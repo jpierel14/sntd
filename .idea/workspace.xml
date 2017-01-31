@@ -1,8 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <project version="4">
   <component name="ChangeListManager">
-    <list default="true" id="468c7090-322e-4ee0-a25f-37e5b463bc82" name="Default" comment="&quot;Initializing SNTD project with modules&quot;">
-      <change type="NEW" beforePath="" afterPath="$PROJECT_DIR$/sntd/util.py" />
+    <list default="true" id="468c7090-322e-4ee0-a25f-37e5b463bc82" name="Default" comment="">
       <change type="MODIFICATION" beforePath="$PROJECT_DIR$/.idea/workspace.xml" afterPath="$PROJECT_DIR$/.idea/workspace.xml" />
     </list>
     <option name="EXCLUDED_CONVERTED_TO_IGNORED" value="true" />
@@ -401,7 +400,14 @@
       <option name="project" value="LOCAL" />
       <updated>1485887822745</updated>
     </task>
-    <option name="localTasksCounter" value="2" />
+    <task id="LOCAL-00002" summary="&quot;Initializing SNTD project with modules&quot;">
+      <created>1485888189034</created>
+      <option name="number" value="00002" />
+      <option name="presentableId" value="LOCAL-00002" />
+      <option name="project" value="LOCAL" />
+      <updated>1485888189034</updated>
+    </task>
+    <option name="localTasksCounter" value="3" />
     <servers />
   </component>
   <component name="ToolWindowManager">
