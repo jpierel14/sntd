@@ -26,7 +26,7 @@ __props__={
 
 class curve(lightcurve):
     """
-    A class, inheriting from pycs lightcurve superclass, that now also has an
+    A class, inheriting from PyCS lightcurve superclass, that now also has an
     astropy.table.Table version of the data file for SNCosmo commands and flux/fluxerr
     arrays.
     """
