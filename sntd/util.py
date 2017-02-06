@@ -1,5 +1,4 @@
 #!/Users/jpierel/anaconda3/envs/astro2/bin python2
-from __future__ import absolute_import
 
 NORMAL = 0    # use python zip libraries
 PROCESS = 1   # use (zcat, gzip) or (bzcat, bzip2)
