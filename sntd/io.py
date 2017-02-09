@@ -1,40 +1,65 @@
 #!/Users/jpierel/anaconda3/envs/astro2/bin python2
-from pycs.gen.lc import lightcurve
-from astropy.table import Table,vstack
-import numpy as np
-from .util import anyOpen
-from sncosmo import get_magsystem
+import string
 from collections import OrderedDict as odict
 
-def _get_default_prop_name(prop):
+import numpy as np
+import pycs
+import sncosmo
+from astropy.table import Table,vstack
+from pycs.gen.lc import lightcurve
+from scipy.stats import mode
+from sncosmo import get_magsystem
+
+from .util import anyOpen
+
+__all__=['curve','curveDict','read_data','factory']
+
+def _cast_str(s):
     try:
-        temp=__props__[[item for item in __props__.keys() if prop in item or prop.lower() in [x.lower() for x in item] or prop.upper() in [y.upper() for y in item]][0]]
+        return int(s)
     except:
-        return prop
-    return temp
+        try:
+            return float(s)
+        except:
+            return s.strip()
 
-__meta__={'#','@','$','%','!','&'}
+def _get_default_prop_name(prop):
+    """
+    Searches through the sets of potential column names to return default if applicable
+    :param prop: The property you want the defaul version of (i.e. "mjd"-->"time")
+    :return: Default value if prop is in _props, else prop
+    """
+    for key,value in _props.items():
+        if {prop.lower()} & value:
+            return key
+    return prop
 
-__props__=odict([
-    ({'mjd', 'mjdobs', 'jd', 'time', 'date', 'mjd_obs','mhjd'},'time'),
-    ({'filter', 'band', 'flt', 'bandpass'}, 'band'),
-    ({'flux', 'f'},'flux'),
-    ({'flux_error', 'fluxerr', 'fluxerror', 'fe', 'flux_err'},'fluxerr'),
-    ({'zero_point','zp', 'zpt', 'zeropoint'},'zp'),
-    ({'zpsys', 'magsys', 'zpmagsys'},'zpsys'),
-    ({'mag','magnitude'},'mag'),
-    ({'magerr','magerror','magnitudeerror','magnitudeerr'},'magerr'),
-    ({'ra','Right Ascension'},'ra'),
-    ({'dec','declination'},'dec'),
-    ({'magcol','magnitudeCol','magColNumber'},'magcol'),
-    ({'errcol','magerrcol'},'errcol'),
-    ({'fluxcol','   fluxColNum'},'fluxcol'),
-    ({'fluxerrcol','fluxerrorcol'},'fluxerrcol'),
-    ({'startline','firstline'},'startline'),
-    ({'jdcol','jdcolnum'},'jdcol')
-    ])
+def _isfloat(value):
+    try:
+        float(value)
+        return True
+    except:
+        return False
 
-__default__={_get_default_prop_name(x) for x in ['time','band','flux','fluxerr','zpsys','zp','mag','magerr']}
+_meta__={'@','$','%','!','&'}
+_comment_char={'#'}
+_props=odict([
+    ('time',{'mjd', 'mjdobs', 'jd', 'time', 'date', 'mjd_obs','mhjd'}),
+    ('band',{'filter', 'band', 'flt', 'bandpass'}),
+    ('flux',{'flux', 'f'}),
+    ('fluxerr',{'flux_error', 'fluxerr', 'fluxerror', 'fe', 'flux_err'}),
+    ('zp',{'zero_point','zp', 'zpt', 'zeropoint'}),
+    ('zpsys',{'zpsys', 'magsys', 'zpmagsys'}),
+    ('mag',{'mag','magnitude'}),
+    ('magerr',{'magerr','magerror','magnitudeerror','magnitudeerr'})
+])
+
+class curveDict(dict):
+    def __init__(self,meta=None):
+        super(curveDict, self).__init__()
+        self.meta = {'info': ''}
+    __getattr__=dict.__getitem__
+    __setattr__=dict.__setitem__
 
 class curve(lightcurve,object):
     """
@@ -49,8 +74,9 @@ class curve(lightcurve,object):
         superclass. Following their format, we initialize a small lightcurve with
         only 5 points, etc. See pycs.gen.lc module for more info on the inherited properties.
 
-        :param table: astropy.table.Table data structure for use with SNCosmo
+        :param band, zp, zpsys
         """
+        #todo populate param documentation
         super(curve,self).__init__()
         self.table=None
         """@type: ~astropy.table.Table
@@ -163,11 +189,8 @@ class curve(lightcurve,object):
         temp[_get_default_prop_name('fluxerr')] = self.getfluxerrs()
         temp[_get_default_prop_name('zp')] = self.getzp()
         temp[_get_default_prop_name('zpsys')] = self.getzpsys()
-        for key in [x for x in self.table.keys() if x not in __default__]:
-            try:
-                temp[_get_default_prop_name(key)]=self.table[_get_default_prop_name(key)].copy()
-            except:
-                temp[key]=self.table[key].copy()
+        for key in [x for x in self.table.keys() if x not in _props.keys()]:
+            temp[_get_default_prop_name(key)]=self.table[_get_default_prop_name(key)].copy()
         return temp
 
     def applyml(self):
@@ -213,14 +236,15 @@ class curve(lightcurve,object):
 
     def sort(self):
         """
-        Simply extends the superclass version of sort to include flux
+        Simply extends the superclass version of sort to include flux and the table
+
         :return: None, but changes self.jds, self.mags, self.magerrs, self.labels, self.properties, self.mask, and
         removes microlensing if it exists
         """
         sortedindices=np.argsort(self.jds)
         self.fluxes=self.fluxes[sortedindices]
         self.fluxerrs=self.fluxerrs[sortedindices]
-        for col in __default__:
+        for col in self.table.colnames:
             self.table[col]=self.table[col][sortedindices]
         super(curve,self).sort()
 
@@ -299,11 +323,15 @@ class curve(lightcurve,object):
         # We include a "mask" column only if mask is not True for all points
         if False in self.mask:
             colnames = ["mhjd", "mag", "magerr", "flux","fluxerr","zp","zpsys","mask"]
-            data = [self.getjds(), self.getmags(), self.getmagerrs(), self.fluxes,self.fluxerrs,np.asarray(self.table[_get_default_prop_name('zp')]),np.asarray(self.table[_get_default_prop_name(_get_default_prop_name('zpsys'))]),self.mask]
+            data = [self.getjds(), self.getmags(), self.getmagerrs(), self.fluxes, self.fluxerrs,
+                    np.asarray(self.table[_get_default_prop_name('zp')]),
+                    np.asarray(self.table[_get_default_prop_name(_get_default_prop_name('zpsys'))]), self.mask]
 
         else:
             colnames = ["mhjd", "mag", "magerr","flux","fluxerr","zp","zpsys"]
-            data = [self.getjds(), self.getmags(), self.getmagerrs(), self.fluxes,self.fluxerrs,np.asarray(self.table[_get_default_prop_name('zp')]),np.asarray(self.table[_get_default_prop_name(_get_default_prop_name('zpsys'))])]
+            data = [self.getjds(), self.getmags(), self.getmagerrs(), self.fluxes, self.fluxerrs,
+                    np.asarray(self.table[_get_default_prop_name('zp')]),
+                    np.asarray(self.table[_get_default_prop_name(_get_default_prop_name('zpsys'))])]
 
         # Now we do some special formatting for the cols mhjd, mag, magerr, flux, fluxerr
         data[0] = map(lambda mhjd: "%.8f" % (mhjd), data[0])  # formatting of mhjd
@@ -400,3 +428,100 @@ def factory(jds, mags,fluxes,zp,zpsys,magerrs=None, fluxerrs=None, telescopename
     if verbose: print("New lightcurve %s with %i points" % (str(newlc), len(newlc.jds)))
 
     return newlc
+
+def switch(ext):
+    switcher = {
+        #'pkl': pycs.gen.util.readpickle,
+        'rdb': pycs.gen.lc.rdbimport
+    }
+
+    return switcher.get(ext, _read_data)
+
+def read_data(filename,**kwargs):
+    if filename[filename.rfind('.')+1:]=='pkl':
+        lc,spline=pycs.gen.util.readpickle(filename,**kwargs)
+    else:
+        lc=switch(filename[filename.rifind('.')+1:])(filename,**kwargs)
+        spline=None
+    if isinstance(lc,list):
+        curves = curveDict()
+        for x in range(len(lc)):
+            curves[lc[x].band]=lc[x]
+        curves.spline=spline
+    try:
+        getattr(lc,'table')
+    except:
+        ##make a table
+        pass
+
+def _read_data(filename,**kwargs):
+    delim = kwargs.get('delim', None)
+    curves=curveDict()
+    flux_to_mag = False
+    mag_to_flux = False
+    colnames = {}
+    with anyOpen(filename) as f:
+        lines=f.readlines()
+        f.close()
+        length=mode([len(l.split()) for l in lines])[0][0]#uses the most common line length as the correct length
+        for i,line in enumerate(lines):
+            if line[0] in _comment_char:
+                continue
+            line = line.strip(delim)
+            if line[0] in _meta__:
+                pos = line.find(' ')
+                if (lines[i + 1][0] in _meta__ or lines[i + 1][0] in _comment_char or len(
+                        line) != length):  # just making sure we're not about to put the col names into meta
+                    if (pos == -1 or not any([_isfloat(x) for x in line.split()])):
+                        if line[-1] not in string.punctuation:
+                            line=line+'.'
+                        curves.meta['info']=curves.meta['info']+' '+ line[1:]
+                    else:
+                        curves.meta[line[1:pos]] = _cast_str(line[pos:])
+                else:#these must be column names with a meta char at the beginning
+                    colnames={_get_default_prop_name(x) for x in line[1:].split()}
+                    if len(colnames)!=len(line.split()):
+                        raise(RuntimeError,"Do you have duplicate column names?")
+                    if len(colnames&_props.keys())!=len(_props.keys()):
+                        if _get_default_prop_name('time') not in colnames:
+                            raise RuntimeError("No time data, or else column name is not in default list.")
+                        temp_flux=[_get_default_prop_name(x) for x in ['flux','fluxerr']]
+                        temp_mag=[_get_default_prop_name(x) for x in ['mag','magerr']]
+                        if len(temp_flux&colnames) != len(temp_flux):
+                            if len(temp_mag&colnames) != len(temp_mag):
+                                raise RuntimeError("You need mag and/or flux data with error, missing: {0}".format(
+                                    ', '.join([x for x in temp_flux + temp_mag if x not in colnames])))
+                            mag_to_flux=True
+                        elif len(temp_mag&colnames) != len(temp_mag):
+                            flux_to_mag=True
+                continue
+            if len(line)!= length:
+                raise(RuntimeError,"Make sure your data are in a square matrix.")
+            try:
+                table=sncosmo.read_lc(filename,**kwargs)
+            except:
+
+                table=Table()
+            if not colnames:#these must be column names with a meta char at the beginning
+                if table.colnames:
+                    continue
+                #todo THIS IS WHERE I'M AT, JUST TRYING TO USE THE TABLE DATA IF POSSIBLE TO POPULATE LC WITH FACTORY
+                colnames={_get_default_prop_name(x) for x in line[1:].split()}
+                if len(colnames)!=len(line.split()):
+                    raise(RuntimeError,"Do you have duplicate column names?")
+                if len(colnames&_props.keys())!=len(_props.keys()):
+                    if _get_default_prop_name('time') not in colnames:
+                        raise RuntimeError("No time data, or else column name is not in default list.")
+                    temp_flux=[_get_default_prop_name(x) for x in ['flux','fluxerr']]
+                    temp_mag=[_get_default_prop_name(x) for x in ['mag','magerr']]
+                    if len(temp_flux&colnames) != len(temp_flux):
+                        if len(temp_mag&colnames) != len(temp_mag):
+                            raise RuntimeError("You need mag and/or flux data with error, missing: {0}".format(
+                                ', '.join([x for x in temp_flux + temp_mag if x not in colnames])))
+                        mag_to_flux=True
+                    elif len(temp_mag&colnames) != len(temp_mag):
+                        flux_to_mag=True
+            ###data starts here###
+
+
+        print(curves.meta)
