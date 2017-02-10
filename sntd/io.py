@@ -54,6 +54,7 @@ _props=odict([
     ('magerr',{'magerr','magerror','magnitudeerror','magnitudeerr'})
 ])
 
+
 class curveDict(dict):
     def __init__(self,meta=None):
         super(curveDict, self).__init__()
@@ -364,6 +365,8 @@ class curve(lightcurve,object):
         outfile.close()
         print("Wrote %s into %s." % (str(self), filename))
 
+def table_to_lc(table):
+    pass
 def factory(jds, mags,fluxes,zp,zpsys,magerrs=None, fluxerrs=None, telescopename="Unknown", object="Unknown", verbose=False):
     #todo: improve it and use this in file importing functions
     """
@@ -429,7 +432,7 @@ def factory(jds, mags,fluxes,zp,zpsys,magerrs=None, fluxerrs=None, telescopename
 
     return newlc
 
-def switch(ext):
+def _switch(ext):
     switcher = {
         #'pkl': pycs.gen.util.readpickle,
         'rdb': pycs.gen.lc.rdbimport
@@ -441,7 +444,7 @@ def read_data(filename,**kwargs):
     if filename[filename.rfind('.')+1:]=='pkl':
         lc,spline=pycs.gen.util.readpickle(filename,**kwargs)
     else:
-        lc=switch(filename[filename.rifind('.')+1:])(filename,**kwargs)
+        lc=_switch(filename[filename.rifind('.')+1:])(filename,**kwargs)
         spline=None
     if isinstance(lc,list):
         curves = curveDict()
@@ -454,15 +457,38 @@ def read_data(filename,**kwargs):
         ##make a table
         pass
 
+def _col_check(colnames):
+    flux_to_mag=False
+    mag_to_flux=False
+    if len(colnames & _props.keys()) != len(_props.keys()):
+        temp_missing=[x for x in _props.keys() if x not in [_get_default_prop_name(y) for y in ['flux','fluxerr','mag','magerr']] and x not in colnames]
+        if len(temp_missing) !=0:
+            raise RuntimeError("Missing required data, or else column name is not in default list: {0}".format(', '.join(temp_missing)))
+        temp_flux = {_get_default_prop_name(x) for x in ['flux', 'fluxerr']}
+        temp_mag = {_get_default_prop_name(x) for x in ['mag', 'magerr']}
+        if len(temp_flux & colnames) != len(temp_flux):
+            if len(temp_mag & colnames) != len(temp_mag):
+                raise RuntimeError("You need mag and/or flux data with error, missing: {0}".format(
+                    ', '.join([x for x in list(temp_flux) + list(temp_mag) if x not in colnames])))
+            mag_to_flux = True
+        elif len(temp_mag & colnames) != len(temp_mag):
+            flux_to_mag = True
+    return flux_to_mag,mag_to_flux
+
 def _read_data(filename,**kwargs):
+    try:
+        table = sncosmo.read_lc(filename, **kwargs)
+        table=Table(table,masked=True)
+    except:
+        table = Table(masked=True)
     delim = kwargs.get('delim', None)
     curves=curveDict()
-    flux_to_mag = False
-    mag_to_flux = False
-    colnames = {}
+    colnames={}
+    flux_to_mag=False
+    mag_to_flux=False
+    band=None
     with anyOpen(filename) as f:
         lines=f.readlines()
-        f.close()
         length=mode([len(l.split()) for l in lines])[0][0]#uses the most common line length as the correct length
         for i,line in enumerate(lines):
             if line[0] in _comment_char:
@@ -478,50 +504,54 @@ def _read_data(filename,**kwargs):
                         curves.meta['info']=curves.meta['info']+' '+ line[1:]
                     else:
                         curves.meta[line[1:pos]] = _cast_str(line[pos:])
-                else:#these must be column names with a meta char at the beginning
-                    colnames={_get_default_prop_name(x) for x in line[1:].split()}
-                    if len(colnames)!=len(line.split()):
-                        raise(RuntimeError,"Do you have duplicate column names?")
-                    if len(colnames&_props.keys())!=len(_props.keys()):
-                        if _get_default_prop_name('time') not in colnames:
-                            raise RuntimeError("No time data, or else column name is not in default list.")
-                        temp_flux=[_get_default_prop_name(x) for x in ['flux','fluxerr']]
-                        temp_mag=[_get_default_prop_name(x) for x in ['mag','magerr']]
-                        if len(temp_flux&colnames) != len(temp_flux):
-                            if len(temp_mag&colnames) != len(temp_mag):
-                                raise RuntimeError("You need mag and/or flux data with error, missing: {0}".format(
-                                    ', '.join([x for x in temp_flux + temp_mag if x not in colnames])))
-                            mag_to_flux=True
-                        elif len(temp_mag&colnames) != len(temp_mag):
-                            flux_to_mag=True
                 continue
             if len(line)!= length:
                 raise(RuntimeError,"Make sure your data are in a square matrix.")
-            try:
-                table=sncosmo.read_lc(filename,**kwargs)
-            except:
-
-                table=Table()
-            if not colnames:#these must be column names with a meta char at the beginning
+            if not colnames:
                 if table.colnames:
-                    continue
-                #todo THIS IS WHERE I'M AT, JUST TRYING TO USE THE TABLE DATA IF POSSIBLE TO POPULATE LC WITH FACTORY
-                colnames={_get_default_prop_name(x) for x in line[1:].split()}
-                if len(colnames)!=len(line.split()):
-                    raise(RuntimeError,"Do you have duplicate column names?")
-                if len(colnames&_props.keys())!=len(_props.keys()):
-                    if _get_default_prop_name('time') not in colnames:
-                        raise RuntimeError("No time data, or else column name is not in default list.")
-                    temp_flux=[_get_default_prop_name(x) for x in ['flux','fluxerr']]
-                    temp_mag=[_get_default_prop_name(x) for x in ['mag','magerr']]
-                    if len(temp_flux&colnames) != len(temp_flux):
-                        if len(temp_mag&colnames) != len(temp_mag):
-                            raise RuntimeError("You need mag and/or flux data with error, missing: {0}".format(
-                                ', '.join([x for x in temp_flux + temp_mag if x not in colnames])))
-                        mag_to_flux=True
-                    elif len(temp_mag&colnames) != len(temp_mag):
-                        flux_to_mag=True
-            ###data starts here###
+                    colnames=table.colnames
+                    break
+                else:
+                    colnames = {_get_default_prop_name(x) for x in line.split()}
+                    if len(colnames) != len(line.split()):
+                        raise (RuntimeError, "Do you have duplicate column names?")
+                colnames=odict(zip(colnames,range(len(colnames))))
+                continue
+            band=line[colnames[_get_default_prop_name('band')]]
+            if band not in curves.keys():
+                curves[band]={}
+                for col in colnames:
+                    curves[band][col]=list(line[colnames[col]])
+            else:
+                for col in colnames:
+                    curves[band][col].append(line[colnames[col]])
+        f.close()
+    flux_to_mag, mag_to_flux = _col_check(colnames)
+    if table:
+        for row in range(len(table)):
+            band=table[row][_get_default_prop_name('band')]
+            if band not in curves.keys():
+                curves[band]={}
+                for col in table.colnames:
+                    curves[band][col]=list(table[col][row])
+            else:
+                for col in table.colnames:
+                    curves[band][col].append(list(table[col][row]))
+    else:
+        for band in curves.keys():
+            for col in curves[band].keys():
+                table[col].append(curves[band][col])
+    if flux_to_mag:
+        mag,magerr=_flux_to_mag(curves)
+    elif mag_to_flux:
+        flux,fluxerr=_mag_to_flux(curves)
+
+#todo implement these functions, then create light curve object for the curveDict using the factories
+def _flux_to_mag(curves):
+    pass
+
+def _mag_to_flux(curves):
+    pass
 
 
-        print(curves.meta)
+
