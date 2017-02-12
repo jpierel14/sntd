@@ -96,7 +96,7 @@ class curve(lightcurve,object):
         @ivar: band name, used
         """
         self.zp=zp
-        """@type: double
+        """@type: float
         @ivar: zero-point for flux scale
         """
         self.zpsys=zpsys
@@ -244,8 +244,7 @@ class curve(lightcurve,object):
         sortedindices=np.argsort(self.jds)
         self.fluxes=self.fluxes[sortedindices]
         self.fluxerrs=self.fluxerrs[sortedindices]
-        for col in self.table.colnames:
-            self.table[col]=self.table[col][sortedindices]
+        self.table.sort(_get_default_prop_name('time'))
         super(curve,self).sort()
 
     def montecarlofluxes(self,f=1.0,seed=None):
@@ -372,12 +371,23 @@ def table_factory(table,telescopename="Unknown",object="Unknown",verbose=False):
     newlc.magerrs = np.asarray(table[_get_default_prop_name('magerr')])
     newlc.fluxes = np.asarray(table[_get_default_prop_name('flux')])
     newlc.fluxerrs = np.asarray(table[_get_default_prop_name('fluxerr')])
+    newlc.zpsys={x for x in table[_get_default_prop_name('zpsys')]}
+    newlc.zp={x for x in table[_get_default_prop_name('zp')]}
+    if len(newlc.zpsys)>1:
+        raise(RuntimeError,"zero point system not consistent across band")
+    if len(newlc.zp)>1:
+        raise(RuntimeError,"zero point not consistent across band")
+    newlc.zpsys=newlc.zpsys.pop()
+    newlc.zp=newlc.zp.pop()
 
     if len(newlc.jds) != len(newlc.mags) or len(newlc.jds) != len(newlc.magerrs) or len(newlc.jds) != len(
             newlc.fluxes) or len(newlc.jds) != len(newlc.fluxerrs):
         raise (RuntimeError, "lightcurve factory called with arrays of incoherent lengths")
 
-    newlc.mask = ~table.mask
+    newlc.mask = newlc.magerrs >= 0.0  # This should be true for all !
+    newlc.mask = newlc.fluxes >= 0.0  # This should be true for all !    newlc.table=table
+
+    newlc.table=table
 
     newlc.properties = [{}] * len(newlc.jds)
 
@@ -424,6 +434,8 @@ def factory(jds, mags,fluxes,zp,zpsys,magerrs=None, fluxerrs=None, telescopename
     newlc.jds = np.asarray(jds)
     newlc.mags=np.asarray(mags)
     newlc.fluxes = np.asarray(fluxes)
+    newlc.zp=zp
+    newlc.zpsys=zpsys
 
     if not fluxerrs:
         newlc.fluxerrs = np.zeros(len(newlc.jds)) + 0.1
@@ -443,8 +455,7 @@ def factory(jds, mags,fluxes,zp,zpsys,magerrs=None, fluxerrs=None, telescopename
 
     colnames = ["mhjd", "mag", "magerr", "flux", "fluxerr", "zp", "zpsys"]
     newlc.table = Table([jds, mags, magerrs, fluxes, fluxerrs, [zp for i in range(len(newlc.jds))],
-                         [zpsys for i in range(len(newlc.jds))]], names=colnames, masked=True)
-    newlc.table[:].mask=~newlc.mask #because pycs uses mask=false to denote mask, astropy tables do the opposite
+                         [zpsys for i in range(len(newlc.jds))]], names=colnames)
     newlc.properties = [{}] * len(newlc.jds)
 
     newlc.telescopename = telescopename
@@ -469,11 +480,11 @@ def _switch(ext):
 
     return switcher.get(ext, _read_data)
 
-def read_data(filename,**kwargs):
+def read_data(filename,telescopename="Unknown",object="Uknown",**kwargs):
     if filename[filename.rfind('.')+1:]=='pkl':
         lc,spline=pycs.gen.util.readpickle(filename,**kwargs)
     else:
-        lc=_switch(filename[filename.rfind('.')+1:])(filename,**kwargs)
+        lc=_switch(filename[filename.rfind('.')+1:])(filename,telescopename,object,**kwargs)
         spline=None
     if isinstance(lc,list):
         curves = curveDict()
@@ -504,13 +515,13 @@ def _col_check(colnames):
             flux_to_mag = True
     return flux_to_mag,mag_to_flux
 
-def _read_data(filename,**kwargs):
+def _read_data(filename,telescopename="Unknown",object="Unknown",**kwargs):
     try:
         #table = sncosmo.read_lc(filename, **kwargs)
         #table=Table(table,masked=True)
-        table=Table(masked=True)
+        table=Table()
     except:
-        table = Table(masked=True)
+        table = Table()
     delim = kwargs.get('delim', None)
     curves=curveDict()
     colnames={}
@@ -560,15 +571,15 @@ def _read_data(filename,**kwargs):
         colnames=set(colnames.keys())
     flux_to_mag, mag_to_flux = _col_check(colnames)
     if flux_to_mag:
-        table.mask[table[_get_default_prop_name('flux')]<0]=True
+        table=table[table[_get_default_prop_name('flux')]>=0]
         table=_flux_to_mag(table)
     elif mag_to_flux:
-        table.mask[table[_get_default_prop_name('magerr')] < 0] = True
+        table=table[table[_get_default_prop_name('magerr')] >= 0]
         table=_mag_to_flux(table)
     else:
-        table.mask[table[_get_default_prop_name('flux')] < 0] = True
-        table.mask[table[_get_default_prop_name('magerr')] < 0] = True
-    bands = {table[_get_default_prop_name('band')][x] for x in range(len(table)) if not any(table.mask[x])}
+        table = table[table[_get_default_prop_name('flux')] >= 0]
+        table = table[table[_get_default_prop_name('magerr')] >= 0]
+    bands = {x for x in table[_get_default_prop_name('band')]}
     for band in bands:
         if _isfloat(band[0]):
             band='band_'+band
@@ -578,13 +589,12 @@ def _read_data(filename,**kwargs):
             else:
                 sncosmo.get_bandpass(band)
         except:
-            print()
+            print('Skipping band %s, not in registry.' %band)
             continue
-        print(table[table[_get_default_prop_name('band')]==band])
-        sys.exit()
-        curves[band]=table_factory(table)
+        curves[band]=table_factory(table[table[_get_default_prop_name('band')]==band],telescopename=curves.meta.get('telescopename',telescopename),object=curves.meta.get('object',object))
+    curves.table=table
+    return curves
 
-#todo create light curve object for the curveDict using the factories.
 def _flux_to_mag(table):
     mag=np.zeros(len(table))
     magerr=np.zeros(len(mag))
@@ -594,7 +604,7 @@ def _flux_to_mag(table):
             mag[row]=system.band_flux_to_mag(table[row][_get_default_prop_name('flux')],table[row][_get_default_prop_name('band')])
             magerr[row] = system.band_flux_to_mag(table[row][_get_default_prop_name('fluxerr')],table[row][_get_default_prop_name('band')])
         except:
-            table.mask[row][:]=True
+            pass
     table['mag']=mag
     table['magerr']=magerr
     return table
@@ -603,11 +613,14 @@ def _mag_to_flux(table):
     flux = np.zeros(len(table))
     fluxerr = np.zeros(len(flux))
     for row in range(len(table)):
-        system = get_magsystem(table[_get_default_prop_name('zpsys')][row])
-        flux[row] = system.band_flux_to_mag(table[_get_default_prop_name('flux')][row],
-                                           table[_get_default_prop_name('band')][row])
-        fluxerr[row] = system.band_flux_to_mag(table[_get_default_prop_name('fluxerr')][row],
-                                              table[_get_default_prop_name('band')][row])
+        try:
+            system = get_magsystem(table[_get_default_prop_name('zpsys')][row])
+            flux[row] = system.band_flux_to_mag(table[_get_default_prop_name('flux')][row],
+                                               table[_get_default_prop_name('band')][row])
+            fluxerr[row] = system.band_flux_to_mag(table[_get_default_prop_name('fluxerr')][row],
+                                                  table[_get_default_prop_name('band')][row])
+        except:
+            pass
     table['flux'] = flux
     table['fluxerr'] = fluxerr
     return table
