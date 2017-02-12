@@ -3,8 +3,7 @@ import string
 from collections import OrderedDict as odict
 
 import numpy as np
-import pycs
-import sncosmo
+import pycs,sncosmo,sys
 from astropy.table import Table,vstack
 from pycs.gen.lc import lightcurve
 from scipy.stats import mode
@@ -365,8 +364,38 @@ class curve(lightcurve,object):
         outfile.close()
         print("Wrote %s into %s." % (str(self), filename))
 
-def table_to_lc(table):
-    pass
+def table_factory(table,telescopename="Unknown",object="Unknown",verbose=False):
+    newlc=curve()
+
+    newlc.jds = np.asarray(table[_get_default_prop_name('time')])
+    newlc.mags = np.asarray(table[_get_default_prop_name('mag')])
+    newlc.magerrs = np.asarray(table[_get_default_prop_name('magerr')])
+    newlc.fluxes = np.asarray(table[_get_default_prop_name('flux')])
+    newlc.fluxerrs = np.asarray(table[_get_default_prop_name('fluxerr')])
+
+    if len(newlc.jds) != len(newlc.mags) or len(newlc.jds) != len(newlc.magerrs) or len(newlc.jds) != len(
+            newlc.fluxes) or len(newlc.jds) != len(newlc.fluxerrs):
+        raise (RuntimeError, "lightcurve factory called with arrays of incoherent lengths")
+
+    newlc.mask = ~table.mask
+
+    newlc.properties = [{}] * len(newlc.jds)
+
+    newlc.telescopename = telescopename
+    newlc.object = object
+
+    newlc.setindexlabels()
+    newlc.commentlist = []
+
+    newlc.sort()  # not sure if this is needed / should be there
+
+    newlc.validate()
+
+    if verbose: print("New lightcurve %s with %i points" % (str(newlc), len(newlc.jds)))
+
+    return newlc
+
+
 def factory(jds, mags,fluxes,zp,zpsys,magerrs=None, fluxerrs=None, telescopename="Unknown", object="Unknown", verbose=False):
     #todo: improve it and use this in file importing functions
     """
@@ -444,7 +473,7 @@ def read_data(filename,**kwargs):
     if filename[filename.rfind('.')+1:]=='pkl':
         lc,spline=pycs.gen.util.readpickle(filename,**kwargs)
     else:
-        lc=_switch(filename[filename.rifind('.')+1:])(filename,**kwargs)
+        lc=_switch(filename[filename.rfind('.')+1:])(filename,**kwargs)
         spline=None
     if isinstance(lc,list):
         curves = curveDict()
@@ -460,7 +489,7 @@ def read_data(filename,**kwargs):
 def _col_check(colnames):
     flux_to_mag=False
     mag_to_flux=False
-    if len(colnames & _props.keys()) != len(_props.keys()):
+    if len(colnames & set(_props.keys())) != len(_props.keys()):
         temp_missing=[x for x in _props.keys() if x not in [_get_default_prop_name(y) for y in ['flux','fluxerr','mag','magerr']] and x not in colnames]
         if len(temp_missing) !=0:
             raise RuntimeError("Missing required data, or else column name is not in default list: {0}".format(', '.join(temp_missing)))
@@ -477,8 +506,9 @@ def _col_check(colnames):
 
 def _read_data(filename,**kwargs):
     try:
-        table = sncosmo.read_lc(filename, **kwargs)
-        table=Table(table,masked=True)
+        #table = sncosmo.read_lc(filename, **kwargs)
+        #table=Table(table,masked=True)
+        table=Table(masked=True)
     except:
         table = Table(masked=True)
     delim = kwargs.get('delim', None)
@@ -505,53 +535,82 @@ def _read_data(filename,**kwargs):
                     else:
                         curves.meta[line[1:pos]] = _cast_str(line[pos:])
                 continue
+            line=line.split()
             if len(line)!= length:
                 raise(RuntimeError,"Make sure your data are in a square matrix.")
-            if not colnames:
-                if table.colnames:
-                    colnames=table.colnames
-                    break
-                else:
-                    colnames = {_get_default_prop_name(x) for x in line.split()}
-                    if len(colnames) != len(line.split()):
-                        raise (RuntimeError, "Do you have duplicate column names?")
+            if table.colnames:
+                colnames=set(table.colnames)
+            else:
+                colnames = odict.fromkeys([_get_default_prop_name(x) for x in line])
+                if len(colnames) != len(line):
+                    raise (RuntimeError, "Do you have duplicate column names?")
                 colnames=odict(zip(colnames,range(len(colnames))))
-                continue
-            band=line[colnames[_get_default_prop_name('band')]]
-            if band not in curves.keys():
-                curves[band]={}
-                for col in colnames:
-                    curves[band][col]=list(line[colnames[col]])
-            else:
-                for col in colnames:
-                    curves[band][col].append(line[colnames[col]])
-        f.close()
+            startLine=i
+            break
+    f.close()
+    if not table:
+        lines = [x.strip().split() for x in lines[startLine + 1:]]
+        #bands={x[colnames[_get_default_prop_name('band')]] for x in lines}
+#        if _isfloat(band[0]):
+#            band='band_'+band
+#       if band not in curves.keys():
+#            curves[band]={}
+        for col in colnames:
+            table[col]=np.asarray([_cast_str(x[colnames[col]]) for x in lines])
+        colnames=set(colnames.keys())
     flux_to_mag, mag_to_flux = _col_check(colnames)
-    if table:
-        for row in range(len(table)):
-            band=table[row][_get_default_prop_name('band')]
-            if band not in curves.keys():
-                curves[band]={}
-                for col in table.colnames:
-                    curves[band][col]=list(table[col][row])
-            else:
-                for col in table.colnames:
-                    curves[band][col].append(list(table[col][row]))
-    else:
-        for band in curves.keys():
-            for col in curves[band].keys():
-                table[col].append(curves[band][col])
     if flux_to_mag:
-        mag,magerr=_flux_to_mag(curves)
+        table.mask[table[_get_default_prop_name('flux')]<0]=True
+        table=_flux_to_mag(table)
     elif mag_to_flux:
-        flux,fluxerr=_mag_to_flux(curves)
+        table.mask[table[_get_default_prop_name('magerr')] < 0] = True
+        table=_mag_to_flux(table)
+    else:
+        table.mask[table[_get_default_prop_name('flux')] < 0] = True
+        table.mask[table[_get_default_prop_name('magerr')] < 0] = True
+    bands = {table[_get_default_prop_name('band')][x] for x in range(len(table)) if not any(table.mask[x])}
+    for band in bands:
+        if _isfloat(band[0]):
+            band='band_'+band
+        try:
+            if band[0:5]=='band_':
+                sncosmo.get_bandpass(band[5:])
+            else:
+                sncosmo.get_bandpass(band)
+        except:
+            print()
+            continue
+        print(table[table[_get_default_prop_name('band')]==band])
+        sys.exit()
+        curves[band]=table_factory(table)
 
-#todo implement these functions, then create light curve object for the curveDict using the factories
-def _flux_to_mag(curves):
-    pass
+#todo create light curve object for the curveDict using the factories.
+def _flux_to_mag(table):
+    mag=np.zeros(len(table))
+    magerr=np.zeros(len(mag))
+    for row in range(len(table)):
+        try:
+            system = get_magsystem(table[row][_get_default_prop_name('zpsys')])
+            mag[row]=system.band_flux_to_mag(table[row][_get_default_prop_name('flux')],table[row][_get_default_prop_name('band')])
+            magerr[row] = system.band_flux_to_mag(table[row][_get_default_prop_name('fluxerr')],table[row][_get_default_prop_name('band')])
+        except:
+            table.mask[row][:]=True
+    table['mag']=mag
+    table['magerr']=magerr
+    return table
 
-def _mag_to_flux(curves):
-    pass
+def _mag_to_flux(table):
+    flux = np.zeros(len(table))
+    fluxerr = np.zeros(len(flux))
+    for row in range(len(table)):
+        system = get_magsystem(table[_get_default_prop_name('zpsys')][row])
+        flux[row] = system.band_flux_to_mag(table[_get_default_prop_name('flux')][row],
+                                           table[_get_default_prop_name('band')][row])
+        fluxerr[row] = system.band_flux_to_mag(table[_get_default_prop_name('fluxerr')][row],
+                                              table[_get_default_prop_name('band')][row])
+    table['flux'] = flux
+    table['fluxerr'] = fluxerr
+    return table
 
 
 
