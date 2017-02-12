@@ -5,4 +5,5 @@ filename="example_photometric_data.dat"
 #filename="test.rdb"
 #tab=sncosmo.read_lc(filename,verbose=False,masked=True)
 temp=sntd.read_data(filename)
+print(temp)
 

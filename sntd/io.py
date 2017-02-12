@@ -3,7 +3,7 @@ import string
 from collections import OrderedDict as odict
 
 import numpy as np
-import pycs,sncosmo,sys
+import sncosmo
 from astropy.table import Table,vstack
 from pycs.gen.lc import lightcurve
 from scipy.stats import mode
@@ -55,11 +55,28 @@ _props=odict([
 
 
 class curveDict(dict):
+    #todo document this class
     def __init__(self,meta=None):
         super(curveDict, self).__init__()
         self.meta = {'info': ''}
     __getattr__=dict.__getitem__
     __setattr__=dict.__setitem__
+    def __str__(self):
+        print('Telescope: %s'%self.telescopename)
+        print('Object: %s'%self.object)
+        print('Number of bands: %d' %len({x for x in self.table[_get_default_prop_name('band')]}))
+        print('')
+        print('Metadata:')
+        print('\n'.join('{}:{}'.format(*t) for t in zip(self.meta.keys(),self.meta.values())))
+        print('')
+        for band in {x for x in self.table[_get_default_prop_name('band')]}:
+            print('------------------')
+            print('Band: %s'%band)
+            print('Date Range: %.5f->%.5f' % (
+            min(self.table[self.table[_get_default_prop_name('band')] == band][_get_default_prop_name('time')]),
+            max(self.table[self.table[_get_default_prop_name('band')] == band][_get_default_prop_name('time')])))
+            print('Number of points: %d' %len(self[band].table))
+        return '------------------'
 
 class curve(lightcurve,object):
     """
@@ -363,7 +380,8 @@ class curve(lightcurve,object):
         outfile.close()
         print("Wrote %s into %s." % (str(self), filename))
 
-def table_factory(table,telescopename="Unknown",object="Unknown",verbose=False):
+def table_factory(table,band,telescopename="Unknown",object="Unknown",verbose=False):
+    #todo document this function
     newlc=curve()
 
     newlc.jds = np.asarray(table[_get_default_prop_name('time')])
@@ -379,6 +397,8 @@ def table_factory(table,telescopename="Unknown",object="Unknown",verbose=False):
         raise(RuntimeError,"zero point not consistent across band")
     newlc.zpsys=newlc.zpsys.pop()
     newlc.zp=newlc.zp.pop()
+
+    newlc.band=band
 
     if len(newlc.jds) != len(newlc.mags) or len(newlc.jds) != len(newlc.magerrs) or len(newlc.jds) != len(
             newlc.fluxes) or len(newlc.jds) != len(newlc.fluxerrs):
@@ -406,7 +426,7 @@ def table_factory(table,telescopename="Unknown",object="Unknown",verbose=False):
     return newlc
 
 
-def factory(jds, mags,fluxes,zp,zpsys,magerrs=None, fluxerrs=None, telescopename="Unknown", object="Unknown", verbose=False):
+def factory(jds, mags,fluxes,band,zp,zpsys,magerrs=None, fluxerrs=None, telescopename="Unknown", object="Unknown", verbose=False):
     #todo: improve it and use this in file importing functions
     """
     "COPY" of pycs.gen.lc.factory, but for fluxes
@@ -436,6 +456,9 @@ def factory(jds, mags,fluxes,zp,zpsys,magerrs=None, fluxerrs=None, telescopename
     newlc.fluxes = np.asarray(fluxes)
     newlc.zp=zp
     newlc.zpsys=zpsys
+    if _isfloat(band[0]):
+        band = 'band_' + band
+    newlc.band=band
 
     if not fluxerrs:
         newlc.fluxerrs = np.zeros(len(newlc.jds)) + 0.1
@@ -475,27 +498,36 @@ def factory(jds, mags,fluxes,zp,zpsys,magerrs=None, fluxerrs=None, telescopename
 def _switch(ext):
     switcher = {
         #'pkl': pycs.gen.util.readpickle,
-        'rdb': pycs.gen.lc.rdbimport
+        #'rdb': pycs.gen.lc.rdbimport
     }
 
     return switcher.get(ext, _read_data)
 
-def read_data(filename,telescopename="Unknown",object="Uknown",**kwargs):
-    if filename[filename.rfind('.')+1:]=='pkl':
-        lc,spline=pycs.gen.util.readpickle(filename,**kwargs)
-    else:
-        lc=_switch(filename[filename.rfind('.')+1:])(filename,telescopename,object,**kwargs)
-        spline=None
-    if isinstance(lc,list):
-        curves = curveDict()
-        for x in range(len(lc)):
-            curves[lc[x].band]=lc[x]
-        curves.spline=spline
-    try:
-        getattr(lc,'table')
-    except:
-        ##make a table
-        pass
+def lc_to_curve(lc):
+    #todo write this function that takes a pycs lc and turns it into an sntd curve
+    pass
+
+def write_data(curve,filename):
+    #todo write this write function
+    pass
+
+def read_data(filename,telescopename="Unknown",object="Unknown",**kwargs):
+    #todo document this function and maybe add other file types (I suspect pickles will be the answer)
+    return(_switch(filename[filename.rfind('.')+1:])(filename,telescopename,object,**kwargs))
+    #spline=None
+    #if not isinstance(lc,curve):
+    #    lc=lc_to_curve(lc)
+    #if isinstance(lc,list):
+    #    curves = curveDict()
+    #    for x in range(len(lc)):
+    #        curves[lc[x].band]=lc[x]
+    #    curves.spline=spline
+    #try:
+    #    getattr(lc,'table')
+    #except:
+    #    print('made it here')
+    #    sys.exit()
+    #    pass
 
 def _col_check(colnames):
     flux_to_mag=False
@@ -517,17 +549,11 @@ def _col_check(colnames):
 
 def _read_data(filename,telescopename="Unknown",object="Unknown",**kwargs):
     try:
-        #table = sncosmo.read_lc(filename, **kwargs)
-        #table=Table(table,masked=True)
-        table=Table()
+        table = sncosmo.read_lc(filename, **kwargs)
     except:
         table = Table()
     delim = kwargs.get('delim', None)
     curves=curveDict()
-    colnames={}
-    flux_to_mag=False
-    mag_to_flux=False
-    band=None
     with anyOpen(filename) as f:
         lines=f.readlines()
         length=mode([len(l.split()) for l in lines])[0][0]#uses the most common line length as the correct length
@@ -561,11 +587,6 @@ def _read_data(filename,telescopename="Unknown",object="Unknown",**kwargs):
     f.close()
     if not table:
         lines = [x.strip().split() for x in lines[startLine + 1:]]
-        #bands={x[colnames[_get_default_prop_name('band')]] for x in lines}
-#        if _isfloat(band[0]):
-#            band='band_'+band
-#       if band not in curves.keys():
-#            curves[band]={}
         for col in colnames:
             table[col]=np.asarray([_cast_str(x[colnames[col]]) for x in lines])
         colnames=set(colnames.keys())
@@ -591,8 +612,11 @@ def _read_data(filename,telescopename="Unknown",object="Unknown",**kwargs):
         except:
             print('Skipping band %s, not in registry.' %band)
             continue
-        curves[band]=table_factory(table[table[_get_default_prop_name('band')]==band],telescopename=curves.meta.get('telescopename',telescopename),object=curves.meta.get('object',object))
+        curves[band]=table_factory(table[table[_get_default_prop_name('band')]==band],band=band,telescopename=curves.meta.get('telescopename',telescopename),object=curves.meta.get('object',object))
+        curves[band].spline=None
     curves.table=table
+    curves.telescopename=curves.meta.get('telescopename',telescopename)
+    curves.object=curves.get('object',object)
     return curves
 
 def _flux_to_mag(table):
