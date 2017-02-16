@@ -3,6 +3,8 @@ import string
 from collections import OrderedDict as odict
 
 import numpy as np
+import os
+import pycs
 import sncosmo
 from astropy.table import Table,vstack
 from pycs.gen.lc import lightcurve
@@ -11,7 +13,7 @@ from sncosmo import get_magsystem
 
 from .util import anyOpen
 
-__all__=['curve','curveDict','read_data','factory']
+__all__=['curve','curveDict','read_data','write_data','table_factory','factory']
 
 def _cast_str(s):
     try:
@@ -59,8 +61,17 @@ class curveDict(dict):
     def __init__(self,meta=None):
         super(curveDict, self).__init__()
         self.meta = {'info': ''}
-    __getattr__=dict.__getitem__
-    __setattr__=dict.__setitem__
+
+    __setattr__ = dict.__setitem__
+    __delattr__ = dict.__delitem__
+    __getattr__ = dict.__getitem__
+
+    def __getstate__(self):
+        return self
+
+    def __setstate__(self, d):
+        self.__dict__ = d
+
     def __str__(self):
         print('Telescope: %s'%self.telescopename)
         print('Object: %s'%self.object)
@@ -77,6 +88,7 @@ class curveDict(dict):
             max(self.table[self.table[_get_default_prop_name('band')] == band][_get_default_prop_name('time')])))
             print('Number of points: %d' %len(self[band].table))
         return '------------------'
+
 
 class curve(lightcurve,object):
     """
@@ -128,6 +140,7 @@ class curve(lightcurve,object):
         @ivar: Used to convert between mag and flux, none if no zpsys is defined at construction
         """
 
+
     def calcmagshiftfluxes(self,inverse=False):
         """
         Returns an array of fluxes that you have to add to the curve.fluxes if you want to take into account for the magshift.
@@ -145,6 +158,7 @@ class curve(lightcurve,object):
             return shift
         else:
             return 0
+
 
     def getfluxes(self,noml=False):
         #TODO: More advanced mag_to_flux integration or add ml.calcmlfluxes
@@ -166,6 +180,7 @@ class curve(lightcurve,object):
             else:
                 return self.fluxes + self.fluxshift
 
+
     def getfluxerrs(self):
         #TODO: Figure out if magshift/ml effect fluxerrs
 
@@ -176,6 +191,7 @@ class curve(lightcurve,object):
         """
         return self.fluxerrs.copy()
 
+
     def getzp(self):
         """
         A getter method returning zero-point
@@ -184,6 +200,7 @@ class curve(lightcurve,object):
         """
         return self.zp
 
+
     def getzpsys(self):
         """
         A getter method returning the zero-point system
@@ -191,6 +208,7 @@ class curve(lightcurve,object):
         :return: string, self.zpsys
         """
         return self.zpsys
+
 
     def gettable(self):
         """
@@ -210,6 +228,7 @@ class curve(lightcurve,object):
             temp[_get_default_prop_name(key)]=self.table[_get_default_prop_name(key)].copy()
         return temp
 
+
     def applyml(self):
         """
         Simply extends the superclass version of applyml to add the ml effect to the fluxes as well as the mags
@@ -224,6 +243,7 @@ class curve(lightcurve,object):
         self.fluxes+=np.array([self.system.band_mag_to_flux(x,self.band) for x in self.ml.calcmlmags(self)])
         super(curve,self).applyml()
 
+
     def cutmask(self):
         """
         Simply extends the superclass version of cutmask to include flux
@@ -234,6 +254,7 @@ class curve(lightcurve,object):
         self.fluxes=self.fluxes[self.mask]
         self.fluxerrs=self.fluxerrs[self.mask]
         super(curve,self).cutmask()
+
 
     def validate(self, verbose=False):
         """
@@ -251,6 +272,7 @@ class curve(lightcurve,object):
             self.system=get_magsystem(self.zpsys)
         super(curve,self).validate(verbose)
 
+
     def sort(self):
         """
         Simply extends the superclass version of sort to include flux and the table
@@ -264,10 +286,12 @@ class curve(lightcurve,object):
         self.table.sort(_get_default_prop_name('time'))
         super(curve,self).sort()
 
+
     def montecarlofluxes(self,f=1.0,seed=None):
         self.commentlist.append("Monte Carlo on fluxes !")  # to avoid confusions.
         rs = np.random.RandomState(seed)  # we create a random state object, to control the seed.
         self.fluxes += rs.standard_normal(self.fluxes.shape) * f * self.fluxerrs  # and here we do the actual bootstrapping !
+
 
     def merge(self,otherlc):
         #todo: make sure we actually care about these things that currently error
@@ -294,6 +318,7 @@ class curve(lightcurve,object):
         self.table=concTable
         super(curve,self).merge(otherlc)
 
+
     def applymagshift(self):
         """
         It adds the magshift-float to the present flux, then puts this magshift-float to 0. So that "nothing" changes as seen from
@@ -305,6 +330,7 @@ class curve(lightcurve,object):
         self.fluxes += self.calcmagshiftfluxes()
         self.commentlist.append("CAUTION : magshift of %f APPLIED" % (self.magshift))
         self.magshift = 0.0  # as this is now applied.
+
 
     def rdbexport(self, filename=None, separator="\t", writeheader=True, rdbunderline=True, properties=None):
         """
@@ -495,25 +521,38 @@ def factory(jds, mags,fluxes,band,zp,zpsys,magerrs=None, fluxerrs=None, telescop
 
     return newlc
 
+
 def _switch(ext):
     switcher = {
-        #'pkl': pycs.gen.util.readpickle,
+        '.pkl': _read_pickle,
         #'rdb': pycs.gen.lc.rdbimport
     }
 
     return switcher.get(ext, _read_data)
 
+
 def lc_to_curve(lc):
     #todo write this function that takes a pycs lc and turns it into an sntd curve
     pass
 
-def write_data(curve,filename):
-    #todo write this write function
+
+def write_data(curves,filename=None,type='pkl',verbose=True,protocol=-1):
+    if not filename:
+        filename=curves.object
+    if type!='pkl':
+        return _write_data()
+    else:
+        return pycs.gen.util.writepickle(curves,filename,verbose=verbose,protocol=protocol)
     pass
+
+
+def _write_data():
+    pass
+
 
 def read_data(filename,telescopename="Unknown",object="Unknown",**kwargs):
     #todo document this function and maybe add other file types (I suspect pickles will be the answer)
-    return(_switch(filename[filename.rfind('.')+1:])(filename,telescopename,object,**kwargs))
+    return(_switch(os.path.splitext(filename)[1])(filename,telescopename,object,**kwargs))
     #spline=None
     #if not isinstance(lc,curve):
     #    lc=lc_to_curve(lc)
@@ -528,6 +567,15 @@ def read_data(filename,telescopename="Unknown",object="Unknown",**kwargs):
     #    print('made it here')
     #    sys.exit()
     #    pass
+
+
+def _read_pickle(filename,telescopename="Unknown",object="Unknown",**kwargs):
+    return pycs.gen.util.readpickle(filename,verbose=True)
+
+
+def _write_pickle(curves):
+    pycs.gen.util.writepickle(curves,'myData.pkl',verbose=False)
+
 
 def _col_check(colnames):
     flux_to_mag=False
@@ -546,6 +594,7 @@ def _col_check(colnames):
         elif len(temp_mag & colnames) != len(temp_mag):
             flux_to_mag = True
     return flux_to_mag,mag_to_flux
+
 
 def _read_data(filename,telescopename="Unknown",object="Unknown",**kwargs):
     try:
@@ -619,6 +668,7 @@ def _read_data(filename,telescopename="Unknown",object="Unknown",**kwargs):
     curves.object=curves.get('object',object)
     return curves
 
+
 def _flux_to_mag(table):
     mag=np.zeros(len(table))
     magerr=np.zeros(len(mag))
@@ -632,6 +682,7 @@ def _flux_to_mag(table):
     table['mag']=mag
     table['magerr']=magerr
     return table
+
 
 def _mag_to_flux(table):
     flux = np.zeros(len(table))
