@@ -26,11 +26,6 @@ def _cast_str(s):
 
 
 def _get_default_prop_name(prop):
-    """
-    Searches through the sets of potential column names to return default if applicable
-    :param prop: The property you want the defaul version of (i.e. "mjd"-->"time")
-    :return: Default value if prop is in _props, else prop
-    """
     for key,value in _props.items():
         if {prop.lower()} & value:
             return key
@@ -61,21 +56,63 @@ _props=odict([
 
 class curveDict(dict):
     #todo document this class
-    def __init__(self,meta=None):
-        super(curveDict, self).__init__()
+    def __init__(self,telescopename="Unknown",object="Unknown"):
+        """
+        Constructor for curveDict class. Inherits from the dictionary class, and is the main object of organization used by SNTD.
+        :param telescopename: Name of the telescope that the data were gathered from
+        :param object: Object of interest
+        """
+        super(curveDict, self).__init__() #init for the super class
         self.meta = {'info': ''}
-
+        """@type: dict
+            @ivar: The metadata for the curveDict object, intialized with an empty "info" key value pair. It's
+            populated by added _metachar__ characters into the header of your data file.
+        """
+        self.bands=[]
+        """
+        @type: list
+        @ivar: The list of bands contained inside this curveDict
+        """
+        self.table=Table()
+        """
+        @type:~astropy.table.Table
+        @ivar: The astropy table containing all of the data in your data file
+        """
+        self.telescopename=telescopename
+        """
+        @type: str
+        @ivar: Name of the telescope that the data were gathered from
+        """
+        self.object=object
+        """
+        @type: str
+        @ivar: Object of interest
+        """
+    #these three functions allow you to access the curveDict via "dot" notation
     __setattr__ = dict.__setitem__
     __delattr__ = dict.__delitem__
     __getattr__ = dict.__getitem__
 
     def __getstate__(self):
+        """
+        A function necessary for pickling
+        :return: self
+        """
         return self
 
     def __setstate__(self, d):
+        """
+        A function necessary for pickling
+        :param d: A value
+        :return: self.__dict__
+        """
         self.__dict__ = d
 
     def __str__(self):
+        """
+        A replacement for the print method of the class, so that when you run print(curveDict()), this is how it shows
+        up.
+        """
         print('Telescope: %s'%self.telescopename)
         print('Object: %s'%self.object)
         print('Number of bands: %d' %len({x for x in self.table[_get_default_prop_name('band')]}))
@@ -408,7 +445,16 @@ class curve(lightcurve,object):
         print("Wrote %s into %s." % (str(self), filename))
 
 def table_factory(table,band,telescopename="Unknown",object="Unknown",verbose=False):
-    #todo document this function
+    #todo finish documenting this function
+    """
+    This function will create a new curve object using an astropy table.
+    :param table: ~astropy.table.Table() with all of your data from your data file.
+    :param band:
+    :param telescopename:
+    :param object:
+    :param verbose:
+    :return:
+    """
     newlc=curve()
 
     newlc.jds = np.asarray(table[_get_default_prop_name('time')])
