@@ -1,13 +1,13 @@
 import sntd
 #filename="example_photometric_data.dat"
-#filename="refsdalS1_psfphot.dat"
-filename="testRef2.dat"
+filename="refsdalS2_psfphot.dat"
+filename2="testRef2.dat"
 #filename="myData.pkl"
 #filename="test.rdb"
 #tab=sncosmo.read_lc(filename,verbose=False,masked=True)
-temp=sntd.read_data(filename)
-print(temp.F105W.fluxes)
-print(temp.F105W.table)
+temp1=sntd.read_data(filename)
+temp2=sntd.read_data(filename2)
+fits=sntd.fit_data([temp1,temp2])
 """
 sntd.write_data(temp,'myData.pkl')
 temp=sntd.read_data('myData.pkl')
