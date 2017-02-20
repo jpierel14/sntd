@@ -68,7 +68,7 @@ class curveDict(dict):
             @ivar: The metadata for the curveDict object, intialized with an empty "info" key value pair. It's
             populated by added _metachar__ characters into the header of your data file.
         """
-        self.bands=[]
+        self.bands=set()
         """
         @type: list
         @ivar: The list of bands contained inside this curveDict
@@ -92,6 +92,7 @@ class curveDict(dict):
     __setattr__ = dict.__setitem__
     __delattr__ = dict.__delitem__
     __getattr__ = dict.__getitem__
+
 
     def __getstate__(self):
         """
@@ -654,7 +655,6 @@ def _read_data(filename,telescopename,object,**kwargs):
         for col in table.colnames:
             if col != _get_default_prop_name(col.lower()):
                 table.rename_column(col, _get_default_prop_name(col.lower()))
-        table=Table()
     except:
         table = Table()
     delim = kwargs.get('delim', None)
@@ -725,7 +725,7 @@ def _read_data(filename,telescopename,object,**kwargs):
     curves.table=table
     curves.telescopename=curves.meta.get('telescopename',telescopename)
     curves.object=curves.get('object',object)
-    curves.bands=list(bands)
+    curves.bands={band for band in bands}
     return curves
 
 def _norm_flux_mag(table,bands):

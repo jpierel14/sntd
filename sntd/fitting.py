@@ -2,9 +2,13 @@ import numpy as np
 import matplotlib.pyplot as plt
 from astropy.table import Table
 from .io import _get_default_prop_name,_props
-import sys,inspect,sncosmo
+import sys,inspect,sncosmo,sntd
 
 __all__=['fit_data']
+
+_needs_bounds={'z'}
+
+
 class fitDict(dict):
     #todo document this class
     def __init__(self,curves,bands=None,method='minuit', models=None, params=None, bounds=None, ignore=None, constants=None,
@@ -35,14 +39,17 @@ class fitDict(dict):
         :type micro: Boolean
         """
         super(fitDict, self).__init__() #init for the super class
-        self.bands = bands if bands else list({x for x in [y.bands for y in curves]})
+        self.curves=curves
+        self.bands = bands if bands else set(np.ndarray.flatten(np.asarray([x for x in [y.bands for y in self.curves]])))
         for band in self.bands:
             self[band]=[]
-            for curve in curves:
-                self[band].append(fit(curve[band],meta=curve.meta,))
+            for dcurve in self.curves:
+                self[band].append(fit())
 
+        self.meta = {k: v if k != 'info' else '' for d in [x.meta for x in self.curves] for k, v in d.items()}
+        for d in [x.meta for x in self.curves]:
+            self.meta['info']+=d['info']
 
-        self.meta = curves.meta
         """@type: dict
             @ivar: The metadata for the fitDict object, intialized with the curveDict metadata. It's
             populated by added _metachar__ characters into the header of your data file.
@@ -141,7 +148,7 @@ class fitDict(dict):
         return '------------------'
 
 
-class fit:
+class fit(dict):
     '''
     This is going to be a fits object that will contain a dictionary
     of modelss with keys as models names. Each value will then be a fitted models
@@ -151,15 +158,50 @@ class fit:
     delays and microlensing effects, write out the result, and run through sncosmo
     to get best fit models?
     '''
-    def __init__(self,curve):
-        self.curve=curve
+    def __init__(self,dcurve,bands=None,method='minuit', models=None, params=None, bounds={}, ignore=None, constants={},
+             spline=False, poly=False, micro='spline', **kwargs):
+        super(fit, self).__init__() #init for the super class
+        self.bands={band for band in bands} if bands else bands
+        self.method=method
+        self.params=params if params else []
+        self.bounds=bounds if bounds else {}
+        self.ignore=ignore if ignore else []
+        self.constants = constants if constants else {x: y for x, y in zip(dcurve.meta.keys(), dcurve.meta.values()) if
+                                                      x != 'info'}
+        if not self.constants:
+            self.constants={}
+        self.spline=spline
+        self.poly=poly
+        self.micro=micro
 
+        for band in self.bands:
+            self[band]=sntd.curve()
+        # these three functions allow you to access the curveDict via "dot" notation
+        __setattr__ = dict.__setitem__
+        __delattr__ = dict.__delitem__
+        __getattr__ = dict.__getitem__
+
+
+        def __getstate__(self):
+            """
+            A function necessary for pickling
+            :return: self
+            """
+            return self
+
+        def __setstate__(self, d):
+            """
+            A function necessary for pickling
+            :param d: A value
+            :return: self.__dict__
+            """
+            self.__dict__ = d
 
 def fit_data(curves, bands=None,method='minuit', models=None, params=None, bounds=None, ignore=None, constants=None,
              spline=False, poly=False, micro='spline', **kwargs):
     """
     The main, high-level fitting function.
-    :param curves: list of objects containing lightcurves to fit, or a single curve
+    :param curves: list of objects containing lightcurves to fit, or a single dcurve
     :type curves: ~io.curveDict or list of ~io.curveDict
     :param bands: The list of bands you'd like to fit, optional (all will be fit if you don't specify)
     :type bands: list
@@ -188,23 +230,114 @@ def fit_data(curves, bands=None,method='minuit', models=None, params=None, bound
     :return: fits object containing all fit information for each lightcurve
     """
     args=locals()
+    curves=[curves] if not isinstance(curves,(tuple,list)) else curves
+    args['bands'] = {x for x in bands} if bands else set(np.hstack(np.array([x for x in [list(y.bands) for y in curves]])))
+    if not args['bands']:
+        raise(RuntimeError,"You don't have any bands to analyze!")
+    #fits=fitDict(**{x:args[x] for x in args.keys() if x != 'kwargs'})
+    mods = sncosmo.models._SOURCES._loaders.keys() if not models else models
+    sn_func = {'minuit': sncosmo.fit_lc, 'mcmc': sncosmo.mcmc_lc, 'nest': sncosmo.nest_lc}
+    props = {x: kwargs[x] for x in kwargs.keys() if
+             x in [y for y in inspect.getargspec(sn_func[method])[0]] and x != 'verbose'}
+    for dcurve in curves:  # here dcurve=curveDict
+        dcurve.fit = fit(dcurve, **args)
+    printed=False
+    for model in mods:
+        if isinstance(model, tuple):
+            model = model[0]
+        source = sncosmo.get_source(model)
+        mod = sncosmo.Model(source=source)
 
-    fits = fitDict(curves, bands, method, models, params, bounds, ignore, constants, spline, poly, micro) if isinstance(
-        curves, (tuple, list)) else fitDict([curves], bands, method, models, params, bounds, ignore, constants, spline,
-                                            poly, micro)
-    if spline:
-        if poly:
-            raise(RuntimeError,"Can't fit spline and polynomial at the same time!")
-        #todo implement a normal pycs spline fit to each band
-        return None
-    elif poly:
-        #todo implement a normal pycs polyfit to each band
-        return None
+        tmin=mod.mintime()
+        tmax=mod.maxtime()
+        tgrid = np.linspace(tmin, tmax, int(tmax - tmin) + 1)
+        mflux = mod.bandflux('F160W', tgrid)
+        """
+        fig = plt.figure()
+        ax = plt.gca()
+        ax.plot(tgrid, mflux)
+        plt.show()
+        """
+        if not params:
+            if len(mods) == 1:
+                print(
+                "Did not supply params, using default model params. (These are: '{1}' for model {0!r})".format(model,
+                                                                                                               "', '".join(
+                                                                                                                   mod.param_names)))
+            params = {x for x in mod.param_names}
+        else:
+            params=set(params)
+        for dcurve in curves:
+            no_bound = {x for x in params if
+                        x in _needs_bounds and x not in dcurve.fit.bounds.keys() and x not in dcurve.fit.constants.keys()}
+            if no_bound:
+                if not printed:
+                    print("Ignoring following parameter(s), didn't have required bounds: {0}".format(', '.join(no_bound)))
+                    print('')
+                params=list(params-no_bound)
+                printed=True
+            params= [x for x in params if x not in dcurve.fit.ignore and x not in dcurve.fit.constants.keys()]
+            dcurve.fit.params = params
+            if dcurve.fit.constants:
+                constants = {x: dcurve.fit.constants[x] for x in dcurve.fit.constants.keys() if x in mod.param_names}
+                mod.set(**constants)
+            dcurve.fit.res, dcurve.fit.model = sn_func[method](dcurve.table, mod, dcurve.fit.params, dcurve.fit.bounds,verbose=False, **props)
+            dcurve=_snmodel_to_flux(dcurve)
+            """
+            fig = plt.figure()
+            ax = plt.gca()
+            try:
+                ax.plot(dcurve.fit['F160W'].curve.time-dcurve.fit.model.parameters[1], dcurve.fit['F160W'].curve.fluxes)
+                plt.show()
+                sncosmo.plot_lc(dcurve.table,dcurve.fit.model)
+                plt.show()
+            except:
+                ax.plot(dcurve.fit['sdssr'].curve.time-dcurve.fit.model.parameters[1], dcurve.fit['sdssr'].curve.fluxes)
+                plt.show()
+                sncosmo.plot_lc(dcurve.table,dcurve.fit.model)
+                plt.show()
+            """
+        sys.exit()
+
+
+def _snmodel_to_flux(dcurve):
+    for band in dcurve.fit.bands & dcurve.bands:
+        dcurve.fit[band].curve=sntd.curve(band=band,zp=dcurve[band].zp,zpsys=dcurve[band].zpsys)
+        tmin = []
+        tmax = []
+        tmin.append(np.min(dcurve[band].table[_get_default_prop_name('time')]) - 10)
+        tmax.append(np.max(dcurve[band].table[_get_default_prop_name('time')]) + 10)
+        tmin.append(dcurve.fit.model.mintime())
+        tmax.append(dcurve.fit.model.maxtime())
+        tmin = min(tmin)
+        tmax = max(tmax)
+        tgrid = np.linspace(tmin, tmax, int(tmax - tmin) + 1)
+        mflux = dcurve.fit.model.bandflux(band, tgrid, zp=dcurve[band].zp, zpsys=dcurve[band].zpsys)
+        mmag = -2.5 * np.log10(mflux) + dcurve[band].zp
+        dcurve.fit[band].curve.mags=mmag
+        dcurve.fit[band].curve.fluxes = mflux
+        dcurve.fit[band].curve.time = tgrid
+        dcurve.fit[band].curve.magerrs = mmag*.1
+        dcurve.fit[band].curve.magerrs = mflux*.1
+    return dcurve
+
+
+
+
+    """
+    list(filter(lambda x: mod.bandoverlap(x),fits.bands)):
+    Okay I think it makes sense to do it this way. Go through each curveDict object and run sncosmo on all bands
+    at the same time. Each time, keep track of the model result for each band in a fits object. Then send the fits
+    object to the pycs fitting function. It will take all of the model results for each band one at a time and send them
+    to pycs, which will try to fit them to the data instead of a spline. This means I'll need a fits object with a
+    hierarchy looking something like:
+    fitsDict-->band keys, each band has a fit object--> each fit object contains model results for that band?
+
     sn_func={'minuit':sncosmo.fit_lc,'mcmc':sncosmo.mcmc_lc,'nest':sncosmo.nest_lc}
     props = {x: kwargs[x] for x in kwargs.keys() if x in [y for y in inspect.getargspec(sn_func[method])[0]] and x !='verbose'}
 
-    models=fits.models if fits.models else sncosmo.models._SOURCES._loaders.keys()
-    for band in fits.bands:
+    models= sncosmo.models._SOURCES._loaders.keys()
+    for dcurve in curves:
         printed=False
         for model in models:
             if isinstance(model,tuple):
@@ -212,7 +345,7 @@ def fit_data(curves, bands=None,method='minuit', models=None, params=None, bound
             source = sncosmo.get_source(model)
             mod = sncosmo.Model(source=source)
 
-            if not fits.params:
+            if not params:
                 if len(models)==1:
                     print("Did not supply params, using default model params. (These are: '{1}' for model {0!r})".format(model,
                                                                                                                      "', '".join(
@@ -221,16 +354,16 @@ def fit_data(curves, bands=None,method='minuit', models=None, params=None, bound
                 if 'z' in mod.param_names:
                     if args.get('bounds') and 'z' in args.get('bounds').keys():
                         params.append('z')
-                    elif 'z' not in fits.constants and 'z' not in fits.ignore and not printed:
+                    elif 'z' not in constants and 'z' not in ignore and not printed:
                         print("Ignoring 'z' parameter because no bounds were given (required)")
                         printed=True
 
-            fits.params = [x for x in params if x not in fits.ignore and x not in fits.constants.keys()]
+            fits.params = [x for x in params if x not in ignore and x not in constants.keys()]
             if fits.constants:
-                fits.constants={x:fits.constants[x] for x in fits.constants.keys() if x in mod.param_names}
+                fits.constants={x:fits.constants[x] for x in constants.keys() if x in mod.param_names}
                 mod.set(**fits.constants)
-            fits[band].res, fits[band].model = sn_func[method](fits[band].curve.table, mod, fits.params,fits.bounds,verbose=False, **props)
-            #sncosmo.plot_lc(fits[band].curve.table,model=fits[band].model)
+            fits[band].res, fits[band].model = sn_func[method](fits[band].dcurve.table, mod, fits.params,fits.bounds,verbose=False, **props)
+            #sncosmo.plot_lc(fits[band].dcurve.table,model=fits[band].model)
 
 
             _py_fit(fits[band],band,micro,**kwargs)
@@ -244,13 +377,14 @@ def fit_data(curves, bands=None,method='minuit', models=None, params=None, bound
 def _py_fit(fit,band,micro,**kwargs):
     tmin = []
     tmax = []
-    tmin.append(np.min(fit.curve.table[_get_default_prop_name('time')]) - 10)
-    tmax.append(np.max(fit.curve.table[_get_default_prop_name('time')]) + 10)
+    tmin.append(np.min(fit.dcurve.table[_get_default_prop_name('time')]) - 10)
+    tmax.append(np.max(fit.dcurve.table[_get_default_prop_name('time')]) + 10)
     tmin.append(fit.model.mintime())
     tmax.append(fit.model.maxtime())
     tmin = min(tmin)
     tmax = max(tmax)
     tgrid = np.linspace(tmin, tmax, int(tmax - tmin) + 1)
-    mflux = fit.model.bandflux(band, tgrid, zp=fit[band].curve.zp, zpsys=fit[band].curve.zpsys)
-    mmag = -2.5 * np.log10(mflux) + fit[band].curve.zp
+    mflux = fit.model.bandflux(band, tgrid, zp=fit[band].dcurve.zp, zpsys=fit[band].dcurve.zpsys)
+    mmag = -2.5 * np.log10(mflux) + fit[band].dcurve.zp
 
+"""

@@ -1,7 +1,7 @@
 import sntd
-#filename="example_photometric_data.dat"
+filename2="example_photometric_data.dat"
 filename="refsdalS2_psfphot.dat"
-filename2="testRef2.dat"
+#filename2="testRef2.dat"
 #filename="myData.pkl"
 #filename="test.rdb"
 #tab=sncosmo.read_lc(filename,verbose=False,masked=True)

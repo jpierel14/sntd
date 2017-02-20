@@ -1,3 +1,6 @@
+@something here that I wanted to say
+@c 2.3
+@z 1.4
   TARGET                RA         DEC       MJD  FILTER  APER       FLUX  FLUXERR         MAG   MAGERR  MAGSYS       ZP      SKY SKYERR  IMAGE
 S2                177.39772    22.39578  56966.487   F105W   inf     0.9918   0.1986     26.2778   0.2174     AB   26.2688  -0.0009 0.0186  refsdal_f105w_e01-e00_sub_masked.fits
 S2                177.39772    22.39578  56972.058   F105W   inf     1.3533   0.3321     25.9403   0.2664     AB   26.2688  -0.0005 0.0303  refsdal_f105w_e02-e00_sub_masked.fits
