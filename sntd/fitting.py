@@ -1,8 +1,11 @@
+import inspect
+import sncosmo
+import sntd
+import sys
+
 import numpy as np
-import matplotlib.pyplot as plt
-from astropy.table import Table
-from .io import _get_default_prop_name,_props
-import sys,inspect,sncosmo,sntd
+
+from .io import _get_default_prop_name
 
 __all__=['fit_data']
 
@@ -247,12 +250,12 @@ def fit_data(curves, bands=None,method='minuit', models=None, params=None, bound
             model = model[0]
         source = sncosmo.get_source(model)
         mod = sncosmo.Model(source=source)
-
+        """
         tmin=mod.mintime()
         tmax=mod.maxtime()
         tgrid = np.linspace(tmin, tmax, int(tmax - tmin) + 1)
         mflux = mod.bandflux('F160W', tgrid)
-        """
+
         fig = plt.figure()
         ax = plt.gca()
         ax.plot(tgrid, mflux)
@@ -267,6 +270,7 @@ def fit_data(curves, bands=None,method='minuit', models=None, params=None, bound
             params = {x for x in mod.param_names}
         else:
             params=set(params)
+        bands=set()
         for dcurve in curves:
             no_bound = {x for x in params if
                         x in _needs_bounds and x not in dcurve.fit.bounds.keys() and x not in dcurve.fit.constants.keys()}
@@ -283,26 +287,32 @@ def fit_data(curves, bands=None,method='minuit', models=None, params=None, bound
                 mod.set(**constants)
             dcurve.fit.res, dcurve.fit.model = sn_func[method](dcurve.table, mod, dcurve.fit.params, dcurve.fit.bounds,verbose=False, **props)
             dcurve=_snmodel_to_flux(dcurve)
-            """
-            fig = plt.figure()
-            ax = plt.gca()
-            try:
-                ax.plot(dcurve.fit['F160W'].curve.time-dcurve.fit.model.parameters[1], dcurve.fit['F160W'].curve.fluxes)
-                plt.show()
-                sncosmo.plot_lc(dcurve.table,dcurve.fit.model)
-                plt.show()
-            except:
-                ax.plot(dcurve.fit['sdssr'].curve.time-dcurve.fit.model.parameters[1], dcurve.fit['sdssr'].curve.fluxes)
-                plt.show()
-                sncosmo.plot_lc(dcurve.table,dcurve.fit.model)
-                plt.show()
-            """
+            bands.update(dcurve.fit.bands)
+        """
+        This is the point where all light curves have their own fit object for each band containing the flux/mag data for the model template,
+        ready to be sent to pycs if that's what we want to do. bands contains all of the bands for all of the curves in a set.
+        """
+        #todo figure out if we need to do microlensing before time delay measurements, then continue the modeling process
+        """
+        fig = plt.figure()
+        ax = plt.gca()
+        try:
+            ax.plot(dcurve.fit['F160W'].curve.time-dcurve.fit.model.parameters[1], dcurve.fit['F160W'].curve.fluxes)
+            plt.show()
+            sncosmo.plot_lc(dcurve.table,dcurve.fit.model)
+            plt.show()
+        except:
+            ax.plot(dcurve.fit['sdssr'].curve.time-dcurve.fit.model.parameters[1], dcurve.fit['sdssr'].curve.fluxes)
+            plt.show()
+            sncosmo.plot_lc(dcurve.table,dcurve.fit.model)
+            plt.show()
+        """
         sys.exit()
 
 
 def _snmodel_to_flux(dcurve):
     for band in dcurve.fit.bands & dcurve.bands:
-        dcurve.fit[band].curve=sntd.curve(band=band,zp=dcurve[band].zp,zpsys=dcurve[band].zpsys)
+        dcurve.fit[band]=sntd.curve(band=band,zp=dcurve[band].zp,zpsys=dcurve[band].zpsys)
         tmin = []
         tmax = []
         tmin.append(np.min(dcurve[band].table[_get_default_prop_name('time')]) - 10)
@@ -314,11 +324,11 @@ def _snmodel_to_flux(dcurve):
         tgrid = np.linspace(tmin, tmax, int(tmax - tmin) + 1)
         mflux = dcurve.fit.model.bandflux(band, tgrid, zp=dcurve[band].zp, zpsys=dcurve[band].zpsys)
         mmag = -2.5 * np.log10(mflux) + dcurve[band].zp
-        dcurve.fit[band].curve.mags=mmag
-        dcurve.fit[band].curve.fluxes = mflux
-        dcurve.fit[band].curve.time = tgrid
-        dcurve.fit[band].curve.magerrs = mmag*.1
-        dcurve.fit[band].curve.magerrs = mflux*.1
+        dcurve.fit[band].mags=mmag
+        dcurve.fit[band].fluxes = mflux
+        dcurve.fit[band].time = tgrid
+        dcurve.fit[band].magerrs = mmag*.1
+        dcurve.fit[band].fluxerrs = mflux*.1
     return dcurve
 
 
