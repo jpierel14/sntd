@@ -5,6 +5,7 @@ import os,sys
 import warnings
 import numpy as np
 import multiprocessing
+import matplotlib.pyplot as plt
 from multiprocessing import Pool
 from contextlib import contextmanager
 from copy import deepcopy
@@ -130,23 +131,40 @@ def fit_data(curves, bands=None,method='minuit', models=None, params=None, bound
     args['props'] = {x: kwargs[x] for x in kwargs.keys() if
              x in [y for y in inspect.getargspec(args['sn_func'][method])[0]] and x != 'verbose'}
     printed = False
-
+    """
     @contextmanager
     def terminating(thing):
         try:
             yield thing
         finally:
             thing.terminate()
-    with terminating(Pool(processes=multiprocessing.cpu_count())) as p:
-        curves=p.map(_multi_run_wrapper,[(x,args) for x in mods])
-    print(curves)
+    """
+    test=[]
+    def _pool_results_to_dict(modResults):
+        modName,modResults=modResults
+        for i,tempFit in modResults:
+            if not hasattr(args['curves'][i],'fit'):
+                args['curves'][i].fit=fit(args['curves'][i],**args)
+            args['curves'][i].fit[modName] = tempFit
 
-def _multi_run_wrapper(args):
-    return _fit_data(*args)
 
-def _fit_data(model,args):
-    model=locals()['model']
-    args=locals()['args']
+
+    p=Pool(processes=multiprocessing.cpu_count())
+    for model in mods:
+        p.apply_async(_fit_data,args=((model,args),),callback=_pool_results_to_dict)
+    p.close()
+    p.join()
+    #print(test)
+    print(args['curves'][0].fit.keys())
+    fig = plt.figure()
+    ax = plt.gca()
+    ax.plot(args['curves'][0].fit['hsiao']['sdssr'].time, args['curves'][0].fit['hsiao']['sdssr'].fluxes)
+    plt.show()
+
+
+def _fit_data(args):
+    model=args[0]
+    args=args[1]
     if isinstance(model, tuple):
         model = model[0]
     modName=deepcopy(model)
@@ -172,7 +190,7 @@ def _fit_data(model,args):
         except:
             continue
         bands.update(dcurve.fit.bands)
-    return(args['curves'][0].fit.bands)
+    return((modName,[(i,dcurve.fit[modName]) for i,dcurve in enumerate(args['curves'])]))
 
 
 
@@ -193,11 +211,11 @@ def _snmodel_to_flux(dcurve,modName):
         tgrid = np.linspace(tmin, tmax, int(tmax - tmin) + 1)
         mflux = dcurve.fit[modName].model.bandflux(band, tgrid, zp=dcurve[band].zp, zpsys=dcurve[band].zpsys)
         mmag = -2.5 * np.log10(mflux) + dcurve[band].zp
-        dcurve.fit[band].mags=mmag
-        dcurve.fit[band].fluxes = mflux
-        dcurve.fit[band].time = tgrid
-        dcurve.fit[band].magerrs = mmag*.1
-        dcurve.fit[band].fluxerrs = mflux*.1
+        dcurve.fit[modName][band].mags=mmag
+        dcurve.fit[modName][band].fluxes = mflux
+        dcurve.fit[modName][band].time = tgrid
+        dcurve.fit[modName][band].magerrs = mmag*.1
+        dcurve.fit[modName][band].fluxerrs = mflux*.1
     return dcurve
 
 
