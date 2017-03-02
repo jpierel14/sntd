@@ -64,8 +64,8 @@ class fit(dict):
         self.spline=spline
         self.poly=poly
         self.micro=micro
-        for band in self.bands:
-            self[band]=sntd.curve()
+        #for band in self.bands:
+        #    self[band]=sntd.curve()
         # these three functions allow you to access the curveDict via "dot" notation
         __setattr__ = dict.__setitem__
         __delattr__ = dict.__delitem__
@@ -130,7 +130,6 @@ def fit_data(curves, bands=None,method='minuit', models=None, params=None, bound
     args['sn_func'] = {'minuit': sncosmo.fit_lc, 'mcmc': sncosmo.mcmc_lc, 'nest': sncosmo.nest_lc}
     args['props'] = {x: kwargs[x] for x in kwargs.keys() if
              x in [y for y in inspect.getargspec(args['sn_func'][method])[0]] and x != 'verbose'}
-    printed = False
     """
     @contextmanager
     def terminating(thing):
@@ -139,7 +138,7 @@ def fit_data(curves, bands=None,method='minuit', models=None, params=None, bound
         finally:
             thing.terminate()
     """
-    test=[]
+    print(len(mods))
     def _pool_results_to_dict(modResults):
         modName,modResults=modResults
         for i,tempFit in modResults:
@@ -148,27 +147,33 @@ def fit_data(curves, bands=None,method='minuit', models=None, params=None, bound
             args['curves'][i].fit[modName] = tempFit
 
 
-
     p=Pool(processes=multiprocessing.cpu_count())
     for model in mods:
         p.apply_async(_fit_data,args=((model,args),),callback=_pool_results_to_dict)
     p.close()
     p.join()
-    #print(test)
+
     print(args['curves'][0].fit.keys())
+    print(len(args['curves'][0].fit.keys()))
+    """
     fig = plt.figure()
     ax = plt.gca()
     ax.plot(args['curves'][0].fit['hsiao']['sdssr'].time, args['curves'][0].fit['hsiao']['sdssr'].fluxes)
     plt.show()
+    """
 
-
+#todo decide about multiple versions of model
 def _fit_data(args):
     model=args[0]
     args=args[1]
     if isinstance(model, tuple):
+        version = model[1]
         model = model[0]
-    modName=deepcopy(model)
-    source = sncosmo.get_source(model)
+    else:
+        version=None
+    print(model)
+    modName=model+'_'+version if version else deepcopy(model)
+    source = sncosmo.get_source(model,version=version)
     mod = sncosmo.Model(source=source)
     params=args['params'] if args['params'] else [x for x in mod.param_names]
     bands=set()
@@ -193,7 +198,7 @@ def _fit_data(args):
     return((modName,[(i,dcurve.fit[modName]) for i,dcurve in enumerate(args['curves'])]))
 
 
-
+#todo figure out how to deal with negative flux from model flux to mag
 def _snmodel_to_flux(dcurve,modName):
     warnings.simplefilter("ignore")
     for band in dcurve.fit.bands & dcurve.bands:
