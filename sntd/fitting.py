@@ -4,6 +4,7 @@ import sntd
 import os,sys
 import warnings
 import numpy as np
+import functools
 import multiprocessing
 import matplotlib.pyplot as plt
 from multiprocessing import Pool
@@ -19,6 +20,7 @@ class newDict(dict):
     def __init__(self):
         super(newDict,self).__init__()
 
+    # these three functions allow you to access the curveDict via "dot" notation
     __setattr__ = dict.__setitem__
     __delattr__ = dict.__delitem__
     __getattr__ = dict.__getitem__
@@ -139,20 +141,43 @@ def fit_data(curves, bands=None,method='minuit', models=None, params=None, bound
             thing.terminate()
     """
     print(len(mods))
+
     def _pool_results_to_dict(modResults):
-        modName,modResults=modResults
+        modName,source,modResults=modResults
         for i,tempFit in modResults:
             if not hasattr(args['curves'][i],'fit'):
                 args['curves'][i].fit=fit(args['curves'][i],**args)
             args['curves'][i].fit[modName] = tempFit
-
-
+            args['curves'][i].fit[modName].model._source=sncosmo.get_source(source)
+    """
+    def _pool_results_to_dict(fits):
+        for model in fits:
+            modName,modResults=model
+            for i, tempFit in modResults:
+                if not hasattr(args['curves'][i], 'fit'):
+                    args['curves'][i].fit = fit(args['curves'][i], **args)
+                args['curves'][i].fit[modName] = tempFit
+        return(args['curves'])
+    """
+    fits=[]
+    #mods=mods[0:30]
+    models={}
+    for mod in mods:
+        if mod[0] in models.keys() and float(mod[1])>float(models[mod[0]]):
+            models[mod[0]]=mod[1]
+        else:
+            models[mod[0]]=mod[1]
+    mods=[(x,models[x]) for x in models.keys()]
     p=Pool(processes=multiprocessing.cpu_count())
-    for model in mods:
-        p.apply_async(_fit_data,args=((model,args),),callback=_pool_results_to_dict)
-    p.close()
-    p.join()
-
+    #for model in mods:
+    #    p.map_async(_fit_data,args=((model,args),),callback=_pool_results_to_dict)
+    for x in p.imap(_fit_data,[(x,args) for x in mods]):#,chunksize=5):
+        #fits.append(x)
+        _pool_results_to_dict(x)
+    #print(fits[0][1][0][1])
+    #p.close()
+    #p.join()
+    #args['curves']=_pool_results_to_dict(fits)
     print(args['curves'][0].fit.keys())
     print(len(args['curves'][0].fit.keys()))
     """
@@ -161,21 +186,45 @@ def fit_data(curves, bands=None,method='minuit', models=None, params=None, bound
     ax.plot(args['curves'][0].fit['hsiao']['sdssr'].time, args['curves'][0].fit['hsiao']['sdssr'].fluxes)
     plt.show()
     """
+'''
+class Model(sncosmo.Model):
+    def __init__(self,model):
+        super(Model,self).__init__(model._source)
+        self._param_names=model._param_names
+        self.param_names_latex=model.param_names_latex
+        self._parameters=model._parameters
+        self.description=model.description
+        self._effects=model._effects
+        self._effect_names=model._effect_names
+        self._effect_frames=model._effect_frames
+        self._synchronize_parameters()
+
+    def __reduce__(self):
+        return (Model,(None,))
+
+
+def _fit_data_wrap(args):
+    try:
+        return _fit_data(args)
+    except:
+        return None
+'''
 
 #todo decide about multiple versions of model
 def _fit_data(args):
-    model=args[0]
+    warnings.simplefilter("ignore")
+    mod=args[0]
     args=args[1]
-    if isinstance(model, tuple):
-        version = model[1]
-        model = model[0]
+    if isinstance(mod, tuple):
+        version = mod[1]
+        mod = mod[0]
     else:
-        version=None
-    print(model)
-    modName=model+'_'+version if version else deepcopy(model)
-    source = sncosmo.get_source(model,version=version)
-    mod = sncosmo.Model(source=source)
-    params=args['params'] if args['params'] else [x for x in mod.param_names]
+        version = None
+    modName=mod+'_'+version if version and version != '1.0' else deepcopy(mod)
+    source=sncosmo.get_source(mod)
+    #print(modName)
+    smod = sncosmo.Model(source=source)
+    params=args['params'] if args['params'] else [x for x in smod.param_names]
     bands=set()
     for dcurve in args.get('curves'):
         dcurve.fit = fit(dcurve, **args)
@@ -187,16 +236,16 @@ def _fit_data(args):
         params= [x for x in params if x not in dcurve.fit.ignore and x not in dcurve.fit.constants.keys()]
         dcurve.fit.params = params
         if dcurve.fit.constants:
-            constants = {x: dcurve.fit.constants[x] for x in dcurve.fit.constants.keys() if x in mod.param_names}
-            mod.set(**constants)
-        dcurve.fit[modName].res, dcurve.fit[modName].model = args.get('sn_func')[args.get('method')](dcurve.table, mod, dcurve.fit.params, dcurve.fit.bounds,verbose=False, **args.get('props'))
+            constants = {x: dcurve.fit.constants[x] for x in dcurve.fit.constants.keys() if x in smod.param_names}
+            smod.set(**constants)
+        dcurve.fit[modName].res, dcurve.fit[modName].model = args.get('sn_func')[args.get('method')](dcurve.table, smod, dcurve.fit.params, dcurve.fit.bounds,verbose=False, **args.get('props'))
         try:
             dcurve=_snmodel_to_flux(dcurve,modName)
         except:
             continue
         bands.update(dcurve.fit.bands)
-    return((modName,[(i,dcurve.fit[modName]) for i,dcurve in enumerate(args['curves'])]))
-
+        dcurve.fit[modName].model._source = None
+    return((modName,mod,[(i,dcurve.fit[modName]) for i,dcurve in enumerate(args['curves'])]))
 
 #todo figure out how to deal with negative flux from model flux to mag
 def _snmodel_to_flux(dcurve,modName):
