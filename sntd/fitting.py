@@ -161,6 +161,7 @@ def fit_data(curves, bands=None,method='minuit', models=None, params=None, bound
     """
     fits=[]
     #mods=mods[0:30]
+    '''
     models={}
     for mod in mods:
         if mod[0] in models.keys() and float(mod[1])>float(models[mod[0]]):
@@ -168,6 +169,10 @@ def fit_data(curves, bands=None,method='minuit', models=None, params=None, bound
         else:
             models[mod[0]]=mod[1]
     mods=[(x,models[x]) for x in models.keys()]
+    '''
+    mods={x[0] for x in mods}
+    print(len(mods))
+    sys.exit()
     p=Pool(processes=multiprocessing.cpu_count())
     #for model in mods:
     #    p.map_async(_fit_data,args=((model,args),),callback=_pool_results_to_dict)
