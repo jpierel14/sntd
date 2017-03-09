@@ -17,6 +17,10 @@ __all__=['fit_data']
 _needs_bounds={'z'}
 
 class newDict(dict):
+    """
+    This is just a dictionary replacement class that allows the use of a normal dictionary but with the ability
+    to access via "dot" notation.
+    """
     def __init__(self):
         super(newDict,self).__init__()
 
@@ -51,7 +55,7 @@ class fit(dict):
     delays and microlensing effects, write out the result, and run through sncosmo
     to get best fit models?
     '''
-    def __init__(self,dcurve,bands=None,method='minuit', models=None, params=None, bounds={}, ignore=None, constants={},
+    def __init__(self,dcurve,bands=None,method='minuit', models=None, params=None, bounds=None, ignore=None, constants=None,
              spline=False, poly=False, micro='spline', **kwargs):
         super(fit, self).__init__() #init for the super class
         self.bands={band for band in bands} if bands else bands
@@ -127,20 +131,10 @@ def fit_data(curves, bands=None,method='minuit', models=None, params=None, bound
         np.hstack(np.array([x for x in [list(y.bands) for y in args['curves']]])))
     if not args['bands']:
         raise (RuntimeError, "You don't have any bands to analyze!")
-    # fits=fitDict(**{x:args[x] for x in args.keys() if x != 'kwargs'})
     mods = sncosmo.models._SOURCES._loaders.keys() if not models else models
     args['sn_func'] = {'minuit': sncosmo.fit_lc, 'mcmc': sncosmo.mcmc_lc, 'nest': sncosmo.nest_lc}
     args['props'] = {x: kwargs[x] for x in kwargs.keys() if
              x in [y for y in inspect.getargspec(args['sn_func'][method])[0]] and x != 'verbose'}
-    """
-    @contextmanager
-    def terminating(thing):
-        try:
-            yield thing
-        finally:
-            thing.terminate()
-    """
-    print(len(mods))
 
     def _pool_results_to_dict(modResults):
         modName,source,modResults=modResults
@@ -149,71 +143,12 @@ def fit_data(curves, bands=None,method='minuit', models=None, params=None, bound
                 args['curves'][i].fit=fit(args['curves'][i],**args)
             args['curves'][i].fit[modName] = tempFit
             args['curves'][i].fit[modName].model._source=sncosmo.get_source(source)
-    """
-    def _pool_results_to_dict(fits):
-        for model in fits:
-            modName,modResults=model
-            for i, tempFit in modResults:
-                if not hasattr(args['curves'][i], 'fit'):
-                    args['curves'][i].fit = fit(args['curves'][i], **args)
-                args['curves'][i].fit[modName] = tempFit
-        return(args['curves'])
-    """
-    fits=[]
-    #mods=mods[0:30]
-    '''
-    models={}
-    for mod in mods:
-        if mod[0] in models.keys() and float(mod[1])>float(models[mod[0]]):
-            models[mod[0]]=mod[1]
-        else:
-            models[mod[0]]=mod[1]
-    mods=[(x,models[x]) for x in models.keys()]
-    '''
+
     mods={x[0] for x in mods}
-    print(len(mods))
-    sys.exit()
     p=Pool(processes=multiprocessing.cpu_count())
-    #for model in mods:
-    #    p.map_async(_fit_data,args=((model,args),),callback=_pool_results_to_dict)
-    for x in p.imap(_fit_data,[(x,args) for x in mods]):#,chunksize=5):
-        #fits.append(x)
+    for x in p.imap(_fit_data,[(x,args) for x in mods]):
         _pool_results_to_dict(x)
-    #print(fits[0][1][0][1])
-    #p.close()
-    #p.join()
-    #args['curves']=_pool_results_to_dict(fits)
-    print(args['curves'][0].fit.keys())
-    print(len(args['curves'][0].fit.keys()))
-    """
-    fig = plt.figure()
-    ax = plt.gca()
-    ax.plot(args['curves'][0].fit['hsiao']['sdssr'].time, args['curves'][0].fit['hsiao']['sdssr'].fluxes)
-    plt.show()
-    """
-'''
-class Model(sncosmo.Model):
-    def __init__(self,model):
-        super(Model,self).__init__(model._source)
-        self._param_names=model._param_names
-        self.param_names_latex=model.param_names_latex
-        self._parameters=model._parameters
-        self.description=model.description
-        self._effects=model._effects
-        self._effect_names=model._effect_names
-        self._effect_frames=model._effect_frames
-        self._synchronize_parameters()
 
-    def __reduce__(self):
-        return (Model,(None,))
-
-
-def _fit_data_wrap(args):
-    try:
-        return _fit_data(args)
-    except:
-        return None
-'''
 
 #todo decide about multiple versions of model
 def _fit_data(args):
@@ -227,7 +162,6 @@ def _fit_data(args):
         version = None
     modName=mod+'_'+version if version and version != '1.0' else deepcopy(mod)
     source=sncosmo.get_source(mod)
-    #print(modName)
     smod = sncosmo.Model(source=source)
     params=args['params'] if args['params'] else [x for x in smod.param_names]
     bands=set()
@@ -276,71 +210,3 @@ def _snmodel_to_flux(dcurve,modName):
         dcurve.fit[modName][band].magerrs = mmag*.1
         dcurve.fit[modName][band].fluxerrs = mflux*.1
     return dcurve
-
-
-
-
-    """
-    list(filter(lambda x: mod.bandoverlap(x),fits.bands)):
-    Okay I think it makes sense to do it this way. Go through each curveDict object and run sncosmo on all bands
-    at the same time. Each time, keep track of the model result for each band in a fits object. Then send the fits
-    object to the pycs fitting function. It will take all of the model results for each band one at a time and send them
-    to pycs, which will try to fit them to the data instead of a spline. This means I'll need a fits object with a
-    hierarchy looking something like:
-    fitsDict-->band keys, each band has a fit object--> each fit object contains model results for that band?
-
-    sn_func={'minuit':sncosmo.fit_lc,'mcmc':sncosmo.mcmc_lc,'nest':sncosmo.nest_lc}
-    props = {x: kwargs[x] for x in kwargs.keys() if x in [y for y in inspect.getargspec(sn_func[method])[0]] and x !='verbose'}
-
-    models= sncosmo.models._SOURCES._loaders.keys()
-    for dcurve in curves:
-        printed=False
-        for model in models:
-            if isinstance(model,tuple):
-                model=model[0]
-            source = sncosmo.get_source(model)
-            mod = sncosmo.Model(source=source)
-
-            if not params:
-                if len(models)==1:
-                    print("Did not supply params, using default model params. (These are: '{1}' for model {0!r})".format(model,
-                                                                                                                     "', '".join(
-                                                                                                                         mod.param_names)))
-                params = [x for x in mod.param_names if x != 'z']
-                if 'z' in mod.param_names:
-                    if args.get('bounds') and 'z' in args.get('bounds').keys():
-                        params.append('z')
-                    elif 'z' not in constants and 'z' not in ignore and not printed:
-                        print("Ignoring 'z' parameter because no bounds were given (required)")
-                        printed=True
-
-            fits.params = [x for x in params if x not in ignore and x not in constants.keys()]
-            if fits.constants:
-                fits.constants={x:fits.constants[x] for x in constants.keys() if x in mod.param_names}
-                mod.set(**fits.constants)
-            fits[band].res, fits[band].model = sn_func[method](fits[band].dcurve.table, mod, fits.params,fits.bounds,verbose=False, **props)
-            #sncosmo.plot_lc(fits[band].dcurve.table,model=fits[band].model)
-
-
-            _py_fit(fits[band],band,micro,**kwargs)
-            '''
-            fig = plt.figure()
-            ax = plt.gca()
-            ax.plot(tgrid-fits[band].model.parameters[1], mflux)
-            plt.show()
-            '''
-
-def _py_fit(fit,band,micro,**kwargs):
-    tmin = []
-    tmax = []
-    tmin.append(np.min(fit.dcurve.table[_get_default_prop_name('time')]) - 10)
-    tmax.append(np.max(fit.dcurve.table[_get_default_prop_name('time')]) + 10)
-    tmin.append(fit.model.mintime())
-    tmax.append(fit.model.maxtime())
-    tmin = min(tmin)
-    tmax = max(tmax)
-    tgrid = np.linspace(tmin, tmax, int(tmax - tmin) + 1)
-    mflux = fit.model.bandflux(band, tgrid, zp=fit[band].dcurve.zp, zpsys=fit[band].dcurve.zpsys)
-    mmag = -2.5 * np.log10(mflux) + fit[band].dcurve.zp
-
-"""
