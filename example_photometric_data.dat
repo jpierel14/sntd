@@ -1,7 +1,5 @@
 @This is just a test of the info option
 @This is also a test
-@c 0.2
-@z .5
 time band flux fluxerr zp zpsys
 55070.0 sdssg 0.36351153597 0.672843847541 25.0 ab
 55072.0512821 sdssr -0.200801295864 0.672843847541 25.0 ab

@@ -8,7 +8,7 @@ import functools
 import multiprocessing
 import matplotlib.pyplot as plt
 from multiprocessing import Pool
-from contextlib import contextmanager
+from scipy.stats import norm
 from copy import deepcopy
 from .io import _get_default_prop_name
 
@@ -127,31 +127,69 @@ def fit_data(curves, bands=None,method='minuit', models=None, params=None, bound
     """
     args = locals()
     args['curves'] = [curves] if not isinstance(curves, (tuple, list)) else curves
+    #sets the bands to user's if defined (set, so that they're unique), otherwise to all the bands that exist in curves
     args['bands'] = {x for x in bands} if bands else set(
         np.hstack(np.array([x for x in [list(y.bands) for y in args['curves']]])))
     if not args['bands']:
         raise (RuntimeError, "You don't have any bands to analyze!")
+    #currently sets the models to run through to all if user doesn't define, will probably change that
     mods = sncosmo.models._SOURCES._loaders.keys() if not models else models
+    mods=[mods] if not isinstance(mods,(tuple,list)) else mods
     args['sn_func'] = {'minuit': sncosmo.fit_lc, 'mcmc': sncosmo.mcmc_lc, 'nest': sncosmo.nest_lc}
+    #get any properties set in kwargs that exist for the defined fitting function
     args['props'] = {x: kwargs[x] for x in kwargs.keys() if
              x in [y for y in inspect.getargspec(args['sn_func'][method])[0]] and x != 'verbose'}
+    #get a unique set of the models to run (not multiple versions of the same model)
+    mods = {x[0] if isinstance(x,(tuple,list)) else x for x in mods}
 
     def _pool_results_to_dict(modResults):
-        modName,source,modResults=modResults
-        for i,tempFit in modResults:
-            if not hasattr(args['curves'][i],'fit'):
-                args['curves'][i].fit=fit(args['curves'][i],**args)
-            args['curves'][i].fit[modName] = tempFit
-            args['curves'][i].fit[modName].model._source=sncosmo.get_source(source)
+        """
+        This function is just used in the parallel processing in order to "share" a data structure between threads.
+        :param modResults: The object returned by each call to _fit_data during multiprocessing.
+        :type modResults: tuple (Name of current model (including version if exists),name of the sncosmo model,version
+                    of sncosmo model,list of tuples containing index and dcurve.fit[modname] for each dcurve in curves)
+        :return:None, but updates args
+        """
+        if modResults:
+            modName, source, version, modResults = modResults
+            for i, tempFit in modResults:
+                # if not hasattr(args['curves'][i],'fit'):
+                #    args['curves'][i].fit=fit(args['curves'][i],**args)
+                args['curves'][i].fit[modName] = tempFit
+                args['curves'][i].fit[modName].model._source = sncosmo.get_source(source, version=version)
 
-    mods={x[0] for x in mods}
-    p=Pool(processes=multiprocessing.cpu_count())
-    for x in p.imap(_fit_data,[(x,args) for x in mods]):
-        _pool_results_to_dict(x)
+    for mod in mods:
+        for curve in args['curves']:
+            curve.fit=fit(curve,**args)
+            curve.fit[mod]=None
 
+    #set up parallel processing
+    p = Pool(processes=multiprocessing.cpu_count())
+    fits=[]
+    #run each model in parallel and keep track using _pool_results_to_dict
+    for x in p.imap(_fit_data_wrap,[(x,args) for x in mods]):
+        #_pool_results_to_dict(x)
+        fits.append(x)
+    p.close()
+    print(fits)
+    #print(args['curves'][0].fit.keys())#['salt2'].res.errors)
+    #print(args['curves'][1].fit['salt2'].res.errors)
+
+
+def _fit_data_wrap(args):
+    try:
+        return _fit_data(args)
+    except:
+        return None
 
 #todo decide about multiple versions of model
 def _fit_data(args):
+    """
+    Helper function that allows parallel processing to occur.
+    :param args: All the arguments given from fit_data
+    :return: modResults: tuple (Name of current model (including version if exists),name of the sncosmo model,version
+                    of sncosmo model,list of tuples containing index and dcurve.fit[modname] for each dcurve in curves)
+    """
     warnings.simplefilter("ignore")
     mod=args[0]
     args=args[1]
@@ -160,12 +198,12 @@ def _fit_data(args):
         mod = mod[0]
     else:
         version = None
-    modName=mod+'_'+version if version and version != '1.0' else deepcopy(mod)
+    modName=mod+'_'+version if version else deepcopy(mod)
     source=sncosmo.get_source(mod)
     smod = sncosmo.Model(source=source)
     params=args['params'] if args['params'] else [x for x in smod.param_names]
     bands=set()
-    for dcurve in args.get('curves'):
+    for dcurve in list(args.get('curves')):
         dcurve.fit = fit(dcurve, **args)
         dcurve.fit[modName]=newDict()
         no_bound = {x for x in params if
@@ -184,7 +222,7 @@ def _fit_data(args):
             continue
         bands.update(dcurve.fit.bands)
         dcurve.fit[modName].model._source = None
-    return((modName,mod,[(i,dcurve.fit[modName]) for i,dcurve in enumerate(args['curves'])]))
+    return((modName,mod,version,[(i,dcurve.fit[modName]) for i,dcurve in enumerate(args['curves'])]))
 
 #todo figure out how to deal with negative flux from model flux to mag
 def _snmodel_to_flux(dcurve,modName):

@@ -1,6 +1,4 @@
 @oh and that other thing
-@c 2.3
-@z 1.4
 #do not want this line in there
 target	RA	DEC	mjd	filter	APER	MAG	MAGERR	MAGSYS	zp	SKY	SKYERR	IMAGE
 S1	177.39822	22.39563	56966.487	F105W	inf	26.236	0.1683	AB	26.2688	-0.0019	0.0176	refsdal_f105w_e01-e00_sub_masked.fits
