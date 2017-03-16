@@ -9,8 +9,8 @@ filename2="testRef2.dat"
 #tab=sncosmo.read_lc(filename,verbose=False,masked=True)
 temp1=sntd.read_data(filename)
 temp2=sntd.read_data(filename2)
-sntd.fit_data(temp1,bounds={'z':(1.2,1.5)})
-#print(timeit.timeit("sntd.fit_data(sntd.read_data('example_photometric_data.dat'))",setup="import sntd",number=1))
+#sntd.fit_data(temp1,bounds={'z':(1.2,1.5)})
+print(timeit.timeit("sntd.fit_data(sntd.read_data('example_photometric_data.dat'))",setup="import sntd",number=1))
 """
 sntd.write_data(temp,'myData.pkl')
 temp=sntd.read_data('myData.pkl')

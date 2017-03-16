@@ -45,7 +45,7 @@ class newDict(dict):
         self.__dict__ = d
 
 
-class fit(dict):
+class fits(dict):
     '''
     This is going to be a fits object that will contain a dictionary
     of models with keys as models names. Each value will then be a fitted models
@@ -55,21 +55,20 @@ class fit(dict):
     delays and microlensing effects, write out the result, and run through sncosmo
     to get best fit models?
     '''
-    def __init__(self,dcurve,bands=None,method='minuit', models=None, params=None, bounds=None, ignore=None, constants=None,
-             spline=False, poly=False, micro='spline', **kwargs):
-        super(fit, self).__init__() #init for the super class
-        self.bands={band for band in bands} if bands else bands
-        self.method=method
-        self.params=params if params else []
-        self.bounds=bounds if bounds else {}
-        self.ignore=ignore if ignore else []
-        self.constants = constants if constants else {x: y for x, y in zip(dcurve.meta.keys(), dcurve.meta.values()) if
-                                                      x != 'info'}
-        if not self.constants:
-            self.constants={}
-        self.spline=spline
-        self.poly=poly
-        self.micro=micro
+    def __init__(self):
+        super(fits, self).__init__() #init for the super class
+
+        self.method='minuit'
+        self.params=[]
+        self.bounds={}
+        self.ignore=[]
+        self.modelFits=newDict()
+        #self.constants = constants if constants else {x: y for x, y in zip(dcurve.meta.keys(), dcurve.meta.values()) if
+        #                                             x != 'info'}
+        self.constants={}
+        self.spline=False
+        self.poly=False
+        self.micro='spline'
         #for band in self.bands:
         #    self[band]=sntd.curve()
         # these three functions allow you to access the curveDict via "dot" notation
@@ -127,8 +126,9 @@ def fit_data(curves, bands=None,method='minuit', models=None, params=None, bound
     """
     args = locals()
     args['curves'] = [curves] if not isinstance(curves, (tuple, list)) else curves
+    args['bands'] = [bands] if bands and not isinstance(bands,(tuple,list)) else bands
     #sets the bands to user's if defined (set, so that they're unique), otherwise to all the bands that exist in curves
-    args['bands'] = {x for x in bands} if bands else set(
+    args['bands'] = set(bands) if bands else set(
         np.hstack(np.array([x for x in [list(y.bands) for y in args['curves']]])))
     if not args['bands']:
         raise (RuntimeError, "You don't have any bands to analyze!")
@@ -140,8 +140,8 @@ def fit_data(curves, bands=None,method='minuit', models=None, params=None, bound
     args['props'] = {x: kwargs[x] for x in kwargs.keys() if
              x in [y for y in inspect.getargspec(args['sn_func'][method])[0]] and x != 'verbose'}
     #get a unique set of the models to run (not multiple versions of the same model)
-    mods = {x[0] if isinstance(x,(tuple,list)) else x for x in mods}
-
+    if not models:
+        mods = {x[0] if isinstance(x,(tuple,list)) else x for x in mods}
     def _pool_results_to_dict(modResults):
         """
         This function is just used in the parallel processing in order to "share" a data structure between threads.
@@ -158,10 +158,8 @@ def fit_data(curves, bands=None,method='minuit', models=None, params=None, bound
                 args['curves'][i].fit[modName] = tempFit
                 args['curves'][i].fit[modName].model._source = sncosmo.get_source(source, version=version)
 
-    for mod in mods:
-        for curve in args['curves']:
-            curve.fit=fit(curve,**args)
-            curve.fit[mod]=None
+    for curve in args['curves']:
+        curve.fits.modelFits=dict((mod,None) if not isinstance(mod,(list,tuple)) else (mod[0]+'_'+mod[1],None) for mod in mods)
 
     #set up parallel processing
     p = Pool(processes=multiprocessing.cpu_count())
@@ -179,7 +177,7 @@ def fit_data(curves, bands=None,method='minuit', models=None, params=None, bound
 def _fit_data_wrap(args):
     try:
         return _fit_data(args)
-    except:
+    except RuntimeError:
         return None
 
 #todo decide about multiple versions of model
@@ -203,48 +201,55 @@ def _fit_data(args):
     smod = sncosmo.Model(source=source)
     params=args['params'] if args['params'] else [x for x in smod.param_names]
     bands=set()
-    for dcurve in list(args.get('curves')):
-        dcurve.fit = fit(dcurve, **args)
-        dcurve.fit[modName]=newDict()
-        no_bound = {x for x in params if
-                    x in _needs_bounds and x not in dcurve.fit.bounds.keys() and x not in dcurve.fit.constants.keys()}
+    for i,dcurve in enumerate(args['curves']):
+        if not np.any([smod.bandoverlap(band) for band in dcurve.bands]):
+            continue
+        dcurve.fits.method=args['method']
+        dcurve.fits.bounds=args['bounds'] if args['bounds'] else {}
+        dcurve.fits.ignore=args['ignore'] if args['ignore'] else []
+        dcurve.fits.constants = args['constants'] if args['constants'] else {x: y for x, y in zip(dcurve.meta.keys(),dcurve.meta.values()) if x != 'info'}
+        dcurve.fits.spline = args['spline']
+        dcurve.fits.poly = args['poly']
+        dcurve.fits.micro = args['micro']
+        no_bound = {x for x in params if x in _needs_bounds and x not in dcurve.fits.bounds.keys() and x not in dcurve.fits.constants.keys()}
         if no_bound:
-            params=list(params-no_bound)
-        params= [x for x in params if x not in dcurve.fit.ignore and x not in dcurve.fit.constants.keys()]
-        dcurve.fit.params = params
-        if dcurve.fit.constants:
-            constants = {x: dcurve.fit.constants[x] for x in dcurve.fit.constants.keys() if x in smod.param_names}
+            params=list(set(params)-no_bound)
+        params= [x for x in params if x not in dcurve.fits.ignore and x not in dcurve.fits.constants.keys()]
+        dcurve.fits.params = params
+        if dcurve.fits.constants:
+            constants = {x: dcurve.fits.constants[x] for x in dcurve.fits.constants.keys() if x in smod.param_names}
             smod.set(**constants)
-        dcurve.fit[modName].res, dcurve.fit[modName].model = args.get('sn_func')[args.get('method')](dcurve.table, smod, dcurve.fit.params, dcurve.fit.bounds,verbose=False, **args.get('props'))
+        dcurve.fits.modelFits[modName].res, dcurve.fits.modelFits[modName].model = args['sn_func'][args['method']](dcurve.table, smod, dcurve.fits.params, dcurve.fits.bounds,verbose=False, **args['props'])
         try:
             dcurve=_snmodel_to_flux(dcurve,modName)
         except:
             continue
-        bands.update(dcurve.fit.bands)
-        dcurve.fit[modName].model._source = None
-    return((modName,mod,version,[(i,dcurve.fit[modName]) for i,dcurve in enumerate(args['curves'])]))
+        bands.update(dcurve.fits.bands)
+        dcurve.fits.modelFits[modName].model._source = None
+    return((modName,mod,version,[(i,dcurve.fits) for i,dcurve in enumerate(args['curves'])]))
 
 #todo figure out how to deal with negative flux from model flux to mag
 def _snmodel_to_flux(dcurve,modName):
     warnings.simplefilter("ignore")
-    for band in dcurve.fit.bands & dcurve.bands:
-        if not dcurve.fit[modName].model.bandoverlap(band):
+    for band in dcurve.fits.bands & dcurve.bands:
+        if not dcurve.fits.modelFits[modName].model.bandoverlap(band):
             continue
-        dcurve.fit[modName][band]=sntd.curve(band=band,zp=dcurve[band].zp,zpsys=dcurve[band].zpsys)
+        dcurve.fits.modelFits[modName][band]=sntd.curve(band=band,zp=dcurve[band].zp,zpsys=dcurve[band].zpsys)
         tmin = []
         tmax = []
         tmin.append(np.min(dcurve[band].table[_get_default_prop_name('time')]) - 10)
         tmax.append(np.max(dcurve[band].table[_get_default_prop_name('time')]) + 10)
-        tmin.append(dcurve.fit[modName].model.mintime())
-        tmax.append(dcurve.fit[modName].model.maxtime())
+        tmin.append(dcurve.fits.modelFits[modName].model.mintime())
+        tmax.append(dcurve.fits.modelFits[modName].model.maxtime())
         tmin = min(tmin)
         tmax = max(tmax)
         tgrid = np.linspace(tmin, tmax, int(tmax - tmin) + 1)
-        mflux = dcurve.fit[modName].model.bandflux(band, tgrid, zp=dcurve[band].zp, zpsys=dcurve[band].zpsys)
+        mflux = dcurve.fits.modelFits[modName].model.bandflux(band, tgrid, zp=dcurve[band].zp, zpsys=dcurve[band].zpsys)
         mmag = -2.5 * np.log10(mflux) + dcurve[band].zp
-        dcurve.fit[modName][band].mags=mmag
-        dcurve.fit[modName][band].fluxes = mflux
-        dcurve.fit[modName][band].time = tgrid
-        dcurve.fit[modName][band].magerrs = mmag*.1
-        dcurve.fit[modName][band].fluxerrs = mflux*.1
+        dcurve.fits.modelFits[modName][band].mags=mmag
+        dcurve.fits.modelFits[modName][band].fluxes = mflux
+        dcurve.fits.modelFits[modName][band].time = tgrid
+        #todo do real error thing
+        dcurve.fits.modelFits[modName][band].magerrs = mmag*.1
+        dcurve.fits.modelFits[modName][band].fluxerrs = mflux*.1
     return dcurve

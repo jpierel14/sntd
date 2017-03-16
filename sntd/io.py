@@ -5,7 +5,7 @@ from collections import OrderedDict as odict
 import numpy as np
 import os,sys
 import pycs
-import sncosmo
+import sncosmo,sntd
 from astropy.table import Table,vstack
 from pycs.gen.lc import lightcurve
 from scipy.stats import mode
@@ -649,7 +649,10 @@ def _col_check(colnames):
 
 def _read_data(filename,telescopename,object,**kwargs):
     if not object:
-        object=filename[:filename.rfind('.')]
+        try:
+            object=filename[:filename.rfind('.')]
+        except:
+            object='Unknown'
     try:
         table = sncosmo.read_lc(filename, **kwargs)
         for col in table.colnames:
@@ -698,6 +701,7 @@ def _read_data(filename,telescopename,object,**kwargs):
             table[col]=np.asarray([_cast_str(x[colnames[col]]) for x in lines])
         colnames=colnames.keys()
     flux_to_mag, mag_to_flux = _col_check(colnames)
+    #todo: don't get rid of negative flux
     if flux_to_mag:
         table=table[table[_get_default_prop_name('flux')]>=0]
         table=_flux_to_mag(table)
@@ -707,9 +711,9 @@ def _read_data(filename,telescopename,object,**kwargs):
     else:
         table = table[table[_get_default_prop_name('flux')] >= 0]
         table = table[table[_get_default_prop_name('magerr')] >= 0]
-    bands = {x for x in table[_get_default_prop_name('band')]}
-    _norm_flux_mag(table, bands)
-    for band in bands:
+    bnds = {x for x in table[_get_default_prop_name('band')]}
+    table=_norm_flux_mag(table, bnds)
+    for band in bnds:
         if _isfloat(band[0]):
             band='band_'+band
         try:
@@ -725,7 +729,8 @@ def _read_data(filename,telescopename,object,**kwargs):
     curves.table=table
     curves.telescopename=curves.meta.get('telescopename',telescopename)
     curves.object=curves.get('object',object)
-    curves.bands={band for band in bands}
+    curves.bands=bnds
+    curves.fits=sntd.fitting.fits()
     return curves
 
 def _norm_flux_mag(table,bands):
