@@ -1,16 +1,29 @@
+'''
 
+import sncosmo
+import pickle
+data=sncosmo.load_example_data()
+model=sncosmo.Model('salt2')
+res, fitted_model = sncosmo.fit_lc(data, model,['z', 't0', 'x0', 'x1', 'c'],bounds={'z':(0.3, 0.7)})
+#model._source=None
+with open('test.pkl','wb') as handle:
+    pickle.dump(sncosmo.Model('salt2'),handle,protocol=2)
+
+'''
 import sntd,timeit
 from multiprocessing import Pool
 #filename2="example_photometric_data.dat"
-filename="refsdalS2_psfphot.dat"
-filename2="testRef2.dat"
+#filename="refsdalS2_psfphot.dat"
+#filename2="testRef2.dat"
 #filename="myData.pkl"
 #filename="test.rdb"
 #tab=sncosmo.read_lc(filename,verbose=False,masked=True)
-temp1=sntd.read_data(filename)
-temp2=sntd.read_data(filename2)
+#temp1=sntd.read_data(filename)
+#temp2=sntd.read_data(filename2)
 #sntd.fit_data(temp1,bounds={'z':(1.2,1.5)})
-print(timeit.timeit("sntd.fit_data(sntd.read_data('example_photometric_data.dat'))",setup="import sntd",number=1))
+#sntd.fit_data(temp2,bounds={'z':(.3,.7)})
+print(timeit.timeit("sntd.fit_data(sntd.read_data('example_photometric_data.dat'),bounds={'z':(0.3, 0.7)})",setup="import sntd",number=1))
+#print(timeit.timeit("sntd.fit_data(sntd.read_data('refsdalS2_psfphot.dat'),bounds={'z':(1.2, 1.5)})",setup="import sntd",number=1))
 """
 sntd.write_data(temp,'myData.pkl')
 temp=sntd.read_data('myData.pkl')

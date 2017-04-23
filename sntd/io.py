@@ -43,14 +43,14 @@ def _isfloat(value):
 _meta__={'@','$','%','!','&'}
 _comment_char={'#'}
 _props=odict([
-    ('time',{'mjd', 'mjdobs', 'jd', 'time', 'date', 'mjd_obs','mhjd'}),
+    ('time',{'mjd', 'mjdobs', 'jd', 'time', 'date', 'mjd_obs','mhjd','jds'}),
     ('band',{'filter', 'band', 'flt', 'bandpass'}),
-    ('flux',{'flux', 'f'}),
-    ('fluxerr',{'flux_error', 'fluxerr', 'fluxerror', 'fe', 'flux_err'}),
+    ('flux',{'flux', 'f','fluxes'}),
+    ('fluxerr',{'flux_error', 'fluxerr', 'fluxerror', 'fe', 'flux_err','fluxerrs'}),
     ('zp',{'zero_point','zp', 'zpt', 'zeropoint'}),
     ('zpsys',{'zpsys', 'magsys', 'zpmagsys'}),
-    ('mag',{'mag','magnitude'}),
-    ('magerr',{'magerr','magerror','magnitudeerror','magnitudeerr'})
+    ('mag',{'mag','magnitude','mags'}),
+    ('magerr',{'magerr','magerror','magnitudeerror','magnitudeerr','magerrs'})
 ])
 
 
@@ -536,11 +536,11 @@ def factory(jds, mags,fluxes,band,zp,zpsys,magerrs=None, fluxerrs=None, telescop
         band = 'band_' + band
     newlc.band=band
 
-    if not fluxerrs:
+    if fluxerrs is not None:
         newlc.fluxerrs = np.zeros(len(newlc.jds)) + 0.1
     else:
         newlc.fluxerrs = np.asarray(fluxerrs)
-    if not magerrs:
+    if magerrs is not None:
         newlc.magerrs = np.zeros(len(newlc.jds)) + 0.1
     else:
         newlc.magerrs = np.asarray(magerrs)
@@ -552,7 +552,7 @@ def factory(jds, mags,fluxes,band,zp,zpsys,magerrs=None, fluxerrs=None, telescop
     newlc.mask = newlc.magerrs >= 0.0  # This should be true for all !
     newlc.mask = newlc.fluxerrs >= 0.0  # This should be true for all !
 
-    colnames = ["mhjd", "mag", "magerr", "flux", "fluxerr", "zp", "zpsys"]
+    colnames = [_get_default_prop_name(x) for x in ["time", "mag", "magerr", "flux", "fluxerr", "zp", "zpsys"]]
     newlc.table = Table([jds, mags, magerrs, fluxes, fluxerrs, [zp for i in range(len(newlc.jds))],
                          [zpsys for i in range(len(newlc.jds))]], names=colnames)
     newlc.properties = [{}] * len(newlc.jds)
@@ -750,9 +750,9 @@ def _norm_flux_mag(table,bands):
 
 
 def _flux_to_mag(table):
-    table['mag'] = np.asarray(map(lambda x, y: -2.5 * np.log10(x) + y, table[_get_default_prop_name('flux')],
+    table[_get_default_prop_name('mag')] = np.asarray(map(lambda x, y: -2.5 * np.log10(x) + y, table[_get_default_prop_name('flux')],
                                   table[_get_default_prop_name('zp')]))
-    table['magerr'] = np.asarray(map(lambda x, y: 2.5 * np.log10(np.e) * y / x, table[_get_default_prop_name('flux')],
+    table[_get_default_prop_name('magerr')] = np.asarray(map(lambda x, y: 2.5 * np.log10(np.e) * y / x, table[_get_default_prop_name('flux')],
                                      table[_get_default_prop_name('fluxerr')]))
     return table
 

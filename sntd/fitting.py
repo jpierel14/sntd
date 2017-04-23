@@ -11,6 +11,7 @@ from multiprocessing import Pool
 from scipy.stats import norm
 from copy import deepcopy
 from .io import _get_default_prop_name
+from astropy.table import Table
 
 __all__=['fit_data']
 
@@ -133,15 +134,19 @@ def fit_data(curves, bands=None,method='minuit', models=None, params=None, bound
     if not args['bands']:
         raise (RuntimeError, "You don't have any bands to analyze!")
     #currently sets the models to run through to all if user doesn't define, will probably change that
-    mods = sncosmo.models._SOURCES._loaders.keys() if not models else models
-    mods=[mods] if not isinstance(mods,(tuple,list)) else mods
+    mods = [x for x in sncosmo.models._SOURCES._loaders.keys() if 'snana' in x[0] or 'salt2' in x[0]] if not models else models
+    #mods=[mods] if not isinstance(mods,(tuple,list)) else mods
     args['sn_func'] = {'minuit': sncosmo.fit_lc, 'mcmc': sncosmo.mcmc_lc, 'nest': sncosmo.nest_lc}
     #get any properties set in kwargs that exist for the defined fitting function
     args['props'] = {x: kwargs[x] for x in kwargs.keys() if
              x in [y for y in inspect.getargspec(args['sn_func'][method])[0]] and x != 'verbose'}
     #get a unique set of the models to run (not multiple versions of the same model)
+
     if not models:
         mods = {x[0] if isinstance(x,(tuple,list)) else x for x in mods}
+    elif  not isinstance(models,(tuple,list)):
+        mods=[models]
+
     def _pool_results_to_dict(modResults):
         """
         This function is just used in the parallel processing in order to "share" a data structure between threads.
@@ -151,34 +156,42 @@ def fit_data(curves, bands=None,method='minuit', models=None, params=None, bound
         :return:None, but updates args
         """
         if modResults:
-            modName, source, version, modResults = modResults
-            for i, tempFit in modResults:
-                # if not hasattr(args['curves'][i],'fit'):
-                #    args['curves'][i].fit=fit(args['curves'][i],**args)
-                args['curves'][i].fit[modName] = tempFit
-                args['curves'][i].fit[modName].model._source = sncosmo.get_source(source, version=version)
+            modName, source, version, results = modResults
+            for i, tempFit in results:
+                args['curves'][i].fits.modelFits[modName] = tempFit
+                args['curves'][i].fits.modelFits[modName].model._source = sncosmo.get_source(source, version=version)
+                #todo: right now there is not astropy table in the model curve object because of pickling issues, decide if this is a bad idea
 
     for curve in args['curves']:
-        curve.fits.modelFits=dict((mod,None) if not isinstance(mod,(list,tuple)) else (mod[0]+'_'+mod[1],None) for mod in mods)
-
+        curve.fits.modelFits=dict((mod,newDict()) if not isinstance(mod,(list,tuple)) else (mod[0]+'_'+mod[1],newDict()) for mod in mods)
     #set up parallel processing
     p = Pool(processes=multiprocessing.cpu_count())
-    fits=[]
     #run each model in parallel and keep track using _pool_results_to_dict
-    for x in p.imap(_fit_data_wrap,[(x,args) for x in mods]):
+    fits=[]
+    mods={'salt2','salt2-extended'}
+    for x in p.imap_unordered(_fit_data_wrap,[(x,args) for x in mods]):
         #_pool_results_to_dict(x)
         fits.append(x)
     p.close()
-    print(fits)
-    #print(args['curves'][0].fit.keys())#['salt2'].res.errors)
+    print('done')
     #print(args['curves'][1].fit['salt2'].res.errors)
-
+    #fig=plt.figure()
+    #plt.plot(args['curves'][0].fits.modelFits['salt2']['sdssi'].time,args['curves'][0].fits.modelFits['salt2']['sdssi'].fluxes)
+    #plt.show()
+    #sncosmo.plot_lc(args['curves'][0].table,model=args['curves'][0].fits.modelFits['salt2'].model,errors=args['curves'][0].fits.modelFits['salt2'].res.errors)
+    #plt.show()
 
 def _fit_data_wrap(args):
     try:
+        smod=sncosmo.Model('salt2')
+        data = sncosmo.load_example_data()
+        print('test1')
+        res, fitted_model = sncosmo.fit_lc(data, smod, ['z', 't0', 'x0', 'x1', 'c'], bounds={'z': (0.3, 0.7)})
+        print('test2')
         return _fit_data(args)
-    except RuntimeError:
-        return None
+    except:
+        print('There was an issue running model {0}, skipping...'.format(args[0]))
+        return('test')#args[0]
 
 #todo decide about multiple versions of model
 def _fit_data(args):
@@ -190,17 +203,22 @@ def _fit_data(args):
     """
     warnings.simplefilter("ignore")
     mod=args[0]
+
     args=args[1]
     if isinstance(mod, tuple):
         version = mod[1]
         mod = mod[0]
     else:
         version = None
+
     modName=mod+'_'+version if version else deepcopy(mod)
     source=sncosmo.get_source(mod)
+    print(mod)
     smod = sncosmo.Model(source=source)
     params=args['params'] if args['params'] else [x for x in smod.param_names]
-    bands=set()
+
+
+    return(smod)
     for i,dcurve in enumerate(args['curves']):
         if not np.any([smod.bandoverlap(band) for band in dcurve.bands]):
             continue
@@ -219,19 +237,29 @@ def _fit_data(args):
         if dcurve.fits.constants:
             constants = {x: dcurve.fits.constants[x] for x in dcurve.fits.constants.keys() if x in smod.param_names}
             smod.set(**constants)
+
         dcurve.fits.modelFits[modName].res, dcurve.fits.modelFits[modName].model = args['sn_func'][args['method']](dcurve.table, smod, dcurve.fits.params, dcurve.fits.bounds,verbose=False, **args['props'])
+
+
+        '''
         try:
             dcurve=_snmodel_to_flux(dcurve,modName)
-        except:
+        except RuntimeError:
+            print('woops')
             continue
-        bands.update(dcurve.fits.bands)
-        dcurve.fits.modelFits[modName].model._source = None
-    return((modName,mod,version,[(i,dcurve.fits) for i,dcurve in enumerate(args['curves'])]))
+        '''
 
+
+    """
+        dcurve = _snmodel_to_flux(dcurve, modName)
+        #dcurve.fits.modelFits[modName].model._source = None
+    #return((modName,mod,version,[(i,dcurve.fits.modelFits[modName]) for i,dcurve in enumerate(args['curves'])]))
+    return('test')
+    """
 #todo figure out how to deal with negative flux from model flux to mag
 def _snmodel_to_flux(dcurve,modName):
     warnings.simplefilter("ignore")
-    for band in dcurve.fits.bands & dcurve.bands:
+    for band in dcurve.bands:
         if not dcurve.fits.modelFits[modName].model.bandoverlap(band):
             continue
         dcurve.fits.modelFits[modName][band]=sntd.curve(band=band,zp=dcurve[band].zp,zpsys=dcurve[band].zpsys)
@@ -246,10 +274,13 @@ def _snmodel_to_flux(dcurve,modName):
         tgrid = np.linspace(tmin, tmax, int(tmax - tmin) + 1)
         mflux = dcurve.fits.modelFits[modName].model.bandflux(band, tgrid, zp=dcurve[band].zp, zpsys=dcurve[band].zpsys)
         mmag = -2.5 * np.log10(mflux) + dcurve[band].zp
+        # todo do real error thing
+
         dcurve.fits.modelFits[modName][band].mags=mmag
         dcurve.fits.modelFits[modName][band].fluxes = mflux
-        dcurve.fits.modelFits[modName][band].time = tgrid
-        #todo do real error thing
-        dcurve.fits.modelFits[modName][band].magerrs = mmag*.1
-        dcurve.fits.modelFits[modName][band].fluxerrs = mflux*.1
+        dcurve.fits.modelFits[modName][band].jds = tgrid
+
+        dcurve.fits.modelFits[modName][band].magerrs = np.abs(mmag)*.1
+        dcurve.fits.modelFits[modName][band].fluxerrs = np.abs(mflux)*.1
+        #dcurve.fits.modelFits[modName][band]=sntd.io.factory(tgrid,mmag,mflux,band,dcurve[band].zp,dcurve[band].zpsys,np.abs(mmag)*.1,np.abs(mflux)*.1,dcurve[band].telescopename,dcurve[band].object)
     return dcurve
