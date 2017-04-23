@@ -165,14 +165,14 @@ def fit_data(curves, bands=None,method='minuit', models=None, params=None, bound
     for curve in args['curves']:
         curve.fits.modelFits=dict((mod,newDict()) if not isinstance(mod,(list,tuple)) else (mod[0]+'_'+mod[1],newDict()) for mod in mods)
     #set up parallel processing
-    p = Pool(processes=multiprocessing.cpu_count())
+    def producer():
+        for mod in mods:
+            yield (mod,args)
+    from joblib import Parallel,delayed
+    fits=Parallel(n_jobs=2)(delayed(_fit_data_wrap)(x) for x in producer())
     #run each model in parallel and keep track using _pool_results_to_dict
-    fits=[]
-    mods={'salt2','salt2-extended'}
-    for x in p.imap_unordered(_fit_data_wrap,[(x,args) for x in mods]):
-        #_pool_results_to_dict(x)
-        fits.append(x)
-    p.close()
+    print(fits)
+
     print('done')
     #print(args['curves'][1].fit['salt2'].res.errors)
     #fig=plt.figure()
@@ -183,11 +183,6 @@ def fit_data(curves, bands=None,method='minuit', models=None, params=None, bound
 
 def _fit_data_wrap(args):
     try:
-        smod=sncosmo.Model('salt2')
-        data = sncosmo.load_example_data()
-        print('test1')
-        res, fitted_model = sncosmo.fit_lc(data, smod, ['z', 't0', 'x0', 'x1', 'c'], bounds={'z': (0.3, 0.7)})
-        print('test2')
         return _fit_data(args)
     except:
         print('There was an issue running model {0}, skipping...'.format(args[0]))
@@ -218,7 +213,7 @@ def _fit_data(args):
     params=args['params'] if args['params'] else [x for x in smod.param_names]
 
 
-    return(smod)
+    return('test')
     for i,dcurve in enumerate(args['curves']):
         if not np.any([smod.bandoverlap(band) for band in dcurve.bands]):
             continue
