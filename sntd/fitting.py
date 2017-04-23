@@ -159,34 +159,33 @@ def fit_data(curves, bands=None,method='minuit', models=None, params=None, bound
             modName, source, version, results = modResults
             for i, tempFit in results:
                 args['curves'][i].fits.modelFits[modName] = tempFit
-                args['curves'][i].fits.modelFits[modName].model._source = sncosmo.get_source(source, version=version)
+                #args['curves'][i].fits.modelFits[modName].model._source = sncosmo.get_source(source, version=version)
                 #todo: right now there is not astropy table in the model curve object because of pickling issues, decide if this is a bad idea
 
     for curve in args['curves']:
         curve.fits.modelFits=dict((mod,newDict()) if not isinstance(mod,(list,tuple)) else (mod[0]+'_'+mod[1],newDict()) for mod in mods)
     #set up parallel processing
-    def producer():
-        for mod in mods:
-            yield (mod,args)
-    from joblib import Parallel,delayed
-    fits=Parallel(n_jobs=2)(delayed(_fit_data_wrap)(x) for x in producer())
+    p = Pool(processes=multiprocessing.cpu_count())
     #run each model in parallel and keep track using _pool_results_to_dict
-    print(fits)
-
+    fits=[]
+    for x in p.imap_unordered(_fit_data_wrap,[(x,args) for x in mods]):
+        _pool_results_to_dict(x)
+        #fits.append(x)
+    p.close()
     print('done')
     #print(args['curves'][1].fit['salt2'].res.errors)
     #fig=plt.figure()
     #plt.plot(args['curves'][0].fits.modelFits['salt2']['sdssi'].time,args['curves'][0].fits.modelFits['salt2']['sdssi'].fluxes)
     #plt.show()
-    #sncosmo.plot_lc(args['curves'][0].table,model=args['curves'][0].fits.modelFits['salt2'].model,errors=args['curves'][0].fits.modelFits['salt2'].res.errors)
-    #plt.show()
+    sncosmo.plot_lc(args['curves'][0].table,model=args['curves'][0].fits.modelFits['salt2'].model,errors=args['curves'][0].fits.modelFits['salt2'].res.errors)
+    plt.show()
 
 def _fit_data_wrap(args):
     try:
         return _fit_data(args)
-    except:
+    except RuntimeError:
         print('There was an issue running model {0}, skipping...'.format(args[0]))
-        return('test')#args[0]
+        return None#args[0]
 
 #todo decide about multiple versions of model
 def _fit_data(args):
@@ -213,7 +212,6 @@ def _fit_data(args):
     params=args['params'] if args['params'] else [x for x in smod.param_names]
 
 
-    return('test')
     for i,dcurve in enumerate(args['curves']):
         if not np.any([smod.bandoverlap(band) for band in dcurve.bands]):
             continue
@@ -245,12 +243,11 @@ def _fit_data(args):
         '''
 
 
-    """
+
         dcurve = _snmodel_to_flux(dcurve, modName)
         #dcurve.fits.modelFits[modName].model._source = None
-    #return((modName,mod,version,[(i,dcurve.fits.modelFits[modName]) for i,dcurve in enumerate(args['curves'])]))
-    return('test')
-    """
+    return((modName,mod,version,[(i,dcurve.fits.modelFits[modName]) for i,dcurve in enumerate(args['curves'])]))
+
 #todo figure out how to deal with negative flux from model flux to mag
 def _snmodel_to_flux(dcurve,modName):
     warnings.simplefilter("ignore")
