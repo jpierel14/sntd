@@ -10,8 +10,9 @@ with open('test.pkl','wb') as handle:
     pickle.dump(sncosmo.Model('salt2'),handle,protocol=2)
 
 '''
-import sntd,timeit
+import sntd,timeit,glob
 from multiprocessing import Pool
+files=glob.glob('data/*.dat')
 #filename2="example_photometric_data.dat"
 #filename="refsdalS2_psfphot.dat"
 #filename2="testRef2.dat"
@@ -19,10 +20,13 @@ from multiprocessing import Pool
 #filename="test.rdb"
 #tab=sncosmo.read_lc(filename,verbose=False,masked=True)
 #temp1=sntd.read_data(filename)
-#temp2=sntd.read_data(filename2)
+curves=sntd.curveDict(telescopename='Hubble',object='Refsdal')
+for f in files:
+    temp2=sntd.read_data(f)
+    print(temp2.table)
 #sntd.fit_data(temp1,bounds={'z':(1.2,1.5)})
 #sntd.fit_data(temp2,bounds={'z':(.3,.7)})
-print(timeit.timeit("sntd.fit_data(sntd.read_data('example_photometric_data.dat'),bounds={'z':(0.3, 0.7)})",setup="import sntd",number=1))
+#print(timeit.timeit("sntd.fit_data(sntd.read_data('example_photometric_data.dat'),bounds={'z':(0.3, 0.7)})",setup="import sntd",number=1))
 #print(timeit.timeit("sntd.fit_data(sntd.read_data('refsdalS2_psfphot.dat'),bounds={'z':(1.2, 1.5)})",setup="import sntd",number=1))
 """
 sntd.write_data(temp,'myData.pkl')

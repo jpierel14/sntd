@@ -88,6 +88,7 @@ class curveDict(dict):
         @type: str
         @ivar: Object of interest
         """
+        self.curves=dict([])
     #these three functions allow you to access the curveDict via "dot" notation
     __setattr__ = dict.__setitem__
     __delattr__ = dict.__delitem__
@@ -148,6 +149,11 @@ class curve(lightcurve,object):
         """
         #todo populate param documentation
         super(curve,self).__init__()
+        self.meta = {'info': ''}
+        """@type: dict
+            @ivar: The metadata for the curveDict object, intialized with an empty "info" key value pair. It's
+            populated by added _metachar__ characters into the header of your data file.
+        """
         self.table=None
         """@type: ~astropy.table.Table
         @ivar: A table containing the data, used for SNCosmo functions, etc.
@@ -165,9 +171,9 @@ class curve(lightcurve,object):
         """@type: float
         @ivar: zero-point for flux scale
         """
-        self.band=band
+        self.bands=band
         """@type: string
-        @ivar: band name, used
+        @ivar: band names, used
         """
         self.zpsys=zpsys
         """@type: string
@@ -577,7 +583,6 @@ def _switch(ext):
         '.pkl': _read_pickle,
         #'rdb': pycs.gen.lc.rdbimport
     }
-
     return switcher.get(ext, _read_data)
 
 
@@ -661,7 +666,8 @@ def _read_data(filename,telescopename,object,**kwargs):
     except:
         table = Table()
     delim = kwargs.get('delim', None)
-    curves=curveDict()
+    #curves=curveDict()
+    myCurve=curve()
     with anyOpen(filename) as f:
         lines=f.readlines()
         length=mode([len(l.split()) for l in lines])[0][0]#uses the most common line length as the correct length
@@ -678,9 +684,9 @@ def _read_data(filename,telescopename,object,**kwargs):
                     if (pos == -1 or not any([_isfloat(x) for x in line.split()])):
                         if line[-1] not in string.punctuation:
                             line=line+'.'
-                        curves.meta['info']=curves.meta['info']+' '+ line[1:]
+                        myCurve.meta['info']=curves.meta['info']+' '+ line[1:]
                     else:
-                        curves.meta[line[1:pos]] = _cast_str(line[pos:])
+                        myCurve.meta[line[1:pos]] = _cast_str(line[pos:])
                 continue
             line=line.split()
             if len(line)!= length:
@@ -726,12 +732,13 @@ def _read_data(filename,telescopename,object,**kwargs):
             continue
         curves[band]=table_factory(table[table[_get_default_prop_name('band')]==band],band=band,telescopename=curves.meta.get('telescopename',telescopename),object=curves.meta.get('object',object))
         curves[band].spline=None
-    curves.table=table
-    curves.telescopename=curves.meta.get('telescopename',telescopename)
-    curves.object=curves.get('object',object)
-    curves.bands=bnds
-    curves.fits=sntd.fitting.fits()
-    return curves
+    myCurve.table=table
+    #curves.telescopename=curves.meta.get('telescopename',telescopename)
+    #curves.object=curves.get('object',object)
+    myCurve.bands=bnds
+    myCurve.fits=sntd.fitting.fits()
+    #curves.curves['S'+str(len(curves.curves)+1)]=table
+    return myCurve
 
 def _norm_flux_mag(table,bands):
     #todo make sure that by changing the zero-point i'm not messing with the errors
