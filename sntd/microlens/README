@@ -1,0 +1,24 @@
+******************************************************************************
+2012-09-18:
+******************************************************************************
+
+with FITS-file output:
+	cd cfitsio
+	./configure
+	make
+	cd ..
+	cp -p Makefile-FITS Makefile
+	make
+	---> executable "microlens"  should be produced and runable!
+
+without FITS-file output:
+	cd cfitsio
+	rm *
+	cd ..
+	cp -p Makefile-NOFITS Makefile
+	make
+	---> executable "microlens"  should be produced and runable!
+
+******************************************************************************
+******************************************************************************
+******************************************************************************

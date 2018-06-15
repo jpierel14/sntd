@@ -3,13 +3,16 @@ import string
 from collections import OrderedDict as odict
 
 import numpy as np
-import os,sys
+import os,sys,math
 import pycs
 import sncosmo,sntd
-from astropy.table import Table,vstack
+from astropy.table import Table,vstack,Column
 from pycs.gen.lc import lightcurve
 from scipy.stats import mode
 from sncosmo import get_magsystem
+from copy import deepcopy
+import matplotlib.pyplot as plt
+
 from .util import anyOpen
 
 __all__=['curve','curveDict','read_data','write_data','table_factory','factory']
@@ -73,7 +76,7 @@ class curveDict(dict):
         @type: list
         @ivar: The list of bands contained inside this curveDict
         """
-        self.table=Table()
+        self.table=None
         """
         @type:~astropy.table.Table
         @ivar: The astropy table containing all of the data in your data file
@@ -88,7 +91,9 @@ class curveDict(dict):
         @type: str
         @ivar: Object of interest
         """
-        self.curves=dict([])
+        self.images=dict([])
+
+
     #these three functions allow you to access the curveDict via "dot" notation
     __setattr__ = dict.__setitem__
     __delattr__ = dict.__delitem__
@@ -122,14 +127,86 @@ class curveDict(dict):
         print('Metadata:')
         print('\n'.join('{}:{}'.format(*t) for t in zip(self.meta.keys(),self.meta.values())))
         print('')
-        for band in self.bands:
+        for c in np.sort(self.images.keys()):
             print('------------------')
-            print('Band: %s'%band)
+            print('Image: %s:'%c)
+            print('Bands: {}'.format(self.images[c].bands))
             print('Date Range: %.5f->%.5f' % (
-            min(self.table[self.table[_get_default_prop_name('band')] == band][_get_default_prop_name('time')]),
-            max(self.table[self.table[_get_default_prop_name('band')] == band][_get_default_prop_name('time')])))
-            print('Number of points: %d' %len(self[band].table))
+            min(self.images[c].table[_get_default_prop_name('time')]),
+            max(self.images[c].table[_get_default_prop_name('time')])))
+            print('Number of points: %d' %len(self.images[c].table))
         return '------------------'
+
+    def add_curve(self,myCurve):
+        self.bands.update([x for x in myCurve.bands if x not in self.bands])
+        im='S'+str(len(self.images)+1)
+        tempCurve=deepcopy(myCurve)
+
+        tempCurve.table.add_column(Column([im for i in range(len(tempCurve.table))],name='object'))
+        self.images[im]=myCurve
+
+        if self.table:
+            for row in tempCurve.table:
+                self.table.add_row(row)
+        else:
+            self.table=tempCurve.table
+
+
+    def plot_object(self,bands='all',showfig=False,savefig=True,filename='mySN'):
+
+        colors=['r','g','b','k']
+        #markers=['.','^','*','8','s','+','D']
+        i=0
+        nrows=int(math.ceil(len(self.bands)/2.))
+        fig,ax=plt.subplots(nrows=nrows,ncols=2,sharex=True,sharey=False)
+        leg=[]
+        for lc in np.sort(self.images.keys()):
+            #print(lcs.images[lc].simMeta)
+            row=0
+            col=0
+            if bands=='all':
+                bands=self.images[lc].bands
+
+
+            for b in bands:
+                if b==bands[0]:
+                    leg.append(ax[row][col].errorbar(self.images[lc].table['time'][self.images[lc].table['band']==b],
+                                                     self.images[lc].table['flux'][self.images[lc].table['band']==b],
+                                                     yerr=self.images[lc].table['fluxerr'][self.images[lc].table['band']==b],markersize=4,fmt=colors[i]+'.'))
+                else:
+                    ax[row][col].errorbar(self.images[lc].table['time'][self.images[lc].table['band']==b],
+                                          self.images[lc].table['flux'][self.images[lc].table['band']==b],
+                                          yerr=self.images[lc].table['fluxerr'][self.images[lc].table['band']==b],markersize=4,fmt=colors[i]+'.')
+                ax[row][col].plot(self.images[lc].table['time'][self.images[lc].table['band']==b],self.images[lc].table['flux'][self.images[lc].table['band']==b]*self.images[lc].ml[b],color=colors[i])
+                ax[row][col].annotate(b[-1].upper()+' Filter',size=10,xy=(.7,.87), xycoords='axes fraction')
+
+                if row==0:
+                    if col==0:
+                        col=1
+                    else:
+                        row=1
+                        col=0
+                else:
+                    col=1
+                    row+=1
+
+            i+=1
+
+        if not len(self.bands)%2==0:
+            fig.delaxes(ax[nrows-1][1])
+            ax[nrows-2][1].tick_params(axis='x',labelbottom='on',bottom='on')
+            plt.figlegend(leg,np.sort(self.images.keys()),loc='lower right',fontsize=16)
+
+        fig.text(0.5, 0.02, r'Time (MJD)', ha='center',fontsize=16)
+        fig.text(0.04, .5, 'Flux', va='center', rotation='vertical',fontsize=16)
+        plt.suptitle('Multiply-Imaged SN "'+self.object+'" on the '+self.telescopename,fontsize=18)
+        if savefig:
+            plt.savefig(filename+'.pdf',format='pdf',overwrite=True)
+        if showfig:
+            plt.show()
+        return
+
+
 
 
 class curve(lightcurve,object):
@@ -138,7 +215,7 @@ class curve(lightcurve,object):
     astropy.table.Table version of the data file for SNCosmo commands and flux/fluxerr
     arrays.
     """
-    def __init__(self,band=None,zp=None,zpsys=None):
+    def __init__(self,zp=None,zpsys=None):
         #todo: implement more general read and write functions
         """
         Constructor for curve class, which inherits from the PyCS lightcurve
@@ -171,7 +248,7 @@ class curve(lightcurve,object):
         """@type: float
         @ivar: zero-point for flux scale
         """
-        self.bands=band
+        self.bands=[]
         """@type: string
         @ivar: band names, used
         """
@@ -186,7 +263,7 @@ class curve(lightcurve,object):
         """@type: class sncosmo.MagSystem
         @ivar: Used to convert between mag and flux, none if no zpsys is defined at construction
         """
-
+        self.simMeta=dict([])
 
     def calcmagshiftfluxes(self,inverse=False):
         """
@@ -285,9 +362,10 @@ class curve(lightcurve,object):
         if self.ml == None:
             raise(RuntimeError, "Hey, there is no ml associated to this lightcurve !")
 
-        if self.fluxshift != 0.0:
-            raise(RuntimeError, "Apply the fluxshift before applying the ML !")
-        self.fluxes+=np.array([self.system.band_mag_to_flux(x,self.band) for x in self.ml.calcmlmags(self)])
+        #if self.fluxshift != 0.0:
+        #    raise(RuntimeError, "Apply the fluxshift before applying the ML !")
+        #self.fluxes+=np.array([self.system.band_mag_to_flux(x,self.band) for x in self.ml.calcmlmags(self)])
+
         super(curve,self).applyml()
 
 
@@ -659,12 +737,13 @@ def _read_data(filename,telescopename,object,**kwargs):
         except:
             object='Unknown'
     try:
-        table = sncosmo.read_lc(filename, **kwargs)
+        table = sncosmo.read_lc(filename, masked=True,**kwargs)
         for col in table.colnames:
             if col != _get_default_prop_name(col.lower()):
                 table.rename_column(col, _get_default_prop_name(col.lower()))
     except:
-        table = Table()
+        table = Table(masked=True)
+
     delim = kwargs.get('delim', None)
     #curves=curveDict()
     myCurve=curve()
@@ -706,7 +785,9 @@ def _read_data(filename,telescopename,object,**kwargs):
         for col in colnames:
             table[col]=np.asarray([_cast_str(x[colnames[col]]) for x in lines])
         colnames=colnames.keys()
+
     flux_to_mag, mag_to_flux = _col_check(colnames)
+    '''
     #todo: don't get rid of negative flux
     if flux_to_mag:
         table=table[table[_get_default_prop_name('flux')]>=0]
@@ -717,6 +798,7 @@ def _read_data(filename,telescopename,object,**kwargs):
     else:
         table = table[table[_get_default_prop_name('flux')] >= 0]
         table = table[table[_get_default_prop_name('magerr')] >= 0]
+    '''
     bnds = {x for x in table[_get_default_prop_name('band')]}
     table=_norm_flux_mag(table, bnds)
     for band in bnds:
@@ -729,15 +811,18 @@ def _read_data(filename,telescopename,object,**kwargs):
                 sncosmo.get_bandpass(band)
         except:
             print('Skipping band %s, not in registry.' %band)
+            table.mask[table[_get_default_prop_name('band')]==band]=True
             continue
-        curves[band]=table_factory(table[table[_get_default_prop_name('band')]==band],band=band,telescopename=curves.meta.get('telescopename',telescopename),object=curves.meta.get('object',object))
-        curves[band].spline=None
+        myCurve.bands.append(band)
+
+        #curves[band]=table_factory(table[table[_get_default_prop_name('band')]==band],band=band,telescopename=curves.meta.get('telescopename',telescopename),object=curves.meta.get('object',object))
+        #curves[band].spline=None
     myCurve.table=table
     #curves.telescopename=curves.meta.get('telescopename',telescopename)
     #curves.object=curves.get('object',object)
-    myCurve.bands=bnds
-    myCurve.fits=sntd.fitting.fits()
-    #curves.curves['S'+str(len(curves.curves)+1)]=table
+    #myCurve.bands=bnds
+    #myCurve.fits=sntd.fitting.fits()
+    #curves.curves=table
     return myCurve
 
 def _norm_flux_mag(table,bands):

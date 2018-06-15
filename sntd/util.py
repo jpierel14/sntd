@@ -1,5 +1,9 @@
 #!/Users/jpierel/anaconda3/envs/astro2/bin python2
 
+import os
+__current_dir__=os.path.abspath(os.getcwd())
+__dir__=os.path.abspath(os.path.dirname(__file__))
+
 NORMAL = 0    # use python zip libraries
 PROCESS = 1   # use (zcat, gzip) or (bzcat, bzip2)
 PARALLEL = 2  # (pigz -dc, pigz) or (pbzip2 -dc, pbzip2)
