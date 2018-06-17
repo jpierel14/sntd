@@ -177,7 +177,8 @@ class curveDict(dict):
                     ax[row][col].errorbar(self.images[lc].table['time'][self.images[lc].table['band']==b],
                                           self.images[lc].table['flux'][self.images[lc].table['band']==b],
                                           yerr=self.images[lc].table['fluxerr'][self.images[lc].table['band']==b],markersize=4,fmt=colors[i]+'.')
-                ax[row][col].plot(self.images[lc].table['time'][self.images[lc].table['band']==b],self.images[lc].table['flux'][self.images[lc].table['band']==b]*self.images[lc].ml[b],color=colors[i])
+                if self.images[lc].ml:
+                    ax[row][col].plot(self.images[lc].table['time'][self.images[lc].table['band']==b],self.images[lc].table['flux'][self.images[lc].table['band']==b]*self.images[lc].ml[b],color=colors[i])
                 ax[row][col].annotate(b[-1].upper()+' Filter',size=10,xy=(.7,.87), xycoords='axes fraction')
 
                 if row==0:

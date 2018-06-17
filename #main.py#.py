@@ -35,15 +35,20 @@ cbar.ax.set_yticklabels([str(np.round(x,2)) for x in np.linspace((1.1*np.min(im)
 plt.savefig('lensplane.pdf',format='pdf',overwrite=True)
 sys.exit()
 '''
-salt2=sncosmo.SALT2Source(modeldir='/Users/jpierel/rodney/SED_Repository/SEDs.P18-UV2IR/Type_Ia/salt2-extended')
-mod=sncosmo.Model(source=salt2)
-#mod=sncosmo.Model(source='snana-2004gv')
+#salt2=sncosmo.SALT2Source(modeldir='/Users/jpierel/rodney/SED_Repository/SEDs.P18-UV2IR/Type_Ia/salt2-extended')
+#mod=sncosmo.Model(source=salt2)
+mod=sncosmo.Model(source='snana-2004gv')
 #mod=sncosmo.Model(source='snana-2006fo')
 #mod=sncosmo.Model(source='snana-2004hx')
 #['bessellux','bessellb','bessellv','bessellr','besselli']
-snType='Ia'
-lcs=sim.createRandMultiplyImagedSN(mod,snType,.01,bands=['bessellb','bessellv','bessellr'],zp=100,cadence=2,epochs=75,numImages=4,objectName='Test',telescopename='HST',microlensing=True)
+snType='Ib'
+lcs=sim.createRandMultiplyImagedSN(mod,snType,.1,bands=['bessellb','bessellv','bessellr'],zp=100,cadence=2,epochs=10,numImages=4,objectName='Test',telescopename='HST',microlensing=True)
+sntd.colorFit(lcs)
+sntd.fit_data(lcs,snType=snType,bounds={'z':(.05,.15)})
+
 lcs.plot_object(filename='type'+snType)
+
+sys.exit()
 #lcs.plot_microlensing()
 
 sys.exit()

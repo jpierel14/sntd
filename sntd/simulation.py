@@ -69,13 +69,17 @@ def createRandMultiplyImagedSN(model,snType,redshift,telescopename='telescope',o
 
 
         tempCurve=curve(zp=zp,zpsys=zpsys)
+
         tempCurve.table=temp
         tempCurve.bands=list(set(temp['band']))
-        tempCurve.simMeta=lc.meta
+        tempCurve.simMeta=deepcopy(lc.meta)
+
         tempCurve.simMeta['mu']=mu
         tempCurve.simMeta['td']=delay
         if microlensing:
             tempCurve.ml=mlCurve
+        else:
+            tempCurve.ml=None
         obj.add_curve(tempCurve)
 
 

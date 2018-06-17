@@ -27,7 +27,8 @@ def plotObject(lcs,bands='all',showfig=False,savefig=True,filename='mySN'):
                 ax[row][col].errorbar(lcs.images[lc].table['time'][lcs.images[lc].table['band']==b],
                                       lcs.images[lc].table['flux'][lcs.images[lc].table['band']==b],
                                       yerr=lcs.images[lc].table['fluxerr'][lcs.images[lc].table['band']==b],markersize=4,fmt=colors[i]+'.')
-            ax[row][col].plot(lcs.images[lc].table['time'][lcs.images[lc].table['band']==b],lcs.images[lc].table['flux'][lcs.images[lc].table['band']==b]*lcs.images[lc].ml[b],color=colors[i])
+            if lcs.images[lc].ml:
+                ax[row][col].plot(lcs.images[lc].table['time'][lcs.images[lc].table['band']==b],lcs.images[lc].table['flux'][lcs.images[lc].table['band']==b]*lcs.images[lc].ml[b],color=colors[i])
             ax[row][col].annotate(b[-1].upper()+' Filter',size=10,xy=(.55,.87), xycoords='axes fraction')
 
             if row==0:
