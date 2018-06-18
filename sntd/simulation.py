@@ -34,7 +34,7 @@ def createRandMultiplyImagedSN(model,snType,redshift,telescopename='telescope',o
     ms=sncosmo.get_magsystem(zpsys)
 
     zpList=[ms.band_flux_to_mag(1,b) for b in bandList] if not zp else [zp for i in range(len(bandList))]
-    obs=Table({'time':np.tile(times,len(bands)),'band':bandList,'zpsys':[zpsys for i in range(len(bandList))],'zp':zpList,'skynoise':[skynoise for i in range(len(bandList))],'gain':[gain for i in range(len(bandList))]})
+    obs=Table({'time':np.tile(times,len(bands)),'band':bandList,'zpsys':[zpsys for i in range(len(bandList))],'zp':zpList,'skynoise':np.random.uniform(80,150,len(bandList)),'gain':[gain for i in range(len(bandList))]})
 
 
     absolutes=_getAbsoluteDist()
