@@ -23,7 +23,7 @@ def _getAbsFromDist(dist):
     mu,sigma=dist
     return(np.random.normal(mu,sigma))
 
-def createRandMultiplyImagedSN(model,snType,redshift,telescopename='telescope',objectName='object',timeDelayRange=(0,100),muRange=(1,20),numImages=2,cadence=5,epochs=50,bands=['F140W','F105W','F160W'],gain=1.,skynoise=0.,mjdRange=None,zpsys='ab',zp=None,microlensing=False):
+def createRandMultiplyImagedSN(model,snType,redshift,telescopename='telescope',objectName='object',timeDelayRange=(0,100),muRange=(1,20),numImages=2,cadence=5,epochs=50,bands=['F140W','F105W','F160W'],gain=7.,skynoise=0.,mjdRange=None,zpsys='ab',zp=None,microlensing=False):
     obj=curveDict(telescopename=telescopename,object=objectName)
     if not mjdRange:
         now=np.round(Time(datetime.datetime.now()).mjd,3)
@@ -34,8 +34,7 @@ def createRandMultiplyImagedSN(model,snType,redshift,telescopename='telescope',o
     ms=sncosmo.get_magsystem(zpsys)
 
     zpList=[ms.band_flux_to_mag(1,b) for b in bandList] if not zp else [zp for i in range(len(bandList))]
-    obs=Table({'time':np.tile(times,len(bands)),'band':bandList,'zpsys':[zpsys for i in range(len(bandList))],'zp':zpList,'skynoise':np.random.uniform(80,150,len(bandList)),'gain':[gain for i in range(len(bandList))]})
-
+    obs=Table({'time':np.tile(times,len(bands)),'band':bandList,'zpsys':[zpsys for i in range(len(bandList))],'zp':zpList,'skynoise':np.random.uniform(1,10,len(bandList)),'gain':[gain for i in range(len(bandList))]})
 
     absolutes=_getAbsoluteDist()
 
@@ -54,7 +53,15 @@ def createRandMultiplyImagedSN(model,snType,redshift,telescopename='telescope',o
     else:
         amp=model.get('amplitude')
         params={'z':redshift,'t0':times[0]+.5*(times[-1]-times[0]),'amplitude':amp}
+    #model.set(**params)
+    #print(model.bandflux('bessellb',params['t0'],zp=25,zpsys='ab'))
+    #sys.exit()
     lc=sncosmo.realize_lcs(obs,model,[params],trim_observations=True)[0]
+    print(lc)
+    #lc=sncosmo.photdata.photometric_data(sncosmo.realize_lcs(obs,model,[params],trim_observations=True)[0])
+    #lc=lc.normalized()
+    #lc=Table([lc.time,[x.name for x in lc.band],lc.flux,lc.fluxerr,lc.zp,lc.zpsys],names=['time','band','flux','fluxerr','zp','zpsys'])
+
     for i in range(numImages):
         temp=deepcopy(lc)
         delay=np.random.uniform(timeDelayRange[0],timeDelayRange[-1])

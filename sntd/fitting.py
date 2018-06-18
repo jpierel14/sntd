@@ -8,6 +8,7 @@ from scipy.optimize import curve_fit
 from scipy.stats import chisquare
 
 from .io import _get_default_prop_name
+from .simulation import _getAbsFromDist,_getAbsoluteDist
 from .util import __dir__
 from astropy.table import Table
 
@@ -152,7 +153,6 @@ def fit_data(curves, snType='Ia',bands=None,method='minuit', models=None, params
     #    mods = {x[0] if isinstance(x,(tuple,list)) else x for x in mods}
     #elif  not isinstance(models,(tuple,list)):
 
-
     for d in curves.images.keys():
         print(d)
         args['curve']=curves.images[d]
@@ -173,6 +173,21 @@ def fit_data(curves, snType='Ia',bands=None,method='minuit', models=None, params
                     bestChisq=res.chisq
                     bestFit=mod
                     bestRes=res
+        sncosmo.plot_lc(curves.images[d].table,model=bestFit,errors=bestRes.errors)
+        print(bestRes)
+        plt.show()
+
+
+        print(bestRes.errors)
+        print(be)
+        sys.exit()
+        priorDict=_get_priors(bestRes)
+        nest_res,nest_fit=sncosmo.nest_lc(curves.images[d].table,bestFit,vparam_names=[x for x in bestRes.vparam_names if x !='z'],bounds=dict([]),guess_amplitude_bound=True,maxiter=1000,npoints=100)
+        _plot_marginal_pdfs(nest_res)
+        print(nest_res.niter,nest_res.ncall)
+        print(nest_res.samples[0,:])
+        plt.show()
+        sys.exit()
         curves.images[d].fits=newDict()
         curves.images[d].fits['model']=bestFit
         curves.images[d].fits['res']=bestRes
@@ -192,6 +207,58 @@ def fit_data(curves, snType='Ia',bands=None,method='minuit', models=None, params
 
     #sncosmo.plot_lc(curves.images['S1'].table,model=curves.images['S1'].fits.model,errors=curves.images['S1'].fits.res.errors)
     #plt.show()
+
+def _get_priors(res,modelName,snType):
+    priors=dict([])
+    absolutes=_getAbsoluteDist()
+    mod=sncosmo.Model(source=modelName)
+    mod.set(z=res.parameters[res.param_names=='z'])
+
+    if snType in ['IIP','IIL','IIn']:
+        absBand='bessellb'
+    else:
+        absBand='bessellr'
+    mod.set_source_peakabsmag(_getAbsFromDist(absolutes[snType]['dist']),absBand,zpsys='ab')
+    if snType=='Ia':
+
+        priors['x0']=a
+
+
+def _plot_marginal_pdfs( res, nbins=101, **kwargs):
+    """ plot the results of a classification run
+    :return:
+    """
+    from matplotlib import pyplot as pl
+    import numpy as np
+
+    nparam = len(res.vparam_names)
+    # nrow = np.sqrt( nparam )
+    # ncol = nparam / nrow + 1
+    nrow, ncol = 1, nparam
+
+    pdfdict = _get_marginal_pdfs( res, nbins )
+
+    fig = plt.gcf()
+    for parname in res.vparam_names :
+        iax = res.vparam_names.index( parname )+1
+        ax = fig.add_subplot( nrow, ncol, iax )
+
+        parval, pdf, mean, std = pdfdict[parname]
+        ax.plot(  parval, pdf, **kwargs )
+        if np.abs(std)>=0.1:
+            ax.text( 0.95, 0.95, '%s  %.1f +- %.1f'%( parname, np.round(mean,1), np.round(std,1)),
+                     ha='right',va='top',transform=ax.transAxes )
+        elif np.abs(std)>=0.01:
+            ax.text( 0.95, 0.95, '%s  %.2f +- %.2f'%( parname, np.round(mean,2), np.round(std,2)),
+                     ha='right',va='top',transform=ax.transAxes )
+        elif np.abs(std)>=0.001:
+            ax.text( 0.95, 0.95, '%s  %.3f +- %.3f'%( parname, np.round(mean,3), np.round(std,3)),
+                     ha='right',va='top',transform=ax.transAxes )
+        else :
+            ax.text( 0.95, 0.95, '%s  %.3e +- %.3e'%( parname, mean, std),
+                     ha='right',va='top',transform=ax.transAxes )
+
+    plt.draw()
 
 def _fit_data_wrap(args):
     try:
@@ -252,23 +319,80 @@ def _fit_data(args):
         fits.res, fits.model = args['sn_func'][args['method']](dcurve.table, smod, fits.params, fits.bounds,verbose=False, **args['props'])
 
 
-    '''
-    try:
-        dcurve=_snmodel_to_flux(dcurve,modName)
-    except RuntimeError:
-        print('woops')
-        continue
-    '''
-
-
-
-    #dcurve = _snmodel_to_flux(dcurv e, modName)
-    #fits.model._source=None
-    #print(fits.res)
     return(pyParz.parReturn(fits))
 
 #def _tdMin(delay,time,curves):
 #    return(chisquare())
+
+def _get_marginal_pdfs( res, nbins=51, verbose=True ):
+    """ Given the results <res> from a nested sampling chain, determine the
+    marginalized posterior probability density functions for each of the
+    parameters in the model.
+    :param res:  the results of a nestlc run
+    :param nbins: number of bins (steps along the x axis) for sampling
+       each parameter's marginalized posterior probability
+    :return: a dict with an entry for each parameter, giving a 2-tuple containing
+       NDarrays of length nbins.  The first array in each pair gives the parameter
+       value that defines the left edge of each bin along the parameter axis.
+       The second array gives the posterior probability density integrated
+       across that bin.
+    """
+    import numpy as np
+    import sncosmo
+    vparam_names = res.vparam_names
+    weights = res.weights
+    samples = res.samples
+    pdfdict = {}
+
+    for param in vparam_names :
+        ipar = vparam_names.index( param )
+        paramvals = samples[:,ipar]
+
+        if nbins>1:
+            if param in res.bounds :
+                parvalmin, parvalmax = res.bounds[param]
+            else :
+                parvalmin, parvalmax = 0.99*paramvals.min(), 1.01*paramvals.max()
+            parambins = np.linspace( parvalmin, parvalmax, nbins, endpoint=True )
+            binindices = np.digitize( paramvals, parambins )
+
+            # we estimate the marginalized pdf by summing the weights of all points in the bin,
+            # where the weight of each point is the prior volume at that point times the
+            # likelihood, divided by the total evidence
+            pdf = np.array( [ weights[np.where( binindices==ibin )].sum() for ibin in range(len(parambins)) ] )
+        else :
+            parambins = None
+            pdf = None
+
+        mean = (weights  * samples[:,ipar]).sum()
+        std = np.sqrt( (weights * (samples[:,ipar]-mean)**2 ).sum() )
+
+        pdfdict[param] = (parambins,pdf,mean,std)
+
+        if verbose :
+            if np.abs(std)>=0.1:
+                print( '  <%s> =  %.2f +- %.2f'%( param, np.round(mean,2), np.round(std,2))  )
+            elif np.abs(std)>=0.01:
+                print( '  <%s> =  %.3f +- %.3f'%( param, np.round(mean,3), np.round(std,3)) )
+            elif np.abs(std)>=0.001:
+                print( '  <%s> =  %.4f +- %.4f'%( param, np.round(mean,4), np.round(std,4)) )
+            else :
+                print( '  <%s> = %.3e +- %.3e'%( param, mean, std) )
+
+
+        if param == 'x0' :
+            salt2 = sncosmo.Model( source='salt2')
+            salt2.source.set_peakmag( 0., 'bessellb', 'ab' )
+            x0_AB0 = salt2.get('x0')
+            mBmean = -2.5*np.log10(  mean / x0_AB0 )
+            mBstd = 2.5*np.log10( np.e ) *  std / mean
+            mBbins = -2.5*np.log10(  parambins / x0_AB0 )
+
+            pdfdict['mB'] = ( mBbins, pdf, mBmean, mBstd )
+            print( '  <%s> =  %.3f +- %.3f'%( 'mB', np.round(mBmean,3), np.round(mBstd,3)) )
+
+    return( pdfdict )
+
 
 def _findMax(time,curve):
     #TODO check edge cases
