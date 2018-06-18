@@ -21,6 +21,7 @@ from scipy.interpolate import interp1d
 from sntd import ml,simulation as sim,plotting
 warnings.simplefilter('ignore')
 '''
+microlensing
 im,curve=ml.realizeMicro(arand=.243,kappas=.2,kappac=0,gamma=0,eps=.6,nray=100,minmass=1,maxmass=1,pixmax=10,pixminx=-10,pixminy=-10,pixdif=20,fracpixd=.15)
 fig=plt.figure()
 ax=fig.gca()
@@ -40,87 +41,13 @@ mod=sncosmo.Model(source=salt2)
 #mod=sncosmo.Model(source='snana-2004gv')
 #mod=sncosmo.Model(source='snana-2006fo')
 #mod=sncosmo.Model(source='snana-2004hx')
-#['bessellux','bessellb','bessellv','bessellr','besselli']
+
 snType='Ia'
 lcs=sim.createRandMultiplyImagedSN(mod,snType,.1,bands=['bessellb','bessellv','bessellr'],zp=100,cadence=2,epochs=10,numImages=4,objectName='Test',telescopename='HST',microlensing=True)
+#print(lcs.table)
+#print(lcs.images['S1'].table)
 #sntd.colorFit(lcs)
 sntd.fit_data(lcs,snType=snType,bounds={'z':(.05,.15)})
 
 lcs.plot_object(filename='type'+snType)
 
-sys.exit()
-#lcs.plot_microlensing()
-
-sys.exit()
-newTime=np.arange(min(curve['time']),max(curve['time'])+.5,.5)
-curve=ml.getDiffCurves(newTime)
-fig=plt.figure()
-ax=fig.gca()
-colors={'u':'b','b':'g','v':'orange','r':'r'}
-
-from scipy.interpolate import splrep,splev
-for band in [x for x in curve.colnames if x != 'time']:
-    #func=interp1d(curve['time'],curve[band])
-    func=splrep(curve['time'],curve[band])
-    ax.plot(newTime,splev(newTime,func),color=colors[band])
-ax.invert_yaxis()
-plt.show()
-sys.exit()
-'''
-files=glob.glob('data/*.dat')
-
-curves=sntd.curveDict(telescopename='Hubble',object='Refsdal')
-for f in files:
-    curves.add_curve(sntd.read_data(f))
-
-print(curves.images['S3'].table)
-
-#print(timeit.timeit("sntd.fit_data(sntd.read_data('refsdalS2_psfphot.dat'),bounds={'z':(1.2, 1.5)})",setup="import sntd",number=1))
-
-#sntd.write_data(curves,'myData.pkl')
-'''
-temp=sntd.read_data('myData.pkl')
-fig=plt.figure()
-ax=fig.gca()
-tab=temp.images['S4'].table
-#tab.sort('time')
-colors=['r','b','g','k','orange','indigo']
-i=0
-for band in temp.images['S4'].bands:
-    temp=tab[tab['band']==band]
-    temp.sort('time')
-    for j in range(len(temp)-1):
-        if temp['time'][j]==temp['time'][j+1]:
-            temp['time'][j]-=.001
-    print(band,len(temp))
-    if len(tab[tab['band']==band])<12:
-        continue
-    #ax.errorbar(temp['time'],temp['flux'],yerr=temp['fluxerr'],fmt='.',color=colors[i])
-    #win=len(tab[tab['band']==band])/3 if len(tab[tab['band']==band])/3%2!=0 else len(tab[tab['band']==band])/3+1
-    #ax.plot(tab['time'][tab['band']==band],smooth(tab['flux'][tab['band']==band],win,2),color=colors[i])
-    myspline=spl(temp['time'],temp['flux'],w=temp['fluxerr'])
-    #ax.plot(temp['time'],myspline(temp['time']),color=colors[i])
-    micro=temp['flux']-myspline(temp['time'])
-    #ax.errorbar(temp['time'],temp['flux']-micro,yerr=temp['fluxerr'],fmt='.',color=colors[i])
-    ax.plot(temp['time'],micro,linestyle='dotted',color=colors[i])
-    #maxVal=np.max(myspline(np.arange(min(temp['time']),max(temp['time]']),.5)))
-    #ax.plot()
-    ax.plot([min(temp['time']),max(temp['time'])],[0,0],linestyle='dashed',color='pink')
-    #ax.plot()
-    i+=1
-#ax.invert_yaxis()
-#plt.savefig('data.pdf',format='pdf',overwrite=True)
-#plt.savefig('residual.pdf',format='pdf',overwrite=True)
-plt.show()
-
-'''
-from scipy.stats import norm
-import matplotlib.pyplot as plt
-import numpy as np
-
-x=np.linspace(8,12,100)
-fig,ax=plt.subplots(1,1)
-ax.plot(x,norm.pdf(x,10,.2))
-#ax.plot(x,norm.pdf(x,0,.6))
-plt.show()
-'''
