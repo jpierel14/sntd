@@ -12,6 +12,9 @@ from .simulation import _getAbsFromDist,_getAbsoluteDist
 from .util import __dir__
 from astropy.table import Table
 
+__thetaSN__=['z','hostebv']
+__thetaL__=['t0','amplitude']
+
 __all__=['fit_data','colorFit']
 
 _needs_bounds={'z'}
@@ -129,7 +132,10 @@ def fit_data(curves, snType='Ia',bands=None,method='minuit', models=None, params
     args['bands'] = [bands] if bands and not isinstance(bands,(tuple,list)) else bands
     #sets the bands to user's if defined (set, so that they're unique), otherwise to all the bands that exist in curves
     args['bands'] = set(bands) if bands else curves.bands
-
+    args['constants']=constants
+    args['effect_names']=kwargs.get('effect_names',[])
+    args['effect_frames']=kwargs.get('effect_frames',[])
+    args['dust']=kwargs.get('dust',None)
     #currently sets the models to run through to all if user doesn't define, will probably change that
     if not models:
         mod,types=np.loadtxt(os.path.join(__dir__,'data','sncosmo','models.ref'),dtype='str',unpack=True)
@@ -152,9 +158,10 @@ def fit_data(curves, snType='Ia',bands=None,method='minuit', models=None, params
     #if not models:
     #    mods = {x[0] if isinstance(x,(tuple,list)) else x for x in mods}
     #elif  not isinstance(models,(tuple,list)):
-
+    resList=[]
     for d in curves.images.keys():
-        print(d)
+        #TODO should I be letting each curve get a chisq fit and individual stuff? Or choose a model then do nest_lc.
+        #print(curves.images[d].simMeta)
         args['curve']=curves.images[d]
         curves.images[d].fits=newDict()
         if len(args['curve'].table)>63:
@@ -173,16 +180,15 @@ def fit_data(curves, snType='Ia',bands=None,method='minuit', models=None, params
                     bestChisq=res.chisq
                     bestFit=mod
                     bestRes=res
-        sncosmo.plot_lc(curves.images[d].table,model=bestFit,errors=bestRes.errors)
-        print(bestRes)
-        plt.show()
 
-
-        print(bestRes.errors)
-        print(be)
-        sys.exit()
-        priorDict=_get_priors(bestRes)
-        nest_res,nest_fit=sncosmo.nest_lc(curves.images[d].table,bestFit,vparam_names=[x for x in bestRes.vparam_names if x !='z'],bounds=dict([]),guess_amplitude_bound=True,maxiter=1000,npoints=100)
+        #priorDict=_get_priors(bestRes)
+        #print(bestFit._source.name)
+        nest_res,nest_fit=sncosmo.nest_lc(curves.images[d].table,bestFit,vparam_names=bestRes.vparam_names,bounds=bounds,guess_amplitude_bound=True,maxiter=1000,npoints=100)
+        #sncosmo.plot_lc(data=curves.images[d].table,model=nest_fit,errors=nest_res.errors)
+        #plt.show()
+        #plt.close()
+        resList.append(nest_res)
+        '''
         _plot_marginal_pdfs(nest_res)
         print(nest_res.niter,nest_res.ncall)
         print(nest_res.samples[0,:])
@@ -191,23 +197,15 @@ def fit_data(curves, snType='Ia',bands=None,method='minuit', models=None, params
         curves.images[d].fits=newDict()
         curves.images[d].fits['model']=bestFit
         curves.images[d].fits['res']=bestRes
-
+        '''
+        #print(nest_res.samples[0:5,:])
         #print(curves.images[d].fits.model._source.name)
         #print(curves.images[d].fits.res.param_names,curves.images[d].fits.res.parameters,curves.images[d].fits.res.errors)
         #print(curves.images[d].simMeta)
-    #for img in args['curves'].images:
-    #        args['curves'].images[img].fits=dict((mod,newDict()))
-    #set up parallel processing
-    #run each model in parallel and keep track using _pool_results_to_dict
-
-    #print(args['curves'][1].fit['salt2'].res.errors)
-    #fig=plt.figure()
-    #plt.plot(args['curves'][0].fits.modelFits['salt2']['sdssi'].time,args['curves'][0].fits.modelFits['salt2']['sdssi'].fluxes)
-    #plt.show()
-
-    #sncosmo.plot_lc(curves.images['S1'].table,model=curves.images['S1'].fits.model,errors=curves.images['S1'].fits.res.errors)
-    #plt.show()
-
+    print('Marginalized:')
+    joint=_joint_likelihood(resList)
+    sys.exit()
+'''
 def _get_priors(res,modelName,snType):
     priors=dict([])
     absolutes=_getAbsoluteDist()
@@ -222,7 +220,7 @@ def _get_priors(res,modelName,snType):
     if snType=='Ia':
 
         priors['x0']=a
-
+'''
 
 def _plot_marginal_pdfs( res, nbins=101, **kwargs):
     """ plot the results of a classification run
@@ -284,11 +282,24 @@ def _fit_data(args):
         mod = mod[0]
     else:
         version = None
-
+    dust_dict={'SFD98Map':sncosmo.SFD98Map,'CCM89Dust':sncosmo.CCM89Dust,'OD94Dust':sncosmo.OD94Dust,'F99Dust':sncosmo.F99Dust}
+    if args['dust']:
+        dust=dust_dict[args['dust']]()
+    else:
+        dust=[]
+    effect_names=args['effect_names']
+    effect_frames=args['effect_frames']
+    effects=[dust for i in range(len(effect_names))] if effect_names else []
+    effect_names=effect_names if effect_names else []
+    effect_frames=effect_frames if effect_frames else []
+    if not isinstance(effect_names,(list,tuple)):
+        effects=[effect_names]
+    if not isinstance(effect_frames,(list,tuple)):
+        effects=[effect_frames]
     modName=mod+'_'+version if version else deepcopy(mod)
     source=sncosmo.get_source(mod)
     #print(mod)
-    smod = sncosmo.Model(source=source)
+    smod = sncosmo.Model(source=source,effects=effects,effect_names=effect_names,effect_frames=effect_frames)
     params=args['params'] if args['params'] else [x for x in smod.param_names]
 
     fits=newDict()
@@ -308,7 +319,7 @@ def _fit_data(args):
     params= [x for x in params if x not in fits.ignore and x not in fits.constants.keys()]
     fits.params = params
     if fits.constants:
-        constants = {x: dcurve.fits.constants[x] for x in fits.constants.keys() if x in smod.param_names}
+        constants = {x: fits.constants[x] for x in fits.constants.keys() if x in smod.param_names}
         smod.set(**constants)
 
     if args['method']=='mcmc':
@@ -323,6 +334,50 @@ def _fit_data(args):
 
 #def _tdMin(delay,time,curves):
 #    return(chisquare())
+
+def _joint_likelihood(resList,verbose=True):
+    outDict=dict([])
+    params=[]
+    for res in resList:
+        params=np.append(params,res.vparam_names)
+    params=[x for x in set(params) if x in __thetaSN__]
+
+    for param in params:
+
+
+
+        #minVal=np.min([np.min(res.samples[:,res.vparam_names.index(param)]) for res in resList])
+        #maxVal=np.max([np.max(res.samples[:,res.vparam_names.index(param)]) for res in resList])
+        #print(minVal,maxVal)
+        #probsList=np.ones(100)
+        #weightsList=np.ones(100)
+        probsList=[]
+        weightsList=[]
+        for res in resList:
+            #_plot_marginal_pdfs(res,nbins=50)
+            pdf=_get_marginal_pdfs(res,nbins=100,verbose=False)
+            weightsList=np.append(weightsList,pdf[param][1])
+            probsList=np.append(probsList,pdf[param][0])
+            #fig=plt.figure()
+            #ax=fig.gca()
+            #ax.plot(pdf[param][0],pdf[param][1])
+            #plt.show()
+            #plt.close()
+            #probs,edges=np.histogram(res.samples[:,res.vparam_names.index(param)],weights=res.weights,bins=np.linspace(minVal,maxVal,21),density=True)
+            #print(np.max(res.weights))
+            #print(probs)
+            #plt.hist(probs,bins=edges)
+            #plt.show()
+            #plt.close()
+            #probsList=np.multiply(probsList,probs/np.sum(res.weights))
+        expectedValue=(weightsList*probsList).sum()
+        expectedValue/=len(resList)
+        std = np.sqrt( ((weightsList * (probsList-expectedValue)**2 ).sum())/4 )
+        if verbose:
+            print( '  <%s> = %.3e +- %.3e'%( param, expectedValue, std) )
+
+        outDict[param]=(expectedValue,std)
+    return(outDict)
 
 def _get_marginal_pdfs( res, nbins=51, verbose=True ):
     """ Given the results <res> from a nested sampling chain, determine the
