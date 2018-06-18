@@ -275,9 +275,12 @@ def _findMax(time,curve):
     t0=np.where(curve==np.max(curve))[0][0]
 
     if t0==0:
-        return(time[0])
+        #return(time[0])
+        return None
+
     elif t0==len(time)-1:
-        return(time[-1])
+        #return(time[-1])
+        return None
 
     else:
         fit=splrep(time[t0-1:t0+2],curve[t0-1:t0+2],k=2)
@@ -287,8 +290,24 @@ def _findMax(time,curve):
     return(interptime[flux==np.max(flux)])
 
 
+def _findMin(time,curve):
+    #TODO check edge cases
+    t0=np.where(curve==np.min(curve))[0][0]
 
+    if t0==0:
+        #return(time[0])
+        return None
 
+    elif t0==len(time)-1:
+        #return(time[-1])
+        return None
+
+    else:
+        fit=splrep(time[t0-1:t0+2],curve[t0-1:t0+2],k=2)
+
+    interptime=np.linspace(time[t0-1],time[t0+1],100)
+    flux=splev(interptime,fit)
+    return(interptime[flux==np.min(flux)])
 
 
 def colorFit(lcs):
@@ -308,32 +327,53 @@ def colorFit(lcs):
             ccurve=splev(time,spl1)/splev(time,spl2)
             #curves.append(dcurve.table['flux'][dcurve.table['band']==col[0]]-dcurve.table['flux'][dcurve.table['band']==col[1]])
             curves[d]=(time,ccurve)
-        ref=None
+        ref=False
+
+
         delays=dict([])
         for k in curves.keys():
             time,curve=curves[k]
             maxValue=_findMax(time,curve)
+            minValue=_findMin(time,curve)
+            if not minValue and not maxValue:
+                sys.exit()
+
             if not ref:
-                ref=maxValue
+                ref=True
+                refMax=maxValue
+                refMin=minValue
                 refName=k
                 delays[k]=0
+
             else:
-                delays[k]=maxValue-ref
-        '''
-        print(delays)
-        for k in curves.keys():
-            time,curve=curves[k]
-            print(np.min(time-delays[k]-curves[refName][0]))
-            ax.scatter(time-delays[k]-curves[refName][0],curve)
-        '''
+
+                #print(maxValue-refMax,minValue-refMin)
+                if refMax and maxValue:
+                    if refMin and minValue:
+                        delays[k]=np.mean([maxValue-refMax,minValue-refMin])
+                    else:
+                        delays[k]=maxValue-refMax
+                elif refMin and minValue:
+                    delays[k]=minValue-refMin
+                else:
+                    sys.exit()
+
+
+
         allDelays.append(delays)
     finalDelays=dict([])
     for k in allDelays[0].keys():
 
-        print(lcs.images[k].simMeta)
-        finalDelays[k]=np.mean([x[k] for x in allDelays])
-        print(finalDelays[k])
-    sys.exit()
+        est=np.mean([x[k] for x in allDelays])
+        est=est[0] if isinstance(est,list) else est
+        finalDelays[k]=est
+        print('True: '+str(lcs.images[k].simMeta['td']-lcs.images[refName].simMeta['td']),'Estimate: '+str(finalDelays[k]))
+    for k in curves.keys():
+        time,curve=curves[k]
+        #print(np.min(time-delays[k]-curves[refName][0]))
+        ax.scatter(time,curve)
+        #ax.scatter(time-finalDelays[k]-curves[refName][0],curve)
+    plt.show()
     return(finalDelays)
 
 
