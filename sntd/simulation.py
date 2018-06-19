@@ -24,7 +24,7 @@ def _getAbsFromDist(dist):
     return(np.random.normal(mu,sigma))
 
 def createRandMultiplyImagedSN(model,snType,redshift,telescopename='telescope',objectName='object',timeDelayRange=(0,100),muRange=(1,20),
-                               numImages=2,cadence=5,epochs=50,bands=['F140W','F105W','F160W'],gain=20.,skynoiseRange=(1,5),mjdRange=None,zpsys='ab',zp=None,microlensing=False,
+                               numImages=2,cadence=5,epochs=50,bands=['F140W','F105W','F160W'],gain=50.,skynoiseRange=(1,5),mjdRange=None,zpsys='ab',zp=None,microlensing=False,
                                cc_av=.9,ia_av=.3,dust='CCM89Dust',effect_frames=['rest'],effect_names=['host']):
     #TODO sample from dust prior
     obj=curveDict(telescopename=telescopename,object=objectName)

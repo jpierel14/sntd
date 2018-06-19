@@ -42,7 +42,7 @@ mod='snana-2004gv'
 #mod=sncosmo.Model(source='snana-2004hx')
 #['bessellux','bessellb','bessellv','bessellr','besselli']
 snType='Ib'
-lcs=sim.createRandMultiplyImagedSN(mod,snType,.1,bands=['bessellb','bessellv','bessellr'],zp=25,cadence=5,epochs=12,numImages=4,objectName='Test',telescopename='HST',microlensing=True)
+lcs=sim.createRandMultiplyImagedSN(mod,snType,.1,bands=['bessellb','bessellv','bessellr'],zp=25,cadence=5,epochs=20,numImages=4,objectName='Test',telescopename='HST',microlensing=True)
 #sntd.colorFit(lcs)
 sntd.fit_data(lcs,effect_frames=['rest'],effect_names=['host'],snType=snType,constants={'hostr_v':3.1},bounds={'z':(.08,.12),'hostebv':(-1,1)},dust='CCM89Dust')
 

@@ -136,7 +136,6 @@ def fit_data(curves, snType='Ia',bands=None,method='minuit', models=None, params
     args['effect_names']=kwargs.get('effect_names',[])
     args['effect_frames']=kwargs.get('effect_frames',[])
     args['dust']=kwargs.get('dust',None)
-    #currently sets the models to run through to all if user doesn't define, will probably change that
     if not models:
         mod,types=np.loadtxt(os.path.join(__dir__,'data','sncosmo','models.ref'),dtype='str',unpack=True)
         modDict={mod[i]:types[i] for i in range(len(mod))}
@@ -147,21 +146,15 @@ def fit_data(curves, snType='Ia',bands=None,method='minuit', models=None, params
     else:
         mods=models
     mods=set(mods)
-    #mods = [x for x in sncosmo.models._SOURCES._loaders.keys() if 'snana' in x[0] or 'salt2' in x[0]] if not models else models
-    #mods=[mods] if not isinstance(mods,(tuple,list)) else mods
+
     args['sn_func'] = {'minuit': sncosmo.fit_lc, 'mcmc': sncosmo.mcmc_lc, 'nest': sncosmo.nest_lc}
     #get any properties set in kwargs that exist for the defined fitting function
     args['props'] = {x: kwargs[x] for x in kwargs.keys() if
              x in [y for y in inspect.getargspec(args['sn_func'][method])[0]] and x != 'verbose'}
-    #get a unique set of the models to run (not multiple versions of the same model)
 
-    #if not models:
-    #    mods = {x[0] if isinstance(x,(tuple,list)) else x for x in mods}
-    #elif  not isinstance(models,(tuple,list)):
-    resList=[]
+    resList=dict([])
     fitDict=dict([])
     for d in curves.images.keys():
-        #TODO should I be letting each curve get a chisq fit and individual stuff? Or choose a model then do nest_lc.
         #print(curves.images[d].simMeta)
         args['curve']=curves.images[d]
         curves.images[d].fits=newDict()
@@ -184,6 +177,7 @@ def fit_data(curves, snType='Ia',bands=None,method='minuit', models=None, params
         fitDict[d]=(fits,bestFit,bestRes)
     #if all the best models aren't the same, take the one with min chisq (not the best way to do this)
     if not all([fitDict[d][1]._source.name==fitDict[fitDict.keys()[0]][1]._source.name for d in fitDict.keys()]):
+        print('All models did not match, finding best...')
         bestChisq=np.inf
         bestMod=None
         for d in fitDict.keys():
@@ -201,46 +195,32 @@ def fit_data(curves, snType='Ia',bands=None,method='minuit', models=None, params
 
     for d in fitDict.keys():
         _,bestFit,bestMod=fitDict[d]
-        #priorDict=_get_priors(bestRes)
-        #print(bestFit._source.name)
         nest_res,nest_fit=sncosmo.nest_lc(curves.images[d].table,bestFit,vparam_names=bestRes.vparam_names,bounds=bounds,guess_amplitude_bound=True,maxiter=1000,npoints=100)
         #sncosmo.plot_lc(data=curves.images[d].table,model=nest_fit,errors=nest_res.errors)
         #plt.show()
         #plt.close()
-        resList.append(nest_res)
-        '''
-        _plot_marginal_pdfs(nest_res)
-        print(nest_res.niter,nest_res.ncall)
-        print(nest_res.samples[0,:])
-        plt.show()
-        sys.exit()
+        resList[d]=nest_res
         curves.images[d].fits=newDict()
-        curves.images[d].fits['model']=bestFit
-        curves.images[d].fits['res']=bestRes
-        '''
-        #print(nest_res.samples[0:5,:])
-        #print(curves.images[d].fits.model._source.name)
-        #print(curves.images[d].fits.res.param_names,curves.images[d].fits.res.parameters,curves.images[d].fits.res.errors)
-        #print(curves.images[d].simMeta)
-    print('Marginalized:')
-    joint=_joint_likelihood(resList)
-    sys.exit()
-'''
-def _get_priors(res,modelName,snType):
-    priors=dict([])
-    absolutes=_getAbsoluteDist()
-    mod=sncosmo.Model(source=modelName)
-    mod.set(z=res.parameters[res.param_names=='z'])
+        curves.images[d].fits['model']=nest_fit
+        curves.images[d].fits['res']=nest_res
+        print(curves.images[d].simMeta)
 
-    if snType in ['IIP','IIL','IIn']:
-        absBand='bessellb'
-    else:
-        absBand='bessellr'
-    mod.set_source_peakabsmag(_getAbsFromDist(absolutes[snType]['dist']),absBand,zpsys='ab')
-    if snType=='Ia':
 
-        priors['x0']=a
-'''
+    joint=_joint_likelihood(resList,verbose=True)
+    for p in joint.keys():
+        for d in curves.images.keys():
+            if isinstance(joint[p],dict):
+                curves.images[d].fits.model.set(**{p:joint[p][d][0]})
+            else:
+                curves.images[d].fits.model.set(**{p:joint[p][0]})
+
+    for d in curves.images.keys():
+        sncosmo.plot_lc(curves.images[d].table,model=curves.images[d].fits.model,errors=curves.images[d].fits.res)
+        plt.show()
+        plt.close()
+
+    return curves
+
 
 def _plot_marginal_pdfs( res, nbins=101, **kwargs):
     """ plot the results of a classification run
@@ -356,40 +336,29 @@ def _fit_data(args):
 #    return(chisquare())
 
 def _joint_likelihood(resList,verbose=True):
-    outDict=dict([])
+
+
     params=[]
-    for res in resList:
-        params=np.append(params,res.vparam_names)
-    params=[x for x in set(params) if x in __thetaSN__]
-
+    for res in resList.values():
+        params=list(set(np.append(params,res.vparam_names)))
+    otherParams=[x for x in params if x in __thetaL__]
+    snparams=[x for x in params if x in __thetaSN__]
+    outDict={p:dict([]) for p in otherParams}
     for param in params:
-
-
-
-        #minVal=np.min([np.min(res.samples[:,res.vparam_names.index(param)]) for res in resList])
-        #maxVal=np.max([np.max(res.samples[:,res.vparam_names.index(param)]) for res in resList])
-        #print(minVal,maxVal)
-        #probsList=np.ones(100)
-        #weightsList=np.ones(100)
         probsList=[]
         weightsList=[]
-        for res in resList:
-            #_plot_marginal_pdfs(res,nbins=50)
+        for k in resList.keys():
+            res=resList[k]
             pdf=_get_marginal_pdfs(res,nbins=100,verbose=False)
-            weightsList=np.append(weightsList,pdf[param][1])
-            probsList=np.append(probsList,pdf[param][0])
-            #fig=plt.figure()
-            #ax=fig.gca()
-            #ax.plot(pdf[param][0],pdf[param][1])
-            #plt.show()
-            #plt.close()
-            #probs,edges=np.histogram(res.samples[:,res.vparam_names.index(param)],weights=res.weights,bins=np.linspace(minVal,maxVal,21),density=True)
-            #print(np.max(res.weights))
-            #print(probs)
-            #plt.hist(probs,bins=edges)
-            #plt.show()
-            #plt.close()
-            #probsList=np.multiply(probsList,probs/np.sum(res.weights))
+            if param in snparams:
+                weightsList=np.append(weightsList,pdf[param][1])
+                probsList=np.append(probsList,pdf[param][0])
+            elif param in otherParams:
+                if verbose:
+                    print( 'Image %s:  <%s> = %.4e +- %.4e'%(k, param, pdf[param][2], pdf[param][3]) )
+                outDict[param][k]=(pdf[param][2],pdf[param][3])
+        if param in otherParams:
+            continue
         expectedValue=(weightsList*probsList).sum()
         expectedValue/=len(resList)
         std = np.sqrt( ((weightsList * (probsList-expectedValue)**2 ).sum())/4 )
