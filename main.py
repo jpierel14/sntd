@@ -44,7 +44,7 @@ mod='snana-2004gv'
 snType='Ib'
 lcs=sim.createRandMultiplyImagedSN(mod,snType,.1,bands=['bessellb','bessellv','bessellr'],zp=25,cadence=5,epochs=20,numImages=4,objectName='Test',telescopename='HST',microlensing=True)
 #sntd.colorFit(lcs)
-sntd.fit_data(lcs,effect_frames=['rest'],effect_names=['host'],snType=snType,constants={'hostr_v':3.1},bounds={'z':(.08,.12),'hostebv':(-1,1)},dust='CCM89Dust')
+sntd.fit_data_separately(lcs,effect_frames=['rest','free'],effect_names=['host','screen'],snType=snType,constants={'hostr_v':3.1,'screenr_v':3.1},bounds={'screenz':(.3,.7),'z':(.08,.12),'hostebv':(-1,1),'screenebv':(-1,1)},dust='CCM89Dust')
 
 lcs.plot_object(filename='type'+snType)
 

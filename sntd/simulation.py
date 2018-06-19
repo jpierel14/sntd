@@ -7,6 +7,7 @@ from copy import deepcopy
 from .util import __dir__
 from .io import curve,curveDict
 from .ml import getDiffCurve
+
 def _getAbsoluteDist():
     absolutes=ascii.read(os.path.join(__dir__,'sim','data','absolutes.ref'))
     total=float(np.sum(absolutes['N'][absolutes['type']!='Ia']))
@@ -24,9 +25,9 @@ def _getAbsFromDist(dist):
     return(np.random.normal(mu,sigma))
 
 def createRandMultiplyImagedSN(model,snType,redshift,telescopename='telescope',objectName='object',timeDelayRange=(0,100),muRange=(1,20),
-                               numImages=2,cadence=5,epochs=50,bands=['F140W','F105W','F160W'],gain=50.,skynoiseRange=(1,5),mjdRange=None,zpsys='ab',zp=None,microlensing=False,
-                               cc_av=.9,ia_av=.3,dust='CCM89Dust',effect_frames=['rest'],effect_names=['host']):
-    #TODO sample from dust prior
+                               numImages=2,cadence=5,epochs=50,bands=['F140W','F105W','F160W'],gain=1000.,skynoiseRange=(1,3),mjdRange=None,zpsys='ab',zp=None,microlensing=False,
+                               cc_av=.9,ia_av=.3,dust='CCM89Dust',screenz=None,screenebv=None,effect_frames=['rest','free'],effect_names=['host','screen']):
+    #TODO sample from dust prior and add intermediate redshift dust https://github.com/sncosmo/sncosmo/pull/189
     obj=curveDict(telescopename=telescopename,object=objectName)
     if not mjdRange:
         now=np.round(Time(datetime.datetime.now()).mjd,3)
@@ -54,7 +55,12 @@ def createRandMultiplyImagedSN(model,snType,redshift,telescopename='telescope',o
         effects=[effect_frames]
     model=sncosmo.Model(source=model,effects=effects,effect_names=effect_names,effect_frames=effect_frames)
 
-    model.set(z=redshift)
+    if not screenz:
+        screenz=redshift/2.
+    if not screenebv:
+        screenebv=np.random.uniform(-1,1,1)[0]
+    model.set(z=redshift,screenz=screenz,screenebv=screenebv)
+
     if snType in ['IIP','IIL','IIn']:
         absBand='bessellb'
     else:
@@ -72,7 +78,7 @@ def createRandMultiplyImagedSN(model,snType,redshift,telescopename='telescope',o
         amp=model.get('amplitude')
         params={'z':redshift,'t0':times[0]+.5*(times[-1]-times[0]),'amplitude':amp,'hostebv':cc_av/3.1}
     params['hostr_v']=3.1
-
+    params['screenr_v']=3.1
 
     #model.set(**params)
     #print(model.bandflux('bessellb',params['t0'],zp=25,zpsys='ab'))
@@ -100,7 +106,8 @@ def createRandMultiplyImagedSN(model,snType,redshift,telescopename='telescope',o
         tempCurve.table=temp
         tempCurve.bands=list(set(temp['band']))
         tempCurve.simMeta=deepcopy(lc.meta)
-
+        tempCurve.simMeta['screenebv']=screenebv
+        tempCurve.simMeta['screenz']=screenz
         tempCurve.simMeta['mu']=mu
         tempCurve.simMeta['td']=delay
         if microlensing:

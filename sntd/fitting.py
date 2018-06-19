@@ -12,10 +12,10 @@ from .simulation import _getAbsFromDist,_getAbsoluteDist
 from .util import __dir__
 from astropy.table import Table
 
-__thetaSN__=['z','hostebv']
+__thetaSN__=['z','hostebv','screenebv','screenz']
 __thetaL__=['t0','amplitude']
 
-__all__=['fit_data','colorFit']
+__all__=['fit_data_separately','fit_combined_data','colorFit']
 
 _needs_bounds={'z'}
 
@@ -95,7 +95,12 @@ class fits(dict):
             """
             self.__dict__ = d
 
-def fit_data(curves, snType='Ia',bands=None,method='minuit', models=None, params=None, bounds=None, ignore=None, constants=None,
+
+
+def fit_combined_data():
+    pass
+
+def fit_data_separately(curves, snType='Ia',bands=None,method='minuit', models=None, params=None, bounds=None, ignore=None, constants=None,
              spline=False, poly=False, micro='spline', **kwargs):
     """
     The main, high-level fitting function.
@@ -174,7 +179,7 @@ def fit_data(curves, snType='Ia',bands=None,method='minuit', models=None, params
                     bestChisq=res.chisq
                     bestFit=mod
                     bestRes=res
-        fitDict[d]=(fits,bestFit,bestRes)
+        fitDict[d]=[fits,bestFit,bestRes]
     #if all the best models aren't the same, take the one with min chisq (not the best way to do this)
     if not all([fitDict[d][1]._source.name==fitDict[fitDict.keys()[0]][1]._source.name for d in fitDict.keys()]):
         print('All models did not match, finding best...')
@@ -188,7 +193,8 @@ def fit_data(curves, snType='Ia',bands=None,method='minuit', models=None, params
 
         for d in fitDict.keys():
             for f in fitDict[d][0]:
-                if f['model']._source.name==bestMod:
+
+                if f and f['model']._source.name==bestMod:
                     fitDict[d][1]=f['model']
                     fitDict[d][2]=f['res']
                     break
@@ -345,6 +351,7 @@ def _joint_likelihood(resList,verbose=True):
     snparams=[x for x in params if x in __thetaSN__]
     outDict={p:dict([]) for p in otherParams}
     for param in params:
+        print(param)
         probsList=[]
         weightsList=[]
         for k in resList.keys():
@@ -355,7 +362,7 @@ def _joint_likelihood(resList,verbose=True):
                 probsList=np.append(probsList,pdf[param][0])
             elif param in otherParams:
                 if verbose:
-                    print( 'Image %s:  <%s> = %.4e +- %.4e'%(k, param, pdf[param][2], pdf[param][3]) )
+                    print( 'Image %s:  <%s> = %.6e +- %.2e'%(k, param, pdf[param][2], pdf[param][3]) )
                 outDict[param][k]=(pdf[param][2],pdf[param][3])
         if param in otherParams:
             continue

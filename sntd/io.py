@@ -151,6 +151,11 @@ class curveDict(dict):
         else:
             self.table=tempCurve.table
 
+    def combine_curves(self):
+        if len(self.images) <2:
+            print("Not enough curves to combine!")
+            return
+
 
     def plot_object(self,bands='all',showfig=False,savefig=True,filename='mySN'):
 
