@@ -159,6 +159,7 @@ def fit_data(curves, snType='Ia',bands=None,method='minuit', models=None, params
     #    mods = {x[0] if isinstance(x,(tuple,list)) else x for x in mods}
     #elif  not isinstance(models,(tuple,list)):
     resList=[]
+    fitDict=dict([])
     for d in curves.images.keys():
         #TODO should I be letting each curve get a chisq fit and individual stuff? Or choose a model then do nest_lc.
         #print(curves.images[d].simMeta)
@@ -180,7 +181,26 @@ def fit_data(curves, snType='Ia',bands=None,method='minuit', models=None, params
                     bestChisq=res.chisq
                     bestFit=mod
                     bestRes=res
+        fitDict[d]=(fits,bestFit,bestRes)
+    #if all the best models aren't the same, take the one with min chisq (not the best way to do this)
+    if not all([fitDict[d][1]._source.name==fitDict[fitDict.keys()[0]][1]._source.name for d in fitDict.keys()]):
+        bestChisq=np.inf
+        bestMod=None
+        for d in fitDict.keys():
+            chisq=fitDict[d][2].chisq
+            if chisq<bestChisq:
+                bestChisq=chisq
+                bestMod=fitDict[d][1]._source.name
 
+        for d in fitDict.keys():
+            for f in fitDict[d][0]:
+                if f['model']._source.name==bestMod:
+                    fitDict[d][1]=f['model']
+                    fitDict[d][2]=f['res']
+                    break
+
+    for d in fitDict.keys():
+        _,bestFit,bestMod=fitDict[d]
         #priorDict=_get_priors(bestRes)
         #print(bestFit._source.name)
         nest_res,nest_fit=sncosmo.nest_lc(curves.images[d].table,bestFit,vparam_names=bestRes.vparam_names,bounds=bounds,guess_amplitude_bound=True,maxiter=1000,npoints=100)
