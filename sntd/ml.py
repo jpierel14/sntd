@@ -60,15 +60,16 @@ def realizeMicro(arand=.25,debug=0,kappas=.75,kappac=.15,gamma=.76,eps=.6,nray=3
     return(lensPlane,curve)
 
 
-def getDiffCurve(time,default=True):
-    num=np.random.randint(1,5)
+def getDiffCurve(time,num,default=True):
+
     tab=ascii.read(os.path.join(__dir__,'data','diff'+str(num)+'.dat'))
     outTab=Table()
     outTab['time']=time
     for band in [x for x in tab.colnames if x != 'time']:
-
         spl=splrep(tab['time']+time[0],10**(-.4*tab[band]))
         outTab[band]=splev(time,spl)
+
+
     return(outTab)
 
 

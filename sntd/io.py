@@ -13,48 +13,11 @@ from sncosmo import get_magsystem
 from copy import deepcopy
 import matplotlib.pyplot as plt
 
-from .util import anyOpen
+from .util import *
+from .fitting import _guess_magnifications,_guess_time_delays,newDict
 
 __all__=['curve','curveDict','read_data','write_data','table_factory','factory']
 
-
-def _cast_str(s):
-    try:
-        return int(s)
-    except:
-        try:
-            return float(s)
-        except:
-            return s.strip()
-
-
-def _get_default_prop_name(prop):
-    for key,value in _props.items():
-        if {prop.lower()} & value:
-            return key
-    return prop
-
-
-def _isfloat(value):
-    try:
-        float(value)
-        return True
-    except:
-        return False
-
-
-_meta__={'@','$','%','!','&'}
-_comment_char={'#'}
-_props=odict([
-    ('time',{'mjd', 'mjdobs', 'jd', 'time', 'date', 'mjd_obs','mhjd','jds'}),
-    ('band',{'filter', 'band', 'flt', 'bandpass'}),
-    ('flux',{'flux', 'f','fluxes'}),
-    ('fluxerr',{'flux_error', 'fluxerr', 'fluxerror', 'fe', 'flux_err','fluxerrs'}),
-    ('zp',{'zero_point','zp', 'zpt', 'zeropoint'}),
-    ('zpsys',{'zpsys', 'magsys', 'zpmagsys'}),
-    ('mag',{'mag','magnitude','mags'}),
-    ('magerr',{'magerr','magerror','magnitudeerror','magnitudeerr','magerrs'})
-])
 
 
 class curveDict(dict):
@@ -92,6 +55,9 @@ class curveDict(dict):
         @ivar: Object of interest
         """
         self.images=dict([])
+
+        self.combined=curve()
+
 
 
     #these three functions allow you to access the curveDict via "dot" notation
@@ -138,11 +104,22 @@ class curveDict(dict):
         return '------------------'
 
     def add_curve(self,myCurve):
+
         self.bands.update([x for x in myCurve.bands if x not in self.bands])
         im='S'+str(len(self.images)+1)
+        myCurve.table.add_column(Column([im for i in range(len(myCurve.table))],name='object'))
+
+        if not myCurve.zpsys:
+            myCurve.zpsys=myCurve.table['zpsys'][0]
+        if not myCurve.zp:
+            print('Assuming standard curve...')
+            myCurve.zp=myCurve.table['zp'][0]
+        #myCurve.fluxes
+
+
         tempCurve=deepcopy(myCurve)
 
-        tempCurve.table.add_column(Column([im for i in range(len(tempCurve.table))],name='object'))
+
         self.images[im]=myCurve
 
         if self.table:
@@ -150,11 +127,36 @@ class curveDict(dict):
                 self.table.add_row(row)
         else:
             self.table=tempCurve.table
+        return(self)
 
-    def combine_curves(self):
+    def combine_curves(self,tds=None,mus=None):
         if len(self.images) <2:
             print("Not enough curves to combine!")
-            return
+            return(self)
+        if not tds:
+            tds=_guess_time_delays(self)
+        if not mus:
+            mus=_guess_magnifications(self)
+        #print(tds)
+        #print(mus)
+        self.combined.table=Table(names=self.table.colnames,dtype=[self.table.dtype[x] for x in self.table.colnames])
+        for k in np.sort(self.images.keys()):
+            #print('True mu:'+str(self.images[k].simMeta['mu']/self.images['S3'].simMeta['mu']))
+            #print('True td: '+str(self.images[k].simMeta['td']-self.images['S3'].simMeta['td']))
+            temp=deepcopy(self.images[k].table)
+            temp['time']-=tds[k]
+            temp['flux']/=mus[k]
+            temp['fluxerr']/=mus[k]
+
+            self.combined.table=vstack([self.combined.table,temp])
+        #print(self.combinedCurve)
+        self.combined.bands=self.bands
+        self.combined.meta['td']=tds
+        self.combined.meta['mu']=mus
+        return(self)
+
+
+
 
 
     def plot_object(self,bands='all',showfig=False,savefig=True,filename='mySN'):
@@ -210,6 +212,7 @@ class curveDict(dict):
             plt.savefig(filename+'.pdf',format='pdf',overwrite=True)
         if showfig:
             plt.show()
+        plt.close()
         return
 
 
@@ -247,6 +250,7 @@ class curve(lightcurve,object):
         @ivar: Fluxes, preferably connected to magnitudes that exist in the superclass
         """
         self.fluxerrs=np.array([0.1,0.1,0.15,0.05,0.2])
+
         """@type: 1D float array
         @ivar: Errors of fluxes, as floats
         """
@@ -270,6 +274,8 @@ class curve(lightcurve,object):
         @ivar: Used to convert between mag and flux, none if no zpsys is defined at construction
         """
         self.simMeta=dict([])
+
+        self.fits=None
 
     def calcmagshiftfluxes(self,inverse=False):
         """

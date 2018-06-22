@@ -1,12 +1,73 @@
 #!/Users/jpierel/anaconda3/envs/astro2/bin python2
 
-import os
+import os,sncosmo
+import numpy as np
+from collections import OrderedDict as odict
+
 __current_dir__=os.path.abspath(os.getcwd())
 __dir__=os.path.abspath(os.path.dirname(__file__))
 
 NORMAL = 0    # use python zip libraries
 PROCESS = 1   # use (zcat, gzip) or (bzcat, bzip2)
 PARALLEL = 2  # (pigz -dc, pigz) or (pbzip2 -dc, pbzip2)
+
+_meta__={'@','$','%','!','&'}
+_comment_char={'#'}
+_props=odict([
+    ('time',{'mjd', 'mjdobs', 'jd', 'time', 'date', 'mjd_obs','mhjd','jds'}),
+    ('band',{'filter', 'band', 'flt', 'bandpass'}),
+    ('flux',{'flux', 'f','fluxes'}),
+    ('fluxerr',{'flux_error', 'fluxerr', 'fluxerror', 'fe', 'flux_err','fluxerrs'}),
+    ('zp',{'zero_point','zp', 'zpt', 'zeropoint'}),
+    ('zpsys',{'zpsys', 'magsys', 'zpmagsys'}),
+    ('mag',{'mag','magnitude','mags'}),
+    ('magerr',{'magerr','magerror','magnitudeerror','magnitudeerr','magerrs'})
+])
+
+def flux_to_mag(table,bandDict,zpsys='AB'):
+    """
+    Accepts an astropy table of flux data and does the conversion to mags (flux in ergs/s/cm^2/AA)
+
+    :param table: Table containing flux, flux error error, and band columns
+    :type table: astropy.Table
+    :param bandDict: translates band to sncosmo.Bandpass object (i.e. 'U'-->bessellux)
+    :type bandDict: dict
+    :param zpsys: magnitude system
+    :type zpsys: str,optional
+    :returns: astropy.Table object with mag and mag error added
+    """
+    table=table[table['flux']>0]
+    ms=sncosmo.get_magsystem(zpsys)
+    table[_get_default_prop_name('mag')] = np.asarray(map(lambda x, y: ms.band_flux_to_mag(x,y), table[_get_default_prop_name('flux')],#/sncosmo.constants.HC_ERG_AA
+                                                       np.array([bandDict[z] for z in table[_get_default_prop_name('band')]])))
+    table[_get_default_prop_name('magerr')] = np.asarray(map(lambda x, y: 2.5 * np.log10(np.e) * y / x, table[_get_default_prop_name('flux')],
+                                                          table[_get_default_prop_name('fluxerr')]))
+    table=table[np.abs(table['mag']/table['magerr'])>5]
+    return(table)
+
+def _cast_str(s):
+    try:
+        return int(s)
+    except:
+        try:
+            return float(s)
+        except:
+            return s.strip()
+
+
+def _get_default_prop_name(prop):
+    for key,value in _props.items():
+        if {prop.lower()} & value:
+            return key
+    return prop
+
+
+def _isfloat(value):
+    try:
+        float(value)
+        return True
+    except:
+        return False
 
 def anyOpen(filename, mode='r', buff=1024*1024, external=PARALLEL):
     if 'r' in mode and 'w' in mode:

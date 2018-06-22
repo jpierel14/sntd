@@ -42,10 +42,32 @@ mod='snana-2004gv'
 #mod=sncosmo.Model(source='snana-2004hx')
 #['bessellux','bessellb','bessellv','bessellr','besselli']
 snType='Ib'
-lcs=sim.createRandMultiplyImagedSN(mod,snType,.1,bands=['bessellb','bessellv','bessellr'],zp=25,cadence=5,epochs=20,numImages=4,objectName='Test',telescopename='HST',microlensing=True)
-#sntd.colorFit(lcs)
-sntd.fit_data_separately(lcs,effect_frames=['rest','free'],effect_names=['host','screen'],snType=snType,constants={'hostr_v':3.1,'screenr_v':3.1},bounds={'screenz':(.3,.7),'z':(.08,.12),'hostebv':(-1,1),'screenebv':(-1,1)},dust='CCM89Dust')
+lcs=sim.createRandMultiplyImagedSN(mod,snType,.1,bands=['bessellb','bessellv','bessellr'],zp=25,cadence=10,epochs=15,numImages=4,timeDelayRange=(0,30),objectName='Test',telescopename='HST',microlensing=False)
+for k in lcs.images.keys():
+    sncosmo.plot_lc(lcs.images[k].table)
+    plt.savefig(k+'.pdf',format='pdf',overwrite=True)
+    plt.clf()
+sntd.spline_fit(lcs)
+lcs.plot_object()
+lcs.combine_curves()
+#fig=plt.figure()
+#ax=fig.gca()
+#for img in list(set(lcs.combinedCurve['object'])):
+#ax.scatter(lcs.combinedCurve['time'][lcs.combinedCurve['band']==b],lcs.combinedCurve['flux'][lcs.combinedCurve['band']==b])
 
+sncosmo.plot_lc(lcs.combined.table)
+plt.savefig('combined.pdf',format='pdf',overwrite=True)
+plt.close()
+
+
+#sys.exit()
+#sntd.colorFit(lcs)
+
+lcs=sntd.fit_data(lcs,effect_frames=['rest','free'],effect_names=['host','screen'],snType=snType,constants={'hostr_v':3.1,'screenr_v':3.1},
+                  bounds={'screenz':(.4,.6),'z':(.08,.12),'hostebv':(0,1),'screenebv':(-1,1)},dust='CCM89Dust',combined_or_separate='combined',combinedGrids={'td':(-5,5),'mu':(-1,1)})
+sncosmo.plot_lc(lcs.combined.table,model=lcs.combined.fit.model,errors=lcs.combined.fit.res)
+plt.show()
+sys.exit()
 lcs.plot_object(filename='type'+snType)
 
 sys.exit()
