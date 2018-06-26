@@ -181,7 +181,8 @@ class curveDict(dict):
         #markers=['.','^','*','8','s','+','D']
         i=0
         # nrows=int(math.ceil(len(bands)/2.))
-        fig,axlist=plt.subplots(nrows=nrows,ncols=ncols,sharex=True,sharey=False)
+        fig,axlist=plt.subplots(nrows=nrows, ncols=ncols,
+                                sharex=True, sharey=True)
         if nbands==1:
             axlist = [axlist]
         leg=[]
@@ -211,8 +212,8 @@ class curveDict(dict):
                                 self.images[lc].table['band']==b] * \
                             self.images[lc].ml[b],color=colors[i])
 
-                ax.annotate(b.upper(), size=10, xy=(.7,.87),
-                            xycoords='axes fraction')
+                ax.text(0.95, 0.95, b.upper(), fontsize='large',
+                        transform=ax.transAxes, ha='right', va='top')
 
                 if showmodel:
                     # Plot the underlying model, including dust and lensing
@@ -231,11 +232,14 @@ class curveDict(dict):
         #if not len(self.bands)%2==0:
             #fig.delaxes(ax[nrows-1][1])
             #axlist[nrows-2][1].tick_params(axis='x',labelbottom='on',bottom='on')
-        plt.figlegend(leg,np.sort(self.images.keys()),loc='upper left',fontsize=16)
+        plt.figlegend(leg,np.sort(self.images.keys()), frameon=False,
+                      loc='center right', fontsize='medium', numpoints=1)
 
-        fig.text(0.5, 0.02, r'Time (MJD)', ha='center',fontsize=16)
-        fig.text(0.04, .5, 'Flux', va='center', rotation='vertical',fontsize=16)
-        plt.suptitle('Multiply-Imaged SN "'+self.object+'" on the '+self.telescopename,fontsize=18)
+        fig.text(0.5, 0.02, r'Observer-frame time (days)', ha='center',
+                 fontsize='large')
+        fig.text(-0.02, .5, 'Integrated Flux (detector counts)', va='center',
+                 rotation='vertical',fontsize='large')
+        #plt.suptitle('Multiply-Imaged SN "'+self.object+'" on the '+self.telescopename,fontsize=18)
         if savefig:
             plt.savefig(filename+'.pdf',format='pdf',overwrite=True)
         if showfig:
