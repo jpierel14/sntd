@@ -1,2 +1,17 @@
 .idea
 .idea/workspace.xml
+
+*.py[cod]
+.idea
+*~
+\#*\#
+commit.txt
+
+# executables
+*.e
+
+# C extensions
+*.so
+
+# Installer logs
+pip-log.txt
