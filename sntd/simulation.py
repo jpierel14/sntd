@@ -128,8 +128,15 @@ def createRandMultiplyImagedSN(sourcename, snType, redshift,
                                    trim_observations=True, scatter=scatter)[0]
         tempCurve=curve(zp=zp, zpsys=zpsys)
 
+        # TODO : implement a more general microlensing apparatus
         if microlensing:
-            mlCurve=getDiffCurve(lc_i['time'][lc_i['band']==lc_i['band'][0]])
+            if lc_i['band'][0].lower().startswith('bessell'):
+                bandset = 'bessell'
+            elif lc_i['band'][0].lower().startswith('f1'):
+                bandset = 'hst'
+            mlCurve=getDiffCurve(
+                lc_i['time'][lc_i['band']==lc_i['band'][0]],
+                bandset=bandset)
             lc_i=_addML(mlCurve,lc_i)
             tempCurve.ml=mlCurve
         else:

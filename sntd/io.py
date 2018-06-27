@@ -210,7 +210,7 @@ class curveDict(dict):
                                 self.images[lc].table['band']==b],
                             self.images[lc].table['flux'][
                                 self.images[lc].table['band']==b] * \
-                            self.images[lc].ml[b],color=colors[i])
+                            self.images[lc].ml[b], color=colors[i])
 
                 ax.text(0.95, 0.95, b.upper(), fontsize='large',
                         transform=ax.transAxes, ha='right', va='top')
