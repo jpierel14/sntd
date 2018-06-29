@@ -161,55 +161,89 @@ class curveDict(dict):
 
 
 
-    def plot_object(self,bands='all',showfig=False,savefig=True,filename='mySN'):
+    def plot_object(self, bands='all', showfig=False, savefig=True,
+                    filename='mySN', orientation='horizontal',
+                    showmodel=False):
+        """Plot the multiply-imaged SN light curves and save to a file.
+        Each subplot shows a single-band light curve, for all images of the SN. 
+        
+        bands: 'all' = plot all bands; or provide a list of strings 
+        orientation: 'horizontal' = all subplots are in a single row
+            'vertical' = all subplots are in a single column        
+        """
+        if bands == 'all':
+            bands = self.bands
+        nbands = len(bands)
+        if orientation.startswith('v'):
+            ncols = 1
+            nrows = nbands
+        else:
+            ncols = nbands
+            nrows = 1
 
         colors=['r','g','b','k']
         #markers=['.','^','*','8','s','+','D']
         i=0
-        nrows=int(math.ceil(len(self.bands)/2.))
-        fig,ax=plt.subplots(nrows=nrows,ncols=2,sharex=True,sharey=False)
+        # nrows=int(math.ceil(len(bands)/2.))
+        fig,axlist=plt.subplots(nrows=nrows, ncols=ncols,
+                                sharex=True, sharey=True)
+        if nbands==1:
+            axlist = [axlist]
         leg=[]
         for lc in np.sort(self.images.keys()):
-            #print(lcs.images[lc].simMeta)
-            row=0
-            col=0
-            if bands=='all':
-                bands=self.images[lc].bands
-
-
-            for b in bands:
-                if b==bands[0]:
-                    leg.append(ax[row][col].errorbar(self.images[lc].table['time'][self.images[lc].table['band']==b],
-                                                     self.images[lc].table['flux'][self.images[lc].table['band']==b],
-                                                     yerr=self.images[lc].table['fluxerr'][self.images[lc].table['band']==b],markersize=4,fmt=colors[i]+'.'))
+            for b, ax in zip(bands, axlist):
+                if b==list(bands)[0]:
+                    leg.append(
+                        ax.errorbar(self.images[lc].table['time'][
+                                        self.images[lc].table['band']==b],
+                                    self.images[lc].table['flux'][
+                                        self.images[lc].table['band']==b],
+                                    yerr=self.images[lc].table['fluxerr'][
+                                        self.images[lc].table['band']==b],
+                                    markersize=4, fmt=colors[i]+'.'))
                 else:
-                    ax[row][col].errorbar(self.images[lc].table['time'][self.images[lc].table['band']==b],
-                                          self.images[lc].table['flux'][self.images[lc].table['band']==b],
-                                          yerr=self.images[lc].table['fluxerr'][self.images[lc].table['band']==b],markersize=4,fmt=colors[i]+'.')
+                    ax.errorbar(self.images[lc].table['time'][
+                                    self.images[lc].table['band']==b],
+                                self.images[lc].table['flux'][
+                                    self.images[lc].table['band']==b],
+                                yerr=self.images[lc].table['fluxerr'][
+                                    self.images[lc].table['band']==b],
+                                markersize=4, fmt=colors[i]+'.')
                 if self.images[lc].ml:
-                    ax[row][col].plot(self.images[lc].table['time'][self.images[lc].table['band']==b],self.images[lc].table['flux'][self.images[lc].table['band']==b]*self.images[lc].ml[b],color=colors[i])
-                ax[row][col].annotate(b[-1].upper()+' Filter',size=10,xy=(.7,.87), xycoords='axes fraction')
+                    ax.plot(self.images[lc].table['time'][
+                                self.images[lc].table['band']==b],
+                            self.images[lc].table['flux'][
+                                self.images[lc].table['band']==b] * \
+                            self.images[lc].ml[b], color=colors[i])
 
-                if row==0:
-                    if col==0:
-                        col=1
-                    else:
-                        row=1
-                        col=0
-                else:
-                    col=1
-                    row+=1
+                ax.text(0.95, 0.95, b.upper(), fontsize='large',
+                        transform=ax.transAxes, ha='right', va='top')
 
+                if showmodel:
+                    # Plot the underlying model, including dust and lensing
+                    # effects, as a black curve for each simulated SN image
+                    time_model = np.arange(self.images[lc].table['time'].min(),
+                                           self.images[lc].table['time'].max(),
+                                           0.1)
+                    time_shifted = time_model - self.images[lc].simMeta['td']
+                    flux_magnified = self.model.bandflux(
+                        b, time_shifted, self.zpDict[b], self.zpsys) * \
+                                     self.images[lc].simMeta['mu']
+                    ax.plot(time_model, flux_magnified, 'k-')
+                    #import pdb; pdb.set_trace()
             i+=1
 
-        if not len(self.bands)%2==0:
-            fig.delaxes(ax[nrows-1][1])
-            ax[nrows-2][1].tick_params(axis='x',labelbottom='on',bottom='on')
-            plt.figlegend(leg,np.sort(self.images.keys()),loc='lower right',fontsize=16)
+        #if not len(self.bands)%2==0:
+            #fig.delaxes(ax[nrows-1][1])
+            #axlist[nrows-2][1].tick_params(axis='x',labelbottom='on',bottom='on')
+        plt.figlegend(leg,np.sort(self.images.keys()), frameon=False,
+                      loc='center right', fontsize='medium', numpoints=1)
 
-        fig.text(0.5, 0.02, r'Time (MJD)', ha='center',fontsize=16)
-        fig.text(0.04, .5, 'Flux', va='center', rotation='vertical',fontsize=16)
-        plt.suptitle('Multiply-Imaged SN "'+self.object+'" on the '+self.telescopename,fontsize=18)
+        fig.text(0.5, 0.02, r'Observer-frame time (days)', ha='center',
+                 fontsize='large')
+        fig.text(-0.02, .5, 'Integrated Flux (detector counts)', va='center',
+                 rotation='vertical',fontsize='large')
+        #plt.suptitle('Multiply-Imaged SN "'+self.object+'" on the '+self.telescopename,fontsize=18)
         if savefig:
             plt.savefig(filename+'.pdf',format='pdf',overwrite=True)
         if showfig:

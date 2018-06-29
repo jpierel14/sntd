@@ -60,9 +60,25 @@ def realizeMicro(arand=.25,debug=0,kappas=.75,kappac=.15,gamma=.76,eps=.6,nray=3
     return(lensPlane,curve)
 
 
+<<<<<<< HEAD
 def getDiffCurve(time,num,default=True):
 
     tab=ascii.read(os.path.join(__dir__,'data','diff'+str(num)+'.dat'))
+=======
+def getDiffCurve(time, bandset='bessell'):
+    """Read in a microlensing difference curve from a data file.
+    """
+    #TODO : interpolate to account for redshift of the lens and source
+    num=np.random.randint(1,5)
+    if bandset.lower()=='bessell':
+        tab=ascii.read(os.path.join(__dir__,'data','diff'+str(num)+'.dat'))
+    elif bandset.lower()=='hst':
+        tab = ascii.read(
+            os.path.join(__dir__, 'data/hstmicrolensing',
+                         'diff' + str(num) + '.dat'))
+    else:
+        raise RuntimeError("bandset must be 'bessell' or 'hst'")
+>>>>>>> master
     outTab=Table()
     outTab['time']=time
     for band in [x for x in tab.colnames if x != 'time']:

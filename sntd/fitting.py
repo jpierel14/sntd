@@ -809,7 +809,11 @@ def colorFit(lcs,verbose=True):
     for k in curves.keys():
         time,curve=curves[k]
         #print(np.min(time-delays[k]-curves[refName][0]))
+<<<<<<< HEAD
         #ax.scatter(time,curve)
+=======
+        ax.plot(time, curve, marker='o', ls='-')
+>>>>>>> master
         #ax.scatter(time-finalDelays[k]-curves[refName][0],curve)
     #plt.show()
     return(finalDelays)
