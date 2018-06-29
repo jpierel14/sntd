@@ -11,8 +11,7 @@ NORMAL = 0    # use python zip libraries
 PROCESS = 1   # use (zcat, gzip) or (bzcat, bzip2)
 PARALLEL = 2  # (pigz -dc, pigz) or (pbzip2 -dc, pbzip2)
 
-_meta__={'@','$','%','!','&'}
-_comment_char={'#'}
+__all__=['flux_to_mag','_cast_str','_get_default_prop_name','_isfloat','anyOpen','_props']
 _props=odict([
     ('time',{'mjd', 'mjdobs', 'jd', 'time', 'date', 'mjd_obs','mhjd','jds'}),
     ('band',{'filter', 'band', 'flt', 'bandpass'}),

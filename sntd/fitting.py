@@ -711,12 +711,12 @@ def _get_marginal_pdfs( res, nbins=51, verbose=True ):
 def _findMax(time,curve):
     #TODO check edge cases
     t0=np.where(curve==np.max(curve))[0][0]
-
     if t0==0:
         #return(time[0])
         return (None,None)
 
     elif t0==len(time)-1:
+
         #return(time[-1])
         return (None,None)
 

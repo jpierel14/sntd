@@ -35,6 +35,27 @@ cbar.ax.set_yticklabels([str(np.round(x,2)) for x in np.linspace((1.1*np.min(im)
 plt.savefig('lensplane.pdf',format='pdf',overwrite=True)
 sys.exit()
 '''
+from sntd import models
+
+#dat=sncosmo.load_example_data()
+files=glob.glob('data/ref*.dat')
+
+curves=sntd.curveDict(telescopename='Hubble',object='Refsdal')
+for f in files:
+    curves.add_curve(sntd.read_data(f))
+#print(tab['band'])
+tab=curves.images['S1'].table[curves.images['S1'].table.mask['band']==False]
+
+tab=tab[tab['band']=='F105W']
+
+#print(tab)
+temp=models.FlexibleSpline(tab)
+
+mod=sncosmo.Model(temp)
+sncosmo.plot_lc(tab,model=mod)
+plt.show()
+#temp.ban(np.arange(-10,20,1),sncosmo.get_bandpass('F160W').wave)
+sys.exit()
 #salt2=sncosmo.SALT2Source(modeldir='/Users/jpierel/rodney/SED_Repository/SEDs.P18-UV2IR/Type_Ia/salt2-extended')
 #mod=sncosmo.Model(source=salt2)
 mod='snana-2004gv'

@@ -18,6 +18,8 @@ from .fitting import _guess_magnifications,_guess_time_delays,newDict
 
 __all__=['curve','curveDict','read_data','write_data','table_factory','factory']
 
+_comment_char={'#'}
+_meta__={'@','$','%','!','&'}
 
 
 class curveDict(dict):
