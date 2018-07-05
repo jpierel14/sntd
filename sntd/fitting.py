@@ -1,22 +1,21 @@
 import inspect,sncosmo,os,sys,warnings,pyParz,pycs
 import numpy as np
 import matplotlib.pyplot as plt
-from itertools import combinations
 from copy import deepcopy,copy
 from scipy.interpolate import splrep,splev
 from astropy.table import Table
 from astropy.extern import six
 import nestle
 
-#from .io import _get_default_prop_name
-#from .simulation import _getAbsFromDist,_getAbsoluteDist
-from .util import __dir__,flux_to_mag
+from .util import *
 from .spl import spl
 from .plotting import display
-__thetaSN__=['z','hostebv','screenebv','screenz']
-__thetaL__=['t0','amplitude']
-
+import models
 __all__=['fit_data','colorFit','spline_fit']
+
+__thetaSN__=['z','hostebv','screenebv','screenz','rise','fall']
+__thetaL__=['t0','amplitude','dt0','A','B']
+
 
 _needs_bounds={'z'}
 
@@ -96,57 +95,7 @@ class fits(dict):
             """
             self.__dict__ = d
 
-def _guess_magnifications(curves):
-    """Guess t0 and amplitude of the model based on the data.
 
-    Assumes the data has been standardized."""
-    ref=None
-    mags=dict([])
-    for k in curves.images.keys():
-        if not curves.images[k].fits:
-            bestRatio=-np.inf
-            bestBand=None
-            for b in np.unique(curves.images[k].table['band']):
-                ratio=np.abs(np.max(curves.images[k].table['flux'][curves.images[k].table['band']==b])/np.min(curves.images[k].table['flux'][curves.images[k].table['band']==b]))
-                if ratio>bestRatio:
-                    bestRatio=ratio
-                    bestBand=b
-            maxTime,maxValue=_findMax(curves.images[k].table['time'][curves.images[k].table['band']==b],curves.images[k].table['flux'][curves.images[k].table['band']==b])
-
-
-            if not ref:
-                ref=maxValue
-            mags[k]=maxValue/ref
-
-        else:
-            if 'x0' in curves.images[k].fits.res.param_names:
-                amplitude='x0'
-            else:
-                amplitude='amplitude'
-            mag=curves.images[k].fits.model.get(amplitude)
-            if not ref:
-                ref=mag
-            mags[k]=mag/ref
-    return mags
-
-def _guess_time_delays(curves):
-    tds=colorFit(curves)
-    if tds:
-        return tds
-    ref=None
-    tds=dict([])
-    for k in curves.images.keys():
-        if not curves.images[k].fits:
-            maxValue,maxFlux=_findMax(curves.images[k].table['time'],curves.images[k].table['flux'])
-            if not ref:
-                ref=maxValue
-            tds[k]=maxValue-ref
-        else:
-            t0=curves.images[k].fits.model.get('t0')
-            if not ref:
-                ref=t0
-            tds[k]=t0-ref
-    return tds
 
 
 
@@ -191,6 +140,9 @@ def fit_data(curves, snType='Ia',bands=None,method='minuit', models=None, params
     args['effect_names']=kwargs.get('effect_names',[])
     args['effect_frames']=kwargs.get('effect_frames',[])
     args['dust']=kwargs.get('dust',None)
+    args['knots']=kwargs.get('knots',3)
+    args['func']=kwargs.get('func','spline')
+    args['degree']=kwargs.get('degree',3)
     if not models:
         mod,types=np.loadtxt(os.path.join(__dir__,'data','sncosmo','models.ref'),dtype='str',unpack=True)
         modDict={mod[i]:types[i] for i in range(len(mod))}
@@ -423,14 +375,26 @@ def nest_combined_lc(curves,model,res,vparam_names,bounds,snBounds,guess_amplitu
 def _fitSeparate(curves,mods,args,bounds):
     resList=dict([])
     fitDict=dict([])
+    newBounds=dict([])
     for d in curves.images.keys():
         #print(curves.images[d].simMeta)
         args['curve']=curves.images[d]
         curves.images[d].fits=newDict()
-        if len(args['curve'].table)>63:
+        if len(args['curve'].table)>63 or len(mods)==1:
             fits=[]
             for mod in mods:
-                fits.append(_fit_data_wrap((mod,args)))
+                if mod=='SplineSource':
+
+                    fits.append(spline_fit(args))
+                elif mod=='BazinSource':
+                    fits.append(bazin_fit(args))
+
+                elif mod=='KarpenkaSource':
+                    fits.append(karpenka_fit(args))
+
+
+                else:
+                    fits.append(_fit_data_wrap((mod,args)))
         else:
             fits=pyParz.foreach(mods,_fit_data,args)
 
@@ -443,7 +407,17 @@ def _fitSeparate(curves,mods,args,bounds):
                     bestChisq=res.chisq
                     bestFit=mod
                     bestRes=res
+        for param in [p for p in __thetaSN__ if p in bestRes.vparam_names]:
+            if param not in newBounds:
+                newBounds[param]=(.75*bestFit.get(param),1.25*bestFit.get(param))
+            else:
+                lower=np.mean([newBounds[param][0],.75*bestFit.get(param)])
+                upper=np.mean([newBounds[param][1],1.25*bestFit.get(param)])
+                newBounds[param]=(lower,upper)
+
         fitDict[d]=[fits,bestFit,bestRes]
+    for param in [p for p in bounds if p not in newBounds.keys()]:
+        newBounds[param]=bounds[param]
     #if all the best models aren't the same, take the one with min chisq (not the best way to do this)
     if not all([fitDict[d][1]._source.name==fitDict[fitDict.keys()[0]][1]._source.name for d in fitDict.keys()]):
         print('All models did not match, finding best...')
@@ -465,7 +439,7 @@ def _fitSeparate(curves,mods,args,bounds):
 
     for d in fitDict.keys():
         _,bestFit,bestMod=fitDict[d]
-        nest_res,nest_fit=sncosmo.nest_lc(curves.images[d].table,bestFit,vparam_names=bestRes.vparam_names,bounds=bounds,guess_amplitude_bound=True,maxiter=1000,npoints=100)
+        nest_res,nest_fit=sncosmo.nest_lc(curves.images[d].table,bestFit,vparam_names=bestRes.vparam_names,bounds=newBounds,guess_amplitude_bound=False,maxiter=100,npoints=25)
         #sncosmo.plot_lc(data=curves.images[d].table,model=nest_fit,errors=nest_res.errors)
         #plt.show()
         #plt.close()
@@ -473,7 +447,7 @@ def _fitSeparate(curves,mods,args,bounds):
         curves.images[d].fits=newDict()
         curves.images[d].fits['model']=nest_fit
         curves.images[d].fits['res']=nest_res
-        print(curves.images[d].simMeta)
+        #print(curves.images[d].simMeta)
 
 
     joint=_joint_likelihood(resList,verbose=True)
@@ -483,11 +457,11 @@ def _fitSeparate(curves,mods,args,bounds):
                 curves.images[d].fits.model.set(**{p:joint[p][d][0]})
             else:
                 curves.images[d].fits.model.set(**{p:joint[p][0]})
-
-    #for d in curves.images.keys():
-    #    sncosmo.plot_lc(curves.images[d].table,model=curves.images[d].fits.model,errors=curves.images[d].fits.res)
-    #    plt.show()
-    #    plt.close()
+            #print(curves.images[d].fits.model._source.t0)
+    for d in curves.images.keys():
+        sncosmo.plot_lc(curves.images[d].table,model=curves.images[d].fits.model,errors=curves.images[d].fits.res)
+        plt.show()
+        plt.close()
 
     return curves
 
@@ -565,7 +539,10 @@ def _fit_data(args):
         effects=[effect_names]
     if not isinstance(effect_frames,(list,tuple)):
         effects=[effect_frames]
-    modName=mod+'_'+version if version else deepcopy(mod)
+    if isinstance(mod,str):
+        modName=mod+'_'+version if version else deepcopy(mod)
+    else:
+        modName=mod.name+'_'+version if version else deepcopy(mod)
     source=sncosmo.get_source(mod)
     #print(mod)
     smod = sncosmo.Model(source=source,effects=effects,effect_names=effect_names,effect_frames=effect_frames)
@@ -708,120 +685,44 @@ def _get_marginal_pdfs( res, nbins=51, verbose=True ):
     return( pdfdict )
 
 
-def _findMax(time,curve):
-    #TODO check edge cases
-    t0=np.where(curve==np.max(curve))[0][0]
-    if t0==0:
-        #return(time[0])
-        return (None,None)
-
-    elif t0==len(time)-1:
-
-        #return(time[-1])
-        return (None,None)
-
-    else:
-        fit=splrep(time[t0-1:t0+2],curve[t0-1:t0+2],k=2)
-
-    interptime=np.linspace(time[t0-1],time[t0+1],100)
-    flux=splev(interptime,fit)
-    return(interptime[flux==np.max(flux)],np.max(flux))
+def karpenka_fit(args):
+    source=models.KarpenkaSource(args['curve'].table)
+    mod=sncosmo.Model(source)
+    if args['constants']:
+        mod.set(**args['constants'])
+    #mod.set(t0=np.min(args['curve'].table['time']))
+    res,fit=sncosmo.fit_lc(args['curve'].table,mod,['A','B','fall','rise','t1']+args['params'], bounds=args['bounds'],guess_amplitude=False,guess_t0=True,maxcall=50)
+    print(fit.get('t0'),fit.get('fall'),fit.get('rise'),res.chisq/res.ndof)
+    sncosmo.plot_lc(args['curve'].table,model=fit,errors=res)
+    plt.show()
+    sys.exit()
+    return({'res':res,'model':fit})
 
 
-def _findMin(time,curve):
-    #TODO check edge cases
-    t0=np.where(curve==np.min(curve))[0][0]
+def bazin_fit(args):
+    source=models.BazinSource(args['curve'].table)
+    mod=sncosmo.Model(source)
+    if args['constants']:
+        mod.set(**args['constants'])
+    #mod.set(t0=np.min(args['curve'].table['time']))
+    res,fit=sncosmo.fit_lc(args['curve'].table,mod,['A','B','fall','rise']+args['params'], bounds=args['bounds'],guess_amplitude=False,guess_t0=True,maxcall=50)
+    print(fit.get('t0'),fit.get('fall'),fit.get('rise'),res.chisq/res.ndof)
+    sncosmo.plot_lc(args['curve'].table,model=fit,errors=res)
+    plt.show()
+    sys.exit()
+    return({'res':res,'model':fit})
 
-    if t0==0:
-        #return(time[0])
-        return (None,None)
+def spline_fit(args):
+    source=models.SplineSource(args['curve'].table,knots=args['knots'],func=args['func'],degree=args['degree'])
+    mod=sncosmo.Model(source)
 
-    elif t0==len(time)-1:
-        #return(time[-1])
-        return (None,None)
+    if args['constants']:
+        mod.set(**args['constants'])
+    mod.set(t0=0)
+    res,fit=sncosmo.fit_lc(args['curve'].table,mod,['dt0','amplitude'],bounds=args['bounds'],guess_amplitude=False,guess_t0=False,maxcall=50)
+    return({'res':res,'model':fit})
 
-    else:
-        fit=splrep(time[t0-1:t0+2],curve[t0-1:t0+2],k=2)
-
-    interptime=np.linspace(time[t0-1],time[t0+1],100)
-    flux=splev(interptime,fit)
-    return(interptime[flux==np.min(flux)],np.max(flux))
-
-
-def colorFit(lcs,verbose=True):
-    colors=combinations(lcs.bands,2)
-    #figure=plt.figure()
-    #ax=figure.gca()
-    allDelays=[]
-    for col in colors:
-        curves=dict([])
-        for d in lcs.images.keys():
-            dcurve=lcs.images[d]
-            spl1=splrep(dcurve.table['time'][dcurve.table['band']==col[0]],dcurve.table['flux'][dcurve.table['band']==col[0]])
-            spl2=splrep(dcurve.table['time'][dcurve.table['band']==col[1]],dcurve.table['flux'][dcurve.table['band']==col[1]])
-            time=np.linspace(max(np.min(dcurve.table['time'][dcurve.table['band']==col[0]]),np.min(dcurve.table['time'][dcurve.table['band']==col[1]])),
-                        min(np.max(dcurve.table['time'][dcurve.table['band']==col[0]]),np.max(dcurve.table['time'][dcurve.table['band']==col[1]])),50)
-            ccurve=splev(time,spl1)/splev(time,spl2)
-            #curves.append(dcurve.table['flux'][dcurve.table['band']==col[0]]-dcurve.table['flux'][dcurve.table['band']==col[1]])
-            curves[d]=(time,ccurve)
-        ref=False
-
-
-        delays=dict([])
-        for k in curves.keys():
-            time,curve=curves[k]
-            maxValue,flux=_findMax(time,curve)
-            minValue,flux=_findMin(time,curve)
-            if not minValue and not maxValue:
-                return(None)
-
-            if not ref:
-                ref=True
-                refMax=maxValue
-                refMin=minValue
-                refName=k
-                delays[k]=0
-
-            else:
-
-                #print(maxValue-refMax,minValue-refMin)
-                if refMax and maxValue:
-                    if refMin and minValue:
-                        delays[k]=np.mean([maxValue-refMax,minValue-refMin])
-                    else:
-                        delays[k]=maxValue-refMax
-                elif refMin and minValue:
-                    delays[k]=minValue-refMin
-                else:
-                    return(None)
-
-
-
-        allDelays.append(delays)
-    finalDelays=dict([])
-    for k in allDelays[0].keys():
-
-        est=np.mean([x[k] for x in allDelays])
-        est=est[0] if isinstance(est,list) else est
-        finalDelays[k]=est
-        if verbose:
-            print('True: '+str(lcs.images[k].simMeta['td']-lcs.images[refName].simMeta['td']),'Estimate: '+str(finalDelays[k]))
-    for k in curves.keys():
-        time,curve=curves[k]
-        #print(np.min(time-delays[k]-curves[refName][0]))
-<<<<<<< HEAD
-        #ax.scatter(time,curve)
-=======
-        ax.plot(time, curve, marker='o', ls='-')
->>>>>>> master
-        #ax.scatter(time-finalDelays[k]-curves[refName][0],curve)
-    #plt.show()
-    return(finalDelays)
-
-
-
-
-
+'''
 def spline_fit(curves):
     shifts=_guess_time_delays(curves)
     lcs=curves.images.values()
@@ -867,5 +768,5 @@ def spline_fit(curves):
         print(k+': ')
         print(curves.images[k].simMeta)
     sys.exit()
-
+'''
 

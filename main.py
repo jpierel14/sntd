@@ -10,15 +10,15 @@ with open('test.pkl','wb') as handle:
     pickle.dump(sncosmo.Model('salt2'),handle,protocol=2)
 
 '''
-import sntd,timeit,glob,sys,warnings,sncosmo
+import timeit,glob,sys,warnings,sncosmo
 from multiprocessing import Pool
 import matplotlib.pyplot as plt
 from scipy.signal import savgol_filter as smooth
 from scipy.interpolate import UnivariateSpline as spl
 import numpy as np
 from scipy.interpolate import interp1d
-
-from sntd import ml,simulation as sim,plotting
+from astropy.table import vstack
+from sntd import io,fitting,simulation
 warnings.simplefilter('ignore')
 '''
 im,curve=ml.realizeMicro(arand=.243,kappas=.2,kappac=0,gamma=0,eps=.6,nray=100,minmass=1,maxmass=1,pixmax=10,pixminx=-10,pixminy=-10,pixdif=20,fracpixd=.15)
@@ -35,25 +35,59 @@ cbar.ax.set_yticklabels([str(np.round(x,2)) for x in np.linspace((1.1*np.min(im)
 plt.savefig('lensplane.pdf',format='pdf',overwrite=True)
 sys.exit()
 '''
-from sntd import models
+#from sntd import models
 
 #dat=sncosmo.load_example_data()
 files=glob.glob('data/ref*.dat')
+#files=['data/refsdalS1_psfphot.dat']
+curves=io.curveDict(telescopename='Hubble',object='Refsdal')
+final=None
 
-curves=sntd.curveDict(telescopename='Hubble',object='Refsdal')
 for f in files:
-    curves.add_curve(sntd.read_data(f))
+    tab=io.read_data(f)
+    tab.table=tab.table[tab.table.mask['band']==False]
+    tab.table=tab.table[tab.table['band']=='F105W']
+
+    #tab.table=tab.table[tab.table['time']<np.min(tab.table['time'])+300]
+    curves.add_curve(tab)
+    #tab=curves.images[f[-14:-12]].table[curves.images[f[-14:-12]].table.mask['band']==False]
+    #tab=tab[tab['band']=='F160W']
+    #if not final:
+    #    final=tab
+    #else:
+    #    final=vstack(final,tab)
 #print(tab['band'])
-tab=curves.images['S1'].table[curves.images['S1'].table.mask['band']==False]
 
-tab=tab[tab['band']=='F105W']
-
+#tab=curves.images['S1'].table[curves.images['S1'].table.mask['band']==False]
+#tab=tab[tab['band']!='F606W']
+#tab=tab[tab['band']!='F140W']
+#tab=tab[tab['band']=='F160W']
 #print(tab)
-temp=models.FlexibleSpline(tab)
+#temp=sntd.models.FlexibleSpline(tab,knots=2)
+#mod=sncosmo.Model(temp)
+#mod.set(t0=0)
 
-mod=sncosmo.Model(temp)
-sncosmo.plot_lc(tab,model=mod)
+#mod='snana-2004gv'
+#snType='Ib'
+#curves=simulation.createRandMultiplyImagedSN(mod,snType,.1,bands=['bessellv'],zp=25,cadence=10,epochs=15,numImages=4,timeDelayRange=(0,30),objectName='Test',telescopename='HST',microlensing=False)
+#lcs=fitting.fit_data(curves,snType='II',models=['SplineSource'],constants={'t0':0},bounds={'dt0':(-5,5),'amplitude':(.99,1.01)},func='spline',combined_or_separate='separate')
+#lcs=fitting.fit_data(curves,snType='II',models=['BazinSource'],params=['t0'],bounds={'A':(0,1000),'B':(-100,100),'fall':(40,100),'rise':(30,60)},combined_or_separate='separate')
+lcs=fitting.fit_data(curves,snType='II',models=['KarpenkaSource'],params=['t0'],bounds={'A':(0,1000),'B':(0,100),'fall':(5,100),'rise':(0,100),'t1':(-10,10)},combined_or_separate='separate')
+lcs.plot_object()
 plt.show()
+#res,fit=sncosmo.fit_lc(tab,mod,['dt0','amplitude',],bounds={'dt0':(-5,5)},guess_t0=False,guess_amplitude=False)
+
+#sncosmo.plot_lc(tab,model=fit,errors=res)
+#plt.show()
+#tab=tab[tab['band']=='F160W']
+#print(tab)
+#temp=models.FlexibleSpline(tab)
+
+#mod=sncosmo.Model(temp)
+#sncosmo.plot_lc(tab,model=mod)
+
+
+#plt.show()
 #temp.ban(np.arange(-10,20,1),sncosmo.get_bandpass('F160W').wave)
 sys.exit()
 #salt2=sncosmo.SALT2Source(modeldir='/Users/jpierel/rodney/SED_Repository/SEDs.P18-UV2IR/Type_Ia/salt2-extended')

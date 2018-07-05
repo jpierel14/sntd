@@ -26,25 +26,11 @@ def _getAbsFromDist(dist):
     mu,sigma=dist
     return(np.random.normal(mu,sigma))
 
-<<<<<<< HEAD
-def createRandMultiplyImagedSN(source,snType,redshift,telescopename='telescope',objectName='object',timeDelayRange=(0,30),muRange=(1,20),
+def createRandMultiplyImagedSN(sourcename,snType,redshift,telescopename='telescope',objectName='object',timeDelayRange=(0,30),muRange=(1,20),
                                numImages=2,cadence=5,epochs=50,bands=['F140W','F105W','F160W'],gain=1000.,skynoiseRange=(1,5),mjdRange=None,zpsys='ab',zp=None,microlensing=False,
-                               cc_av=.9,ia_av=.3,dust='CCM89Dust',screenz=None,screenebv=None,effect_frames=['rest','free'],effect_names=['host','screen'],minsnr=0.0):
-    #TODO sample from dust prior and add intermediate redshift dust https://github.com/sncosmo/sncosmo/pull/189
-=======
-def createRandMultiplyImagedSN(sourcename, snType, redshift,
-                               telescopename='telescope', objectName='object',
-                               timeDelayRange=(0,100), muRange=(1,20),
-                               numImages=2, cadence=5, epochs=50,
-                               bands=['F140W','F105W','F160W'], gain=1000.,
-                               skynoiseRange=(1,3), scatter=True,
-                               mjdRange=None, zpsys='ab', zp=None,
-                               microlensing=False,
-                               dust='CCM89Dust', av_host=.3,
-                               z_lens=None, av_lens=None):
+                               cc_av=.9,ia_av=.3,dust='CCM89Dust',screenz=None,screenebv=None,effect_frames=['rest','free'],effect_names=['host','screen'],minsnr=0.0,av_host=.3,z_lens=None, av_lens=None,scatter=True):
 
     #TODO sample from dust prior for host and lens-plane dust.
->>>>>>> master
     obj=curveDict(telescopename=telescopename,object=objectName)
     if not mjdRange:
         now=np.round(Time(datetime.datetime.now()).mjd,3)
@@ -87,10 +73,6 @@ def createRandMultiplyImagedSN(sourcename, snType, redshift,
         effects=[effect_names]
     if not isinstance(effect_frames,(list,tuple)):
         effects=[effect_frames]
-<<<<<<< HEAD
-    model=sncosmo.Model(source=source,effects=effects,effect_names=effect_names,effect_frames=effect_frames)
-=======
->>>>>>> master
 
     model=sncosmo.Model(source=sourcename, effects=effects,
                         effect_names=effect_names, effect_frames=effect_frames)
@@ -108,7 +90,6 @@ def createRandMultiplyImagedSN(sourcename, snType, redshift,
     else:
         absBand='bessellr'
     model.set_source_peakabsmag(_getAbsFromDist(absolutes[snType]['dist']),absBand,zpsys)
-<<<<<<< HEAD
     #print(model.source_peakabsmag('bessellr',zpsys))
 
     #model.set(t0=times[0]+.25*(times[-1]-times[0]))
@@ -131,7 +112,6 @@ def createRandMultiplyImagedSN(sourcename, snType, redshift,
     #lc=sncosmo.photdata.photometric_data(sncosmo.realize_lcs(obs,model,[params],trim_observations=True)[0])
     #lc=lc.normalized()
     #lc=Table([lc.time,[x.name for x in lc.band],lc.flux,lc.fluxerr,lc.zp,lc.zpsys],names=['time','band','flux','fluxerr','zp','zpsys'])
-=======
     t0 = times[0] + .25 * (times[-1] - times[0])
 
     if snType=='Ia':
@@ -144,12 +124,10 @@ def createRandMultiplyImagedSN(sourcename, snType, redshift,
     params['hostr_v']=R_V
     if av_lens:
         params['lensr_v']=R_V
->>>>>>> master
 
 
     for i in range(numImages):
-<<<<<<< HEAD
-        model=sncosmo.Model(source=source,effects=effects,effect_names=effect_names,effect_frames=effect_frames)
+        model=sncosmo.Model(source=sourcename,effects=effects,effect_names=effect_names,effect_frames=effect_frames)
         tempParams=deepcopy(params)
         delay=np.random.uniform(timeDelayRange[0],timeDelayRange[-1])
         mu=np.random.uniform(muRange[0],muRange[-1])
@@ -192,7 +170,6 @@ def createRandMultiplyImagedSN(sourcename, snType, redshift,
         tempCurve.simMeta['td']=delay
         if microlensing:
             tempCurve.ml=mlCurves
-=======
         # Draw a random magnification and time delay separately for each image
         mu = np.random.uniform(muRange[0], muRange[-1])
         delay = np.random.uniform(timeDelayRange[0], timeDelayRange[-1])
@@ -223,7 +200,6 @@ def createRandMultiplyImagedSN(sourcename, snType, redshift,
                 bandset=bandset)
             lc_i=_addML(mlCurve,lc_i)
             tempCurve.ml=mlCurve
->>>>>>> master
         else:
             tempCurve.ml=None
         tempCurve.table=lc_i

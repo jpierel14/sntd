@@ -14,7 +14,7 @@ from copy import deepcopy
 import matplotlib.pyplot as plt
 
 from .util import *
-from .fitting import _guess_magnifications,_guess_time_delays,newDict
+#from.util import _get_default_prop_name
 
 __all__=['curve','curveDict','read_data','write_data','table_factory','factory']
 
