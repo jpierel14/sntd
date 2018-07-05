@@ -20,33 +20,17 @@ from scipy.interpolate import interp1d
 from astropy.table import vstack
 from sntd import io,fitting,simulation
 warnings.simplefilter('ignore')
-'''
-im,curve=ml.realizeMicro(arand=.243,kappas=.2,kappac=0,gamma=0,eps=.6,nray=100,minmass=1,maxmass=1,pixmax=10,pixminx=-10,pixminy=-10,pixdif=20,fracpixd=.15)
-fig=plt.figure()
-ax=fig.gca()
-ax.plot(curve['t'],curve['maglin'])
-ax.set_ylim([0,6])
-plt.savefig('curve.pdf',format='pdf',overwrite=True)
-plt.close()
-fig=plt.figure()
-cax=plt.imshow(im)
-cbar = fig.colorbar(cax, ticks=[np.linspace(1.1*np.min(im),np.max(im),5)])
-cbar.ax.set_yticklabels([str(np.round(x,2)) for x in np.linspace((1.1*np.min(im)-1024)/256.,(np.max(im)-1024)/256.,5)])  # vertically oriented colorbar
-plt.savefig('lensplane.pdf',format='pdf',overwrite=True)
-sys.exit()
-'''
-#from sntd import models
 
-#dat=sncosmo.load_example_data()
-files=glob.glob('data/ref*.dat')
+
+files=glob.glob('data/pat_refsdal/dolphot/stringent/*.dat')
 #files=['data/refsdalS1_psfphot.dat']
-curves=io.curveDict(telescopename='Hubble',object='Refsdal')
+curves=io.curveDict(telescopename='Hubble',object='Dolphot_Refsdal')
 final=None
 
 for f in files:
     tab=io.read_data(f)
     tab.table=tab.table[tab.table.mask['band']==False]
-    tab.table=tab.table[tab.table['band']=='F105W']
+    #tab.table=tab.table[tab.table['band']=='F105W']
 
     #tab.table=tab.table[tab.table['time']<np.min(tab.table['time'])+300]
     curves.add_curve(tab)
