@@ -143,6 +143,7 @@ def fit_data(curves, snType='Ia',bands=None,method='minuit', models=None, params
     args['knots']=kwargs.get('knots',3)
     args['func']=kwargs.get('func','spline')
     args['degree']=kwargs.get('degree',3)
+    args['snType']=snType
     if not models:
         mod,types=np.loadtxt(os.path.join(__dir__,'data','sncosmo','models.ref'),dtype='str',unpack=True)
         modDict={mod[i]:types[i] for i in range(len(mod))}
@@ -351,7 +352,7 @@ def nest_combined_lc(curves,model,res,vparam_names,bounds,snBounds,guess_amplitu
         tempMus[ref]=1
         tempCurve.combine_curves(tds=tempTds,mus=tempMus)
         #tempRes,tempMod=sncosmo.nest_lc(tempCurve.combined.table,model,vparam_names=res.vparam_names,bounds=snBounds,guess_amplitude_bound=True,maxiter=1000,npoints=50)
-        tempRes,tempMod=sncosmo.fit_lc(tempCurve.combined.table,model,vparam_names=res.vparam_names,bounds=snBounds,maxcall=100)
+        tempRes,tempMod=sncosmo.fit_lc(tempCurve.combined.table,model,vparam_names=res.vparam_names,bounds=snBounds,maxcall=50)
         snParams.append((parameters,tempRes,tempMod))
         #return tempRes.logz
         return -0.5*tempRes.chisq
@@ -380,7 +381,7 @@ def _fitSeparate(curves,mods,args,bounds):
         #print(curves.images[d].simMeta)
         args['curve']=curves.images[d]
         curves.images[d].fits=newDict()
-        if len(args['curve'].table)>63 or len(mods)==1:
+        if len(args['curve'].table)>63 or len(mods)==1 or curves['snType']=='Ia':
             fits=[]
             for mod in mods:
                 if mod=='SplineSource':
@@ -392,6 +393,8 @@ def _fitSeparate(curves,mods,args,bounds):
                 elif mod=='KarpenkaSource':
                     fits.append(karpenka_fit(args))
 
+                elif mod=='NewlingSource':
+                    fits.append(newling_fit(args))
 
                 else:
                     fits.append(_fit_data_wrap((mod,args)))
@@ -685,17 +688,30 @@ def _get_marginal_pdfs( res, nbins=51, verbose=True ):
     return( pdfdict )
 
 
+def newling_fit(args):
+    source=models.NewlingSource(args['curve'].table)
+    mod=sncosmo.Model(source)
+    if args['constants']:
+        mod.set(**args['constants'])
+    #mod.set(t0=np.min(args['curve'].table['time']))
+    res,fit=sncosmo.fit_lc(args['curve'].table,mod,['A','B','fall','rise','t1']+args['params'], bounds=args['bounds'],guess_amplitude=False,guess_t0=True,maxcall=50)
+    #print(fit.get('t0'),fit.get('fall'),fit.get('rise'),res.chisq/res.ndof)
+    #sncosmo.plot_lc(args['curve'].table,model=fit,errors=res)
+    #plt.show()
+    #sys.exit()
+    return({'res':res,'model':fit})
+
 def karpenka_fit(args):
     source=models.KarpenkaSource(args['curve'].table)
     mod=sncosmo.Model(source)
     if args['constants']:
         mod.set(**args['constants'])
     #mod.set(t0=np.min(args['curve'].table['time']))
-    res,fit=sncosmo.fit_lc(args['curve'].table,mod,['A','B','fall','rise','t1']+args['params'], bounds=args['bounds'],guess_amplitude=False,guess_t0=True,maxcall=50)
-    print(fit.get('t0'),fit.get('fall'),fit.get('rise'),res.chisq/res.ndof)
-    sncosmo.plot_lc(args['curve'].table,model=fit,errors=res)
-    plt.show()
-    sys.exit()
+    res,fit=sncosmo.fit_lc(args['curve'].table,mod,args['params'], bounds=args['bounds'],guess_amplitude=False,guess_t0=True,maxcall=50)
+    #print(fit.get('t0'),fit.get('fall'),fit.get('rise'),res.chisq/res.ndof)
+    #sncosmo.plot_lc(args['curve'].table,model=fit,errors=res)
+    #plt.show()
+    #sys.exit()
     return({'res':res,'model':fit})
 
 
@@ -705,11 +721,11 @@ def bazin_fit(args):
     if args['constants']:
         mod.set(**args['constants'])
     #mod.set(t0=np.min(args['curve'].table['time']))
-    res,fit=sncosmo.fit_lc(args['curve'].table,mod,['A','B','fall','rise']+args['params'], bounds=args['bounds'],guess_amplitude=False,guess_t0=True,maxcall=50)
-    print(fit.get('t0'),fit.get('fall'),fit.get('rise'),res.chisq/res.ndof)
-    sncosmo.plot_lc(args['curve'].table,model=fit,errors=res)
-    plt.show()
-    sys.exit()
+    res,fit=sncosmo.fit_lc(args['curve'].table,mod,args['params'], bounds=args['bounds'],guess_amplitude=False,guess_t0=True,maxcall=50)
+    #print(fit.get('t0'),fit.get('fall'),fit.get('rise'),res.chisq/res.ndof)
+    #sncosmo.plot_lc(args['curve'].table,model=fit,errors=res)
+    #plt.show()
+    #sys.exit()
     return({'res':res,'model':fit})
 
 def spline_fit(args):

@@ -71,10 +71,13 @@ for f in files:
 #snType='Ib'
 #curves=simulation.createRandMultiplyImagedSN(mod,snType,.1,bands=['bessellv'],zp=25,cadence=10,epochs=15,numImages=4,timeDelayRange=(0,30),objectName='Test',telescopename='HST',microlensing=False)
 #lcs=fitting.fit_data(curves,snType='II',models=['SplineSource'],constants={'t0':0},bounds={'dt0':(-5,5),'amplitude':(.99,1.01)},func='spline',combined_or_separate='separate')
-#lcs=fitting.fit_data(curves,snType='II',models=['BazinSource'],params=['t0'],bounds={'A':(0,1000),'B':(-100,100),'fall':(40,100),'rise':(30,60)},combined_or_separate='separate')
-lcs=fitting.fit_data(curves,snType='II',models=['KarpenkaSource'],params=['t0'],bounds={'A':(0,1000),'B':(0,100),'fall':(5,100),'rise':(0,100),'t1':(-10,10)},combined_or_separate='separate')
-lcs.plot_object()
-plt.show()
+#lcs=fitting.fit_data(curves,snType='II',models=['BazinSource'],params=['t0','A','B','fall','rise'],bounds={'A':(0,1000),'B':(-100,100),'fall':(40,100),'rise':(30,60)},combined_or_separate='separate')
+#lcs=fitting.fit_data(curves,snType='II',models=['KarpenkaSource'],params=['A','B','fall','rise','t1','t0'],bounds={'A':(0,1000),'B':(0,100),'fall':(5,100),'rise':(0,100),'t1':(-10,10)},combined_or_separate='separate')
+lcs=fitting.fit_data(curves,snType='II',models=['KarpenkaSource'],params=['A','psi','sigma','k','t0'],bounds={'A':(0,1000),'B':(0,100),'fall':(5,100),'rise':(0,100),'t1':(-10,10)},combined_or_separate='separate')
+
+
+#lcs.plot_object()
+#plt.show()
 #res,fit=sncosmo.fit_lc(tab,mod,['dt0','amplitude',],bounds={'dt0':(-5,5)},guess_t0=False,guess_amplitude=False)
 
 #sncosmo.plot_lc(tab,model=fit,errors=res)
