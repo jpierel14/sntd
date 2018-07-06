@@ -42,7 +42,7 @@ def _param_to_source(source,phase,wave):
     for i in range(len(finalPhase)):
         #if finalPhase[i]>= np.min(timeArr) and finalPhase[i] <= np.max(timeArr):
         for j in range(len(finalWave)):
-            if finalWave[i]>=wave[0] and finalWave[i]<=wave[-1]:
+            if finalWave[j]>=wave[0] and finalWave[j]<=wave[-1]:
                 finalFlux[i][j]=flux[i]
 
     if len(flux[np.where(flux==np.max(flux))])==1:
@@ -84,8 +84,8 @@ class BazinSource(sncosmo.Source):
             bazinFlux=self._constantBazin(len(phase),self._parameters[1])
         else:
             bazinFlux=self._parameters[0]*(np.exp(-phase/self._parameters[2])/(1+np.exp(-phase/self._parameters[3]))) + self._parameters[1]
-        if np.inf in bazinFlux:
-            return(np.ones(len(phase))*(-9999))
+        if np.inf in bazinFlux or np.any(np.isnan(bazinFlux)):
+            return(np.ones(len(phase)))
         return(bazinFlux)
 
 
@@ -99,8 +99,8 @@ class BazinSource(sncosmo.Source):
 
 
 class NewlingSource(sncosmo.Source):
-    _param_names=['A','psi','sigma','k']
-    param_names_latex=['A','\psi','\sigma','k']
+    _param_names=['A','psi','sigma','k','phi']
+    param_names_latex=['A','\psi','\sigma','k','phi']
 
     def __init__(self,data,name=None, version=None,tstep=1):
         super(sncosmo.Source, self).__init__() #init for the super class
@@ -115,25 +115,37 @@ class NewlingSource(sncosmo.Source):
         wave=np.append([.99*wave[0]],wave)
         wave=np.append(wave,[1.01*wave[-1]])
         self._wave=wave
-        self._phase=np.arange(-50,150,1)
+        self._phase=np.arange(-200,500,5)
 
-        self._parameters=np.array([1.,0.,1.,1.,])
+        self._parameters=np.array([1.,0.,1.,1.,-1.])
         self._tstep=tstep
 
 
 
     def _param_flux(self,phase):
+        #self._parameters[4]=np.min([np.min(phase),self._parameters[4]])
+        #self._parameters[4]=-self._parameters[3]*self._parameters[2]
+
         splPhase=phase[phase>=self._parameters[4]]
-        splPhase=splPhase[splPhase<(self._parameters[3]*self._parameters[2]+self._parameters[4])]
-        spl=CubicSpline([self._parameters[4],(self._parameters[3]*self._parameters[2]+self._parameters[4])],[0,self._parameters[1]])
+        splPhase=splPhase[splPhase<=(self._parameters[3]*self._parameters[2]+self._parameters[4])]
+
+        spl=CubicSpline([self._parameters[4],0.],[0,self._parameters[1]])
 
         Psi=np.zeros(len(phase))
-        Psi[phase==splPhase]=spl(splPhase)
-        Psi[phase>=(self._parameters[3]*self._parameters[2]+self._parameters[4])]=self._parameters[1]
+        for i in range(len(Psi)):
+            if phase[i] in splPhase:
+                Psi[i]=spl(phase[i])
+            elif phase[i]>=(self._parameters[3]*self._parameters[2]+self._parameters[4]):
+                Psi[i]=self._parameters[1]
+        #print(Psi[0])
+        #Psi[phase==splPhase]=spl(splPhase)
+        #print(((phase+self._parameters[4])/self._parameters[2]),((phase+self._parameters[4])/self._parameters[2])**self._parameters[3],self._parameters,np.any(np.isnan(phase)))
 
-        newlingFlux=(self._parameters[0]*(phase/self._parameters[2])**self._parameters[3])*np.exp(-phase/self._parameters[2])*(self._parameters[3]**self._parameters[3])*(np.exp(self._parameters[3]))+Psi
-        if np.inf in newlingFlux:
-                return(np.ones(len(phase))*(-9999))
+        newlingFlux=(self._parameters[0]*((phase-self._parameters[4])/self._parameters[2])**self._parameters[3])*np.exp(-(phase-self._parameters[4])/self._parameters[2])*(self._parameters[3]**(-self._parameters[3]))*(np.exp(self._parameters[3]))+Psi
+        #print(phase[0],self._parameters[4])
+        if np.inf in newlingFlux or np.any(np.isnan(newlingFlux)):
+                #print(self._parameters)
+                return(np.zeros(len(phase)))
         return(newlingFlux)
 
     def _flux(self,phase,wave):
@@ -168,8 +180,8 @@ class KarpenkaSource(sncosmo.Source):
 
     def _param_flux(self,phase):
         karpenkaFlux=(self._parameters[0]*(1+self._parameters[1]*((phase+self._parameters[2])**2)))*(np.exp(-phase/self._parameters[4])/(1+np.exp(-phase/self._parameters[3])))
-        if np.inf in karpenkaFlux:
-            return(np.ones(len(phase))*(-9999))
+        if np.inf in karpenkaFlux or np.any(np.isnan(karpenkaFlux)):
+            return(np.zeros(len(phase)))
         return(karpenkaFlux)
 
     def _flux(self,phase,wave):

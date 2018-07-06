@@ -43,11 +43,14 @@ files=glob.glob('data/ref*.dat')
 curves=io.curveDict(telescopename='Hubble',object='Refsdal')
 final=None
 
+minFluxes=[]
+maxFluxes=[]
 for f in files:
     tab=io.read_data(f)
     tab.table=tab.table[tab.table.mask['band']==False]
     tab.table=tab.table[tab.table['band']=='F105W']
-
+    minFluxes.append(np.min(tab.table['flux']))
+    maxFluxes.append(np.max(tab.table['flux']))
     #tab.table=tab.table[tab.table['time']<np.min(tab.table['time'])+300]
     curves.add_curve(tab)
     #tab=curves.images[f[-14:-12]].table[curves.images[f[-14:-12]].table.mask['band']==False]
@@ -73,7 +76,7 @@ for f in files:
 #lcs=fitting.fit_data(curves,snType='II',models=['SplineSource'],constants={'t0':0},bounds={'dt0':(-5,5),'amplitude':(.99,1.01)},func='spline',combined_or_separate='separate')
 #lcs=fitting.fit_data(curves,snType='II',models=['BazinSource'],params=['t0','A','B','fall','rise'],bounds={'A':(0,1000),'B':(-100,100),'fall':(40,100),'rise':(30,60)},combined_or_separate='separate')
 #lcs=fitting.fit_data(curves,snType='II',models=['KarpenkaSource'],params=['A','B','fall','rise','t1','t0'],bounds={'A':(0,1000),'B':(0,100),'fall':(5,100),'rise':(0,100),'t1':(-10,10)},combined_or_separate='separate')
-lcs=fitting.fit_data(curves,snType='II',models=['KarpenkaSource'],params=['A','psi','sigma','k','t0'],bounds={'A':(0,1000),'B':(0,100),'fall':(5,100),'rise':(0,100),'t1':(-10,10)},combined_or_separate='separate')
+lcs=fitting.fit_data(curves,snType='II',models=['NewlingSource'],params=['A','psi','sigma','k','t0','phi'],bounds={'A':(np.min(minFluxes),np.max(maxFluxes)),'psi':(np.min(minFluxes),np.max(maxFluxes)),'sigma':(1,200),'k':(.01,5)},combined_or_separate='separate')
 
 
 #lcs.plot_object()
