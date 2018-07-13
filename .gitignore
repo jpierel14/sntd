@@ -15,3 +15,6 @@ commit.txt
 
 # Installer logs
 pip-log.txt
+
+#figs
+*.pdf

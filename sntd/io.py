@@ -22,9 +22,20 @@ __all__=['curve','curveDict','read_data','write_data','table_factory','factory']
 _comment_char={'#'}
 _meta__={'@','$','%','!','&'}
 
+def _sntd_deepcopy(obj):
+    newCurve=curveDict()
+    for k in obj:
+        setattr(newCurve,k,obj[k])
+    return(newCurve)
 
 class curveDict(dict):
     #todo document this class
+
+    def __deepcopy__(self, memo):
+        return deepcopy(dict(self))
+
+
+
     def __init__(self,telescopename="Unknown",object="Unknown"):
         """
         Constructor for curveDict class. Inherits from the dictionary class, and is the main object of organization used by SNTD.
@@ -67,6 +78,7 @@ class curveDict(dict):
     __setattr__ = dict.__setitem__
     __delattr__ = dict.__delitem__
     __getattr__ = dict.__getitem__
+
 
 
     def __getstate__(self):
@@ -149,9 +161,9 @@ class curveDict(dict):
             #print('True mu:'+str(self.images[k].simMeta['mu']/self.images['S3'].simMeta['mu']))
             #print('True td: '+str(self.images[k].simMeta['td']-self.images['S3'].simMeta['td']))
             temp=deepcopy(self.images[k].table)
-            temp['time']-=tds[k]
+            temp['time']+=tds[k]
             temp['flux']/=mus[k]
-            temp['fluxerr']/=mus[k]
+            #temp['fluxerr']/=mus[k]
 
             self.combined.table=vstack([self.combined.table,temp])
         #print(self.combinedCurve)
@@ -165,7 +177,7 @@ class curveDict(dict):
 
 
     def plot_object(self, bands='all', showfig=False, savefig=True,
-                    filename='mySN', orientation='horizontal',
+                    filename='mySN', orientation='horizontal',combined=False,
                     showmodel=False):
         """Plot the multiply-imaged SN light curves and save to a file.
         Each subplot shows a single-band light curve, for all images of the SN. 
@@ -174,8 +186,10 @@ class curveDict(dict):
         orientation: 'horizontal' = all subplots are in a single row
             'vertical' = all subplots are in a single column        
         """
+
         if bands == 'all':
             bands = self.bands
+
         nbands = len(bands)
         if orientation.startswith('v'):
             ncols = 1
@@ -184,57 +198,85 @@ class curveDict(dict):
             ncols = nbands
             nrows = 1
 
-        colors=['r','g','b','k']
+
+        colors=['r','g','b','k','m']
         #markers=['.','^','*','8','s','+','D']
         i=0
         # nrows=int(math.ceil(len(bands)/2.))
-        fig,axlist=plt.subplots(nrows=nrows, ncols=ncols,
-                                sharex=True, sharey=True)
-        if nbands==1:
-            axlist = [axlist]
         leg=[]
-        for lc in np.sort(self.images.keys()):
-            for b, ax in zip(bands, axlist):
-                if b==list(bands)[0]:
+        if combined:
+
+            fig,axlist=plt.subplots(nrows=ncols, ncols=1,
+                                    sharex=True, sharey=False)
+            if nbands==1:
+                axlist = [axlist]
+            for lc in np.sort(self.images.keys()):
+                temp=self.combined.table[self.combined.table['object']==lc]
+                for b, ax in zip(bands, axlist):
+
                     leg.append(
+                        ax.errorbar(temp['time'][
+                                        temp['band']==b],
+                                    temp['flux'][
+                                        temp['band']==b],
+                                    yerr=temp['fluxerr'][
+                                        temp['band']==b],
+                                    markersize=4, fmt=colors[i]+'.'))
+                    if showmodel:
+                        ax.plot(np.arange(np.min(temp['time'][temp['band']==b]),np.max(temp['time'][temp['band']==b]),1),self.combined.fits.model(np.arange(np.min(temp['time'][temp['band']==b]),np.max(temp['time'][temp['band']==b]),1)),color='y')
+
+                    ax.text(0.95, 0.95, b.upper(), fontsize='large',
+                            transform=ax.transAxes, ha='right', va='top')
+
+                i+=1
+        else:
+            fig,axlist=plt.subplots(nrows=nrows, ncols=ncols,
+                                    sharex=True, sharey=True)
+            if nbands==1:
+                axlist = [axlist]
+
+            for lc in np.sort(self.images.keys()):
+                for b, ax in zip(bands, axlist):
+                    if b==list(bands)[0]:
+                        leg.append(
+                            ax.errorbar(self.images[lc].table['time'][
+                                            self.images[lc].table['band']==b],
+                                        self.images[lc].table['flux'][
+                                            self.images[lc].table['band']==b],
+                                        yerr=self.images[lc].table['fluxerr'][
+                                            self.images[lc].table['band']==b],
+                                        markersize=4, fmt=colors[i]+'.'))
+                    else:
                         ax.errorbar(self.images[lc].table['time'][
                                         self.images[lc].table['band']==b],
                                     self.images[lc].table['flux'][
                                         self.images[lc].table['band']==b],
                                     yerr=self.images[lc].table['fluxerr'][
                                         self.images[lc].table['band']==b],
-                                    markersize=4, fmt=colors[i]+'.'))
-                else:
-                    ax.errorbar(self.images[lc].table['time'][
+                                    markersize=4, fmt=colors[i]+'.')
+                    if getattr(self.images[lc],'ml',None):
+                        ax.plot(self.images[lc].table['time'][
                                     self.images[lc].table['band']==b],
                                 self.images[lc].table['flux'][
-                                    self.images[lc].table['band']==b],
-                                yerr=self.images[lc].table['fluxerr'][
-                                    self.images[lc].table['band']==b],
-                                markersize=4, fmt=colors[i]+'.')
-                if self.images[lc].ml:
-                    ax.plot(self.images[lc].table['time'][
-                                self.images[lc].table['band']==b],
-                            self.images[lc].table['flux'][
-                                self.images[lc].table['band']==b] * \
-                            self.images[lc].ml[b], color=colors[i])
+                                    self.images[lc].table['band']==b] * \
+                                self.images[lc].ml[b], color=colors[i])
 
-                ax.text(0.95, 0.95, b.upper(), fontsize='large',
-                        transform=ax.transAxes, ha='right', va='top')
+                    ax.text(0.95, 0.95, b.upper(), fontsize='large',
+                            transform=ax.transAxes, ha='right', va='top')
 
-                if showmodel:
-                    # Plot the underlying model, including dust and lensing
-                    # effects, as a black curve for each simulated SN image
-                    time_model = np.arange(self.images[lc].table['time'].min(),
-                                           self.images[lc].table['time'].max(),
-                                           0.1)
-                    time_shifted = time_model - self.images[lc].simMeta['td']
-                    flux_magnified = self.model.bandflux(
-                        b, time_shifted, self.zpDict[b], self.zpsys) * \
-                                     self.images[lc].simMeta['mu']
-                    ax.plot(time_model, flux_magnified, 'k-')
-                    #import pdb; pdb.set_trace()
-            i+=1
+                    if showmodel:
+                        # Plot the underlying model, including dust and lensing
+                        # effects, as a black curve for each simulated SN image
+                        time_model = np.arange(self.images[lc].table['time'].min(),
+                                               self.images[lc].table['time'].max(),
+                                               0.1)
+                        time_shifted = time_model - self.images[lc].simMeta['td']
+                        flux_magnified = self.model.bandflux(
+                            b, time_shifted, self.zpDict[b], self.zpsys) * \
+                                         self.images[lc].simMeta['mu']
+                        ax.plot(time_model, flux_magnified, 'k-')
+                        #import pdb; pdb.set_trace()
+                i+=1
 
         #if not len(self.bands)%2==0:
             #fig.delaxes(ax[nrows-1][1])
@@ -244,9 +286,10 @@ class curveDict(dict):
 
         fig.text(0.5, 0.02, r'Observer-frame time (days)', ha='center',
                  fontsize='large')
-        fig.text(-0.02, .5, 'Integrated Flux (detector counts)', va='center',
+        fig.text(0.02, .5, 'Flux', va='center',
                  rotation='vertical',fontsize='large')
-        #plt.suptitle('Multiply-Imaged SN "'+self.object+'" on the '+self.telescopename,fontsize=18)
+
+        plt.suptitle('Multiply-Imaged SN "'+self.object+'"--'+self.telescopename,fontsize=16)
         if savefig:
             plt.savefig(filename+'.pdf',format='pdf',overwrite=True)
         if showfig:
@@ -257,12 +300,14 @@ class curveDict(dict):
 
 
 
-class curve(lightcurve,object):
+class curve(object):
     """
     A class, inheriting from PyCS lightcurve superclass, that now also has an
     astropy.table.Table version of the data file for SNCosmo commands and flux/fluxerr
     arrays.
     """
+
+
     def __init__(self,zp=None,zpsys=None):
         #todo: implement more general read and write functions
         """
@@ -315,6 +360,7 @@ class curve(lightcurve,object):
         self.simMeta=dict([])
 
         self.fits=None
+
 
     def calcmagshiftfluxes(self,inverse=False):
         """
@@ -651,7 +697,7 @@ def table_factory(table,telescopename="Unknown",object=None,verbose=False):
     newlc.telescopename = telescopename
     newlc.object = object
 
-    newlc.setindexlabels()
+    #newlc.setindexlabels()
     newlc.commentlist = []
 
     #newlc.table.sort()  # not sure if this is needed / should be there

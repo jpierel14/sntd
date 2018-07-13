@@ -4,6 +4,8 @@ from astropy.table import Table
 from scipy.interpolate import InterpolatedUnivariateSpline as Spline1d,splrep,splev,CubicSpline
 from sncosmo.utils import integration_grid
 from sncosmo.constants import HC_ERG_AA, MODEL_BANDFLUX_SPACING
+from scipy.stats import exponnorm
+
 from collections import Counter
 import matplotlib.pyplot as plt
 from .util import _findMax
@@ -27,16 +29,16 @@ def _param_to_source(source,phase,wave):
         band.name=band.name.upper()
 
     #t0=np.mean([np.min(source.lc['time'][source.lc['band']==band.name])-phase[0],np.max(source.lc['time'][source.lc['band']==band.name])-phase[-1]])
-    timeInterval=[min(phase),max(phase)]
 
-    finalPhase=np.arange(timeInterval[0],timeInterval[-1],source._tstep)
-
+    #finalPhase=np.append(np.arange(timeInterval[0],0,source._tstep),np.arange(0,timeInterval[-1]+source._tstep,source._tstep))
+    finalPhase=source._phase
 
     wave, dwave = integration_grid(band.minwave(), band.maxwave(),
                                    MODEL_BANDFLUX_SPACING)
+
     ms = sncosmo.get_magsystem(source.lc['zpsys'][0])
     zpnorm = zpnorm / ms.zpbandflux(band)
-    flux=source._param_flux(finalPhase)*HC_ERG_AA/(dwave*np.sum(wave*band(wave))*zpnorm)
+    flux=np.ones(len(finalPhase))*HC_ERG_AA/(dwave*np.sum(wave*band(wave))*zpnorm)
     finalWave=np.arange(wave[0]-dwave*10,wave[-1]+dwave*10,dwave)
     finalFlux=np.zeros((len(finalPhase),len(finalWave)))
     for i in range(len(finalPhase)):
@@ -45,19 +47,18 @@ def _param_to_source(source,phase,wave):
             if finalWave[j]>=wave[0] and finalWave[j]<=wave[-1]:
                 finalFlux[i][j]=flux[i]
 
-    if len(flux[np.where(flux==np.max(flux))])==1:
-        offset=np.array(finalPhase[flux==np.max(flux)])
-    else:
-        offset=np.zeros(len(finalPhase))
-    out=sncosmo.TimeSeriesSource(np.array(finalPhase)-offset,np.array(finalWave),np.array(finalFlux),zero_before=False)
-    return (sncosmo.Model(out))
 
-class BazinSource(sncosmo.Source):
+    #offset=np.zeros(len(finalPhase))
 
-    _param_names=['A','B','fall','rise',]
-    param_names_latex=['A','B','t_{fall}','t_{rise}']
+    out=sncosmo.TimeSeriesSource(np.array(finalPhase),np.array(finalWave),np.array(finalFlux),zero_before=False)
+    return (out)
 
-    def __init__(self,data,name=None, version=None,tstep=1):
+
+class PierelSource(sncosmo.Source):
+    _param_names=['amplitude','k','sigma','s']
+    param_names_latex=['A','K','\sigma','Shift']
+
+    def __init__(self,data,name='PierelSource', version=None,tstep=1):
         super(sncosmo.Source, self).__init__() #init for the super class
         self.name = name
         self.version = version
@@ -70,31 +71,84 @@ class BazinSource(sncosmo.Source):
         wave=np.append([.99*wave[0]],wave)
         wave=np.append(wave,[1.01*wave[-1]])
         self._wave=wave
-        self._phase=np.arange(-50,150,1)#np.sort(np.unique(self.lc['time']))
-
-        self._parameters=np.array([1.,0.,15.,5.,])
+        #self._phase=np.arange(0,np.max(data['time'])-np.min(data['time']),1)
+        #self._phase=np.arange(-(np.max(data['time'])-np.min(data['time'])),np.max(data['time'])-np.min(data['time']),tstep)
+        self._phase=np.arange(-800,800,1)
+        self._parameters=np.array([1.,1.,1.,0.])
         self._tstep=tstep
+        self._ts_sources={b:_param_to_source(self,self._phase,sncosmo.get_bandpass(b).wave) for b in np.unique(self.lc['band'])}
 
+
+    def _param_flux(self,phase):
+        temp=exponnorm.pdf(phase,self._parameters[1],scale=self._parameters[2])
+        if np.max(temp)==0:
+            return(np.zeros(len(phase)))
+        pierelFlux=self._parameters[0]*exponnorm.pdf(phase,self._parameters[1],loc=-phase[temp==np.max(temp)],scale=self._parameters[2])/np.max(temp)+self._parameters[3]
+
+        #print(phase[0],self._parameters[4])
+        if np.inf in pierelFlux or np.any(np.isnan(pierelFlux)):
+            #print(self._parameters)
+            return(np.zeros(len(phase)))
+        return(pierelFlux)
+
+    def _flux(self,phase,wave):
+
+        band=[x for x in np.unique(self.lc['band']) if sncosmo.get_bandpass(x).wave[0]<=wave[0] and sncosmo.get_bandpass(x).wave[-1]>=wave[-1]][0]
+
+        src=self._ts_sources[band]
+
+        return(src._flux(phase,wave)*(self._param_flux(phase)[:,None]))
+
+class BazinSource(sncosmo.Source):
+
+    _param_names=['amplitude','B','fall','rise']
+    param_names_latex=['A','B','t_{fall}','t_{rise}']
+
+    def __init__(self,data,name='BazinSource', version=None,tstep=1):
+        super(sncosmo.Source, self).__init__() #init for the super class
+        self.name = name
+        self.version = version
+        self._model = {}
+        self.lc=_removeDupes(data)
+        wave=[]
+        for b in np.unique(data['band']):
+            wave=np.append(wave,sncosmo.get_bandpass(b).wave)
+        wave=np.sort(np.unique(wave))
+        wave=np.append([.99*wave[0]],wave)
+        wave=np.append(wave,[1.01*wave[-1]])
+        self._wave=wave
+        #self._phase=np.arange(-(np.max(data['time'])-np.min(data['time'])),np.max(data['time'])-np.min(data['time']),tstep)
+        self._phase=np.arange(-800,800,1)
+        self._parameters=np.array([1.,0.,15.,5.])
+        self._tstep=tstep
+        self._ts_sources={b:_param_to_source(self,self._phase,sncosmo.get_bandpass(b).wave) for b in np.unique(self.lc['band'])}
 
     def _constantBazin(self,length,B):
         return(np.ones(length)*B)
 
     def _param_flux(self,phase):
         if self._parameters[0]==0:
-            bazinFlux=self._constantBazin(len(phase),self._parameters[1])
+            return(self._constantBazin(len(phase),self._parameters[1]))
         else:
-            bazinFlux=self._parameters[0]*(np.exp(-phase/self._parameters[2])/(1+np.exp(-phase/self._parameters[3]))) + self._parameters[1]
+            temp=(np.exp(-phase/self._parameters[2])/(1+np.exp(-phase/self._parameters[3])))
+        if np.max(temp)==0:
+            return(np.zeros(len(phase)))
+        #print(phase[temp==np.max(temp)])
+        bazinFlux=self._parameters[0]*(np.exp(-(phase+phase[temp==np.max(temp)])/self._parameters[2])/(1+np.exp(-(phase+phase[temp==np.max(temp)])/self._parameters[3])))/np.max(temp) + self._parameters[1]
+
         if np.inf in bazinFlux or np.any(np.isnan(bazinFlux)):
-            return(np.ones(len(phase)))
+            return(np.zeros(len(phase)))
         return(bazinFlux)
 
 
 
     def _flux(self,phase,wave):
-        #if self._parameters[2]<=self._parameters[3]:
-        #    return np.ones((len(phase),len(wave)))*(-9999)
-        mod=_param_to_source(self,phase,wave)
-        return(mod._flux(phase,wave))
+
+        band=[x for x in np.unique(self.lc['band']) if sncosmo.get_bandpass(x).wave[0]<=wave[0] and sncosmo.get_bandpass(x).wave[-1]>=wave[-1]][0]
+
+        src=self._ts_sources[band]
+
+        return(src._flux(phase,wave)*(self._param_flux(phase)[:,None]))
 
 
 
@@ -102,7 +156,7 @@ class NewlingSource(sncosmo.Source):
     _param_names=['A','psi','sigma','k','phi']
     param_names_latex=['A','\psi','\sigma','k','phi']
 
-    def __init__(self,data,name=None, version=None,tstep=1):
+    def __init__(self,data,name='NewlingSource', version=None,tstep=1,flip=False):
         super(sncosmo.Source, self).__init__() #init for the super class
         self.name = name
         self.version = version
@@ -158,7 +212,7 @@ class KarpenkaSource(sncosmo.Source):
     _param_names=['A','B','t1','rise','fall']
     param_names_latex=['A','B','t_1','t_{rise}','t_{fall}']
 
-    def __init__(self,data,name=None, version=None,tstep=1):
+    def __init__(self,data,name='KarpenkaSource', version=None,tstep=1):
         super(sncosmo.Source, self).__init__() #init for the super class
         self.name = name
         self.version = version
@@ -196,7 +250,7 @@ class SplineSource(sncosmo.Source):
     #_param_names = ['dt0','amplitude']
 
     #param_names_latex=['\Delta \ t_0','A']
-    def __init__(self, data,weights=None,name=None, version=None,tstep=1,wstep=10,knots=3,degree=3,func='spline'):
+    def __init__(self, data,weights=None,name='SplineSource', version=None,tstep=1,wstep=10,knots=3,degree=3,smooth=1,func='spline'):
         super(sncosmo.Source, self).__init__() #init for the super class
         self.name = name
         self.version = version
@@ -224,6 +278,7 @@ class SplineSource(sncosmo.Source):
         self.param_names_latex=['\Delta \ t_0','A']
         self._knots=knots
         self._deg=degree
+        self._smooth=smooth
         wave=[]
         for b in np.unique(data['band']):
             if len(data[data['band']==b])<knots:
@@ -313,7 +368,7 @@ class SplineSource(sncosmo.Source):
             zpnorm = zpnorm / ms.zpbandflux(b)
 
             if self._func=='spline':
-                spl=splrep(tempTime,tempFlux,k=int(self._knots),w=1./weights,s=len(tempFlux)/2)
+                spl=splrep(tempTime,tempFlux,k=int(self._knots),w=1./weights,s=len(tempFlux)*self._smooth)
                 flux=splev(timeArr,spl)*HC_ERG_AA/(dwave*np.sum(wave*band(wave))*zpnorm)
             elif self._func=='chebyshev':
                 cheb=np.polynomial.chebyshev.chebfit(tempTime,tempFlux,deg=int(self._deg),w=1./weights)
@@ -329,7 +384,7 @@ class SplineSource(sncosmo.Source):
                 for i in range(len(finalPhase)):
                     #if finalPhase[i]>= np.min(timeArr) and finalPhase[i] <= np.max(timeArr):
                     for j in range(len(finalWave)):
-                        if finalWave[i]>=wave[0] and finalWave[i]<=wave[-1]:
+                        if finalWave[j]>=wave[0] and finalWave[j]<=wave[-1]:
                             finalFlux[i][j]=flux[i]
 
 

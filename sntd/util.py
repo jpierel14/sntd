@@ -7,6 +7,7 @@ from scipy.interpolate import splrep,splev
 from itertools import combinations
 import matplotlib.pyplot as plt
 
+
 __current_dir__=os.path.abspath(os.getcwd())
 __dir__=os.path.abspath(os.path.dirname(__file__))
 
@@ -14,7 +15,7 @@ NORMAL = 0    # use python zip libraries
 PROCESS = 1   # use (zcat, gzip) or (bzcat, bzip2)
 PARALLEL = 2  # (pigz -dc, pigz) or (pbzip2 -dc, pbzip2)
 
-__all__=['flux_to_mag','_cast_str','_get_default_prop_name','_isfloat','anyOpen','_props','_findMax','_findMin','colorFit','_guess_time_delays','_guess_magnifications']
+__all__=['flux_to_mag','_cast_str','_get_default_prop_name','_isfloat','anyOpen','_props','_findMax','_findMin','colorFit','_guess_time_delays','_guess_magnifications','__dir__']
 _props=odict([
     ('time',{'mjd', 'mjdobs', 'jd', 'time', 'date', 'mjd_obs','mhjd','jds'}),
     ('band',{'filter', 'band', 'flt', 'bandpass'}),
@@ -25,6 +26,9 @@ _props=odict([
     ('mag',{'mag','magnitude','mags'}),
     ('magerr',{'magerr','magerror','magnitudeerror','magnitudeerr','magerrs'})
 ])
+
+
+
 
 def _guess_magnifications(curves):
     """Guess t0 and amplitude of the model based on the data.
@@ -61,27 +65,40 @@ def _guess_magnifications(curves):
 
 def colorFit(lcs,verbose=True):
     colors=combinations(lcs.bands,2)
-    figure=plt.figure()
-    ax=figure.gca()
+
+
     allDelays=[]
     for col in colors:
         curves=dict([])
-        for d in lcs.images.keys():
+        for d in np.sort(lcs.images.keys()):
+            figure=plt.figure()
+            ax=figure.gca()
             dcurve=lcs.images[d]
-            spl1=splrep(dcurve.table['time'][dcurve.table['band']==col[0]],dcurve.table['flux'][dcurve.table['band']==col[0]])
-            spl2=splrep(dcurve.table['time'][dcurve.table['band']==col[1]],dcurve.table['flux'][dcurve.table['band']==col[1]])
+            ind0=np.argmax(dcurve.table['flux'][dcurve.table['band']==col[0]])
+            ind0min=max(ind0-10,0)
+            ind0max=min(ind0+10,len(dcurve.table['flux'][dcurve.table['band']==col[0]])-1)
+            ind1=np.argmax(dcurve.table['flux'][dcurve.table['band']==col[1]])
+            ind1min=max(ind1-10,0)
+            ind1max=min(ind1+10,len(dcurve.table['flux'][dcurve.table['band']==col[1]])-1)
+            spl1=splrep(dcurve.table['time'][dcurve.table['band']==col[0]][ind0min:ind0max+1],dcurve.table['flux'][dcurve.table['band']==col[0]][ind0min:ind0max+1])
+            spl2=splrep(dcurve.table['time'][dcurve.table['band']==col[1]][ind1min:ind1max+1],dcurve.table['flux'][dcurve.table['band']==col[1]][ind1min:ind1max+1])
             time=np.linspace(max(np.min(dcurve.table['time'][dcurve.table['band']==col[0]]),np.min(dcurve.table['time'][dcurve.table['band']==col[1]])),
-                             min(np.max(dcurve.table['time'][dcurve.table['band']==col[0]]),np.max(dcurve.table['time'][dcurve.table['band']==col[1]])),50)
+                             min(np.max(dcurve.table['time'][dcurve.table['band']==col[0]]),np.max(dcurve.table['time'][dcurve.table['band']==col[1]])),500)
             ccurve=splev(time,spl1)/splev(time,spl2)
+            ax.plot(time,ccurve)
+            plt.show()
+            plt.close()
             #curves.append(dcurve.table['flux'][dcurve.table['band']==col[0]]-dcurve.table['flux'][dcurve.table['band']==col[1]])
             curves[d]=(time,ccurve)
         ref=False
 
 
         delays=dict([])
-        for k in curves.keys():
+        for k in np.sort(curves.keys()):
+            print(k)
             time,curve=curves[k]
             maxValue,flux=_findMax(time,curve)
+            print(maxValue)
             minValue,flux=_findMin(time,curve)
             if not minValue and not maxValue:
                 return(None)
@@ -105,23 +122,22 @@ def colorFit(lcs,verbose=True):
                     delays[k]=minValue-refMin
                 else:
                     return(None)
-
-
+            print(delays[k])
 
         allDelays.append(delays)
     finalDelays=dict([])
-    for k in allDelays[0].keys():
+    for k in np.sort(allDelays[0].keys()):
 
         est=np.mean([x[k] for x in allDelays])
         est=est[0] if isinstance(est,list) else est
         finalDelays[k]=est
-        if verbose:
-            print('True: '+str(lcs.images[k].simMeta['td']-lcs.images[refName].simMeta['td']),'Estimate: '+str(finalDelays[k]))
-    for k in curves.keys():
-        time,curve=curves[k]
+        #if verbose and lcs.images[k].simMeta:
+        #    print('True: '+str(lcs.images[k].simMeta['td']-lcs.images[refName].simMeta['td']),'Estimate: '+str(finalDelays[k]))
+    #for k in curves.keys():
+        #time,curve=curves[k]
         #print(np.min(time-delays[k]-curves[refName][0]))
         #ax.scatter(time,curve)
-        ax.plot(time, curve, marker='o', ls='-')
+        #ax.plot(time, curve, marker='o', ls='-')
         #ax.scatter(time-finalDelays[k]-curves[refName][0],curve)
     #plt.show()
     return(finalDelays)

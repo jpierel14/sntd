@@ -2,6 +2,56 @@ import sys,math
 import matplotlib.pyplot as plt
 import numpy as np
 
+def plotTimeDelays(lcs,fig=None,ax=None,band=None,color='b',filename='time_delays',offset=1,savefig=False,showfig=True):
+    nrows=len(lcs.images.keys())-1
+    ncols=nrows
+    if fig is None:
+        fig,ax=plt.subplots(nrows=nrows,ncols=ncols,sharex=False,sharey=True,figsize=(14,8))
+    elif ax is None:
+        ax=fig.gca()
+    else:
+        ncols=ax.shape[1]
+        nrows=ax.shape[0]
+
+    images=np.sort(lcs.images.keys())
+    ref=None
+    for im in images:
+        if lcs.time_delays[im]==0:
+            ref=im
+            break
+    if ref is None:
+        raise RuntimeError("Don't have a reference image?")
+    ind=np.where(images==ref)
+    for i in range(nrows):
+        for j in range(ncols):
+            if j>i:
+                try:
+                    fig.delaxes(ax[i][j])
+                except:
+                    pass
+            else:
+                delay='S'+str(j+1)+'S'+str(i+2) if i+2<5 else 'S'+str(j+1)+'SX'
+                #ax[i][j].errorbar(lcs.time_delays['S'+str(i+2)]-lcs.time_delays['S'+str(j+1)],offset,xerr=lcs.time_delay_errors['S'+str(i+2)]-lcs.time_delay_errors['S'+str(j+1)],label="%s"%lcs.bands,fmt='.',color=color)
+                ax[i][j].errorbar(lcs.measurements['t0']['S'+str(j+1)][band]-lcs.measurements['t0'][delay[-2:]][band],offset,
+                                  xerr=math.sqrt(lcs.measurements['t0_err']['S'+str(j+1)][band]**2+lcs.measurements['t0_err'][delay[-2:]][band]**2),
+                                  fmt='.',color=color,linewidth=2,markersize=12)
+                ax[i][j].annotate(delay,size=10,xy=(0.05,.85),xycoords='axes fraction')
+                ax[i][j].annotate(str(np.round(lcs.measurements['t0']['S'+str(j+1)][band]-lcs.measurements['t0'][delay[-2:]][band],2))+'$\pm$'+str(np.round(math.sqrt(lcs.measurements['t0_err']['S'+str(j+1)][band]**2+lcs.measurements['t0_err'][delay[-2:]][band]**2),2)),
+                                  size=8,xy=(.9999*(lcs.measurements['t0']['S'+str(j+1)][band]-lcs.measurements['t0'][delay[-2:]][band]),offset+.3),xycoords='data',color=color)
+                #ax[i][j].set_xlim((.8*(lcs.time_delays['S'+str(i+2)]-lcs.time_delays['S'+str(j+1)]),1.2*(lcs.time_delays['S'+str(i+2)]-lcs.time_delays['S'+str(j+1)])))
+                ax[i][j].set_ylim((0,offset+1))
+                ax[i][j].tick_params(axis='y',labelleft='off')
+
+    if savefig:
+        plt.savefig(filename+'.pdf',format='pdf',overwrite=True)
+    if showfig:
+        plt.show()
+    return(ax,fig)
+
+
+
+
+
 def plotObject(lcs,bands='all',showfig=False,savefig=True,filename='mySN'):
 
     colors=['r','g','b','k']
