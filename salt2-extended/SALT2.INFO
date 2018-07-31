@@ -1,0 +1,21 @@
+
+# ====================================== 
+# SALT2.INFO from SALT2.JLA-B14
+# 
+RESTLAMBDA_RANGE: 2000. 25000.  # extended using snsedextend tools 
+COLORLAW_VERSION: 1 
+COLORCOR_PARAMS: 2800 7000 4  -0.50429400 0.78769100 -0.46171500 0.08156190
+COLOR_OFFSET: 0.0 
+
+MAG_OFFSET: 0.27 # to get B-band mag from cosmology fit (Nov 23, 2011) 
+
+SEDFLUX_INTERP_OPT: 2 # 1=>linear, 2=>spline 
+ERRMAP_INTERP_OPT: 1  # 0=snake off; 1=>linear 2=>spline 
+ERRMAP_KCOR_OPT: 1    # 0=ignore salt2_color_dispersion.dat; 1=> use it to define K-corr. uncertainty vs lambda
+
+MAGERR_FLOOR: 0.005 # don;t allow smaller error than this 
+MAGERR_LAMOBS: 0.1 2000 4000 # magerr minlam maxlam 
+MAGERR_LAMREST: 0.1 100 200 # magerr minlam maxlam 
+
+SIGMA_INT: 0.106 # used in simulation 
+

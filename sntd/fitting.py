@@ -16,8 +16,8 @@ from .plotting import display
 import models
 __all__=['fit_data','colorFit','spline_fit']
 
-__thetaSN__=['z','hostebv','screenebv','screenz','rise','fall','sigma','k']
-__thetaL__=['t0','amplitude','dt0','A','B','t1','psi','phi','s']
+__thetaSN__=['z','hostebv','screenebv','screenz','rise','fall','sigma','k','x1','c']
+__thetaL__=['t0','amplitude','dt0','A','B','t1','psi','phi','s','x0']
 
 
 _needs_bounds={'z'}
@@ -703,6 +703,8 @@ def _fitSeparate(curves,mods,args,bounds):
                 maxFlux=np.max(tempTable['flux'])
                 maxTime=tempTable['time'][tempTable['flux']==maxFlux]
                 args['bounds']['t0']=(t0Bounds[0]+maxTime,t0Bounds[1]+maxTime)
+        if args['snType']=='Ia' and 'x1' not in args['bounds']:
+            args['bounds']['x1']=(-1,1)
         if 'amplitude' in args['bounds'] and args['guess_amp']:
             args['bounds']['amplitude']=(ampBounds[0]*np.max(tempTable['flux']),ampBounds[1]*np.max(tempTable['flux']))
         if 'amplitude' not in args['bounds']:
@@ -749,7 +751,7 @@ def _fitSeparate(curves,mods,args,bounds):
                 if isinstance(joint[p],dict):
                     if p=='t0':
                         bds[p]=(-3+joint[p][d][0],3+joint[p][d][0])
-                    elif p!='amplitude':
+                    elif p!='amplitude' and p!='x0':
 
                         if joint[p][d][1]==0 or np.round(joint[p][d][1]/joint[p][d][0],6)==0:
                             bds[p]=(joint[p][d][0]-.05*joint[p][d][0],joint[p][d][0]+.05*joint[p][d][0])
@@ -963,7 +965,9 @@ def _fit_data(args):
         modName=mod+'_'+version if version else deepcopy(mod)
     else:
         modName=mod.name+'_'+version if version else deepcopy(mod)
+
     source=sncosmo.get_source(mod)
+
     #print(mod)
     smod = sncosmo.Model(source=source,effects=effects,effect_names=effect_names,effect_frames=effect_frames)
     params=args['params'] if args['params'] else [x for x in smod.param_names]
@@ -971,6 +975,7 @@ def _fit_data(args):
     fits=newDict()
     dcurve=args['curve']
     if not np.any([smod.bandoverlap(band) for band in dcurve.bands]):
+        print('yep')
         raise RuntimeError("No band overlap for model %s"%modName)
     fits.method=args['method']
     fits.bounds=args['bounds'] if args['bounds'] else {}
@@ -979,6 +984,7 @@ def _fit_data(args):
     fits.spline = args['spline']
     fits.poly = args['poly']
     fits.micro = args['micro']
+
     no_bound = {x for x in params if x in _needs_bounds and x not in fits.bounds.keys() and x not in fits.constants.keys()}
     if no_bound:
         params=list(set(params)-no_bound)
@@ -997,6 +1003,7 @@ def _fit_data(args):
             fits.res, fits.model = args['sn_func'][args['method']](dcurve.table, smod, fits.params, fits.bounds,verbose=False, **args['props'])
         return(pyParz.parReturn(fits))
     else:
+
         fits.model=smod
         fits.res=newDict()
         fits.res['vparam_names']=fits.params
@@ -1115,7 +1122,8 @@ def _get_marginal_pdfs( res, nbins=51, verbose=True ):
             mBbins = -2.5*np.log10(  parambins / x0_AB0 )
 
             pdfdict['mB'] = ( mBbins, pdf, mBmean, mBstd )
-            print( '  <%s> =  %.3f +- %.3f'%( 'mB', np.round(mBmean,3), np.round(mBstd,3)) )
+            if verbose:
+                print( '  <%s> =  %.3f +- %.3f'%( 'mB', np.round(mBmean,3), np.round(mBstd,3)) )
 
     return( pdfdict )
 

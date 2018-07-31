@@ -6,5 +6,5 @@ setup(
     packages=['sntd'],
     author='Justin Pierel',
     author_email='jr23@email.sc.edu',
-    version='0.0.3' 
+    version='0.0.4' 
 )
