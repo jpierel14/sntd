@@ -1,0 +1,11 @@
+cython
+numpy
+scipy
+sncosmo
+astropy
+matplotlib
+nestle
+pyParz
+pycs
+datetime
+iminuit
