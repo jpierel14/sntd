@@ -7,7 +7,7 @@ from copy import deepcopy
 
 from .util import __dir__
 from .io import curve,curveDict
-from .ml import getDiffCurve
+from .ml import *
 
 __all__=['createRandMultiplyImagedSN']
 def _getAbsoluteDist():
@@ -60,7 +60,7 @@ def createMultiplyImagedSN(
         sourcename, snType, redshift, telescopename='telescope',
         objectName='object', time_delays=[0., 20.], magnifications=[1., 5.],
         numImages=2, cadence=5, epochs=50, bands=['F105W', 'F125W', 'F160W'],
-        gain=1000., skynoiseRange=(1, 5), mjdRange=None, zpsys='ab', zp=None,
+        gain=1000., skynoiseRange=(1, 5), mjdRange=None, timeArr=None,zpsys='ab', zp=None,
         microlensing_type=None, microlensing_params=[],
         dust_model='CCM89Dust', av_host=.3, av_lens=None,
         z_lens=None, minsnr=0.0, scatter=True):
@@ -78,12 +78,15 @@ def createMultiplyImagedSN(
     data file, and this params list must give [filename, mag_type] where
     mag_type is 'multiply' or 'add'.
     """
-    if not mjdRange:
-        now=np.round(Time(datetime.datetime.now()).mjd,3)
-        times=np.linspace(now,now+cadence*epochs,epochs)
+    if timeArr:
+        times=timeArr
     else:
-        #times=np.linspace(mjdRange[0],mjdRange[-1],epochs)
-        times=np.arange(mjdRange[0],min(mjdRange[0]+cadence*epochs,mjdRange[-1])+cadence,cadence)
+        if not mjdRange:
+            #now=np.round(Time(datetime.datetime.now()).mjd,3)
+            times=np.linspace(0,cadence*epochs,epochs)
+        else:
+            #times=np.linspace(mjdRange[0],mjdRange[-1],epochs)
+            times=np.arange(mjdRange[0],min(mjdRange[0]+cadence*epochs,mjdRange[-1])+cadence,cadence)
     bandList=np.array([np.tile(b,len(times)) for b in bands]).flatten()
     ms=sncosmo.get_magsystem(zpsys)
 
@@ -146,7 +149,8 @@ def createMultiplyImagedSN(
     model.set_source_peakabsmag(_getAbsFromDist(absolutes[snType]['dist']),
                                 absBand, zpsys)
     # TODO: allow user to specify parameters like x1, c, t0 if desired.
-    t0 = times[0] + .25 * (times[-1] - times[0])
+    #t0 = times[0] + .25 * (times[-1] - times[0])
+    t0=0
     if snType=='Ia':
         x0=model.get('x0')
         params={'z':redshift, 't0':t0, 'x0':x0,
@@ -199,10 +203,11 @@ def createMultiplyImagedSN(
                 # Load a microlensing simulation from a data file
                 # TODO : guard against common user entry errors
                 # TODO : allow random file selection from a directory
-                ml_filename = microlensing_params[0]
-                ml_mag_type = microlensing_params[1]
+               # ml_filename = microlensing_params[0]
+                #ml_mag_type = microlensing_params[1]
+                time,dmag=microcaustic_field_to_curve(microlensing_params,np.arange(0,200,1),z_lens,redshift)
                 ml_effect = sncosmo.AchromaticMicrolensing(
-                    ml_filename, ml_mag_type)
+                    time+model_i._source._phase[0],dmag, magformat='add')
             model_i.add_effect(ml_effect, 'microlensing', 'free')
             model_i.set(microlensingz=z_lens)
             params_i['microlensingz'] = z_lens # Redundant?
@@ -212,6 +217,7 @@ def createMultiplyImagedSN(
         # Generate the simulated SN light curve observations, make a `curve`
         # object, and store the simulation metadata
         model_i.set(**params_i)
+
         #print(np.nanmin(model_i.bandmag('F125W',zpsys,np.arange(model_i.mintime(),model_i.maxtime(),1))))
         table_i = sncosmo.realize_lcs(
             obstable , model_i, [params_i],
@@ -220,7 +226,9 @@ def createMultiplyImagedSN(
             table_i = sncosmo.realize_lcs(
                 obstable , model_i, [params_i],
                 trim_observations=True, scatter=scatter,thresh=minsnr)
+
         table_i=table_i[0]
+        #print(table_i['flux']/table_i['fluxerr'])
         curve_i=curve(zp=zp,zpsys=zpsys)
         curve_i.object=None
 

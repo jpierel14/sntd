@@ -247,7 +247,7 @@ def _fitCombined(curves,mods,args,bounds,grids,guess_amplitude_bound=False,
         #refModel=True
     if not args['refModel']:
         refModel=False
-        if len(args['curve'].table)>63 or len(models==1) or args['snType']=='Ia':
+        if len(args['curve'].table)>63 or len(models)==1 or args['snType']=='Ia':
             fits=[]
             for mod in mods:
                 if mod=='SplineSource':
@@ -478,7 +478,6 @@ def nest_combined_lc(curves,vparam_names,bounds,snBounds,guess_amplitude_bound=F
         all_delay_err[im]=pdf[im+'_td'][3]
         all_mus[im]=pdf[im+'_mu'][2]
         all_mu_err[im]=pdf[im+'_mu'][3]
-
 
 
     return all_delays,all_mus,all_delay_err,all_mu_err#(ref,dict(zip(vparam_names,vparameters)),OrderedDict(zip(vparam_names,
@@ -805,7 +804,7 @@ def _fitSeparate(curves,mods,args,bounds):
             tempMod._source._phase=tempMod._source._phase[tempMod._source._phase>=(np.min(tempTable['time'])-tempMod.get('t0'))]
             tempMod._source._phase=tempMod._source._phase[tempMod._source._phase<=(np.max(tempTable['time'])-tempMod.get('t0'))]
             sncosmo.plot_lc(tempTable,model=tempMod,zp=tempTable['zp'][0],zpsys=tempTable['zpsys'][0])
-            #plt.savefig(nest_fit._source.name+'_'+tempTable['band'][0]+'_refs_'+d+'.pdf',format='pdf',overwrik4ite=True)
+            plt.savefig(nest_fit._source.name+'_'+tempTable['band'][0]+'_refs_'+d+'.pdf',format='pdf',overwrik4ite=True)
             plt.show()
             plt.clf()
             plt.close()

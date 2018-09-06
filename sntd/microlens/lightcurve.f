@@ -27,27 +27,33 @@
       character*80 fileread, filewrite
       parameter(ipoints = 505)
       real  x(ipoints),y(ipoints), xx(ipoints),yy(ipoints)
-*
+
+*       My meddling
+	open(1,file='source'status='old')
+	read(1,1000)startLocx,startLocy,endLocx,endLocy,radius
+	
+*       
 * name of magnification pattern to be read:
 *
-      fileread  = 'IRIS001'
+	fileread  = 'IRIS001'
+	
 *
 * name of magnification pattern to be written on:
 *
       filewrite = 'IRIS001-track'
 *
-*
+*     
 * position of start point and end point of lightcurve:
 *
 *
-	ix1 = 309
-	iy1 = 542	
-	ix2 = 448
-	iy2 = 541
+	ix1 = startLocx
+	iy1 = startLocy	
+	ix2 = endLocx
+	iy2 = endLocy
 *
 * source size in pixels (Gaussian width)
 *
-       sigma = 25
+       sigma = radius
        Rn=20       	
        a=-5
        b=0	
@@ -89,11 +95,15 @@
          cosalpha = cos(alpha)
 *
 * points for x = 1    and    y = 1:
-*
-         y0  =   y1 + (1.0d0-x1)*slope
-         x0  =   x1 + (1.0d0-y1)/slope
-         write(*,*)' y0 = ',y0
-         write(*,*)' x0 = ',x0
+*       
+	 if(slope.ne.0) then
+	    y0  =   y1 + (1.0d0-x1)*slope
+	    x0  =   x1 + (1.0d0-y1)/slope
+	    write(*,*)' y0 = ',y0
+	    write(*,*)' x0 = ',x0
+	 else
+	    y0=y1
+	    x0=x1
 *
 *
 *
@@ -111,12 +121,16 @@
 *
 *
 * points for x = ipix    and    y = ipix:
-*
-         y0  =   y1 + (dble(ipix)-x1)*slope
-         x0  =   x1 + (dble(ipix)-y1)/slope
-         write(*,*)' y0 = ',y0
-         write(*,*)' x0 = ',x0
-*
+*       
+	 if(slope.ne.0) then
+	    y0  =   y1 + (dble(ipix)-x1)*slope
+	    x0  =   x1 + (dble(ipix)-y1)/slope
+	    write(*,*)' y0 = ',y0
+	    write(*,*)' x0 = ',x0
+	 else
+	    x0=x1
+	    y0=y1
+*       
 *
 *
          if(x0.ge.1.0d0.and.x0.le.dble(ipix))then
@@ -145,6 +159,7 @@
          open(23,file='out_line',status='unknown')
 c        do i0 = 0,2*ipix
          do i0 = -2*ipix,2*ipix
+	    
 	    xxx = x_start + i0*cosalpha
 	    yyy = y_start + i0*sinalpha
 	    ixxx = nint(xxx)

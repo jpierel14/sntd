@@ -1,9 +1,19 @@
-import os,sys,tempfile
+import os,sys,math
 
 import numpy as np
 from astropy.io import fits,ascii
 from astropy.table import Table
 from scipy.interpolate import splrep,splev
+from astropy import units as u
+from astropy import constants as const
+from astropy.cosmology import WMAP9 as cosmo
+from scipy.interpolate import interp1d
+import matplotlib.pyplot as plt
+from matplotlib import cm
+from matplotlib.patches import Circle
+import matplotlib.colors as colors
+from mpl_toolkits.axes_grid1.axes_divider import make_axes_locatable
+
 from .util import __dir__,__current_dir__
 
 
@@ -44,21 +54,274 @@ def realizeMicro(arand=.25,debug=0,kappas=.75,kappac=.15,gamma=.76,eps=.6,nray=3
     if not verbose:
         #sys.stdout = tempfile.TemporaryFile()
         os.system(r'./microlens > /dev/null')
-        os.system(r'./lightcurve >/dev/null')
+        #os.system(r'./lightcurve >/dev/null')
         #sys.stdout.close()
         #sys.stdout = sys.__stdout__
 
 
     else:
         os.system(r'./microlens')
-        os.system(r'./lightcurve')
+        #os.system(r'./lightcurve')
     num=np.loadtxt(os.path.join(__dir__,'microlens','jobnum'),dtype='str')
     #lensPlane=np.array(fits.open(os.path.join(__dir__,'microlens','IRIS'+str(num)+'.fits'))[0].data,dtype=np.float64)
     lensPlane=fits.open(os.path.join(__dir__,'microlens','IRIS'+str(num)+'.fits'))[0].data
-    curve=ascii.read(os.path.join(__dir__,'microlens','out_line'),names=('t','xval','yval','pixvalue','maglin','xpix','ypix'))
+    #curve=ascii.read(os.path.join(__dir__,'microlens','out_line'),names=('t','xval','yval','pixvalue','maglin','xpix','ypix'))
     os.chdir(__current_dir__)
-    return(lensPlane,curve)
+    return(lensPlane)
 
+# def microcaustic_field_to_curve(field,time,zl,zs,velocity=(4*10**4)*(u.kilometer/u.s),M=(1*u.solMass).to(u.kg),loc='Random',end=None,verbose=False):
+#
+#     D=cosmo.angular_diameter_distance_z1z2(zl,zs)*cosmo.angular_diameter_distance(zs)/cosmo.angular_diameter_distance(zl)
+#     D=D.to(u.m)
+#     einsteinRadius=np.sqrt(4*const.G*M*D/const.c**2)
+#     einsteinRadius=einsteinRadius.to(u.kilometer)
+#     try:
+#         velocity.to(u.kilometer/u.s)
+#     except:
+#         print('Assuming velocity is in km/s.')
+#         velocity*=(u.kilometer/u.s)
+#     try:
+#         M.to(u.kg)
+#     except:
+#         print('Assuming mass is in kg.')
+#     #mlimage=fits.getdata(field)
+#     h,w=field.shape
+#
+#     height=10*einsteinRadius.value
+#     width=10*einsteinRadius.value
+#     #center=(width/2,height/2)
+#     pixwidth=width/w
+#     pixheight=height/h
+#     if pixwidth!=pixheight:
+#         print('Hmm, you are not using squares...')
+#         sys.exit()
+#     maxRadius=((np.max(time)*u.d).to(u.s))*velocity
+#     maxRadius=maxRadius.value
+#     maxx=int(math.floor(maxRadius/pixwidth))
+#     maxy=int(math.floor(maxRadius/pixheight))
+#     mlimage=field[maxx:-maxx][maxy:-maxy]
+#
+#
+#     if loc=='Random' or not isinstance(loc,(list,tuple)):
+#         loc=(int(np.random.uniform(maxx,w-maxx)),int(np.random.uniform(maxy,h-maxy)))
+#
+#
+#     tempTime=np.array([((x*u.d).to(u.s)).value for x in time])
+#     snSize=velocity.value*tempTime/pixwidth
+#     if end is None:#not None:
+#         #slope=float(end[1]-loc[1])/float(end[0]-loc[0])
+#         pixfunc=interp1d([loc[0],end[0]],[loc[1],end[1]])
+#         # I think I need an array of the pixel location at each time step?
+#         totalTime=tempTime[-1]-tempTime[0]
+#         dist=math.sqrt((end[1]-loc[1])**2+(end[0]-loc[0])**2)
+#         vel=dist/totalTime
+#         pixTime=vel*tempTime
+#
+#     else:
+#         end=loc
+#     thefile=open(os.path.join(__dir__,'microlens','source'),'wb')
+#     for i in range(len(snSize)):
+#
+#         thefile.write(('%i\n')%(loc[0])
+#         thefile.write(('%i\n')%(loc[1])
+#         thefile.write(outFile[-1])
+#         thefile.close()
+#
+#
+#
+#     import matplotlib.pyplot as plt
+#     from matplotlib import cm
+#     from matplotlib.patches import Circle
+#     fig=plt.figure()
+#     ax=fig.gca()
+#     ax.imshow(field, aspect='equal', interpolation='nearest', cmap=cm.Greys,
+#               vmin=835, vmax=2003, origin='lower')
+#     #for r,a in zip([snSize[l),snSize[150],snSize[-1]],[.4,.5,.7]):
+#     circle = Circle(loc, snSize[-1], color='#004949', alpha=.7)
+#     ax.add_patch(circle)
+#     plt.show()
+#     plt.clf()
+#     plt.close()
+#     dmag=mu_from_image(mlimage,loc,snSize)
+#     fig=plt.figure()
+#     ax=fig.gca()
+#     ax.plot(snSize,dmag)
+#     plt.show()
+#     sys.exit()
+
+def microcaustic_field_to_curve(field,time,zl,zs,velocity=(4*10**4)*(u.kilometer/u.s),M=(1*u.solMass).to(u.kg),loc='Random'):
+
+    D=cosmo.angular_diameter_distance_z1z2(zl,zs)*cosmo.angular_diameter_distance(zs)/cosmo.angular_diameter_distance(zl)
+    D=D.to(u.m)
+    einsteinRadius=np.sqrt(4*const.G*M*D/const.c**2)
+    einsteinRadius=einsteinRadius.to(u.kilometer)
+    try:
+        velocity.to(u.kilometer/u.s)
+    except:
+        print('Assuming velocity is in km/s.')
+        velocity*=(u.kilometer/u.s)
+    try:
+        M.to(u.kg)
+    except:
+        print('Assuming mass is in kg.')
+    #mlimage=fits.getdata(field)
+    h,w=field.shape
+
+    height=10*einsteinRadius.value
+    width=10*einsteinRadius.value
+    print(10*einsteinRadius)
+    #center=(width/2,height/2)
+    pixwidth=width/w
+    pixheight=height/h
+    if pixwidth!=pixheight:
+        print('Hmm, you are not using squares...')
+        sys.exit()
+    maxRadius=((np.max(time)*u.d).to(u.s))*velocity
+    maxRadius=maxRadius.value
+    maxx=int(math.floor(maxRadius/pixwidth))
+    maxy=int(math.floor(maxRadius/pixheight))
+    mlimage=field[maxx:-maxx][maxy:-maxy]
+
+
+    if loc=='Random' or not isinstance(loc,(list,tuple)):
+        loc=(int(np.random.uniform(maxx,w-maxx)),int(np.random.uniform(maxy,h-maxy)))
+
+
+    tempTime=np.array([((x*u.d).to(u.s)).value for x in time])
+    snSize=velocity.value*tempTime/pixwidth
+
+
+
+    dmag=mu_from_image(field,loc,snSize)
+
+    return(time,dmag)
+
+
+
+
+def createCircularMask(h, w, center=None, radius=None):
+
+    if center is None: # use the middle of the image
+        center = [int(w/2), int(h/2)]
+    if radius is None: # use the smallest distance between the center and image walls
+        radius = min(center[0], center[1], w-center[0], h-center[1])
+
+    Y, X = np.ogrid[:h, :w]
+    dist_from_center = np.sqrt((X - center[0])**2 + (Y-center[1])**2)
+
+    mask = dist_from_center <= radius
+    return mask
+
+def createGaussMask(h,w,center=None,radius=None):
+    if center is None: # use the middle of the image
+        center = [int(w/2), int(h/2)]
+    if radius is None: # use the smallest distance between the center and image walls
+        radius = min(center[0], center[1], w-center[0], h-center[1])
+    Y, X = np.ogrid[:h, :w]
+    dist_from_center = np.sqrt((X - center[0])**2 + (Y-center[1])**2)
+    mask1=dist_from_center<=radius
+    mask2=dist_from_center<=radius*2
+    mask2[mask1==True]=False
+    mask3=dist_from_center<=radius*3
+    mask3[mask2==True]=False
+    mask3[mask1==True]=False
+    return (mask1,mask2,mask3)
+
+class MidpointNormalize(colors.Normalize):
+    """
+    Normalise the colorbar so that diverging bars work there way either side from a prescribed midpoint value)
+
+    e.g. im=ax1.imshow(array, norm=MidpointNormalize(midpoint=0.,vmin=-100, vmax=100))
+    """
+    def __init__(self, vmin=None, vmax=None, midpoint=None, clip=False):
+        self.midpoint = midpoint
+        colors.Normalize.__init__(self, vmin, vmax, clip)
+
+    def __call__(self, value, clip=None):
+        # I'm ignoring masked values and all kinds of edge cases to make a
+        # simple example...
+        x, y = [self.vmin, self.midpoint, self.vmax], [0, 0.5, 1]
+        return np.ma.masked_array(np.interp(value, x, y), np.isnan(value))
+
+def mu_from_image(image, center,sizes,brightness='disk'):
+    h, w = image.shape
+    mu = []
+
+    fig=plt.figure(figsize=(20,10))
+
+    ax=fig.gca()
+    plt.imshow(-(image-1024)/256., aspect='equal', interpolation='nearest', cmap=cm.bwr,norm=MidpointNormalize(vmin=-2,vmax=2,midpoint=0),
+              vmin=-2, vmax=2, origin='lower')
+    ax.imshow(-(image-1024)/256., aspect='equal', interpolation='nearest', cmap=cm.bwr,
+               vmin=-2, vmax=2, origin='lower')
+
+
+    #for r,a in zip([snSize[l),snSize[150],snSize[-1]],[.4,.5,.7]):
+    #
+    #print(np.mean(image),np.std(image))
+    #print(np.mean((image-1024)/256.))
+    image=10**(.4*(image-1024)/256.)
+    i=0
+    alphas=[1,.5,.7]
+    for r in sizes:
+        if r in [sizes[int(len(sizes)/10)],sizes[int(len(sizes)/3)],sizes[int(len(sizes)/1.5)]]:
+
+            circle = Circle(center, r, color='#004949', alpha=alphas[i])
+            i+=1
+            ax.add_patch(circle)
+        if brightness=='disk':
+            mask = createCircularMask(h,w,center=center,radius=r)
+            try:
+                totalMag=float((image[mask]).sum())/float(mask.sum())
+            except:
+                totalMag=0
+            if totalMag==0:
+                mu.append(1024)
+            else:
+                mu.append(totalMag)
+        else:
+            mask1,mask2,mask3=createGaussMask(h,w,center=center,radius=r/3)
+            scale=np.array([.68,.27,.05])
+            totalMags=[]
+            for mask in [mask1,mask2,mask3]:
+                try:
+                    if mask.sum()==0:
+                        totalMags.append(0)
+                        continue
+                    tempMag=float(image[mask].sum())/float(mask.sum())
+                except RuntimeError:
+                    tempMag=0
+                totalMags.append(tempMag)
+            if np.max(totalMags==0):
+                mu.append(1024)
+            else:
+                mu.append(np.dot(np.array(totalMags),scale))
+
+
+    #plt.colorbar()
+
+    mu = np.array(mu)
+    #dmag = -2.5*np.log10(mu.astype(float))#/np.min(mu))
+    #print(mu)
+    cbaxes = fig.add_axes([0.7, 0.3, 0.02, 0.58])
+    cb = plt.colorbar(cax = cbaxes)
+    #dmag=10**(-0.4*((mu-1024)/256.0))
+    dmag=-2.5*np.log10(mu)#(mu-1024)/256.0
+    ax_divider = make_axes_locatable(ax)
+    ax_ml = ax_divider.append_axes("bottom", size="25%", pad=.4)
+    ax_ml.plot(sizes[20:],dmag[20:],ls='-',marker=' ', color='#004949')
+    ax_ml.set_ylabel(r'$\Delta m$ (mag)')
+    ax_ml.set_xlabel('Time from Explosion (days)')
+    ax_ml.invert_yaxis()
+    #ax.plot(sizes[10:-10],dmag[10:-10])
+    plt.savefig('microlensing.pdf',format='pdf',overwrite=True)
+    plt.show()
+    plt.show()
+    plt.clf()
+    plt.close()
+    #print(dmag)
+
+    return(dmag)
 
 def getDiffCurve(time,num,default=True):
 
