@@ -169,7 +169,7 @@ def microcaustic_field_to_curve(field,time,zl,zs,velocity=(4*10**4)*(u.kilometer
 
     height=10*einsteinRadius.value
     width=10*einsteinRadius.value
-    print(10*einsteinRadius)
+    #print(10*einsteinRadius)
     #center=(width/2,height/2)
     pixwidth=width/w
     pixheight=height/h
@@ -247,13 +247,13 @@ def mu_from_image(image, center,sizes,brightness='disk'):
     h, w = image.shape
     mu = []
 
-    fig=plt.figure(figsize=(20,10))
+    #fig=plt.figure(figsize=(20,10))
 
-    ax=fig.gca()
-    plt.imshow(-(image-1024)/256., aspect='equal', interpolation='nearest', cmap=cm.bwr,norm=MidpointNormalize(vmin=-2,vmax=2,midpoint=0),
-              vmin=-2, vmax=2, origin='lower')
-    ax.imshow(-(image-1024)/256., aspect='equal', interpolation='nearest', cmap=cm.bwr,
-               vmin=-2, vmax=2, origin='lower')
+    #ax=fig.gca()
+    #plt.imshow(-(image-1024)/256., aspect='equal', interpolation='nearest', cmap=cm.bwr,norm=MidpointNormalize(vmin=-2,vmax=2,midpoint=0),
+              #vmin=-2, vmax=2, origin='lower')
+    #ax.imshow(-(image-1024)/256., aspect='equal', interpolation='nearest', cmap=cm.bwr,
+               #vmin=-2, vmax=2, origin='lower')
 
 
     #for r,a in zip([snSize[l),snSize[150],snSize[-1]],[.4,.5,.7]):
@@ -268,7 +268,7 @@ def mu_from_image(image, center,sizes,brightness='disk'):
 
             circle = Circle(center, r, color='#004949', alpha=alphas[i])
             i+=1
-            ax.add_patch(circle)
+            #ax.add_patch(circle)
         if brightness=='disk':
             mask = createCircularMask(h,w,center=center,radius=r)
             try:
@@ -303,22 +303,22 @@ def mu_from_image(image, center,sizes,brightness='disk'):
     mu = np.array(mu)
     #dmag = -2.5*np.log10(mu.astype(float))#/np.min(mu))
     #print(mu)
-    cbaxes = fig.add_axes([0.7, 0.3, 0.02, 0.58])
-    cb = plt.colorbar(cax = cbaxes)
+    #cbaxes = fig.add_axes([0.7, 0.3, 0.02, 0.58])
+    #cb = plt.colorbar(cax = cbaxes)
     #dmag=10**(-0.4*((mu-1024)/256.0))
     dmag=-2.5*np.log10(mu)#(mu-1024)/256.0
-    ax_divider = make_axes_locatable(ax)
-    ax_ml = ax_divider.append_axes("bottom", size="25%", pad=.4)
-    ax_ml.plot(sizes[20:],dmag[20:],ls='-',marker=' ', color='#004949')
-    ax_ml.set_ylabel(r'$\Delta m$ (mag)')
-    ax_ml.set_xlabel('Time from Explosion (days)')
-    ax_ml.invert_yaxis()
+    #ax_divider = make_axes_locatable(ax)
+    #ax_ml = ax_divider.append_axes("bottom", size="25%", pad=.4)
+    #ax_ml.plot(sizes[20:],dmag[20:],ls='-',marker=' ', color='#004949')
+    #ax_ml.set_ylabel(r'$\Delta m$ (mag)')
+    #ax_ml.set_xlabel('Time from Explosion (days)')
+    #ax_ml.invert_yaxis()
     #ax.plot(sizes[10:-10],dmag[10:-10])
-    plt.savefig('microlensing.pdf',format='pdf',overwrite=True)
-    plt.show()
-    plt.show()
-    plt.clf()
-    plt.close()
+    #plt.savefig('microlensing.pdf',format='pdf',overwrite=True)
+    #plt.show()
+    #plt.show()
+    #plt.clf()
+    #plt.close()
     #print(dmag)
 
     return(dmag)

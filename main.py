@@ -7,6 +7,7 @@ from astropy.io import ascii
 import numpy as np
 #define which photometry we want to analyze (dolphot or hstphot)
 
+
 photometry='dolphot'
 
 if photometry=='dolphot':

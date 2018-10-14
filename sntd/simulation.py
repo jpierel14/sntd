@@ -63,7 +63,7 @@ def createMultiplyImagedSN(
         gain=1000., skynoiseRange=(1, 5), mjdRange=None, timeArr=None,zpsys='ab', zp=None,
         microlensing_type=None, microlensing_params=[],
         dust_model='CCM89Dust', av_host=.3, av_lens=None,
-        z_lens=None, minsnr=0.0, scatter=True):
+        z_lens=None, minsnr=0.0, scatter=True,snrFunc=None):
     """Generate a multiply-imaged SN light curve set, with user-specified time
     delays and magnifications.
 
@@ -90,7 +90,12 @@ def createMultiplyImagedSN(
     bandList=np.array([np.tile(b,len(times)) for b in bands]).flatten()
     ms=sncosmo.get_magsystem(zpsys)
 
-    zpList=[ms.band_flux_to_mag(1,b) for b in bandList] if not zp else [zp for i in range(len(bandList))]
+    if zp is None:
+        zpList=[ms.band_flux_to_mag(1,b) for b in bandList]
+    elif isinstance(zp,(list,tuple)):
+        zpList=np.array([np.tile(z,len(times)) for z in zp]).flatten()
+    else:
+        zpList=[zp for i in range(len(bandList))]
 
     obj=curveDict(telescopename=telescopename,object=objectName)
     obj.bands = set(bandList)
@@ -180,6 +185,7 @@ def createMultiplyImagedSN(
         # into realize_lcs for flux uncertainties
         model_i = deepcopy(model)
         params_i = deepcopy(params)
+
         if snType=='Ia':
             params_i['x0'] *= mu
         else:
@@ -208,9 +214,9 @@ def createMultiplyImagedSN(
                 time,dmag=microcaustic_field_to_curve(microlensing_params,np.arange(0,200,1),z_lens,redshift)
                 ml_effect = sncosmo.AchromaticMicrolensing(
                     time+model_i._source._phase[0],dmag, magformat='add')
-            model_i.add_effect(ml_effect, 'microlensing', 'free')
-            model_i.set(microlensingz=z_lens)
-            params_i['microlensingz'] = z_lens # Redundant?
+            model_i.add_effect(ml_effect, 'microlensing', 'rest')
+            #model_i.set(microlensingz=redshift)
+            #params_i['microlensingz'] = redshift # Redundant?
         else:
             ml_effect = None
 
@@ -221,15 +227,19 @@ def createMultiplyImagedSN(
         #print(np.nanmin(model_i.bandmag('F125W',zpsys,np.arange(model_i.mintime(),model_i.maxtime(),1))))
         table_i = sncosmo.realize_lcs(
             obstable , model_i, [params_i],
-            trim_observations=True, scatter=scatter,thresh=minsnr)
-        while len(table_i)==0 or len(table_i[0])<numImages:
+            trim_observations=True, scatter=scatter,thresh=minsnr,snrFunc=snrFunc)
+        tried=0
+        while (len(table_i)==0 or len(table_i[0])<numImages) and tried<50:
             table_i = sncosmo.realize_lcs(
                 obstable , model_i, [params_i],
-                trim_observations=True, scatter=scatter,thresh=minsnr)
-
+                trim_observations=True, scatter=scatter,thresh=minsnr,snrFunc=snrFunc)
+            tried+=1
+        if tried==50:
+            print("Your survey parameters detected no supernovae.")
+            sys.exit()
         table_i=table_i[0]
         #print(table_i['flux']/table_i['fluxerr'])
-        curve_i=curve(zp=zp,zpsys=zpsys)
+        curve_i=curve(zp=obj.zpDict,zpsys=zpsys)
         curve_i.object=None
 
         curve_i.table=table_i
@@ -243,17 +253,12 @@ def createMultiplyImagedSN(
         curve_i.simMeta['td']=td
         curve_i.simMeta['microlensing'] = ml_effect
         curve_i.simMeta['microlensing_type'] = microlensing_type
-        curve_i.simMeta['microlensing_params'] = microlensing_params
+        if microlensing_type=='AchromaticSplineMicrolensing':
+            curve_i.simMeta['microlensing_params'] = microlensing_params
+        elif microlensing_type is not None:
+            curve_i.simMeta['microlensing_params'] = interp1d(time+model_i._source._phase[0],dmag)
         obj.add_curve(curve_i)
 
-        # #do my own scatter, sncosmo's is weird
-        # for i in range(len(lc_i)):
-        #     temp=np.random.normal(lc_i['flux'][i],lc_i['fluxerr'][i])
-        #     # 1-sigma clipping ?!
-        #     #while np.abs(temp)>(np.abs(lc_i['flux'][i])+np.abs(lc_i['fluxerr'][i])):
-        #     #    temp=np.random.normal(lc_i['flux'][i],lc_i['fluxerr'][i])
-        #     lc_i['flux'][i]=temp
-        # lc_i=lc_i[(np.abs(lc_i['flux']/lc_i['fluxerr']))>=minsnr]
 
     # Store the un-lensed model as a component of the lensed SN object.
     model.set(**params)

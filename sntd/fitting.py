@@ -161,6 +161,7 @@ def fit_data(lcs, snType='Ia',bands=None,method='minuit', models=None, params=No
     args['guess_amp']=kwargs.get('guess_amplitude',True)
     args['combinedError']=kwargs.get('combinedError',None)
     args['showPlots']=kwargs.get('showPlots',False)
+    args['snType']=snType
     if not models:
         mod,types=np.loadtxt(os.path.join(__dir__,'data','sncosmo','models.ref'),dtype='str',unpack=True)
         modDict={mod[i]:types[i] for i in range(len(mod))}
@@ -619,7 +620,7 @@ def _fitSeparate(curves,mods,args,bounds):
 
 
         curves.images[d].fits=newDict()
-        if len(args['curve'].table)>63 or len(mods)==1 or curves['snType']=='Ia':
+        if True or len(args['curve'].table)>63 or len(mods)==1 or args['snType']=='Ia':
             fits=[]
             for mod in mods:
                 if mod=='SplineSource':
@@ -637,6 +638,7 @@ def _fitSeparate(curves,mods,args,bounds):
                     args['doFit']=doFit
                     fits.append(_fit_data_wrap((mod,args)))
         else:
+            args['doFit']=True
             fits=pyParz.foreach(mods,_fit_data,args)
 
         if len(fits)>1:
@@ -803,8 +805,8 @@ def _fitSeparate(curves,mods,args,bounds):
 
             tempMod._source._phase=tempMod._source._phase[tempMod._source._phase>=(np.min(tempTable['time'])-tempMod.get('t0'))]
             tempMod._source._phase=tempMod._source._phase[tempMod._source._phase<=(np.max(tempTable['time'])-tempMod.get('t0'))]
-            sncosmo.plot_lc(tempTable,model=tempMod,zp=tempTable['zp'][0],zpsys=tempTable['zpsys'][0])
-            plt.savefig(nest_fit._source.name+'_'+tempTable['band'][0]+'_refs_'+d+'.pdf',format='pdf',overwrik4ite=True)
+            sncosmo.plot_lc(tempTable,model=tempMod)
+            #plt.savefig(nest_fit._source.name+'_'+tempTable['band'][0]+'_refs_'+d+'.pdf',format='pdf',overwrik4ite=True)
             plt.show()
             plt.clf()
             plt.close()
@@ -821,37 +823,39 @@ def timeDelaysAndMagnifications(curves):
     fluxes=dict([])
     time_errors=dict([])
     flux_errors=dict([])
+
     for d in curves.images.keys():
-        band_times=dict([])
-        band_fluxes=dict([])
-        band_time_errors=dict([])
-        band_flux_errors=dict([])
-        for b in [x for x in curves.bands if curves.images[d].fits.model.bandoverlap(x)]:
+
+        b=[x for x in curves.bands if curves.images[d].fits.model.bandoverlap(x)]
+        if len(b)==0:
+            print('None of your bands overlap your fit?')
+            sys.exit()
+        b=b[0]
+        try:
+            timeOfPeak=curves.images[d].fits.model.get('t0')
+            band_time_errors=curves.images[d].fits.final_errs['t0']
+
+        except:
+            timeOfPeak,peakFlux=_maxFromModel(curves.images[d].fits.model,b,curves.images[d].zp,curves.images[d].zpsys)
+            band_time_errors=0
+            band_flux_errors=0
+
+        for amp in ['x0','amplitude','A']:
             try:
-                timeOfPeak=curves.images[d].fits.model.get('t0')
-                band_time_errors[b]=curves.images[d].fits.final_errs['t0']
-
+                peakFlux=curves.images[d].fits.model.get(amp)
+                band_flux_errors=curves.images[d].fits.final_errs[amp]
+                success=True
+                break
             except:
-                timeOfPeak,peakFlux=_maxFromModel(curves.images[d].fits.model,b,curves.images[d].zp,curves.images[d].zpsys)
-                band_time_errors[b]=0
-                band_flux_errors[b]=0
+                success=False
+
+        if not success:
+            peakFlux=curves.images[d].fits.model.bandflux(b,timeOfPeak,zp=curves.images[d].zp[b],zpsys=curves.images[d].zpsys)
+            band_flux_errors=0
 
 
-            try:
-                peakFlux=curves.images[d].fits.model.get('amplitude')
-                band_flux_errors[b]=curves.images[d].fits.final_errs['amplitude']
-            except:
-                try:
-                    peakFlux=curves.images[d].fits.model.get('A')
-                    band_flux_errors[b]=curves.images[d].fits.final_errs['A']
-                except:
-                    peakFlux=curves.images[d].fits.model.bandflux(b,timeOfPeak,zp=curves.images[d].zp,zpsys=curves.images[d].zpsys)
-                    band_flux_errors[b]=0
-
-
-
-            band_times[b]=timeOfPeak
-            band_fluxes[b]=peakFlux
+        band_times=timeOfPeak
+        band_fluxes=peakFlux
         times[d]=band_times
         fluxes[d]=band_fluxes
         time_errors[d]=band_time_errors
@@ -865,23 +869,24 @@ def timeDelaysAndMagnifications(curves):
     ref2=None
     ref1_err=None
     ref2_err=None
-    for b in [x for x in curves.bands if curves.images[d].fits.model.bandoverlap(x)]:
-        for im in ims:
-            if not ref1:
-                ref1=times[im][b]
-                delays[im]=0
-                ref2=fluxes[im][b]
-                mags[im]=1
-                ref1_err=time_errors[im][b]
-                ref2_err=flux_errors[im][b]
-                delay_errs[im]=0
-                mag_errs[im]=0
+    for im in ims:
+        if not ref1:
+            ref1=times[im]
+            delays[im]=0
+            ref2=fluxes[im]
+            mags[im]=1
+            ref1_err=time_errors[im]
+            ref2_err=flux_errors[im]
+            delay_errs[im]=0
+            mag_errs[im]=0
 
-            else:
-                delays[im]=ref1-times[im][b]
-                mags[im]=fluxes[im][b]/ref2
-                delay_errs[im]=math.sqrt(time_errors[im][b]**2+ref1_err**2)
-                mag_errs[im]=mags[im]*math.sqrt((flux_errors[im][b]/fluxes[im][b])**2+(ref2_err/ref2)**2)
+        else:
+            delays[im]=ref1-times[im]
+            mags[im]=fluxes[im]/ref2
+            delay_errs[im]=math.sqrt(time_errors[im]**2+ref1_err**2)
+
+            mag_errs[im]=mags[im]*math.sqrt((flux_errors[im]/fluxes[im])**2+(ref2_err/ref2)**2)
+
     return (delays,delay_errs,mags,mag_errs,times,fluxes,time_errors,flux_errors)
 
 
@@ -970,7 +975,6 @@ def _fit_data(args):
     #print(mod)
     smod = sncosmo.Model(source=source,effects=effects,effect_names=effect_names,effect_frames=effect_frames)
     params=args['params'] if args['params'] else [x for x in smod.param_names]
-
     fits=newDict()
     dcurve=args['curve']
     if not np.any([smod.bandoverlap(band) for band in dcurve.bands]):
@@ -1002,7 +1006,6 @@ def _fit_data(args):
             fits.res, fits.model = args['sn_func'][args['method']](dcurve.table, smod, fits.params, fits.bounds,verbose=False, **args['props'])
         return(pyParz.parReturn(fits))
     else:
-
         fits.model=smod
         fits.res=newDict()
         fits.res['vparam_names']=fits.params

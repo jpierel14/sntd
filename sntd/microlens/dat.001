@@ -1,31 +1,31 @@
                    1 jobnu:   number of job
-                    date and time of start:   5. 9.2018    10:10:20
-                    date and time of stop:    5. 9.2018    10:11:37
-CPU-time:        75.74 sec =       1.26 min =     0.02 h
+                    date and time of start:  10.10.2018    13:19:22
+                    date and time of stop:   10.10.2018    13:20:02
+CPU-time:        38.88 sec =       0.65 min =     0.01 h
 
  important parameters:
-                  33 nlens:      total number of lenses within rstars
-                  19 ncell:      total number of cells
-               57.58% ncell/nlens: ratio in percent
-              12.674 avlens:     average number of lenses used per ray
-               5.905 avcell:     average number of cells  used per ray
-         0.000000109 CPU-time/ray: shooting time (CPU-sec) per ray
-              80.756 rayperpi:   average number of rays per pixel
-                9403 pixhigh:    highest number of rays per pixel
-                  10 pixlow:     lowest number of rays per pixel
-             153.141 rayamp1:    number of rays for amplification 1
-               0.527 ampav:      (numerical)   average amplification
-              -1.762 ampth:      (theoretical) average amplification
-           695310000 rayshot:    total number of rays shot in level 3
-            80755809 raysarr:    number of rays arrived in square
-           614554191 rayslost:   number of lost rays
+                  98 nlens:      total number of lenses within rstars
+                  71 ncell:      total number of cells
+               72.45% ncell/nlens: ratio in percent
+              16.556 avlens:     average number of lenses used per ray
+              20.226 avcell:     average number of cells  used per ray
+         0.000000128 CPU-time/ray: shooting time (CPU-sec) per ray
+              58.976 rayperpi:   average number of rays per pixel
+                1944 pixhigh:    highest number of rays per pixel
+                   6 pixlow:     lowest number of rays per pixel
+              21.973 rayamp1:    number of rays for amplification 1
+               2.684 ampav:      (numerical)   average amplification
+              -5.333 ampth:      (theoretical) average amplification
+           304010000 rayshot:    total number of rays shot in level 3
+            58976187 raysarr:    number of rays arrived in square
+           245033813 rayslost:   number of lost rays
 
  INPUT parameters:
                0.250 arand:   input for random number generator
                    0 debug:   parameter for debugging the program       
-               0.750 sigmas:  surface mass density in compact objects   
-               0.150 sigmac:  surface mass density in compact objects   
-               0.760 gamma:   global shear
+               0.500 sigmas:  surface mass density in compact objects   
+               0.250 sigmac:  surface mass density in compact objects   
+               0.500 gamma:   global shear
                0.600 eps:     accuracy parameter, (0 <= eps <= 1)
                  300 nray:    number of rays per row in level 1
               10.000 minmass: lower cutoff of mass spectrum
@@ -42,32 +42,32 @@ CPU-time:        75.74 sec =       1.26 min =     0.02 h
                   10 factor2: multiplier: # rays from level 2 to level 3
 
  OUTPUT parameters:
-               0.136 boa:     b / a  :     (1-gamma) / (1+gamma)
-               0.767 bmsoams: b-s/a-s: (1-gamma-sigma) / (1+gamma-sigma)
+               0.333 boa:     b / a  :     (1-gamma) / (1+gamma)
+               0.333 bmsoams: b-s/a-s: (1-gamma-sigma) / (1+gamma-sigma)
               10.000 massav:  average mass of lenses (in solar masses)
-             330.000 masstot: total mass in all lenses (in solar masses)
-              18.605 raydif:  length of shooting region (level 1)
-                 -43 jxmin:   number of leftmost  ray in level 1
-                 187 jxmax:   number of rightmost ray in level 1
+             980.000 masstot: total mass in all lenses (in solar masses)
+              21.333 raydif:  length of shooting region (level 1)
+                 -19 jxmin:   number of leftmost  ray in level 1
+                  81 jxmax:   number of rightmost ray in level 1
                 -244 jymin:   number of lowest    ray in level 1
                   56 jymax:   number of highest   ray in level 1
-              -3.488 rayminx  coordinate of leftmost  ray in level 1
-              15.116 raymaxx  coordinate of rightmost ray in level 1
-             -19.697 rayminy  coordinate of lowest    ray in level 1
-               4.545 raymaxy  coordinate of highest   ray in level 1
-            0.080808 raydist0: distance of adjacent rays in level 1
-            0.008081 raydist1: distance of adjacent rays in level 2
-            0.000808 raydist2: distance of adjacent rays in level 3
+              -4.000 rayminx  coordinate of leftmost  ray in level 1
+              17.333 raymaxx  coordinate of rightmost ray in level 1
+             -52.000 rayminy  coordinate of lowest    ray in level 1
+              12.000 raymaxy  coordinate of highest   ray in level 1
+            0.213333 raydist0: distance of adjacent rays in level 1
+            0.021333 raydist1: distance of adjacent rays in level 2
+            0.002133 raydist2: distance of adjacent rays in level 3
             0.010000 pixlen(1): pixel length in units of Einstein radii
-            0.037209 pixlen(2): pixel length in lens array PIXLENS
-              21.099 rstars:    radius of circle that comprises stars
-           15.151111 xur:       coordinates of leftmost ray in level 3
-            4.565253 yur:       coordinates of lowest   ray in level 3
-           695310000 rayth:     number of rays expected to be shot
-              18.579 avtot:     average # of cells+lenses  used per ray
-            0.563004 avtot/nlens: avtot divided by total # of lenses
-                   6 highle:    highest level used for cell hierarchy
-                1756 indlens(nlens) number of highest lens
+            0.042667 pixlen(2): pixel length in lens array PIXLENS
+              44.164 rstars:    radius of circle that comprises stars
+           17.385600 xur:       coordinates of leftmost ray in level 3
+           12.052267 yur:       coordinates of lowest   ray in level 3
+           304010000 rayth:     number of rays expected to be shot
+              36.781 avtot:     average # of cells+lenses  used per ray
+            0.375318 avtot/nlens: avtot divided by total # of lenses
+                   8 highle:    highest level used for cell hierarchy
+               38868 indlens(nlens) number of highest lens
 
  CPU time used for different parts of the program:
                0.000 times(1):   time in CPU-sec for subroutine setstar
@@ -78,70 +78,137 @@ CPU-time:        75.74 sec =       1.26 min =     0.02 h
                          0.000 times(13): CPU-sec for     setup    
                          0.000 times(14): CPU-sec for sorting lenses
                          0.000 times(15): CPU-sec for sorting cells
-              75.731 times(7):   time in CPU-sec for    shooting
-                         0.244 times(4): CPU-sec for shootcl  ( 0.32%)
-                         9.097 times(5): CPU-sec for shootfix (12.01%)
-                        52.357 times(6): CPU-sec for shotayco (69.14%)
-              75.739 times(8):   time in CPU-sec whole run
+              38.875 times(7):   time in CPU-sec for    shooting
+                         0.198 times(4): CPU-sec for shootcl  ( 0.51%)
+                         5.596 times(5): CPU-sec for shootfix (14.39%)
+                        26.735 times(6): CPU-sec for shotayco (68.77%)
+              38.885 times(8):   time in CPU-sec whole run
 
 
-        33 lenses   after sorting: 
+        98 lenses   after sorting: 
          number               index      x-coord       y-coord      mass
-              1                  11      9.637000      9.399773    10.00
-              2                  12     19.659364      1.997559    10.00
-              3                  13    -17.105595     -4.839822    10.00
-              4                  16     -8.206876    -13.158756    10.00
-              5                  19      6.991453    -12.350796    10.00
-              6                  20     15.836457    -11.545473    10.00
-              7                  23    -15.895140     11.837328    10.00
-              8                  24    -13.972822     15.330143    10.00
-              9                  25     -8.168568     17.373785    10.00
-             10                  26     -1.055557     16.728824    10.00
-             11                  29    -16.841195      5.891434    10.00
-             12                  30    -12.758470      8.094422    10.00
-             13                  36     -0.916091      1.541431    10.00
-             14                  38      7.948808     17.305119    10.00
-             15                  70      7.973414     -2.167015    10.00
-             16                  72     10.545873     -7.696414    10.00
-             17                  73     11.742418     -3.389717    10.00
-             18                  74     16.346300     -4.949619    10.00
-             19                  76     16.822187     -6.321170    10.00
-             20                 115     -3.276888     12.100718    10.00
-             21                 116     -1.235319     12.484856    10.00
-             22                 134     -7.513212     10.493198    10.00
-             23                 136     -6.183529      6.809384    10.00
-             24                 137     -3.256769     10.131093    10.00
-             25                 138     -1.541048      9.816196    10.00
-             26                 149      1.297032     19.064095    10.00
-             27                 151      2.577502     17.172754    10.00
-             28                 278      2.984641     -1.827754    10.00
-             29                 279      2.242372     -4.886353    10.00
-             30                 437    -10.367148     15.596137    10.00
-             31                 440     -8.490959     13.715713    10.00
-             32                1754     -8.128787     15.369676    10.00
-             33                1756     -8.474380     14.631539    10.00
+              1                  23    -33.270961     24.777340    10.00
+              2                  26     -2.209443     35.015991    10.00
+              3                  29    -35.251200     12.331673    10.00
+              4                  30    -26.705432     16.942865    10.00
+              5                  31    -43.562354      5.280971    10.00
+              6                  35    -14.100369      5.630656    10.00
+              7                  48     11.653227      0.256530    10.00
+              8                  49     22.624650     14.087733    10.00
+              9                  59    -11.770334    -21.509727    10.00
+             10                  68     -7.494746    -35.900308    10.00
+             11                  72     22.074128    -16.109772    10.00
+             12                  74     34.215309    -10.360310    10.00
+             13                  76     35.211412    -13.231176    10.00
+             14                  79      2.071105    -35.871995    10.00
+             15                  82     33.148129    -24.166442    10.00
+             16                  97    -29.247255     32.088335    10.00
+             17                 110    -11.369387     30.022221    10.00
+             18                 112    -11.946408     25.531718    10.00
+             19                 113     -7.187777     29.677055    10.00
+             20                 115     -6.859028     25.328655    10.00
+             21                 116     -2.585712     26.132715    10.00
+             22                 130    -24.791384      6.149032    10.00
+             23                 131    -29.513731      0.361700    10.00
+             24                 135    -18.937832     16.497375    10.00
+             25                 136    -12.943073     14.253084    10.00
+             26                 137     -6.816917     21.205928    10.00
+             27                 138     -3.225650     20.546801    10.00
+             28                 145    -10.896326      7.543447    10.00
+             29                 148     -1.917518      3.226451    10.00
+             30                 149      2.714886     39.904069    10.00
+             31                 153     11.475680     41.928186    10.00
+             32                 156     16.638072     36.222264    10.00
+             33                 161     11.093944     27.839773    10.00
+             34                 163     16.269947     27.427812    10.00
+             35                 186     20.171717     19.675163    10.00
+             36                 187     12.142461     16.396678    10.00
+             37                 201     35.589678     17.908457    10.00
+             38                 204     38.987094     13.616974    10.00
+             39                 213    -40.692116     -0.563397    10.00
+             40                 216    -35.804628    -10.130488    10.00
+             41                 226    -23.641909    -11.066162    10.00
+             42                 228    -24.347532    -19.420201    10.00
+             43                 230    -15.475794     -1.161699    10.00
+             44                 231    -17.767867    -10.920596    10.00
+             45                 242     -3.653312    -14.624763    10.00
+             46                 243     -7.824427    -17.951290    10.00
+             47                 262    -11.405239    -22.116766    10.00
+             48                 264    -11.652815    -31.640213    10.00
+             49                 266     -0.917860    -22.842208    10.00
+             50                 267     -7.490369    -32.225483    10.00
+             51                 278      6.247310     -3.825769    10.00
+             52                 282     16.689576     -4.535894    10.00
+             53                 283     16.249208    -10.331244    10.00
+             54                 284     16.604422     -7.731847    10.00
+             55                 286      6.703882    -14.002086    10.00
+             56                 287      5.069258    -18.567751    10.00
+             57                 293     24.564822     -2.124552    10.00
+             58                 302     31.199486    -15.735004    10.00
+             59                 303     22.249020    -18.170960    10.00
+             60                 310      9.661002    -24.162743    10.00
+             61                 322     17.528108    -36.925699    10.00
+             62                 324     17.643657    -40.019269    10.00
+             63                 326     31.596999    -25.584066    10.00
+             64                 327     24.976515    -29.325779    10.00
+             65                 397    -31.755776     26.549552    10.00
+             66                 400    -27.698178     24.154087    10.00
+             67                 413    -19.763007     37.467381    10.00
+             68                 414    -17.098064     36.365992    10.00
+             69                 437    -21.700029     32.645102    10.00
+             70                 440    -17.772877     28.709086    10.00
+             71                 608      4.333139     35.282493    10.00
+             72                 941    -10.763910     -7.680403    10.00
+             73                 944     -7.920613    -10.120648    10.00
+             74                1047    -20.049178    -27.499390    10.00
+             75                1048    -17.178247    -27.543291    10.00
+             76                1117      2.458049     -6.915542    10.00
+             77                1120      4.693629    -10.227886    10.00
+             78                1153      7.332851    -18.208643    10.00
+             79                1154     10.605747    -17.766343    10.00
+             80                1155      7.066123    -19.654247    10.00
+             81                1178     32.931322     -1.724618    10.00
+             82                1180     31.352536     -4.977755    10.00
+             83                1181     24.578678     -7.095196    10.00
+             84                1183     24.529689    -10.401032    10.00
+             85                1754    -17.014796     32.171084    10.00
+             86                1755    -18.664457     31.302205    10.00
+             87                2149    -15.726303     21.963871    10.00
+             88                2150    -15.021320     21.099400    10.00
+             89                3398     41.150060      4.181198    10.00
+             90                3399     39.536492      2.931804    10.00
+             91                4983      0.541864    -29.964564    10.00
+             92                4984      1.486363    -29.972237    10.00
+             93                5025     14.634181    -25.852108    10.00
+             94                5028     16.243176    -26.406564    10.00
+             95                7026    -17.161661     31.611342    10.00
+             96                7027    -17.738175     30.626052    10.00
+             97               38866      5.474010     36.430688    10.00
+             98               38868      5.395107     35.945203    10.00
 
 
-        19  cells   after sorting: 
+        71  cells   after sorting: 
          number               index      x-coord       y-coord      mass
-              1                   1     -7.533875     11.643875   170.00
-              2                   2      8.223941     12.987860    50.00
-              3                   3    -12.656235     -8.999289    20.00
-              4                   4     10.165013     -6.126034    90.00
-              5                   5    -14.933981     13.583735    20.00
+              1                   1    -17.826638     22.287787   320.00
+              2                   2     18.453135     23.127189   160.00
+              3                   3    -15.325050    -18.050946   180.00
+              4                   4     17.254924    -17.498409   320.00
+              5                   5    -30.493042     26.892329    40.00
 
-             15                  34     -2.398909      9.973644    20.00
-             16                  37      1.937267     18.118424    20.00
-             17                  69      2.613507     -3.357054    20.00
-             18                 109     -8.865319     14.828266    40.00
-             19                 438     -8.301584     15.000607    20.00
+             67                1245      1.014113    -29.968400    20.00
+             68                1256     15.438679    -26.129336    20.00
+             69                1756    -17.449918     31.118697    20.00
+             70                2428      5.434559     36.187946    20.00
+             71                9716      5.434559     36.187946    20.00
 
 
  distribution of cells and lenses in different levels:
              level              cells               lenses
                  1                   4                   0
-                 2                   7                   6
-                 3                   6                  13
-                 4                   1                  10
-                 5                   1                   2
-                 6                   0                   2
+                 2                  14                   0
+                 3                  30                  15
+                 4                  14                  49
+                 5                   6                  20
+                 6                   2                  10
+                 7                   1                   2
+                 8                   0                   2
