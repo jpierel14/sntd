@@ -3,11 +3,13 @@ import numpy as np
 import matplotlib.pyplot as plt
 from copy import deepcopy,copy
 from scipy import stats
-from scipy.interpolate import interp1d
+from scipy.interpolate import interp1d,interp2d
 from astropy.table import Table
 from astropy.extern import six
 import nestle
 from collections import OrderedDict
+from sklearn.gaussian_process import GaussianProcessRegressor
+from sklearn.gaussian_process.kernels import RBF
 
 from .util import *
 from .io import _sntd_deepcopy,table_factory
@@ -17,7 +19,7 @@ import models
 __all__=['fit_data','colorFit','spline_fit']
 
 __thetaSN__=['z','hostebv','screenebv','screenz','rise','fall','sigma','k','x1','c']
-__thetaL__=['t0','amplitude','dt0','A','B','t1','psi','phi','s','x0']
+__thetaL__=['t0','amplitude','dt0','A','B','t1','psi','phi','s','x0','microlensingA','microlensingD']
 
 
 _needs_bounds={'z'}
@@ -162,6 +164,8 @@ def fit_data(lcs, snType='Ia',bands=None,method='minuit', models=None, params=No
     args['combinedError']=kwargs.get('combinedError',None)
     args['showPlots']=kwargs.get('showPlots',False)
     args['snType']=snType
+    args['microlensing']=kwargs.get('microlensing',False)
+    args['kernel']=kwargs.get('kernel','RBF')
     if not models:
         mod,types=np.loadtxt(os.path.join(__dir__,'data','sncosmo','models.ref'),dtype='str',unpack=True)
         modDict={mod[i]:types[i] for i in range(len(mod))}
@@ -691,7 +695,7 @@ def _fitSeparate(curves,mods,args,bounds):
 
     for d in fitDict.keys():
         _,bestFit,bestMod=fitDict[d]
-        tempTable=copy(curves.images[d].table)
+        tempTable=deepcopy(curves.images[d].table)
         for b in [x for x in np.unique(tempTable['band']) if x not in args['bands']]:
             tempTable=tempTable[tempTable['band']!=b]
         if args['flip']:
@@ -712,8 +716,15 @@ def _fitSeparate(curves,mods,args,bounds):
             guess_amp_bounds=True
         else:
             guess_amp_bounds=False
-        nest_res,nest_fit=sncosmo.nest_lc(tempTable,bestFit,vparam_names=bestRes.vparam_names,bounds=args['bounds'],guess_amplitude_bound=guess_amp_bounds,maxiter=1000,npoints=200)
+        nest_res,nest_fit=_nested_wrapper(tempTable,bestFit,vparams=bestRes.vparam_names,bounds=args['bounds'],
+                                          guess_amplitude_bound=guess_amp_bounds,microlensing=args['microlensing'],zp=curves.images[d].zp,zpsys=curves.images[d].zpsys,kernel=args['kernel'],maxiter=1000,npoints=200)
         #print(d,nest_res.h)
+        if args['microlensing'] is None and not guess_amp_bounds:
+            guess_amp_bounds=True
+        else:
+            guess_amp_bounds=False
+
+
 
         if nest_res.ndof != len(tempTable)- len(nest_res.vparam_names):
             dofs[d]=len(tempTable)- len(nest_res.vparam_names)
@@ -734,7 +745,6 @@ def _fitSeparate(curves,mods,args,bounds):
         #errs[d]=nest_res.errors
         #print(curves.images[d].simMeta)
 
-
     joint=_joint_likelihood(resList,verbose=False)
     #for p in joint.keys():
 
@@ -744,7 +754,7 @@ def _fitSeparate(curves,mods,args,bounds):
 
         for b in [x for x in np.unique(tempTable['band']) if x not in args['bands']]:
             tempTable=tempTable[tempTable['band']!=b]
-        if not np.all([x in __thetaL__ for x in joint.keys()]):
+        if not np.all([x in __thetaL__ for x in joint.keys()]):# or args['microlensing'] is not None:
             bds=dict([])
 
             final_vparams=[]
@@ -769,7 +779,7 @@ def _fitSeparate(curves,mods,args,bounds):
                     errs[p]=joint[p][1]
                     #final_vparams.append(p)
             #finalRes,finalFit=sncosmo.fit_lc(tempTable,curves.images[d].fits.model,final_vparams,bounds=bds,guess_amplitude=False,guess_t0=False,maxcall=500)
-            finalRes,finalFit=sncosmo.nest_lc(tempTable,curves.images[d].fits.model,final_vparams,bounds=bds,guess_amplitude_bound=True,maxiter=500)
+            finalRes,finalFit=sncosmo.nest_lc(tempTable,curves.images[d].fits.model,final_vparams,bounds=bds,guess_amplitude_bound=guess_amp_bounds,maxiter=500)
 
             finalRes.ndof=dofs[d]
             #print(d,finalRes.chisq/finalRes.ndof,stats.chi2.sf(finalRes.chisq,finalRes.ndof),finalRes.chisq,finalRes.ndof)
@@ -803,9 +813,12 @@ def _fitSeparate(curves,mods,args,bounds):
                 tempTable=tempTable[tempTable['band']!=b]
             tempMod=copy(curves.images[d].fits.model)
 
-            tempMod._source._phase=tempMod._source._phase[tempMod._source._phase>=(np.min(tempTable['time'])-tempMod.get('t0'))]
-            tempMod._source._phase=tempMod._source._phase[tempMod._source._phase<=(np.max(tempTable['time'])-tempMod.get('t0'))]
+            #tempMod._source._phase=tempMod._source._phase[tempMod._source._phase>=(np.min(tempTable['time'])-tempMod.get('t0'))]
+            #tempMod._source._phase=tempMod._source._phase[tempMod._source._phase<=(np.max(tempTable['time'])-tempMod.get('t0'))]
+
+
             sncosmo.plot_lc(tempTable,model=tempMod)
+
             #plt.savefig(nest_fit._source.name+'_'+tempTable['band'][0]+'_refs_'+d+'.pdf',format='pdf',overwrik4ite=True)
             plt.show()
             plt.clf()
@@ -813,10 +826,184 @@ def _fitSeparate(curves,mods,args,bounds):
 
     return curves
 
+def _nested_wrapper(data,model,vparams,bounds,guess_amplitude_bound,microlensing,zp,zpsys,kernel,maxiter,npoints):
+
+    temp=deepcopy(data)
+    vparam_names=deepcopy(vparams)
+    tempTime=np.linspace(np.min(data['time']),np.max(data['time']),1000)
+    if microlensing is not None:
+        nest_res,nest_fit=sncosmo.nest_lc(temp,model,vparam_names=vparam_names,bounds=bounds,guess_amplitude_bound=guess_amplitude_bound,maxiter=500,npoints=200)
+        temp=deepcopy(data)
+        '''
+        micro,sigma,mu=fit_micro(nest_res,nest_fit,temp,zp,zpsys,micro_type=microlensing,kernel=kernel)
+        if microlensing=='achromatic':
+            nest_fit.add_effect(micro, 'microlensing', 'rest')
+
+        else:
+            pass
+            #TODO add chromatic microlensing
+        vparam_names.append('microlensingA')
+        vparam_names.append('microlensingD')
+
+        bounds['microlensingA']=(0.,1.)#(max(10**(-.4*.1)/np.max(mu),1-3*np.median(sigma/mu)),min(10**(-.4*-.1)/np.max(mu),1+3*np.median(sigma/mu)))
+        bounds['microlensingD']=(-5.,5.)#(-1.96*np.median(sigma),1.96*np.median(sigma))
+        #bounds['t0']=(nest_fit.get('t0')-1,nest_fit.get('t0')+1)
+        print(nest_fit.get('t0'),nest_res.errors)
+        temp=deepcopy(data)
+        nest_res,nest_fit=sncosmo.nest_lc(temp,nest_fit,vparam_names=[x for x in vparam_names if x !='amplitude'],bounds=bounds,guess_amplitude_bound=False,maxiter=1000,npoints=200)
+        '''
+
+        micros,t0Range=fit_micro(nest_res,nest_fit,temp,zp,zpsys,micro_type=microlensing,kernel=kernel)
+        bestMod=None
+        bestRes=None
+        for i in range(len(t0Range)):
+            tempFit=deepcopy(nest_fit)
+            tempRes=deepcopy(nest_res)
+            t0=t0Range[i]
+            micro=micros[i]
+            if microlensing=='achromatic':
+                tempFit.add_effect(micro, 'microlensing', 'rest')
+
+            else:
+                pass
+                #TODO add chromatic microlensing
+            bounds['microlensingA']=(0.,2.)
+            bounds['t0']=(t0-1.96*tempRes.errors['t0'],t0+1.96*tempRes.errors['t0'])
+            #print(tempRes.errors['t0'])
+            vparam_names.append('microlensingA')
+            temp=deepcopy(data)
+            temp_nest_res,temp_nest_fit=sncosmo.nest_lc(temp,tempFit,vparam_names=[x for x in vparam_names if x !='amplitude'],bounds=bounds,guess_amplitude_bound=False,maxiter=None,npoints=200)
+            #print(t0,temp_nest_fit.get('t0'),temp_nest_res.logz)
+            if bestMod is None:
+                bestMod=temp_nest_fit
+                bestRes=temp_nest_res
+            elif temp_nest_res.logz>bestRes.logz:
+                bestMod=temp_nest_fit
+                bestRes=temp_nest_res
+    else:
+        bestRes,bestMod=sncosmo.nest_lc(data,model,vparam_names=vparam_names,bounds=bounds,guess_amplitude_bound=guess_amplitude_bound,maxiter=1000,npoints=200)
+    return(bestRes,bestMod)
+
 def _maxFromModel(mod,band,zp,zpsys):
       time=np.arange(mod.mintime(),mod.maxtime(),.1)
       flux=mod.bandflux(band,time,zp,zpsys)
       return (time[flux==np.max(flux)],np.max(flux))
+
+def fit_micro(res,fit,dat,zp,zpsys,micro_type='achromatic',kernel='RBF'):
+    #print(fit.get('t0'))
+    figures=[]
+
+    mags=[]
+    t0Range=np.linspace(-1.96*res.errors['t0']+fit.get('t0'),1.96*res.errors['t0']+fit.get('t0'),20)
+    for t0 in t0Range:
+        #print(t0)
+
+        fit.set(t0=t0)
+        data=deepcopy(dat)
+
+        data['time']-=t0#fit.get('t0')
+        #data=data[data['time']<=50.]
+        #data=data[data['time']>=-10.]
+        achromatic=micro_type=='achromatic'
+        if achromatic:
+            allResid=[]
+            allErr=[]
+            allTime=[]
+        else:
+            allResid=dict([])
+            allErr=dict([])
+            allTime=dict([])
+        for b in np.unique(data['band']):
+            tempData=data[data['band']==b]
+            tempData=tempData[tempData['flux']>.01]
+            tempTime=tempData['time']
+            mod=fit.bandflux(b,tempTime+t0,zpsys=zpsys,zp=zp[b])
+            #fig=plt.figure()
+            #ax=fig.gca()
+            #ax.plot(tempTime,mod)
+            #ax.scatter(tempData['time'],tempData['flux'])
+            #plt.show()
+            tempData=tempData[mod>.01]
+            residual=tempData['flux']/mod[mod>.01]
+            #from statsmodels.stats.stattools import durbin_watson
+            #print(durbin_watson(-2.5*np.log10(residual)))
+            if achromatic:
+                allResid=np.append(allResid,residual)
+                allErr=np.append(allErr,residual*tempData['fluxerr']/tempData['flux'])
+                allTime=np.append(allTime,tempTime)
+            else:
+                allResid[b]=residual
+                allErr[b]=residual*tempData['fluxerr']/tempData['flux']
+                allTime[b]=tempTime
+
+        if kernel=='RBF':
+            kernel = RBF(25., (10., 50.))
+
+
+
+
+        if achromatic:
+            gp = GaussianProcessRegressor(kernel=kernel, alpha=allErr ** 2,
+                                          n_restarts_optimizer=100)
+            gp.fit(np.atleast_2d(allTime).T,allResid.ravel())
+
+            X=np.atleast_2d(np.linspace(np.min(allTime), np.max(allTime), 1000)).T
+            #print(X[0],X[-1])
+            y_pred, sigma = gp.predict(X, return_std=True)
+            tempX=X[:,0]
+            tempX=np.append([fit._source._phase[0]*(1+fit.get('z'))],np.append(tempX,[fit._source._phase[-1]*(1+fit.get('z'))]))
+            y_pred=np.append([1.],np.append(y_pred,[1.]))
+            sigma=np.append([0.],np.append(sigma,[0.]))
+
+            result=sncosmo.AchromaticMicrolensing(tempX/(1+fit.get('z')),y_pred,sigma=sigma,magformat='multiply')
+
+
+            mags.append(result)
+            '''
+            fig=plt.figure()
+            ax=fig.gca()
+            #plt.plot(X, resid, 'r:', label=u'$f(x) = x\,\sin(x)$')
+            ax.errorbar(allTime.ravel(), allResid, allErr, fmt='r.', markersize=10, label=u'Observations')
+            #for c in np.arange(0,1.01,.1):
+            #    for d in np.arange(-np.max(sigma),np.max(sigma),np.max(sigma)/10):
+            #        plt.plot(X, 1+(y_pred[1:-1]-1)*c+d, 'b-')#, label=u'Prediction')
+            ax.plot(X, y_pred[1:-1], 'b-' ,label=u'Prediction')
+
+            ax.fill(np.concatenate([X, X[::-1]]),
+                     np.concatenate([y_pred[1:-1] - 1.9600 * sigma[1:-1],
+                                     (y_pred[1:-1] + 1.9600 * sigma[1:-1])[::-1]]),
+                     alpha=.5, fc='b', ec='None', label='95% confidence interval')
+            ax.set_xlabel('$x$')
+            ax.set_ylabel('$f(x)$')
+            #plt.xlim(-10, 50)
+            #plt.ylim(.8, 1.4)
+
+            ax.legend(loc='upper left')
+            figures.append(ax)
+            plt.clf()
+            plt.close()
+            '''
+
+
+        else:
+            result=dict([])
+            for b in allResid.keys():
+
+                gp = GaussianProcessRegressor(kernel=kernel, alpha=allErr[b] ** 2,
+                                          n_restarts_optimizer=100)
+                gp.fit(np.atleast_2d(allTime[b]).T,allResid[b].ravel())
+                X=np.atleast_2d(np.linspace(np.min(allTime[b]), np.max(allTime[b]), 1000)).T
+
+                y_pred, sigma = gp.predict(X, return_std=True)
+                tempX=X[:,0]
+                tempX=np.append([fit._source._phase[0]*(1+fit.get('z'))],np.append(tempX,[fit._source._phase[-1]*(1+fit.get('z'))]))
+                y_pred=np.append([1.],np.append(y_pred,[1.]))
+
+                result[b]=(sncosmo.AchromaticMicrolensing(tempX/(1+fit.get('z')),y_pred,magformat='multiply'),sigma)
+
+
+
+    return mags,t0Range#result,sigma,y_pred
 
 def timeDelaysAndMagnifications(curves):
     times=dict([])

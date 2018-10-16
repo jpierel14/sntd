@@ -211,7 +211,11 @@ def createMultiplyImagedSN(
                 # TODO : allow random file selection from a directory
                # ml_filename = microlensing_params[0]
                 #ml_mag_type = microlensing_params[1]
-                time,dmag=microcaustic_field_to_curve(microlensing_params,np.arange(0,200,1),z_lens,redshift)
+                done=True
+                while done:
+                    time,dmag=microcaustic_field_to_curve(microlensing_params,np.arange(0,200,1),z_lens,redshift)
+                    if np.abs(np.max(dmag[time<50])-np.min(dmag[time<50]))>=.03:
+                        done=False
                 ml_effect = sncosmo.AchromaticMicrolensing(
                     time+model_i._source._phase[0],dmag, magformat='add')
             model_i.add_effect(ml_effect, 'microlensing', 'rest')
@@ -236,7 +240,7 @@ def createMultiplyImagedSN(
             tried+=1
         if tried==50:
             print("Your survey parameters detected no supernovae.")
-            sys.exit()
+            return None
         table_i=table_i[0]
         #print(table_i['flux']/table_i['fluxerr'])
         curve_i=curve(zp=obj.zpDict,zpsys=zpsys)
