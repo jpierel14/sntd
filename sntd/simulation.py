@@ -78,7 +78,7 @@ def createMultiplyImagedSN(
     data file, and this params list must give [filename, mag_type] where
     mag_type is 'multiply' or 'add'.
     """
-    if timeArr:
+    if timeArr is not None:
         times=timeArr
     else:
         if not mjdRange:
@@ -211,11 +211,11 @@ def createMultiplyImagedSN(
                 # TODO : allow random file selection from a directory
                # ml_filename = microlensing_params[0]
                 #ml_mag_type = microlensing_params[1]
-                done=True
-                while done:
-                    time,dmag=microcaustic_field_to_curve(microlensing_params,np.arange(0,200,1),z_lens,redshift)
-                    if np.abs(np.max(dmag[time<50])-np.min(dmag[time<50]))>=.03:
-                        done=False
+                #done=True
+                #while done:
+                time,dmag=microcaustic_field_to_curve(microlensing_params,np.arange(0,200,1),z_lens,redshift)
+                #    if np.abs(np.max(dmag[time<50])-np.min(dmag[time<50]))>=.03:
+                #        done=False
                 ml_effect = sncosmo.AchromaticMicrolensing(
                     time+model_i._source._phase[0],dmag, magformat='add')
             model_i.add_effect(ml_effect, 'microlensing', 'rest')
