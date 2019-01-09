@@ -2,6 +2,7 @@
 from __future__ import print_function
 
 from .io import *
+from .simulation import *
 #from .fitting import *
 #from ml import *
 #from supcos.io import read_data,write_data

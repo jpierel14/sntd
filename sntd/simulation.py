@@ -1,15 +1,12 @@
-import sncosmo, datetime, sys, os, scipy
-import numpy as np
-from astropy.time import Time
-from astropy.table import Table
-from astropy.io import ascii
+import sncosmo
 from copy import deepcopy
 
 from .util import __dir__
 from .io import curve,curveDict
 from .ml import *
 
-__all__=['createRandMultiplyImagedSN']
+__all__=['createMultiplyImagedSN']
+
 def _getAbsoluteDist():
     absolutes=ascii.read(os.path.join(__dir__,'sim','data','absolutes.ref'))
     total=float(np.sum(absolutes['N'][absolutes['type']!='Ia']))
@@ -26,67 +23,100 @@ def _getAbsFromDist(dist):
     mu,sigma=dist
     return(np.random.normal(mu,sigma))
 
-def createRandMultiplyImagedSN(
-        sourcename, snType, redshift, telescopename='telescope',
-        objectName='object', timeDelayRange=(0,30), muRange=(1,20),
-        numImages=2, cadence=5, epochs=50, bands=['F140W','F105W','F160W'],
-        gain=1000., skynoiseRange=(1,5), mjdRange=None, zpsys='ab', zp=None,
-        microlensing=False, cc_av=.9, ia_av=.3, dust='CCM89Dust',
-        dust_frames=['rest', 'free'],
-        dust_names=['host', 'lens'], dust_ebv=[None, None],
-        minsnr=0.0, av_host=.3, z_lens=None,
-        av_lens=None, scatter=True):
-    """Generate a multiply-imaged SN light curve set, with time delays and
-    magnifications drawn randomly from user-defined ranges.
-    """
-    time_delays = list(np.random.uniform(timeDelayRange[0], timeDelayRange[1],
-                                         numImages))
-    magnifications = list(np.random.uniform(muRange[0], muRange[1],
-                                            numImages))
-    return createMultiplyImagedSN(
-        sourcename, snType, redshift, telescopename=telescopename,
-        objectName='object', time_delays=time_delays,
-        magnifications=magnifications,
-        numImages=numImages, cadence=cadence, epochs=epochs, bands=bands,
-        gain=gain, skynoiseRange=skynoiseRange, mjdRange=mjdRange,
-        zpsys=zpsys, zp=zp, microlensing=microlensing, cc_av=cc_av,
-        ia_av=ia_av, dust_model=dust, screenz=screenz, screenebv=screenebv,
-        dust_frames=dust_frames, dust_names=dust_names, minsnr=minsnr,
-        av_host=av_host, z_lens=z_lens, av_lens=av_lens, scatter=scatter)
-
-
 
 def createMultiplyImagedSN(
         sourcename, snType, redshift, telescopename='telescope',
         objectName='object', time_delays=[0., 20.], magnifications=[1., 5.],
         numImages=2, cadence=5, epochs=50, bands=['F105W', 'F125W', 'F160W'],
-        gain=1000., skynoiseRange=(1, 5), mjdRange=None, timeArr=None,zpsys='ab', zp=None,
+        gain=1000., skynoiseRange=(1, 5), timeArr=None,zpsys='ab', zp=None,
         microlensing_type=None, microlensing_params=[],
         dust_model='CCM89Dust', av_host=.3, av_lens=None,
         z_lens=None, minsnr=0.0, scatter=True,snrFunc=None):
     """Generate a multiply-imaged SN light curve set, with user-specified time
     delays and magnifications.
+    Parameters
+    ----------
+    sourcename : `~sncosmo.Source` or str
+        The model for the spectral evolution of the source. If a string
+        is given, it is used to retrieve a `~sncosmo.Source` from
+        the registry.
+    snType : str
+        The classification of the supernova
+    redshift : float
+        Redshift of the source
+    z_lens : float
+        Redshift of the lens
+    telescopename : str
+        The name of the telescope used for observations
+    objectName : str
+        The name of the simulated supernova
+    numImages : int
+        The number of images to simulate
+    time_delays : list of float
+        The relative time delays for the multiple images of the supernova. Must
+        be same length as numImages
+    magnifications : list of float
+        The relative magnifications for the multiple images of hte supernova. Must
+        be same length as numImages
+    timeArr : list of float
+        A list of times that define the simulated observation epochs
+    cadence : float
+        The cadence of the simulated observations (if timeArr is not defined)
+    epochs : int
+        The number of simulated observations (if timeArr is not defined)
+    bands : list of `~sncosmo.Bandpass` or str
+        The bandpass(es) used for simulated observations
+    snrFunc : `~scipy.interpolate.interp1d`
+        An interpolation function that defines the signal to noise ratio (SNR)
+        as a function of magnitude in the AB system. Used to define the
+        observations instead of telescope parameters like gain and skynoise
+    gain : float
+        Gain of the telescope "obtaining" the simulated observations (if snrFunc
+        not defined)
+    skynoiseRange : list of float
+        The left and right bounds of sky noise used to define observational noise
+        (if snrFunc not defined)
+    minsnr : float
+        A minimum SNR threshold for observations when defining uncertainty
+    scatter : bool
+        Boolean that decides whether Gaussian scatter is applied to simulated
+        observations
+    zpsys : str or `~sncosmo.MagSystem`
+        The zero-point system used to define the photometry
+    zp : float
+        The zero-point used to define the photometry
+    microlensing_type : str
+        If microlensing is to be included, defines whether it is
+        "AchromaticSplineMicrolensing" or "AchromaticMicrolensing"
+    microlensing_params : `~numpy.array` or list of int
+        If using AchromaticSplineMicrolensing, then this params list must give
+        three values for [nanchor, sigmadm, nspl]. If using AchromaticMicrolensing,
+        then this must be a microcaustic defined by a 2D numpy array
+    dust_model : str
+        The dust model to be used for simulations, see sncosmo documentation for options
+    av_host : float
+        The A<sub>V</sub> parameter for the simulated dust effect in the source plane
+    av_lens : float
+        The A<sub>V</sub> parameter for the simulated dust effect in the lens plane
 
-    :param microlensing_type: str  Name any of the valid sncosmo microlensing
-    types. Currently ['AchromaticSplineMicrolensing',
-    'ChromaticSplineMicrolensing', 'AchromaticMicrolensing']
-    :param microlensing_params: list   Parameters for the microlensing effect
-    -- see sncosmo models.py for details.  Currently, if using either of the
-    spline-based "mock" lensing options, then this params list must give
-    three values for [nanchor, sigmadm, nspl].  If the microlensing_type is
-    'AchromaticMicrolensing' then we are reading a simulated microlensing
-    data file, and this params list must give [filename, mag_type] where
-    mag_type is 'multiply' or 'add'.
+
+    Returns
+    -----
+    MISN : `~sntd.curveDict`
+        A curveDict object containing each of the multiply-imaged SN light curves
+        and the simulation parameters.
+    Examples
+    --------
+    >>> myMISN = sntd.createMultiplyImagedSN('salt2', 'Ia', 1.33,z_lens=.53, bands=['F110W'],
+        zp=[26.8], cadence=5., epochs=35.,skynoiseRange=(.001,.005),gain=70. , time_delays=[10., 78.],
+        magnifications=[7,3.5], objectName='My Type Ia SN', telescopename='HST',minsnr=5.0)
     """
+
     if timeArr is not None:
         times=timeArr
     else:
-        if not mjdRange:
-            #now=np.round(Time(datetime.datetime.now()).mjd,3)
-            times=np.linspace(0,cadence*epochs,epochs)
-        else:
-            #times=np.linspace(mjdRange[0],mjdRange[-1],epochs)
-            times=np.arange(mjdRange[0],min(mjdRange[0]+cadence*epochs,mjdRange[-1])+cadence,cadence)
+        times=np.linspace(0,cadence*epochs,epochs)
+
     bandList=np.array([np.tile(b,len(times)) for b in bands]).flatten()
     ms=sncosmo.get_magsystem(zpsys)
 
@@ -97,17 +127,19 @@ def createMultiplyImagedSN(
     else:
         zpList=[zp for i in range(len(bandList))]
 
+    #set up object to be filled by simulations
     obj=curveDict(telescopename=telescopename,object=objectName)
     obj.bands = set(bandList)
     obj.zpDict = dict([(bandList[i], zpList[i]) for i in range(len(bandList))])
     obj.zpsys = zpsys
+    #make sncosmo obs table
     obstable = Table({'time':np.tile(times,len(bands)), 'band':bandList,
                       'zpsys':[zpsys.upper() for i in range(len(bandList))],
                       'zp':zpList,
                       'skynoise':np.random.uniform(
                           skynoiseRange[0],skynoiseRange[1],len(bandList)),
                       'gain':[gain for i in range(len(bandList))]})
-    #print(ascii.write(obstable['band','time','gain','skynoise','zp','zpsys'],Writer=ascii.Latex,latexdict={'units':{'time':'Days','skynoise':'Counts'}}))
+
     absolutes=_getAbsoluteDist()
 
     # Set up the dust_model extinction effects in the host galaxy and lens plane
@@ -147,6 +179,7 @@ def createMultiplyImagedSN(
     model=sncosmo.Model(source=sourcename, effects=dust_effect_list,
                         effect_names=dust_names, effect_frames=dust_frames)
     model.set(z=redshift)
+    #set absolute magnitude in b or r band based on literature
     if snType in ['IIP','IIL','IIn']:
         absBand='bessellb'
     else:
@@ -154,7 +187,7 @@ def createMultiplyImagedSN(
     model.set_source_peakabsmag(_getAbsFromDist(absolutes[snType]['dist']),
                                 absBand, zpsys)
     # TODO: allow user to specify parameters like x1, c, t0 if desired.
-    #t0 = times[0] + .25 * (times[-1] - times[0])
+
     t0=0
     if snType=='Ia':
         x0=model.get('x0')
@@ -206,21 +239,11 @@ def createMultiplyImagedSN(
                 ml_effect = ml_spline_func(nanchor=nanchor, sigmadm=sigmadm,
                                            nspl=nspl)
             else:
-                # Load a microlensing simulation from a data file
-                # TODO : guard against common user entry errors
-                # TODO : allow random file selection from a directory
-               # ml_filename = microlensing_params[0]
-                #ml_mag_type = microlensing_params[1]
-                #done=True
-                #while done:
+                #get magnification curve from the defined microcaustic
                 time,dmag=microcaustic_field_to_curve(microlensing_params,np.arange(0,200,1),z_lens,redshift)
-                #    if np.abs(np.max(dmag[time<50])-np.min(dmag[time<50]))>=.03:
-                #        done=False
                 ml_effect = sncosmo.AchromaticMicrolensing(
                     time+model_i._source._phase[0],dmag, magformat='add')
             model_i.add_effect(ml_effect, 'microlensing', 'rest')
-            #model_i.set(microlensingz=redshift)
-            #params_i['microlensingz'] = redshift # Redundant?
         else:
             ml_effect = None
 
@@ -228,7 +251,6 @@ def createMultiplyImagedSN(
         # object, and store the simulation metadata
         model_i.set(**params_i)
 
-        #print(np.nanmin(model_i.bandmag('F125W',zpsys,np.arange(model_i.mintime(),model_i.maxtime(),1))))
         table_i = sncosmo.realize_lcs(
             obstable , model_i, [params_i],
             trim_observations=True, scatter=scatter,thresh=minsnr,snrFunc=snrFunc)
@@ -239,10 +261,12 @@ def createMultiplyImagedSN(
                 trim_observations=True, scatter=scatter,thresh=minsnr,snrFunc=snrFunc)
             tried+=1
         if tried==50:
+            #this arbitrary catch is here in case your minsnr and observation parameters
+            #result in a "non-detection"
             print("Your survey parameters detected no supernovae.")
             return None
         table_i=table_i[0]
-        #print(table_i['flux']/table_i['fluxerr'])
+        #create is curve with all parameters and add it to the overall curveDict object from above
         curve_i=curve(zp=obj.zpDict,zpsys=zpsys)
         curve_i.object=None
 
@@ -268,16 +292,3 @@ def createMultiplyImagedSN(
     model.set(**params)
     obj.model = model
     return(obj)
-
-
-def _addML(myCurve):
-    mlCurves=dict([])
-    num=np.random.randint(1,5)
-    print(num)
-    for b in set(myCurve['band']):
-        mlCurve=getDiffCurve(myCurve['time'][myCurve['band']==b],num)
-        myCurve['flux'][myCurve['band']==b]/=mlCurve[b]
-        myCurve['fluxerr'][myCurve['band']==b]/=mlCurve[b]
-        mlCurves[b]=mlCurve[b]
-
-    return(myCurve,mlCurves)
