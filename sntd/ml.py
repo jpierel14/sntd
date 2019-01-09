@@ -17,7 +17,7 @@ import matplotlib.mlab as mlab
 
 from .util import __dir__,__current_dir__
 
-
+__all__=['realizeMicro']
 #def identifyML(lc):
 def realizeMicro(arand=.25,debug=0,kappas=.75,kappac=.15,gamma=.76,eps=.6,nray=300,minmass=10,maxmass=10,power=-2.35,pixmax=5,pixminx=0,pixminy=0,pixdif=10,fracpixd=.3,iwrite=0,verbose=False):
     types=['%.3f','%i','%.2f','%.2f','%.2f','%.3f','%i','%.6f','%.6f','%.3f','%.3f','%.3f','%.3f','%.3f','%.3f','%i']
@@ -62,7 +62,11 @@ def realizeMicro(arand=.25,debug=0,kappas=.75,kappac=.15,gamma=.76,eps=.6,nray=3
     except:
         pass
     os.chdir(os.path.join(__dir__,'microlens'))
-    subprocess.call(r'./microlens')
+    if verbose:
+        subprocess.call(r'./microlens')
+    else:
+        with open(os.devnull,'w') as f:
+            subprocess.call(r'./microlens',stdout=f)
 
 
     num=np.loadtxt(os.path.join(__dir__,'microlens','jobnum'),dtype='str')
@@ -275,7 +279,6 @@ def mu_from_image(image, center,sizes,brightness='disk'):
     #print(np.mean(image),np.std(image))
     #print(np.mean((image-1024)/256.))
     image=10**(.4*(image-1024)/256.)
-    print(np.mean(image))
     i=0
     alphas=[1,.5,.7]
     for r in sizes:
@@ -316,12 +319,15 @@ def mu_from_image(image, center,sizes,brightness='disk'):
     #plt.colorbar(pad=.1)
 
     mu = np.array(mu)
+    mu/=np.mean(mu)
+
     #dmag = -2.5*np.log10(mu.astype(float))#/np.min(mu))
     #print(mu)
     #cbaxes = fig.add_axes([0.7, 0.3, 0.02, 0.58])
     #cb = plt.colorbar(cax = cbaxes)
     #dmag=10**(-0.4*((mu-1024)/256.0))
-    dmag=-2.5*np.log10(mu)#(mu-1024)/256.0
+    #dmag=-2.5*np.log10(mu)
+
     '''
     
     ax_divider = make_axes_locatable(ax)
@@ -337,7 +343,7 @@ def mu_from_image(image, center,sizes,brightness='disk'):
     '''
     #print(dmag)
 
-    return(dmag)
+    return(mu)
 
 def getDiffCurve(time,num,default=True):
 

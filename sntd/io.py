@@ -1,21 +1,19 @@
-#!/Users/jpierel/anaconda3/envs/astro2/bin python2
 import string
 from collections import OrderedDict as odict
 
 import numpy as np
-import os,sys,math
+import os
 import pycs
-import sncosmo,sntd
+import sncosmo
 from astropy.io import ascii
 from astropy.table import Table,vstack,Column
-from pycs.gen.lc import lightcurve
 from scipy.stats import mode
 from sncosmo import get_magsystem
 from copy import deepcopy
 import matplotlib.pyplot as plt
+from mpl_toolkits.axes_grid1.axes_divider import make_axes_locatable
 
 from .util import *
-#from.util import _get_default_prop_name
 
 __all__=['curve','curveDict','read_data','write_data','table_factory','factory']
 
@@ -37,10 +35,16 @@ class curveDict(dict):
 
 
     def __init__(self,telescopename="Unknown",object="Unknown"):
-        """
-        Constructor for curveDict class. Inherits from the dictionary class, and is the main object of organization used by SNTD.
-        :param telescopename: Name of the telescope that the data were gathered from
-        :param object: Object of interest
+        """Constructor for curveDict class. Inherits from the dictionary class, and is the main object of organization used by SNTD.
+        Parameters
+        ----------
+        telescopename : str
+            Name of the telescope that the data were gathered from
+        object : str
+            Name of object of interest
+        Returns
+        -------
+        MISN : `sntd.curveDict`
         """
         super(curveDict, self).__init__() #init for the super class
         self.meta = {'info': ''}
@@ -105,9 +109,6 @@ class curveDict(dict):
         print('Object: %s'%self.object)
         print('Number of bands: %d' %len(self.bands))
         print('')
-        print('Metadata:')
-        print('\n'.join('{}:{}'.format(*t) for t in zip(self.meta.keys(),self.meta.values())))
-        print('')
         for c in np.sort(self.images.keys()):
             print('------------------')
             print('Image: %s:'%c)
@@ -116,13 +117,18 @@ class curveDict(dict):
             min(self.images[c].table[_get_default_prop_name('time')]),
             max(self.images[c].table[_get_default_prop_name('time')])))
             print('Number of points: %d' %len(self.images[c].table))
+            print('')
+            print('Metadata:')
+            print('\n'.join('   {}:{}'.format(*t) for t in zip(self.images[c].simMeta.keys(),self.images[c].simMeta.values()) if isinstance(t[1],(str,float,int))))
         return '------------------'
 
     def add_curve(self,myCurve):
+        """Adds a curve object to the existing curveDict (i.e. adds
+        an image to a MISN)"""
 
         self.bands.update([x for x in myCurve.bands if x not in self.bands])
         if not myCurve.object:
-            myCurve.object='S'+str(len(self.images)+1)
+            myCurve.object='image_'+str(len(self.images)+1)
 
         myCurve.table.add_column(Column([myCurve.object for i in range(len(myCurve.table))],name='object'))
 
@@ -131,7 +137,6 @@ class curveDict(dict):
         if not myCurve.zp:
             print('Assuming standard curve...')
             myCurve.zp=myCurve.table['zp'][0]
-        #myCurve.fluxes
 
 
         tempCurve=deepcopy(myCurve)
@@ -146,45 +151,80 @@ class curveDict(dict):
             self.table=tempCurve.table
         return(self)
 
-    def combine_curves(self,tds=None,mus=None):
+    def combine_curves(self,time_delays=None,magnifications=None):
+        """Takes the multiple images in self.images and combines
+            the data into a single light curve using defined
+            time delays and magnifications or best (quick) guesses.
+        Parameters
+        ----------
+        time_delays : dict
+            Dictionary with image names as keys and relative time
+            delays as values (e.g. {'image_1':0,'image_2':20})
+        magnifications : dict
+            Dictionary with image names as keys and relative
+            magnifications as values (e.g.
+            {'image_1':1,'image_2':1.1})
+        """
         if len(self.images) <2:
             print("Not enough curves to combine!")
             return(self)
-        if not tds:
-            tds=_guess_time_delays(self)
-        if not mus:
-            mus=_guess_magnifications(self)
-        #print(tds)
-        #print(mus)
+        if not time_delays:
+            time_delays=_guess_time_delays(self) #TODO fix these guessing functions
+        if not magnifications:
+            magnifications=_guess_magnifications(self)
+
         self.combined.table=Table(names=self.table.colnames,dtype=[self.table.dtype[x] for x in self.table.colnames])
+
         for k in np.sort(self.images.keys()):
-            #print('True mu:'+str(self.images[k].simMeta['mu']/self.images['S3'].simMeta['mu']))
-            #print('True td: '+str(self.images[k].simMeta['td']-self.images['S3'].simMeta['td']))
             temp=deepcopy(self.images[k].table)
-            temp['time']+=tds[k]
-            temp['flux']/=mus[k]
-            #temp['fluxerr']/=mus[k]
+            temp['time']-=time_delays[k]
+            temp['flux']/=magnifications[k]
+            temp.meta=dict([])
 
             self.combined.table=vstack([self.combined.table,temp])
-        #print(self.combinedCurve)
+
+        self.combined.table.sort('time')
         self.combined.bands=self.bands
-        self.combined.meta['td']=tds
-        self.combined.meta['mu']=mus
+        self.combined.meta['td']=time_delays
+        self.combined.meta['mu']=magnifications
         return(self)
 
 
 
 
 
-    def plot_object(self, bands='all', showfig=False, savefig=True,
+    def plot_object(self, bands='all', savefig=False,
                     filename='mySN', orientation='horizontal',combined=False,
-                    showmodel=False,showfit=False):
-        """Plot the multiply-imaged SN light curves and save to a file.
-        Each subplot shows a single-band light curve, for all images of the SN. 
-        
-        bands: 'all' = plot all bands; or provide a list of strings 
-        orientation: 'horizontal' = all subplots are in a single row
-            'vertical' = all subplots are in a single column        
+                    showModel=False,showFit=False,showMicro=False):
+        """Plot the multiply-imaged SN light curves and show/save to a file.
+            Each subplot shows a single-band light curve, for all images of the SN.
+        Parameters
+        ----------
+        bands : str or list of str
+            'all' = plot all bands; or provide a list of bands to plot
+        savefig : bool
+            boolean to save or not save plot
+        filename : str
+            if savefig is True, this is the output filename
+        orientation : str
+            'horizontal' = all subplots are in a single row
+            'vertical' = all subplots are in a single column
+        combined : bool
+            If true, all light curves will be shown on a single plot.
+            Uses self.combined.table if it exists, otherwise it's
+            created
+        showModel : bool
+            If true, the underlying model before microlensing is plotted
+            as well
+        showFit : bool
+            If true and it exists, the best fit model from
+            self.images['image'].fits.model is plotted
+        showMicro : bool
+            If true and it exists, the simulated microlensing is plotted
+            as well
+        Returns
+        -------
+        figure : `~matplotlib.pyplot.figure`
         """
 
         if bands == 'all':
@@ -200,29 +240,35 @@ class curveDict(dict):
 
 
         colors=['r','g','b','k','m']
-        #markers=['.','^','*','8','s','+','D']
         i=0
-        # nrows=int(math.ceil(len(bands)/2.))
         leg=[]
         if combined:
 
             fig,axlist=plt.subplots(nrows=ncols, ncols=1,
-                                    sharex=True, sharey=False)
+                                    sharex=True, sharey=False,figsize=(8,8))
             if nbands==1:
                 axlist = [axlist]
             for lc in np.sort(self.images.keys()):
                 temp=self.combined.table[self.combined.table['object']==lc]
                 for b, ax in zip(bands, axlist):
-
-                    leg.append(
+                    if b==list(bands)[0]:
+                        leg.append(
+                            ax.errorbar(temp['time'][
+                                            temp['band']==b],
+                                        temp['flux'][
+                                            temp['band']==b],
+                                        yerr=temp['fluxerr'][
+                                            temp['band']==b],
+                                        markersize=4, fmt=colors[i]+'.'))
+                    else:
                         ax.errorbar(temp['time'][
                                         temp['band']==b],
                                     temp['flux'][
                                         temp['band']==b],
                                     yerr=temp['fluxerr'][
                                         temp['band']==b],
-                                    markersize=4, fmt=colors[i]+'.'))
-                    if showfit:
+                                    markersize=4, fmt=colors[i]+'.')
+                    if showFit:
                         ax.plot(np.arange(np.min(temp['time'][temp['band']==b]),np.max(temp['time'][temp['band']==b]),1),self.combined.fits.model(np.arange(np.min(temp['time'][temp['band']==b]),np.max(temp['time'][temp['band']==b]),1)),color='y')
 
                     ax.text(0.95, 0.95, b.upper(), fontsize='large',
@@ -234,7 +280,7 @@ class curveDict(dict):
                                     sharex=True, sharey=True)
             if nbands==1:
                 axlist = [axlist]
-
+            microAx={b:False for b in bands}
             for lc in np.sort(self.images.keys()):
                 for b, ax in zip(bands, axlist):
                     if b==list(bands)[0]:
@@ -246,6 +292,8 @@ class curveDict(dict):
                                         yerr=self.images[lc].table['fluxerr'][
                                             self.images[lc].table['band']==b],
                                         markersize=4, fmt=colors[i]+'.'))
+                        if showMicro:
+                            ax.set_ylabel('Flux',fontsize='large')
                     else:
                         ax.errorbar(self.images[lc].table['time'][
                                         self.images[lc].table['band']==b],
@@ -254,24 +302,34 @@ class curveDict(dict):
                                     yerr=self.images[lc].table['fluxerr'][
                                         self.images[lc].table['band']==b],
                                     markersize=4, fmt=colors[i]+'.')
-                    if getattr(self.images[lc],'ml',None):
-                        ax.plot(self.images[lc].table['time'][
-                                    self.images[lc].table['band']==b],
-                                self.images[lc].table['flux'][
-                                    self.images[lc].table['band']==b] * \
-                                self.images[lc].ml[b], color=colors[i])
 
                     ax.text(0.95, 0.95, b.upper(), fontsize='large',
                             transform=ax.transAxes, ha='right', va='top')
 
-                    if showfit:
+                    if showFit:
                         time_model = np.arange(self.images[lc].table['time'].min(),
                                                self.images[lc].table['time'].max(),
                                                0.1)
                         ax.plot(time_model,self.images[lc].fits.model.bandflux(b,time_model,self.images[lc].zp,self.images[lc].zpsys),'k-')
-                    if showmodel:
+                    if showMicro:
+                        time_model=np.arange(self.images[lc].table['time'].min(),
+                                             self.images[lc].table['time'].max(),
+                                             0.1)
+                        if microAx[b] is False:
+                            ax_divider = make_axes_locatable(ax)
+                            ax_ml = ax_divider.append_axes("bottom", size="25%", pad=.4)
+                            #ax_ml.set_xlabel('Days (Observer Frame)',fontsize='large')
+                            if b==list(bands)[0]:
+                                ax_ml.set_ylabel('Microlensing ($\mu$)',fontsize='large')
+                            microAx[b]=ax_ml
+                        else:
+                            ax_ml=microAx[b]
+                        ax_ml.plot(time_model,self.images[lc].simMeta['microlensing_params'](time_model/(1+self.images[lc].simMeta['sourcez'])),color=colors[i],linewidth=3)
+
+                    if showModel:
                         # Plot the underlying model, including dust and lensing
-                        # effects, as a black curve for each simulated SN image
+                        # effects other than microlesning, as a black curve for
+                        # each simulated SN image
                         time_model = np.arange(self.images[lc].table['time'].min(),
                                                self.images[lc].table['time'].max(),
                                                0.1)
@@ -282,36 +340,29 @@ class curveDict(dict):
                         ax.plot(time_model, flux_magnified, 'k-')
 
 
-                        #import pdb; pdb.set_trace()
                 i+=1
 
-        #if not len(self.bands)%2==0:
-            #fig.delaxes(ax[nrows-1][1])
-            #axlist[nrows-2][1].tick_params(axis='x',labelbottom='on',bottom='on')
+
         plt.figlegend(leg,np.sort(self.images.keys()), frameon=False,
                       loc='center right', fontsize='medium', numpoints=1)
 
+
+        if not showMicro:
+            fig.text(0.02, .5, 'Flux', va='center',
+                rotation='vertical',fontsize='large')
         fig.text(0.5, 0.02, r'Observer-frame time (days)', ha='center',
                  fontsize='large')
-        fig.text(0.02, .5, 'Flux', va='center',
-                 rotation='vertical',fontsize='large')
 
         plt.suptitle('Multiply-Imaged SN "'+self.object+'"--'+self.telescopename,fontsize=16)
         if savefig:
             plt.savefig(filename+'.pdf',format='pdf',overwrite=True)
-        if showfig:
-            plt.show()
-        plt.close()
-        return
+        return fig
 
 
 
 
 class curve(object):
-    """
-    A class, inheriting from PyCS lightcurve superclass, that now also has an
-    astropy.table.Table version of the data file for SNCosmo commands and flux/fluxerr
-    arrays.
+    """SNTD class that describes each image of a MISN
     """
 
 

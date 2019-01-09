@@ -1,9 +1,14 @@
-import sncosmo
-from copy import deepcopy
+import sncosmo,os
+from copy import deepcopy,copy
 
 from .util import __dir__
 from .io import curve,curveDict
-from .ml import *
+from astropy.io import ascii
+import numpy as np
+from astropy.table import Table
+from scipy.interpolate import interp1d
+
+from .ml import microcaustic_field_to_curve
 
 __all__=['createMultiplyImagedSN']
 
@@ -83,8 +88,9 @@ def createMultiplyImagedSN(
         observations
     zpsys : str or `~sncosmo.MagSystem`
         The zero-point system used to define the photometry
-    zp : float
-        The zero-point used to define the photometry
+    zp : float or list of float
+        The zero-point used to define the photometry, list if simulating multiple
+        bandpasses. Then this list must be the same length as bands
     microlensing_type : str
         If microlensing is to be included, defines whether it is
         "AchromaticSplineMicrolensing" or "AchromaticMicrolensing"
@@ -242,7 +248,7 @@ def createMultiplyImagedSN(
                 #get magnification curve from the defined microcaustic
                 time,dmag=microcaustic_field_to_curve(microlensing_params,np.arange(0,200,1),z_lens,redshift)
                 ml_effect = sncosmo.AchromaticMicrolensing(
-                    time+model_i._source._phase[0],dmag, magformat='add')
+                    time+model_i._source._phase[0],dmag, magformat='multiply')
             model_i.add_effect(ml_effect, 'microlensing', 'rest')
         else:
             ml_effect = None
@@ -271,8 +277,10 @@ def createMultiplyImagedSN(
         curve_i.object=None
 
         curve_i.table=table_i
+
         curve_i.bands=list(set(table_i['band']))
-        curve_i.simMeta=table_i.meta
+        curve_i.simMeta=deepcopy(table_i.meta)
+        curve_i.simMeta['sourcez']=redshift
         curve_i.simMeta['model']=model_i
         curve_i.simMeta['hostebv']=ebv_host
         curve_i.simMeta['lensebv']=ebv_lens
@@ -281,6 +289,7 @@ def createMultiplyImagedSN(
         curve_i.simMeta['td']=td
         curve_i.simMeta['microlensing'] = ml_effect
         curve_i.simMeta['microlensing_type'] = microlensing_type
+
         if microlensing_type=='AchromaticSplineMicrolensing':
             curve_i.simMeta['microlensing_params'] = microlensing_params
         elif microlensing_type is not None:
