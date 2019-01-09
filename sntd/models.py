@@ -191,7 +191,7 @@ class NewlingSource(sncosmo.Source):
                 Psi[i]=spl(phase[i])
             elif phase[i]>=(self._parameters[3]*self._parameters[2]+self._parameters[4]):
                 Psi[i]=self._parameters[1]
-        #print(Psi[0])
+
         #Psi[phase==splPhase]=spl(splPhase)
         #print(((phase+self._parameters[4])/self._parameters[2]),((phase+self._parameters[4])/self._parameters[2])**self._parameters[3],self._parameters,np.any(np.isnan(phase)))
 

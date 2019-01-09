@@ -280,6 +280,8 @@ class curveDict(dict):
                             b, time_shifted, self.zpDict[b], self.zpsys) * \
                                          self.images[lc].simMeta['mu']
                         ax.plot(time_model, flux_magnified, 'k-')
+
+
                         #import pdb; pdb.set_trace()
                 i+=1
 

@@ -1,4 +1,4 @@
-import os,sys,math
+import os,sys,math,subprocess
 
 import numpy as np
 from astropy.io import fits,ascii
@@ -13,6 +13,7 @@ from matplotlib import cm
 from matplotlib.patches import Circle
 import matplotlib.colors as colors
 from mpl_toolkits.axes_grid1.axes_divider import make_axes_locatable
+import matplotlib.mlab as mlab
 
 from .util import __dir__,__current_dir__
 
@@ -50,21 +51,27 @@ def realizeMicro(arand=.25,debug=0,kappas=.75,kappac=.15,gamma=.76,eps=.6,nray=3
         thefile.write((types[i]+'\n')%(float(outFile[i])))
     thefile.write(outFile[-1])
     thefile.close()
+
+    num=np.loadtxt(os.path.join(__dir__,'microlens','jobnum'),dtype='str')
+    try:
+        os.remove(os.path.join(__dir__,'microlens','IRIS'+str(num)))
+    except:
+        pass
+    try:
+        os.remove(os.path.join(__dir__,'microlens','IRIS'+str(num)+'.fits'))
+    except:
+        pass
     os.chdir(os.path.join(__dir__,'microlens'))
-    if not verbose:
-        #sys.stdout = tempfile.TemporaryFile()
-        os.system(r'./microlens > /dev/null')
-        #os.system(r'./lightcurve >/dev/null')
-        #sys.stdout.close()
-        #sys.stdout = sys.__stdout__
+    subprocess.call(r'./microlens')
 
 
-    else:
-        os.system(r'./microlens')
-        #os.system(r'./lightcurve')
     num=np.loadtxt(os.path.join(__dir__,'microlens','jobnum'),dtype='str')
     #lensPlane=np.array(fits.open(os.path.join(__dir__,'microlens','IRIS'+str(num)+'.fits'))[0].data,dtype=np.float64)
-    lensPlane=fits.open(os.path.join(__dir__,'microlens','IRIS'+str(num)+'.fits'))[0].data
+    try:
+        lensPlane=fits.open(os.path.join(__dir__,'microlens','IRIS'+str(num)+'.fits'))[0].data
+    except:
+        print('There was an error with the inputs of your microcaustic.')
+        sys.exit()
     #curve=ascii.read(os.path.join(__dir__,'microlens','out_line'),names=('t','xval','yval','pixvalue','maglin','xpix','ypix'))
     os.chdir(__current_dir__)
     return(lensPlane)
@@ -217,15 +224,24 @@ def createGaussMask(h,w,center=None,radius=None):
         center = [int(w/2), int(h/2)]
     if radius is None: # use the smallest distance between the center and image walls
         radius = min(center[0], center[1], w-center[0], h-center[1])
-    Y, X = np.ogrid[:h, :w]
-    dist_from_center = np.sqrt((X - center[0])**2 + (Y-center[1])**2)
-    mask1=dist_from_center<=radius
-    mask2=dist_from_center<=radius*2
-    mask2[mask1==True]=False
-    mask3=dist_from_center<=radius*3
-    mask3[mask2==True]=False
-    mask3[mask1==True]=False
-    return (mask1,mask2,mask3)
+        #Set up the 2D Gaussian:
+    delta = 0.025
+    x = np.arange(-3.0, 3.0, delta)
+    y = np.arange(-3.0, 3.0, delta)
+    X, Y = np.meshgrid(x, y)
+    sigma = 1.0
+    Z = mlab.bivariate_normal(X, Y, sigma, sigma, 0.0, 0.0)
+    #Get Z values for contours 1, 2, and 3 sigma away from peak:
+    z1 = mlab.bivariate_normal(0, 1 * sigma, sigma, sigma, 0.0, 0.0)
+    z2 = mlab.bivariate_normal(0, 2 * sigma, sigma, sigma, 0.0, 0.0)
+    z3 = mlab.bivariate_normal(0, 3 * sigma, sigma, sigma, 0.0, 0.0)
+    #plt.figure()
+    #plot Gaussian:
+    #im = plt.imshow(Z, interpolation='bilinear', origin='lower',
+                    #extent=(-50,50,-50,50),cmap=cm.gray)
+    #Plot contours at whatever z values we want:
+    #CS = plt.contour(Z, [z1, z2, z3], origin='lower', extent=(-50,50,-50,50),colors='red')
+    #plt.show()
 
 class MidpointNormalize(colors.Normalize):
     """
@@ -247,13 +263,11 @@ def mu_from_image(image, center,sizes,brightness='disk'):
     h, w = image.shape
     mu = []
 
-    #fig=plt.figure(figsize=(20,10))
+    #fig=plt.figure(figsize=(10,10))
 
     #ax=fig.gca()
     #plt.imshow(-(image-1024)/256., aspect='equal', interpolation='nearest', cmap=cm.bwr,norm=MidpointNormalize(vmin=-2,vmax=2,midpoint=0),
-              #vmin=-2, vmax=2, origin='lower')
-    #ax.imshow(-(image-1024)/256., aspect='equal', interpolation='nearest', cmap=cm.bwr,
-               #vmin=-2, vmax=2, origin='lower')
+    #          vmin=-2, vmax=2, origin='lower')
 
 
     #for r,a in zip([snSize[l),snSize[150],snSize[-1]],[.4,.5,.7]):
@@ -261,6 +275,7 @@ def mu_from_image(image, center,sizes,brightness='disk'):
     #print(np.mean(image),np.std(image))
     #print(np.mean((image-1024)/256.))
     image=10**(.4*(image-1024)/256.)
+    print(np.mean(image))
     i=0
     alphas=[1,.5,.7]
     for r in sizes:
@@ -298,7 +313,7 @@ def mu_from_image(image, center,sizes,brightness='disk'):
                 mu.append(np.dot(np.array(totalMags),scale))
 
 
-    #plt.colorbar()
+    #plt.colorbar(pad=.1)
 
     mu = np.array(mu)
     #dmag = -2.5*np.log10(mu.astype(float))#/np.min(mu))
@@ -307,18 +322,19 @@ def mu_from_image(image, center,sizes,brightness='disk'):
     #cb = plt.colorbar(cax = cbaxes)
     #dmag=10**(-0.4*((mu-1024)/256.0))
     dmag=-2.5*np.log10(mu)#(mu-1024)/256.0
-    #ax_divider = make_axes_locatable(ax)
-    #ax_ml = ax_divider.append_axes("bottom", size="25%", pad=.4)
-    #ax_ml.plot(sizes[20:],dmag[20:],ls='-',marker=' ', color='#004949')
-    #ax_ml.set_ylabel(r'$\Delta m$ (mag)')
-    #ax_ml.set_xlabel('Time from Explosion (days)')
-    #ax_ml.invert_yaxis()
-    #ax.plot(sizes[10:-10],dmag[10:-10])
-    #plt.savefig('microlensing.pdf',format='pdf',overwrite=True)
-    #plt.show()
-    #plt.show()
-    #plt.clf()
-    #plt.close()
+    '''
+    
+    ax_divider = make_axes_locatable(ax)
+    ax_ml = ax_divider.append_axes("bottom", size="25%", pad=.4)
+    ax_ml.plot(sizes[20:],dmag[20:],ls='-',marker=' ', color='#004949')
+    ax_ml.set_ylabel(r'$\Delta m$ (mag)')
+    ax_ml.set_xlabel('Time from Explosion (days)')
+    ax_ml.invert_yaxis()
+    ax.plot(sizes[10:-10],dmag[10:-10])
+    plt.savefig('microlensing4.pdf',format='pdf',overwrite=True)
+    plt.clf()
+    plt.close()
+    '''
     #print(dmag)
 
     return(dmag)

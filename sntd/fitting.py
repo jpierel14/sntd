@@ -251,36 +251,23 @@ def _fitCombined(curves,mods,args,bounds,grids,guess_amplitude_bound=False,
     #if args['refModel']:
         #bestFit,bestRes=args['refModel']
         #refModel=True
-    if not args['refModel']:
-        refModel=False
-        if len(args['curve'].table)>63 or len(models)==1 or args['snType']=='Ia':
-            fits=[]
-            for mod in mods:
-                if mod=='SplineSource':
+    if not args['separateFit']:
+        if not args['refModel']:
+            raise RuntimeError("Combined fit had no reference model or model name.")
+        elif isinstance(args['refModel'],sncosmo.Model):
+            tempTime=np.linspace(args['refModel'].minphase(),args['refModel'].maxphase(),1000)
+            args['refModel']=interp1d(tempTime,
+                                      args['refModel'].bandflux(args['curve'].combined.table['band'][0],tempTime,zp=args['curve'].combined.table['zp'][0],zpsys=args['curve'].combined.table['zpsys'][0]),'quadratic')
+        elif not isinstance(args['refModel'],scipy.interpolate.interpolate.interp1d):
+            raise RuntimeError("Your reference model needs to either be an SNCosmo model object, or a scipy interpolation function.")
+    else:
+        args['refModel'],errors=create_composite_model(args['separateFit'],args['curve'].combined.table['band'][0],args['separateFit'].images.keys()[0],weight='logz')
 
-                    fits.append(spline_fit(args))
-                elif mod in ['BazinSource','KarpenkaSource','NewlingSource','PierelSource']:
-                    fits.append(param_fit(args,mod,fit=True))
 
 
-                else:
-                    fits.append(_fit_data_wrap((mod,args)))
-        else:
-            fits=pyParz.foreach(mods,_fit_data,args)
 
-        if len(fits)>1:
-            bestChisq=np.inf
-            for f in fits:
-                if f:
-                    res=f['res']
-                    mod=f['model']
-                    if res.chisq <bestChisq:
-                        bestChisq=res.chisq
-                        bestFit=mod
-                        bestRes=res
-        else:
-            bestFit=fits[0]['model']
-            bestRes=fits[0]['res']
+
+
 
     #if 'amplitude' not in args['bounds']:
     #    guess_amp_bounds=True
@@ -322,7 +309,7 @@ def create_composite_model(curves,band,ref,weight='chisq'):
     maxTime=np.min([curves.images[im].fits.model.maxtime()-curves.images[im].fits.model.get('t0') for im in curves.images.keys()])
 
     compTime=np.arange(minTime,maxTime,1)
-    fluxes=np.array([curves.images[im].fits.model.bandflux(band,compTime+curves.images[im].fits.model.get('t0'),zp=curves.images[im].zp,zpsys=curves.images[im].zpsys)/curves.magnifications[im] for im in np.sort(curves.images.keys())])
+    fluxes=np.array([curves.images[im].fits.model.bandflux(band,compTime+curves.images[im].fits.model.get('t0'),zp=curves.images[im].zp[band],zpsys=curves.images[im].zpsys)/curves.magnifications[im] for im in np.sort(curves.images.keys())])
     compTime+=curves.images[ref].fits.model.get('t0')
 
     try:
@@ -338,7 +325,7 @@ def create_composite_model(curves,band,ref,weight='chisq'):
 
     finalFlux=np.average(fluxes,weights=1./weights,axis=0)
 
-    compFunc=interp1d(compTime,finalFlux)
+    compFunc=interp1d(compTime,finalFlux,'quadratic')
 
     return(compFunc,error)
 
@@ -695,6 +682,7 @@ def _fitSeparate(curves,mods,args,bounds):
     dofs=dict([])
 
     for d in fitDict.keys():
+        print(d)
         _,bestFit,bestMod=fitDict[d]
         tempTable=deepcopy(curves.images[d].table)
         for b in [x for x in np.unique(tempTable['band']) if x not in args['bands']]:
@@ -717,7 +705,7 @@ def _fitSeparate(curves,mods,args,bounds):
             guess_amp_bounds=True
         else:
             guess_amp_bounds=False
-        nest_res,nest_fit=_nested_wrapper(tempTable,bestFit,vparams=bestRes.vparam_names,bounds=args['bounds'],
+        nest_res,nest_fit=_nested_wrapper(curves,tempTable,bestFit,vparams=bestRes.vparam_names,bounds=args['bounds'],
                                           guess_amplitude_bound=guess_amp_bounds,microlensing=args['microlensing'],zp=curves.images[d].zp,zpsys=curves.images[d].zpsys,kernel=args['kernel'],maxiter=1000,npoints=200)
         #print(d,nest_res.h)
         #if args['microlensing'] is None and not guess_amp_bounds:
@@ -845,7 +833,7 @@ def _micro_uncertainty(args):
     return float(tempMod.get('t0'))
 
 
-def _nested_wrapper(data,model,vparams,bounds,guess_amplitude_bound,microlensing,zp,zpsys,kernel,maxiter,npoints):
+def _nested_wrapper(curves,data,model,vparams,bounds,guess_amplitude_bound,microlensing,zp,zpsys,kernel,maxiter,npoints):
 
     temp=deepcopy(data)
     vparam_names=deepcopy(vparams)
@@ -874,7 +862,8 @@ def _nested_wrapper(data,model,vparams,bounds,guess_amplitude_bound,microlensing
         nest_res,nest_fit=sncosmo.nest_lc(temp,nest_fit,vparam_names=[x for x in vparam_names if x !='amplitude'],bounds=bounds,guess_amplitude_bound=False,maxiter=1000,npoints=200)
         '''
         toFit=deepcopy(nest_fit)
-        micro,sigma,x_pred,y_pred,samples=fit_micro(nest_res,nest_fit,temp,zp,zpsys,micro_type=microlensing,kernel=kernel)
+
+        micro,sigma,x_pred,y_pred,samples=fit_micro(curves,nest_res,nest_fit,temp,zp,zpsys,micro_type=microlensing,kernel=kernel)
 
         if False:# and np.abs((y_pred[np.abs(x_pred-5.)==np.min(np.abs(x_pred-5.))]-y_pred[np.abs(x_pred+5.)==np.min(np.abs(x_pred+5.))])/10.)<=.005:
 
@@ -928,7 +917,16 @@ def _nested_wrapper(data,model,vparams,bounds,guess_amplitude_bound,microlensing
 
             t0s=pyParz.foreach(samples.T,_micro_uncertainty,[nest_fit,np.array(temp),temp.colnames,x_pred,vparam_names,bounds])
             mu,sigma=scipy.stats.norm.fit(t0s)
-            print(mu,nest_fit.get('t0'))
+            #print(mu,nest_fit.get('t0'))
+            '''
+            fig=plt.figure()
+            ax=fig.gca()
+            ax.hist(t0s-nest_fit.get('t0'),normed=True)
+            ax.set_xlabel(r'$\Delta t_\mu-\Delta t}}$',fontsize=14)
+            ax.set_ylabel(r'Probability Density',fontsize=14)
+
+            plt.savefig('micro_dist.pdf',format='pdf',overwrite=True)
+            '''
             nest_res.errors['micro']=sigma
             #print(mu,sigma,nest_res.errors['t0'])
             #sys.exit()
@@ -945,7 +943,7 @@ def _maxFromModel(mod,band,zp,zpsys):
       flux=mod.bandflux(band,time,zp,zpsys)
       return (time[flux==np.max(flux)],np.max(flux))
 
-def fit_micro(res,fit,dat,zp,zpsys,micro_type='achromatic',kernel='RBF'):
+def fit_micro(curves,res,fit,dat,zp,zpsys,micro_type='achromatic',kernel='RBF'):
     t0=fit.get('t0')
     #figures=[]
 
@@ -961,7 +959,7 @@ def fit_micro(res,fit,dat,zp,zpsys,micro_type='achromatic',kernel='RBF'):
     data['time']-=t0#fit.get('t0')
     data=data[data['time']<=40.]
     data=data[data['time']>=-15.]
-    achromatic=micro_type=='achromatic'
+    achromatic=micro_type.lower()=='achromatic'
     if achromatic:
         allResid=[]
         allErr=[]
@@ -1031,6 +1029,7 @@ def fit_micro(res,fit,dat,zp,zpsys,micro_type='achromatic',kernel='RBF'):
         y_pred, sigma = gp.predict(X, return_std=True)
         samples=gp.sample_y(X,100)
 
+
         #posteriorTestY = gp.posterior_samples_f(X, full_cov=True,size=3)
         #y_pred, sigma=gp.predict(X)
 
@@ -1044,12 +1043,15 @@ def fit_micro(res,fit,dat,zp,zpsys,micro_type='achromatic',kernel='RBF'):
             else:
                 ax.plot(X, samples[:,i],alpha=.1,color='b')
         ax.errorbar(allTime.ravel(), allResid, allErr, fmt='r.', markersize=10, label=u'Observations')
+        print(len(allResid))
         ax.plot(X, y_pred - 3 * sigma, '--g')
         ax.plot(X, y_pred + 3 * sigma, '--g',label='$3\sigma$ Bounds')
         ax.plot(X,y_pred,'k-.',label="GPR Prediction")
-        ax.legend(fontsize=10)
+
         ax.set_ylabel('Magnification ($\mu$)')
         ax.set_xlabel('Observer Frame Time (Days)')
+        ax.plot(X,curves.images['S2'].simMeta['microlensing_params'](X/(1+1.33))/np.median(curves.images['S2'].simMeta['microlensing_params'](X/(1+1.33))),'k',label='True $\mu$-Lensing')
+        ax.legend(fontsize=10)
         plt.savefig('microlensing_gpr.pdf',format='pdf',overwrite=True)
         plt.close()
         sys.exit()
@@ -1063,7 +1065,7 @@ def fit_micro(res,fit,dat,zp,zpsys,micro_type='achromatic',kernel='RBF'):
         y_pred=np.append([1.],np.append(y_pred,[1.]))
         sigma=np.append([0.],np.append(sigma,[0.]))
 
-        result=sncosmo.AchromaticMicrolensing(tempX/(1+fit.get('z')),y_pred,sigma=sigma,magformat='multiply')
+        result=sncosmo.AchromaticMicrolensing(tempX/(1+fit.get('z')),y_pred,magformat='multiply')
         #lstsq=scipy.stats.linregress(allTime.ravel(),allResid)
         #result=sncosmo.AchromaticMicrolensing(tempX/(1+fit.get('z')),lstsq[0]*tempX+lstsq[1])
 

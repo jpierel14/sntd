@@ -14,7 +14,7 @@ hostname = Justins-MacBook-Air.local
 uname -m = x86_64
 uname -r = 16.7.0
 uname -s = Darwin
-uname -v = Darwin Kernel Version 16.7.0: Thu Jun 15 17:36:27 PDT 2017; root:xnu-3789.70.16~2/RELEASE_X86_64
+uname -v = Darwin Kernel Version 16.7.0: Thu Jun 21 20:07:39 PDT 2018; root:xnu-3789.73.14~1/RELEASE_X86_64
 
 /usr/bin/uname -p = i386
 /bin/uname -X     = unknown
@@ -23,19 +23,20 @@ uname -v = Darwin Kernel Version 16.7.0: Thu Jun 15 17:36:27 PDT 2017; root:xnu-
 /usr/bin/arch -k       = unknown
 /usr/convex/getsysinfo = unknown
 /usr/bin/hostinfo      = Mach kernel version:
-	 Darwin Kernel Version 16.7.0: Thu Jun 15 17:36:27 PDT 2017; root:xnu-3789.70.16~2/RELEASE_X86_64
+	 Darwin Kernel Version 16.7.0: Thu Jun 21 20:07:39 PDT 2018; root:xnu-3789.73.14~1/RELEASE_X86_64
 Kernel configured for up to 4 processors.
 2 processors are physically available.
 4 processors are logically available.
 Processor type: x86_64h (Intel x86-64h Haswell)
 Processors active: 0 1 2 3
 Primary memory available: 8.00 gigabytes
-Default processor set: 306 tasks, 1716 threads, 4 processors
-Load average: 1.88, Mach factor: 2.11
+Default processor set: 293 tasks, 1674 threads, 4 processors
+Load average: 2.18, Mach factor: 1.81
 /bin/machine           = unknown
 /usr/bin/oslevel       = unknown
 /bin/universe          = unknown
 
+PATH: /Users/jpierel/anaconda3/envs/sntd2/bin
 PATH: /Users/jpierel/bin
 PATH: /Users/jpierel/anaconda3/envs/astro2/bin
 PATH: /usr/local/bin
