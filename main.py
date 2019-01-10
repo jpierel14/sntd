@@ -1,7 +1,14 @@
 import sntd
 import matplotlib.pyplot as plt
 
-#fitData=sntd.realizeMicro(nray=10,kappas=1,kappac=.3,gamma=.4)
+
+'''
+myObj=sntd.curveDict(telescopename='HST',object='Refsdal')
+curve=sntd.read_data('testDat.dat',band='F125W',zp=26.2,zpsys='AB')
+myObj.add_curve(curve)
+print(myObj)
+
+fitData=sntd.realizeMicro(nray=10,kappas=1,kappac=.3,gamma=.4)
 myMISN = sntd.createMultiplyImagedSN('salt2', 'Ia', 1.33,z_lens=.53, bands=['F110W','F125W'],
                                      zp=[26.8,26.2], cadence=5., epochs=35.,skynoiseRange=(.001,.005),gain=70. ,
                                      time_delays=[10., 78.], magnifications=[7,3.5], objectName='My Type Ia SN',
@@ -11,3 +18,4 @@ myMISN = sntd.createMultiplyImagedSN('salt2', 'Ia', 1.33,z_lens=.53, bands=['F11
 myMISN.combine_curves(time_delays={'image_1':10,'image_2':78},magnifications={'image_1':7,'image_2':3.5})
 fig=myMISN.plot_object(savefig=False,showModel=False,combined=True,showMicro=False)
 plt.show()
+'''

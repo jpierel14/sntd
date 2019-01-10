@@ -247,6 +247,7 @@ def createMultiplyImagedSN(
             else:
                 #get magnification curve from the defined microcaustic
                 time,dmag=microcaustic_field_to_curve(microlensing_params,np.arange(0,200,1),z_lens,redshift)
+                dmag/=np.mean(dmag) #to remove overall magnification
                 ml_effect = sncosmo.AchromaticMicrolensing(
                     time+model_i._source._phase[0],dmag, magformat='multiply')
             model_i.add_effect(ml_effect, 'microlensing', 'rest')

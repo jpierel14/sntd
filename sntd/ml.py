@@ -319,7 +319,6 @@ def mu_from_image(image, center,sizes,brightness='disk'):
     #plt.colorbar(pad=.1)
 
     mu = np.array(mu)
-    mu/=np.mean(mu)
 
     #dmag = -2.5*np.log10(mu.astype(float))#/np.min(mu))
     #print(mu)
