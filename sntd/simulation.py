@@ -136,8 +136,7 @@ def createMultiplyImagedSN(
     #set up object to be filled by simulations
     obj=curveDict(telescopename=telescopename,object=objectName)
     obj.bands = set(bandList)
-    obj.zpDict = dict([(bandList[i], zpList[i]) for i in range(len(bandList))])
-    obj.zpsys = zpsys
+
     #make sncosmo obs table
     obstable = Table({'time':np.tile(times,len(bands)), 'band':bandList,
                       'zpsys':[zpsys.upper() for i in range(len(bandList))],
@@ -274,9 +273,9 @@ def createMultiplyImagedSN(
             return None
         table_i=table_i[0]
         #create is curve with all parameters and add it to the overall curveDict object from above
-        curve_i=curve(zp=obj.zpDict,zpsys=zpsys)
+        curve_i=curve()
         curve_i.object=None
-
+        curve_i.zpsys=zpsys
         curve_i.table=table_i
 
         curve_i.bands=list(set(table_i['band']))

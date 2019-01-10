@@ -157,9 +157,6 @@ def colorFit(lcs,verbose=True):
     return(finalDelays)
 
 def _guess_time_delays(curves):
-    tds=colorFit(curves)
-    if tds:
-        return tds
     ref=None
     tds=dict([])
     for k in curves.images.keys():

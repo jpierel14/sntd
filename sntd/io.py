@@ -128,20 +128,15 @@ class curveDict(dict):
     def add_curve(self,myCurve):
         """Adds a curve object to the existing curveDict (i.e. adds
         an image to a MISN)"""
-
         self.bands.update([x for x in myCurve.bands if x not in self.bands])
         myCurve.object='image_'+str(len(self.images)+1)
 
         myCurve.table.add_column(Column([myCurve.object for i in range(len(myCurve.table))],name='object'))
 
-        if not myCurve.zpsys:
-            myCurve.zpsys=myCurve.table['zpsys'][0]
-        if not myCurve.zp:
-            print('Assuming standard curve...')
-            myCurve.zp=myCurve.table['zp'][0]
 
 
-        tempCurve=deepcopy(myCurve)
+
+        tempCurve=_sntd_deepcopy(myCurve)
 
 
         self.images[myCurve.object]=myCurve
@@ -176,7 +171,6 @@ class curveDict(dict):
             magnifications=_guess_magnifications(self)
 
         self.combined.table=Table(names=self.table.colnames,dtype=[self.table.dtype[x] for x in self.table.colnames])
-
         for k in np.sort(self.images.keys()):
             temp=deepcopy(self.images[k].table)
             temp['time']-=time_delays[k]
@@ -312,7 +306,9 @@ class curveDict(dict):
                         time_model = np.arange(self.images[lc].table['time'].min(),
                                                self.images[lc].table['time'].max(),
                                                0.1)
-                        ax.plot(time_model,self.images[lc].fits.model.bandflux(b,time_model,self.images[lc].zp,self.images[lc].zpsys),'k-')
+                        ax.plot(time_model,self.images[lc].fits.model.bandflux(b,time_model,
+                                    np.mean(self.images[lc].table['zp'][self.images[lc].table['band']==b]),
+                                    self.images[lc].zpsys),'k-')
                     if showMicro:
                         time_model=np.arange(self.images[lc].table['time'].min(),
                                              self.images[lc].table['time'].max(),
@@ -337,7 +333,8 @@ class curveDict(dict):
                                                0.1)
                         time_shifted = time_model - self.images[lc].simMeta['td']
                         flux_magnified = self.model.bandflux(
-                            b, time_shifted, self.zpDict[b], self.zpsys) * \
+                            b, time_shifted, self.images[lc].table['zp'][self.images[lc].table['band']==b],
+                            self.images[lc].zpsys) * \
                                          self.images[lc].simMeta['mu']
                         ax.plot(time_model, flux_magnified, 'k-')
 
@@ -363,12 +360,13 @@ class curveDict(dict):
 
 
 
-class curve(object):
+class curve(dict):
     """SNTD class that describes each image of a MISN
     """
+    def __deepcopy__(self, memo):
+        return deepcopy(dict(self))
 
-
-    def __init__(self,zp=None,zpsys=None):
+    def __init__(self,zpsys='AB'):
         #todo: implement more general read and write functions
         """
         Constructor for curve class,
@@ -385,30 +383,38 @@ class curve(object):
         """@type: ~astropy.table.Table
         @ivar: A table containing the data, used for SNCosmo functions, etc.
         """
-        self.zp=zp
-        """@type: float
-        @ivar: zero-point for flux scale
-        """
         self.bands=[]
         """@type: string
         @ivar: band names, used
         """
         self.zpsys=zpsys
-        """@type: string
-        @ivar: zero-point system
-        """
-        if self.zpsys:
-            self.system=get_magsystem(self.zpsys)
-        else:
-            self.system=None
-        """@type: class sncosmo.MagSystem
-        @ivar: Used to convert between mag and flux, none if no zpsys is defined at construction
-        """
+
         self.simMeta=dict([])
 
         self.fits=None
 
 
+    #these three functions allow you to access the curveDict via "dot" notation
+    __setattr__ = dict.__setitem__
+    __delattr__ = dict.__delitem__
+    __getattr__ = dict.__getitem__
+
+
+
+    def __getstate__(self):
+        """
+        A function necessary for pickling
+        :return: self
+        """
+        return self
+
+    def __setstate__(self, d):
+        """
+        A function necessary for pickling
+        :param d: A value
+        :return: self.__dict__
+        """
+        self.__dict__ = d
 
     def validate(self, verbose=False):
         """
@@ -420,10 +426,7 @@ class curve(object):
         ndates=len(self)
         if len(self.fluxes) != ndates or len(self.fluxerrs) != ndates or len(self.table)!=ndates:
             raise(RuntimeError, "The length of your flux/fluxerr arrays are inconsistent with rest of curve!")
-        if not self.zp or not self.zpsys:
-            raise(RuntimeError, "No zero-point or zero-point system defined")
-        if not self.system:
-            self.system=get_magsystem(self.zpsys)
+
         super(curve,self).validate(verbose)
 
 
@@ -611,6 +614,7 @@ def _read_data(filename,**kwargs):
         myCurve.bands.append(band)
 
     myCurve.table=table
+    myCurve.zpsys=table['zpsys'][0]
     return myCurve
 
 def _norm_flux_mag(table):
