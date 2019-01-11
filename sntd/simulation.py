@@ -134,8 +134,8 @@ def createMultiplyImagedSN(
         zpList=[zp for i in range(len(bandList))]
 
     #set up object to be filled by simulations
-    obj=curveDict(telescopename=telescopename,object=objectName)
-    obj.bands = set(bandList)
+    curve_obj=curveDict(telescopename=telescopename,object=objectName)
+    curve_obj.bands = set(bandList)
 
     #make sncosmo obs table
     obstable = Table({'time':np.tile(times,len(bands)), 'band':bandList,
@@ -294,10 +294,13 @@ def createMultiplyImagedSN(
             curve_i.simMeta['microlensing_params'] = microlensing_params
         elif microlensing_type is not None:
             curve_i.simMeta['microlensing_params'] = interp1d(time+model_i._source._phase[0],dmag)
-        obj.add_curve(curve_i)
+
+        curve_obj.add_curve(curve_i)
+
 
 
     # Store the un-lensed model as a component of the lensed SN object.
     model.set(**params)
-    obj.model = model
-    return(obj)
+    curve_obj.model = model
+
+    return(curve_obj)

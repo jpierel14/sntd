@@ -17,7 +17,7 @@ from .io import _sntd_deepcopy,table_factory
 from .spl import spl
 from .plotting import display
 import models
-__all__=['fit_data','colorFit','spline_fit']
+__all__=['fit_data']
 
 __thetaSN__=['z','hostebv','screenebv','screenz','rise','fall','sigma','k','x1','c']
 __thetaL__=['t0','amplitude','dt0','A','B','t1','psi','phi','s','x0','microlensingA','microlensingD']
@@ -96,7 +96,7 @@ def fit_data(curves, snType='Ia',bands=None, models=None, params=None, bounds={}
     args['curves']=_sntd_deepcopy(curves)
     args['bands'] = [bands] if bands and not isinstance(bands,(tuple,list)) else bands
     #sets the bands to user's if defined (set, so that they're unique), otherwise to all the bands that exist in curves
-    args['bands'] = set(bands) if bands else curves.bands
+    args['bands'] = list(set(bands)) if bands else list(curves.bands)
 
     models=[models] if models and not isinstance(models,(tuple,list)) else models
     if not models:
@@ -115,8 +115,8 @@ def fit_data(curves, snType='Ia',bands=None, models=None, params=None, bounds={}
     args['props'] = {x: kwargs[x] for x in kwargs.keys() if
              x in [y for y in inspect.getargspec(args['sn_func'][method])[0]] and x != 'verbose'}
 
-    if method not in ['separate','combined','both']:
-        raise RuntimeError('Parameter "combined_or_separate must be "separate","combined", or "both".')
+    if method not in ['separate','combined','color']:
+        raise RuntimeError('Parameter "method" must be "separate","combined", or "color".')
     if method=='separate':
         curves=_fitSeparate(args['curves'],mods,args,bounds,**kwargs)
     elif method=='combined':
@@ -273,10 +273,10 @@ def _fitCombined(curves,mods,args,bounds,grids,guess_amplitude_bound=False,
                  maxiter=None, maxcall=None, modelcov=False, rstate=None,
                  verbose=False, warn=True, **kwargs):
 
-
-    #if not curves.combined.table:
-    #    curves.combine_curves()
-    args['curve']=curves
+    args['bands']=list(args['bands'])
+    if not curves.combined.table:
+        curves.combine_curves()
+    args['curve']=_sntd_deepcopy(curves)
     if not grids:
         print('Need bounds on time delay and magnification (i.e. combinedGrids undefined)')
         sys.exit(1)
@@ -284,41 +284,19 @@ def _fitCombined(curves,mods,args,bounds,grids,guess_amplitude_bound=False,
 
     for b in [x for x in np.unique(args['curve'].combined.table['band']) if x not in args['bands']]:
         args['curve'].combined.table=args['curve'].combined.table[args['curve'].combined.table['band']!=b]
-    #for k in curves.images.keys():
-    #    print(curves.images[k].simMeta)
-    if 't0' in args['bounds']:
-        t0Bounds=copy(args['bounds']['t0'])
-    if 'amplitude' in args['bounds']:
-        ampBounds=copy(args['bounds']['amplitude'])
-        guess_amp_bound=False
-    if 't0' in args['bounds'] and args['t0_guess'] is not None:
-        args['bounds']['t0']=(t0Bounds[0]+args['t0_guess'],t0Bounds[1]+args['t0_guess'])
 
 
-
-    if 'amplitude' in args['bounds'] and args['guess_amp']:
-        args['bounds']['amplitude']=(ampBounds[0]*np.max(args['curve'].table['flux']),ampBounds[1]*np.max(args['curve'].table['flux']))
-    #if args['refModel']:
-        #bestFit,bestRes=args['refModel']
-        #refModel=True
     if not args['refModel']:
         if curves.images['image_1'].fits is not None:
             try:
-                args['refModel'],bounds=create_composite_model(curves,list(args['bands'])[0],'image_1',weight='logz',bound_vars=bounds.keys())
+                args['refModel'],bounds=create_composite_model(curves,list(args['bands'])[0],args['refImage'],weight='logz',bound_vars=bounds.keys())
             except RuntimeError:
-                args['refModel'],bounds=create_composite_model(list(curves,args['bands'])[0],'image_1',bound_vars=bounds.keys())
+                args['refModel'],bounds=create_composite_model(list(curves,args['bands'])[0],args['refImage'],bound_vars=bounds.keys())
 
         else:
             raise RuntimeError("Combined fit had no reference model or model name.")
-    elif isinstance(args['refModel'],sncosmo.Model):
-        tempTime=np.linspace(args['refModel'].minphase(),args['refModel'].maxphase(),1000)
-        args['refModel']=interp1d(tempTime,
-                                  args['refModel'].bandflux(args['curve'].combined.table['band'][0],tempTime,zp=args['curve'].combined.table['zp'][0],zpsys=args['curve'].combined.table['zpsys'][0]),'quadratic')
-    elif not isinstance(args['refModel'],scipy.interpolate.interpolate.interp1d):
-        raise RuntimeError("Your reference model needs to either be an SNCosmo model object, or a scipy interpolation function.")
-    else:
-        args['refModel'],errors=create_composite_model(args['separateFit'],args['curve'].combined.table['band'][0],args['separateFit'].images.keys()[0],weight='logz')
-
+    elif not isinstance(args['refModel'],sncosmo.Model):
+        raise RuntimeError("Your reference model needs to be an SNCosmo model object.")
 
     gridBounds=dict([])
     for k in curves.images.keys():
@@ -328,36 +306,62 @@ def _fitCombined(curves,mods,args,bounds,grids,guess_amplitude_bound=False,
             if par=='mu' and k==args['refImage']:
                 continue
             gridBounds[k+'_'+par]=grids[par]+args['curve'].combined.meta[par][k]
-    args['curve'].combined.time_delays,args['curve'].combined.magnifications,args['curve'].combined.time_delay_errors,args['curve'].combined.magnification_errors=nest_combined_lc(args['curve'],
-                                        vparam_names=np.append([k+'_td' for k in args['curve'].images.keys() if args['curve'].combined.meta['td'][k]!=0],[k+'_mu' for k in args['curve'].images.keys() if args['curve'].combined.meta['mu'][k]!=1]),
-                                        band=list(args['bands'])[0],refModel=args['refModel'],bounds=gridBounds,snBounds=bounds,snVparam_names=bounds.keys(),guess_amplitude_bound=True,maxiter=1000,npoints=100)
 
-    args['curve'].combined.time_delay_errors={k:np.sqrt(args['curve'].combined.time_delay_errors[k]**2+args['combinedError']['td']**2) for k in args['curve'].combined.time_delay_errors.keys() if args['curve'].combined.time_delay_errors[k]!=0}
-    args['curve'].combined.magnification_errors={k:np.sqrt(args['curve'].combined.magnification_errors[k]**2+args['combinedError']['mu']**2) for k in args['curve'].combined.magnification_errors.keys() if args['curve'].combined.magnification_errors[k] !=1}
+    myRes=dict([])
+    for b in args['bands']:
+        myRes[b]=nest_combined_lc(args['curve'],
+                vparam_names=gridBounds.keys(),
+                band=b,refModel=args['refModel'],bounds=gridBounds,snBounds=bounds,
+                snVparam_names=bounds.keys(),guess_amplitude_bound=True,maxiter=200,npoints=50)
 
+    weights=np.array([myRes[b][-2].logz for b in args['bands']])
+    final_params=dict([])
 
-    args['curve'].combine_curves(tds=args['curve'].combined.time_delays,mus=args['curve'].combined.magnifications)
+    for param in myRes[args['bands'][0]][-1].param_names:
+        final_params[param]=np.average([myRes[b][-1].get(param) for b in args['bands']],weights=weights)
 
+    args['curve'].combined.time_delays=dict([])
+    args['curve'].combined.magnifications=dict([])
+    for k in curves.images.keys():
+        args['curve'].combined.time_delays[k]=np.average([myRes[b][0][k] for b in args['bands']],weights=weights)
+        args['curve'].combined.magnifications[k]=np.average([myRes[b][1][k] for b in args['bands']],weights=weights)
+    args['curve'].combined.time_delay_errors[k]=myRes[args['bands'][np.where(weights==np.max(weights))[0][0]]][2]
+    args['curve'].combined.magnification_errors[k]=myRes[args['bands'][np.where(weights==np.max(weights))[0][0]]][3]
+    bestRes=myRes[args['bands'][np.where(weights==np.max(weights))[0][0]]][4]
+    bestMod=myRes[args['bands'][np.where(weights==np.max(weights))[0][0]]][5]
+
+    bestMod.set(**final_params)
+
+    args['curve'].combine_curves(time_delays=args['curve'].combined.time_delays,magnifications=args['curve'].combined.magnifications)
+
+    for b in [x for x in set(args['curve'].combined.table['band']) if x not in args['bands']]:
+        args['curve'].combined.table=args['curve'].combined.table[args['curve'].combined.table['band']!=b]
 
     args['curve'].combined.fits=newDict()
-    args['curve'].combined.fits['model']=args['refModel']#finalfit
+    args['curve'].combined.fits['model']=bestMod
+    args['curve'].combined.fits['res']=bestRes
 
     return args['curve']
 
+
 def create_composite_model(curves,band,ref,weight='chisq',bound_vars=[]):
     weights=np.array([curves.images[im].fits.res[weight] for im in np.sort(curves.images.keys())])
-
+    if weight=='chisq':
+        weights=1./weights
     final_vars=dict([])
     bounds=dict([])
-    for param in curves.images[curves.images.keys()[0]].fits.model.param_names:
-        final_vars[param]=np.average([curves.images[k].fits.model.get(param) for k in np.sort(curves.images.keys())],
-                                     weights=1./weights)
+    for param in curves.images[ref].fits.model.param_names:
+        if param not in bound_vars:
+            final_vars[param]=curves.images[ref].fits.model.get(param)
+        else:
+            final_vars[param]=np.average([curves.images[k].fits.model.get(param) for k in np.sort(curves.images.keys())],
+                                     weights=weights)
         if param in bound_vars:
             bounds[param]=np.average([curves.images[k].fits.final_errs[param] for k in np.sort(curves.images.keys())],
-                                     weights=1./weights)/np.sqrt(len(weights))
+                                     weights=weights)/np.sqrt(len(weights))
             bounds[param]=(final_vars[param]-bounds[param],final_vars[param]+bounds[param])
 
-            final_mod=copy(curves.images[curves.images.keys()[np.where(weights==np.min(weights))[0][0]]].fits.model)
+            final_mod=copy(curves.images[curves.images.keys()[np.where(weights==np.max(weights))[0][0]]].fits.model)
     final_mod.set(**final_vars)
     return(final_mod,bounds)
 
@@ -473,6 +477,14 @@ def nest_combined_lc(curves,vparam_names,bounds,snBounds,snVparam_names,guess_am
     #    chi2 = np.sum(z ** 2)
 
     #    return chi2
+    global best_comb_Z
+    global best_comb_Mod
+    global best_comb_Res
+
+    best_comb_Res = None
+    best_comb_Mod = None
+    best_comb_Z = -np.inf
+
 
     def loglike(parameters):
         tempCurve=_sntd_deepcopy(curves)
@@ -494,9 +506,14 @@ def nest_combined_lc(curves,vparam_names,bounds,snBounds,snVparam_names,guess_am
         tempCurve.combine_curves(time_delays=tempTds,magnifications=tempMus)
 
         tempCurve.combined.table=tempCurve.combined.table[tempCurve.combined.table['band']==band]
-        tempRes,tempMod=sncosmo.nest_lc(tempCurve.combined.table,refModel,vparam_names=snVparam_names,bounds=snBounds,guess_amplitude_bound=False,maxiter=50,npoints=10)
-
-        #chisq=-chisquare(tempCurve.combined.table['flux'],tempMod.bandflux(band,tempCurve.combined.table['flux'],tempCurve.combined.table['zp'],tempCurve.combined.table['zpsys'][0]),tempCurve.combined.table['fluxerr'])/(len(tempCurve.combined.table)-1)
+        tempRes,tempMod=sncosmo.nest_lc(tempCurve.combined.table,refModel,vparam_names=snVparam_names,bounds=snBounds,guess_amplitude_bound=False,maxiter=10,npoints=10)
+        global best_comb_Res
+        global best_comb_Mod
+        global best_comb_Z
+        if tempRes.logz>best_comb_Z:
+            best_comb_Res=copy(tempRes)
+            best_comb_Z=copy(tempRes.logz)
+            best_comb_Mod=copy(tempMod)
 
         return(tempRes.logz)
 
@@ -528,8 +545,7 @@ def nest_combined_lc(curves,vparam_names,bounds,snBounds,snVparam_names,guess_am
         all_mus[im]=pdf[im+'_mu'][2]
         all_mu_err[im]=pdf[im+'_mu'][3]
 
-
-    return all_delays,all_mus,all_delay_err,all_mu_err
+    return all_delays,all_mus,all_delay_err,all_mu_err,best_comb_Res,best_comb_Mod
 
 
 
@@ -564,10 +580,7 @@ def _fitSeparate(curves,mods,args,bounds):
         if True or len(args['curve'].table)>63 or len(mods)==1 or args['snType']=='Ia':
             fits=[]
             for mod in mods:
-                if mod=='SplineSource':
-
-                    fits.append(spline_fit(args))
-                elif mod in ['BazinSource','KarpenkaSource','NewlingSource','PierelSource']:
+                if mod in ['BazinSource','KarpenkaSource','NewlingSource','PierelSource']:
                     fits.append(param_fit(args,mod))
 
 

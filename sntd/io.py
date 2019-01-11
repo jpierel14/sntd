@@ -6,7 +6,7 @@ from astropy.io import ascii
 from astropy.table import Table,vstack,Column
 from scipy.stats import mode
 from sncosmo import get_magsystem
-from copy import deepcopy
+from copy import deepcopy,copy
 import matplotlib.pyplot as plt
 from mpl_toolkits.axes_grid1.axes_divider import make_axes_locatable
 try:
@@ -139,13 +139,13 @@ class curveDict(dict):
         tempCurve=_sntd_deepcopy(myCurve)
 
 
-        self.images[myCurve.object]=myCurve
+        self.images[myCurve.object]=tempCurve
 
         if self.table:
             for row in tempCurve.table:
                 self.table.add_row(row)
         else:
-            self.table=tempCurve.table
+            self.table=copy(tempCurve.table)
         return(self)
 
     def combine_curves(self,time_delays=None,magnifications=None):
@@ -169,7 +169,6 @@ class curveDict(dict):
             time_delays=_guess_time_delays(self) #TODO fix these guessing functions
         if not magnifications:
             magnifications=_guess_magnifications(self)
-
         self.combined.table=Table(names=self.table.colnames,dtype=[self.table.dtype[x] for x in self.table.colnames])
         for k in np.sort(self.images.keys()):
             temp=deepcopy(self.images[k].table)
@@ -223,24 +222,24 @@ class curveDict(dict):
         figure : `~matplotlib.pyplot.figure`
         """
 
-        if bands == 'all':
-            bands = self.bands
 
-        nbands = len(bands)
-        if orientation.startswith('v'):
-            ncols = 1
-            nrows = nbands
-        else:
-            ncols = nbands
-            nrows = 1
 
 
         colors=['r','g','b','k','m']
         i=0
         leg=[]
         if combined:
+            if bands == 'all':
+                bands = set(self.combined.table['band'])
 
-            fig,axlist=plt.subplots(nrows=ncols, ncols=1,
+            nbands = len(bands)
+            if orientation.startswith('v'):
+                ncols = 1
+                nrows = nbands
+            else:
+                ncols = nbands
+                nrows = 1
+            fig,axlist=plt.subplots(nrows=nrows, ncols=ncols,
                                     sharex=True, sharey=False,figsize=(8,8))
             if nbands==1:
                 axlist = [axlist]
@@ -265,13 +264,26 @@ class curveDict(dict):
                                         temp['band']==b],
                                     markersize=4, fmt=colors[i]+'.')
                     if showFit:
-                        ax.plot(np.arange(np.min(temp['time'][temp['band']==b]),np.max(temp['time'][temp['band']==b]),1),self.combined.fits.model(np.arange(np.min(temp['time'][temp['band']==b]),np.max(temp['time'][temp['band']==b]),1)),color='y')
+                        ax.plot(np.arange(np.min(temp['time'][temp['band']==b]),np.max(temp['time'][temp['band']==b]),1),
+                                self.combined.fits.model.bandflux(b,np.arange(np.min(temp['time'][temp['band']==b]),np.max(temp['time'][temp['band']==b]),1),
+                                                                  zp=temp['zp'][temp['band']==b][0],
+                                                                  zpsys=temp['zpsys'][temp['band']==b][0]),color='y')
 
                     ax.text(0.95, 0.95, b.upper(), fontsize='large',
                             transform=ax.transAxes, ha='right', va='top')
 
                 i+=1
         else:
+            if bands == 'all':
+                bands = self.bands
+
+            nbands = len(bands)
+            if orientation.startswith('v'):
+                ncols = 1
+                nrows = nbands
+            else:
+                ncols = nbands
+                nrows = 1
             fig,axlist=plt.subplots(nrows=nrows, ncols=ncols,
                                     sharex=True, sharey=True)
             if nbands==1:
