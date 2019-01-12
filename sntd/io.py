@@ -77,6 +77,7 @@ class curveDict(dict):
         self.images=dict([])
 
         self.combined=curve()
+        self.color=curve()
 
 
 
@@ -131,7 +132,7 @@ class curveDict(dict):
         self.bands.update([x for x in myCurve.bands if x not in self.bands])
         myCurve.object='image_'+str(len(self.images)+1)
 
-        myCurve.table.add_column(Column([myCurve.object for i in range(len(myCurve.table))],name='object'))
+        myCurve.table.add_column(Column([myCurve.object for i in range(len(myCurve.table))],name='image'))
 
 
 
@@ -185,11 +186,37 @@ class curveDict(dict):
         return(self)
 
 
+    def color_table(self,band1,band2):
+        names=['time','image','zpsys']
+        dtype=[self.table.dtype[x] for x in names]
+        names=np.append(names,[band1+'-'+band2,band1+'-'+band2+'_err'])
+        dtype=np.append(dtype,[dtype[0],dtype[0]])
+        self.color.table=Table(names=names,dtype=dtype)
 
+        for im in self.images.keys():
+            temp2=self.images[im].table[self.images[im].table['band']==band2]
+            temp1=self.images[im].table[self.images[im].table['band']==band1]
+            if len(temp2)!=len(temp1):
+                print('You want to make a color curve but both band data are not the same size.')
+                sys.exit(1)
+
+            temp2['fluxerr']=np.sqrt((temp2['fluxerr']/temp2['flux'])**2+(temp1['fluxerr']/temp1['flux'])**2)
+
+
+            temp2['flux']/=temp1['flux']
+            temp2['fluxerr']*=temp2['flux']
+            temp2.rename_column('flux',band1+'-'+band2)
+            temp2.rename_column('fluxerr',band1+'-'+band2+'_err')
+            to_remove=[x for x in temp2.colnames if x not in names]
+            temp2.remove_columns(to_remove)
+
+
+            self.color.table=vstack([self.color.table,copy(temp2)])
+        return(self)
 
 
     def plot_object(self, bands='all', savefig=False,
-                    filename='mySN', orientation='horizontal',combined=False,
+                    filename='mySN', orientation='horizontal',method='separate',
                     showModel=False,showFit=False,showMicro=False):
         """Plot the multiply-imaged SN light curves and show/save to a file.
             Each subplot shows a single-band light curve, for all images of the SN.
@@ -204,10 +231,8 @@ class curveDict(dict):
         orientation : str
             'horizontal' = all subplots are in a single row
             'vertical' = all subplots are in a single column
-        combined : bool
-            If true, all light curves will be shown on a single plot.
-            Uses self.combined.table if it exists, otherwise it's
-            created
+        method : str
+            Plots the result of separate, combined, or color curve method
         showModel : bool
             If true, the underlying model before microlensing is plotted
             as well
@@ -228,7 +253,7 @@ class curveDict(dict):
         colors=['r','g','b','k','m']
         i=0
         leg=[]
-        if combined:
+        if method=='combined':
             if bands == 'all':
                 bands = set(self.combined.table['band'])
 
@@ -244,7 +269,7 @@ class curveDict(dict):
             if nbands==1:
                 axlist = [axlist]
             for lc in np.sort(self.images.keys()):
-                temp=self.combined.table[self.combined.table['object']==lc]
+                temp=self.combined.table[self.combined.table['image']==lc]
                 for b, ax in zip(bands, axlist):
                     if b==list(bands)[0]:
                         leg.append(
@@ -273,6 +298,39 @@ class curveDict(dict):
                             transform=ax.transAxes, ha='right', va='top')
 
                 i+=1
+        elif method =='color':
+            if len(bands) !=2:
+                print("Want to plot color curves but need 2 bands specified.")
+                sys.exit(1)
+
+
+            fig=plt.figure(figsize=(8,8))
+            ax=fig.gca()
+
+            for lc in np.sort(self.images.keys()):
+                temp=self.color.table[self.color.table['image']==lc]
+                temp=temp[temp[bands[0]+'-'+bands[1]]/temp[bands[0]+'-'+bands[1]+'_err']>5.]
+                ax.errorbar(temp['time'],temp[bands[0]+'-'+bands[1]],yerr=temp[bands[0]+'-'+bands[1]+'_err'],
+                            markersize=4, fmt=colors[i]+'.')
+
+                ax.text(0.95, 0.95, bands[0].upper()+'-'+bands[1].upper(), fontsize='large',
+                        transform=ax.transAxes, ha='right', va='top')
+
+                i+=1
+            if showFit:
+                mod_time=np.arange(np.min(self.color.table['time']),np.max(self.color.table['time']),1)
+                f1=self.color.fits.model.bandflux(bands[0],mod_time,zp=self.table['zp'][self.table['band']==bands[0]][0],
+                                                  zpsys=self.table['zpsys'][self.table['band']==bands[0]][0])
+                f2=self.color.fits.model.bandflux(bands[1],mod_time,zp=self.table['zp'][self.table['band']==bands[1]][0],
+                                                  zpsys=self.table['zpsys'][self.table['band']==bands[1]][0])
+                f2=f2[f1>0]
+                mod_time=mod_time[f1>0]
+                f1=f1[f1>0]
+                f1=f1[f2>=0]
+                mod_time=mod_time[f2>=0]
+                f2=f2[f2>=0]
+
+                ax.plot(mod_time,f2/f1,color='y')
         else:
             if bands == 'all':
                 bands = self.bands

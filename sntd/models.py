@@ -10,7 +10,7 @@ from collections import Counter
 import matplotlib.pyplot as plt
 from .util import _findMax
 
-__all__=['SplineSource','BazinSource']
+__all__=['BazinSource']
 
 
 def _param_to_source(source,phase,wave):
@@ -52,6 +52,10 @@ def _param_to_source(source,phase,wave):
 
     out=sncosmo.TimeSeriesSource(np.array(finalPhase),np.array(finalWave),np.array(finalFlux),zero_before=False)
     return (out)
+
+
+
+
 
 
 class PierelSource(sncosmo.Source):
@@ -243,182 +247,6 @@ class KarpenkaSource(sncosmo.Source):
         #    return np.ones((len(phase),len(wave)))*(-9999)
         mod=_param_to_source(self,phase,wave)
         return(mod._flux(phase,wave))
-
-class SplineSource(sncosmo.Source):
-
-
-    #_param_names = ['dt0','amplitude']
-
-    #param_names_latex=['\Delta \ t_0','A']
-    def __init__(self, data,weights=None,name='SplineSource', version=None,tstep=1,wstep=10,knots=3,degree=3,smooth=1,func='spline'):
-        super(sncosmo.Source, self).__init__() #init for the super class
-        self.name = name
-        self.version = version
-        self._model = {}
-        data=_removeDupes(data)
-        self.lc=data
-
-
-        self._phase=np.sort(np.unique(self.lc['time']))
-        self._bands=np.unique(self.lc['band'])
-        #self._param_names=np.append(['dt0_'+str(i) for i in range(len(np.unique(self.lc['band'])))],['amplitude_'+str(i) for i in range(len(np.unique(self.lc['band'])))])
-        #self._parameters = np.append([0. for i in range(len(np.unique(self.lc['band'])))],[1. for i in range(len(np.unique(self.lc['band'])))])#,_findMax(time,flux)[0]])
-        #self.param_names_latex=np.append(['\Delta \ t_0 \ ('+b+')' for b in np.unique(self.lc['band'])],['A \ ('+b+')' for b in np.unique(self.lc['band'])])
-        self._param_names=['dt0','amplitude']
-        self._parameters=np.array([0.,1.])
-        self.t0=dict([])
-        for b in self._bands:
-            t0Est,t0Flux=_findMax(self.lc['time'][self.lc['band']==b],self.lc['flux'][self.lc['band']==b])
-            t0Est=t0Est[0] if isinstance(t0Est,np.ndarray) else t0Est
-            t0Flux=t0Flux[0] if isinstance(t0Flux,np.ndarray) else t0Flux
-            self.t0[str(b)]=[t0Est,t0Flux]
-
-        self._func=func
-
-        self.param_names_latex=['\Delta \ t_0','A']
-        self._knots=knots
-        self._deg=degree
-        self._smooth=smooth
-        wave=[]
-        for b in np.unique(data['band']):
-            if len(data[data['band']==b])<knots:
-                data=data[data['band']!=b]
-                continue
-            wave=np.append(wave,sncosmo.get_bandpass(b).wave)
-        wave=np.sort(np.unique(wave))
-        wave=np.append([.99*wave[0]],wave)
-        wave=np.append(wave,[1.01*wave[-1]])
-
-
-
-        self._wave=wave
-
-        self._steps={'tstep':tstep,'wstep':wstep}
-        #self._time = np.linspace(np.min)
-        #self._wave = wave
-        if not weights:
-            self._weights=None
-        #    self._weights=np.ones(len(data))
-
-
-        #if self._parameters[1] not in self._time:
-        #    self._t0Set()
-
-
-    def _dataToSource(self,phase,waveArr):
-        finalWave,finalPhase,finalFlux=None,None,[]
-        bands=[b for b in np.unique(self.lc['band']) if waveArr[0] >= sncosmo.get_bandpass(b).minwave() and waveArr[-1] <= sncosmo.get_bandpass(b).maxwave()]
-        #for b in np.unique(self.lc['band']):
-        #    print(sncosmo.get_bandpass(b).minwave(),waveArr[0],sncosmo.get_bandpass(b).maxwave(),waveArr[-1])
-        for b in bands:
-            #print(type(self._t0),type(self._t0[b]))
-            #print(self._t0[b],'test')
-            #tup=self._t0[b]#_findMax(self.lc['time'][self.lc['band']==b],self.lc['flux'][self.lc['band']==b])
-
-            t0Est=self.t0[b][0]
-            t0Flux=self.t0[b][1]
-            timeInterval=[float(np.min(self.lc['time'][self.lc['band']==b])),float(np.max(self.lc['time'][self.lc['band']==b]))]
-            phase=phase[phase>=timeInterval[0]]
-            phase=phase[phase<=timeInterval[-1]]
-            tempTime=np.array(self.lc['time'][self.lc['band']==b])
-            tempFlux=np.array(self.lc['flux'][self.lc['band']==b])
-            #if b=='F160W':
-            #    print(tempTime,tempFlux)
-            if self._weights is not None:
-                weights=np.ones(len(tempFlux))
-            else:
-                weights=np.array(self.lc['fluxerr'][self.lc['band']==b])
-
-            #ind=np.where(self._bands==b)[0]
-            if t0Est is not None and t0Est not in self.lc['time'][self.lc['band']==b]:
-                self._t0=t0Est
-                tempTime=np.append(tempTime,self._parameters[0]+np.array([t0Est]))
-                tempFlux=np.append(tempFlux,self._parameters[1]*np.array([t0Flux]))
-                #tempTime=np.append(tempTime,self._parameters[ind]+np.array([t0Est]))
-                #tempFlux=np.append(tempFlux,self._parameters[-1]*np.array([t0Flux]))
-                weights=np.append(weights,np.min(weights))
-            else:
-                tempTime=np.append(tempTime,self._parameters[0]+tempTime[np.where(tempFlux==np.max(tempFlux))])
-                tempFlux=np.append(tempFlux,self._parameters[1]*np.max(tempFlux))
-                #tempTime=np.append(tempTime,self._parameters[ind]+tempTime[np.where(tempFlux==np.max(tempFlux))])
-                #tempFlux=np.append(tempFlux,self._parameters[-1]*np.max(tempFlux))
-                weights=np.append(weights,weights[np.where(tempFlux==np.max(tempFlux))])
-
-            srt=np.argsort(tempTime)
-            tempTime=tempTime[srt]
-            tempFlux=tempFlux[srt]
-            weights=weights[srt]
-            #if b=='F105W':
-            #    print(tempTime)
-
-
-            band=sncosmo.get_bandpass(b)
-            timeArr=np.arange(timeInterval[0],timeInterval[1]+self._steps['tstep'],self._steps['tstep'])
-            wave, dwave = integration_grid(band.minwave(), band.maxwave(),
-                                           MODEL_BANDFLUX_SPACING)
-            #timeArr-=t0Est
-            #print(timeArr)
-            #print(phase[0],timeInterval[0],phase[-1],timeInterval[-1])
-            if phase[0] <timeInterval[0] or phase[-1] > timeInterval[-1]:
-                raise RuntimeError('The phase you requested is outside your data bounds.')
-            zpnorm = 10.**(0.4 * self.lc['zp'][self.lc['band']==b][0])
-
-
-            ms = sncosmo.get_magsystem(self.lc['zpsys'][0])
-            zpnorm = zpnorm / ms.zpbandflux(b)
-
-            if self._func=='spline':
-                spl=splrep(tempTime,tempFlux,k=int(self._knots),w=1./weights,s=len(tempFlux)*self._smooth)
-                flux=splev(timeArr,spl)*HC_ERG_AA/(dwave*np.sum(wave*band(wave))*zpnorm)
-            elif self._func=='chebyshev':
-                cheb=np.polynomial.chebyshev.chebfit(tempTime,tempFlux,deg=int(self._deg),w=1./weights)
-                flux=np.polynomial.chebyshev.chebval(timeArr,cheb)*HC_ERG_AA/(dwave*np.sum(wave*band(wave))*zpnorm)
-            else:
-                raise RuntimeError("Don't know that type of flexible function.")
-
-
-            if finalWave is None:
-                finalWave=np.arange(wave[0]-dwave*10,wave[-1]+dwave*10,dwave)
-                finalPhase=timeArr
-                finalFlux=np.zeros((len(finalPhase),len(finalWave)))
-                for i in range(len(finalPhase)):
-                    #if finalPhase[i]>= np.min(timeArr) and finalPhase[i] <= np.max(timeArr):
-                    for j in range(len(finalWave)):
-                        if finalWave[j]>=wave[0] and finalWave[j]<=wave[-1]:
-                            finalFlux[i][j]=flux[i]
-
-
-
-            source=sncosmo.TimeSeriesSource(np.array(finalPhase),np.array(finalWave),np.array(finalFlux),zero_before=False)
-
-
-            mod=sncosmo.Model(source)
-
-            #mod.set(t0=t0Est)
-            #print(mod.bandflux(b,timeArr))
-            #print(self.lc[self.lc['band']==b])
-            #mod.set(t0=t0Est)
-
-
-
-
-            #trans = band(wave)
-            #print(np.sum(wave*trans),HC_ERG_AA)
-
-
-            #sncosmo.plot_lc(data=self.lc[self.lc['band']==b],model=mod)
-            #plt.show()
-            #sys.exit()
-        return (mod)
-
-
-
-    def _flux(self, phase, wave):
-        model=self._dataToSource(phase,wave)
-
-        return(model._flux(phase,wave))
-
-
 
 
 def _removeDupes(data):
