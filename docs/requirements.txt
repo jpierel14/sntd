@@ -1,5 +1,8 @@
 numpy
-cython
 pyParz
-astropy==2.0.4
+astropy
 scipy
+sncosmo
+matplotlib
+nestle
+sklearn

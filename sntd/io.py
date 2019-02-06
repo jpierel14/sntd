@@ -148,7 +148,7 @@ class curveDict(dict):
             self.table=copy(tempCurve.table)
         return(self)
 
-    def combine_curves(self,time_delays=None,magnifications=None):
+    def combine_curves(self,time_delays=None,magnifications=None,referenceImage='image_1'):
         """Takes the multiple images in self.images and combines
             the data into a single light curve using defined
             time delays and magnifications or best (quick) guesses.
@@ -166,11 +166,11 @@ class curveDict(dict):
             print("Not enough curves to combine!")
             return(self)
         if not time_delays:
-            time_delays=_guess_time_delays(self) #TODO fix these guessing functions
+            time_delays=_guess_time_delays(self,referenceImage) #TODO fix these guessing functions
         if not magnifications:
-            magnifications=_guess_magnifications(self)
+            magnifications=_guess_magnifications(self,referenceImage)
         self.combined.table=Table(names=self.table.colnames,dtype=[self.table.dtype[x] for x in self.table.colnames])
-        for k in np.sort([x for x in self.images.keys()]):
+        for k in np.sort(list(self.images.keys())):
             temp=deepcopy(self.images[k].table)
             temp['time']-=time_delays[k]
             temp['flux']/=magnifications[k]
@@ -180,37 +180,54 @@ class curveDict(dict):
 
         self.combined.table.sort('time')
         self.combined.bands=self.bands
-        self.combined.meta['td']=time_delays
-        self.combined.meta['mu']=magnifications
+        self.combined.meta['td']={k:float(time_delays[k]) for k in time_delays.keys()}
+        self.combined.meta['mu']={k:float(magnifications[k]) for k in magnifications.keys()}
         return(self)
 
 
-    def color_table(self,band1,band2):
+    def color_table(self,band1,band2,time_delays=None,magnifications=None,image=[]):
+        image=list(image) if not isinstance(image,(list,tuple)) else image
         names=['time','image','zpsys']
         dtype=[self.table.dtype[x] for x in names]
         names=np.append(names,[band1+'-'+band2,band1+'-'+band2+'_err'])
         dtype=np.append(dtype,[dtype[0],dtype[0]])
         self.color.table=Table(names=names,dtype=dtype)
-
-        for im in self.images.keys():
-            temp2=self.images[im].table[self.images[im].table['band']==band2]
-            temp1=self.images[im].table[self.images[im].table['band']==band1]
-            if len(temp2)!=len(temp1):
-                print('You want to make a color curve but both band data are not the same size.')
-                sys.exit(1)
-
-            temp2['fluxerr']=np.sqrt((temp2['fluxerr']/temp2['flux'])**2+(temp1['fluxerr']/temp1['flux'])**2)
-
-
-            temp2['flux']/=temp1['flux']
-            temp2['fluxerr']*=temp2['flux']
-            temp2.rename_column('flux',band1+'-'+band2)
-            temp2.rename_column('fluxerr',band1+'-'+band2+'_err')
-            to_remove=[x for x in temp2.colnames if x not in names]
-            temp2.remove_columns(to_remove)
+        if not time_delays:
+            time_delays=_guess_time_delays(self) #TODO fix these guessing functions
+        if not magnifications:
+            magnifications=_guess_magnifications(self)
+        for im in [x for x in self.images.keys() if x not in image]:
+            temp2=copy(self.images[im].table[self.images[im].table['band']==band2])
+            temp1=copy(self.images[im].table[self.images[im].table['band']==band1])
+            temp1=temp1[temp1['flux']>0]
+            temp2=temp2[temp2['flux']>0]
+            temp1['flux']/=magnifications[im]
+            temp2['flux']/=magnifications[im]
+            temp1['time']-=time_delays[im]
+            temp2['time']-=time_delays[im]
 
 
-            self.color.table=vstack([self.color.table,copy(temp2)])
+            temp2['mag']=-2.5*np.log10(temp2['flux'])+temp2['zp']
+            temp2['magerr']=1.0857*temp2['fluxerr']/temp2['flux']
+            temp1['mag']=-2.5*np.log10(temp1['flux'])+temp1['zp']
+            temp1['magerr']=1.0857*temp1['fluxerr']/temp1['flux']
+            temp1_remove=[i for i in range(len(temp1)) if temp1['time'][i] not in temp2['time']]
+            temp1.remove_rows(temp1_remove)
+            temp2_remove=[i for i in range(len(temp2)) if temp2['time'][i] not in temp1['time']]
+            temp2.remove_rows(temp2_remove)
+
+            temp1['magerr']=np.sqrt(temp2['magerr']**2+temp1['magerr']**2)
+
+
+            temp1['mag']-=temp2['mag']
+            temp1.rename_column('mag',band1+'-'+band2)
+            temp1.rename_column('magerr',band1+'-'+band2+'_err')
+            to_remove=[x for x in temp1.colnames if x not in names]
+            temp1.remove_columns(to_remove)
+
+
+            self.color.table=vstack([self.color.table,copy(temp1)])
+        self.color.table.sort('time')
         return(self)
 
 
@@ -313,10 +330,10 @@ class curveDict(dict):
 
             fig=plt.figure(figsize=(10,10))
             ax=fig.gca()
-
             for lc in np.sort([x for x in self.images.keys()]):
                 temp=self.color.table[self.color.table['image']==lc]
-                temp=temp[temp[bands[0]+'-'+bands[1]]/temp[bands[0]+'-'+bands[1]+'_err']>5.]
+
+
                 ax.errorbar(temp['time'],temp[bands[0]+'-'+bands[1]],yerr=temp[bands[0]+'-'+bands[1]+'_err'],
                             markersize=4, fmt=colors[i]+'.')
 

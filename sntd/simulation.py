@@ -47,9 +47,9 @@ def _getAbsFromDist(dist):
 
 def createMultiplyImagedSN(
         sourcename, snType, redshift, telescopename='telescope',
-        objectName='object', time_delays=[0., 20.], magnifications=[1., 5.],
-        numImages=2, cadence=5, epochs=50, bands=['F105W', 'F125W', 'F160W'],
-        gain=1000., skynoiseRange=(1, 5), timeArr=None,zpsys='ab', zp=None,
+        objectName='object', time_delays=[10., 50.], magnifications=[2., 1.],
+        numImages=2, cadence=5, epochs=30, bands=['F105W', 'F125W', 'F160W'],
+        gain=200., skynoiseRange=(1, 1.1), timeArr=None,zpsys='ab', zp=None,
         microlensing_type=None, microlensing_params=[],
         dust_model='CCM89Dust', av_host=.3, av_lens=None,
         z_lens=None, minsnr=0.0, scatter=True,snrFunc=None):
@@ -304,6 +304,9 @@ def createMultiplyImagedSN(
             print("Your survey parameters detected no supernovae.")
             return None
         table_i=table_i[0]
+        if timeArr is None:
+            table_i=table_i[table_i['time']<td+50]
+            table_i=table_i[table_i['time']>td-30]
         #create is curve with all parameters and add it to the overall curveDict object from above
         curve_i=curve()
         curve_i.object=None

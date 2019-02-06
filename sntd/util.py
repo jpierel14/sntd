@@ -6,6 +6,7 @@ from collections import OrderedDict as odict
 from scipy.interpolate import splrep,splev
 from itertools import combinations
 import matplotlib.pyplot as plt
+from copy import copy
 
 
 __current_dir__=os.path.abspath(os.getcwd())
@@ -30,13 +31,16 @@ _props=odict([
 
 
 
-def _guess_magnifications(curves):
+def _guess_magnifications(curves,referenceImage):
     """Guess t0 and amplitude of the model based on the data.
 
     Assumes the data has been standardized."""
     ref=None
     mags=dict([])
-    for k in curves.images.keys():
+    all_ims=[referenceImage]
+    for k in [x for x in curves.images.keys() if x!=referenceImage]:
+        all_ims.append(k)
+    for k in all_ims:
         if not curves.images[k].fits:
             bestRatio=-np.inf
             bestBand=None
@@ -48,8 +52,8 @@ def _guess_magnifications(curves):
             maxTime,maxValue=_findMax(curves.images[k].table['time'][curves.images[k].table['band']==b],curves.images[k].table['flux'][curves.images[k].table['band']==b])
 
 
-            if not ref:
-                ref=maxValue
+            if k==referenceImage:
+                ref=copy(maxValue)
             mags[k]=maxValue/ref
 
         else:
@@ -58,26 +62,31 @@ def _guess_magnifications(curves):
             else:
                 amplitude='amplitude'
             mag=curves.images[k].fits.model.get(amplitude)
-            if not ref:
-                ref=mag
+            if k==referenceImage:
+                ref=copy(mag)
             mags[k]=mag/ref
     return mags
 
 
-
-def _guess_time_delays(curves):
+def _guess_time_delays(curves,referenceImage):
+    #tds=colorFit(curves)
+    #if tds:
+    #    return tds
     ref=None
     tds=dict([])
-    for k in curves.images.keys():
+    all_ims=[referenceImage]
+    for k in [x for x in curves.images.keys() if x!=referenceImage]:
+        all_ims.append(k)
+    for k in all_ims:
         if not curves.images[k].fits:
             maxValue,maxFlux=_findMax(curves.images[k].table['time'],curves.images[k].table['flux'])
-            if not ref:
-                ref=maxValue
+            if k==referenceImage:
+                ref=copy(maxValue)
             tds[k]=maxValue-ref
         else:
             t0=curves.images[k].fits.model.get('t0')
-            if not ref:
-                ref=t0
+            if k==referenceImage:
+                ref=copy(t0)
             tds[k]=t0-ref
     return tds
 
