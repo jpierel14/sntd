@@ -111,7 +111,7 @@ class curveDict(dict):
         print('Object: %s'%self.object)
         print('Number of bands: %d' %len(self.bands))
         print('')
-        for c in np.sort(self.images.keys()):
+        for c in np.sort([x for x in self.images.keys()]):
             print('------------------')
             print('Image: %s:'%c)
             print('Bands: {}'.format(self.images[c].bands))
@@ -170,7 +170,7 @@ class curveDict(dict):
         if not magnifications:
             magnifications=_guess_magnifications(self)
         self.combined.table=Table(names=self.table.colnames,dtype=[self.table.dtype[x] for x in self.table.colnames])
-        for k in np.sort(self.images.keys()):
+        for k in np.sort([x for x in self.images.keys()]):
             temp=deepcopy(self.images[k].table)
             temp['time']-=time_delays[k]
             temp['flux']/=magnifications[k]
@@ -252,6 +252,7 @@ class curveDict(dict):
         colors=['r','g','b','k','m']
         i=0
         leg=[]
+
         if method=='combined':
             if bands == 'all':
                 bands = set(self.combined.table['band'])
@@ -264,10 +265,10 @@ class curveDict(dict):
                 ncols = nbands
                 nrows = 1
             fig,axlist=plt.subplots(nrows=nrows, ncols=ncols,
-                                    sharex=True, sharey=False,figsize=(8,8))
+                                    sharex=True, sharey=False,figsize=(10,10))
             if nbands==1:
                 axlist = [axlist]
-            for lc in np.sort(self.images.keys()):
+            for lc in np.sort([x for x in self.images.keys()]):
                 temp=self.combined.table[self.combined.table['image']==lc]
                 for b, ax in zip(bands, axlist):
                     if b==list(bands)[0]:
@@ -298,15 +299,22 @@ class curveDict(dict):
 
                 i+=1
         elif method =='color':
-            if len(bands) !=2:
+            if bands=='all':
+                if len([x for x in self.color.table.colnames if '-' in x and '_' not in x])!=1:
+                    print("Want to plot color curves but need 2 bands specified.")
+                    sys.exit(1)
+                else:
+                    colname=[x for x in self.color.table.colnames if '-' in x and '_' not in x][0]
+                    bands=[colname[:colname.find('-')],colname[colname.find('-')+1:]]
+            elif len(bands) !=2:
                 print("Want to plot color curves but need 2 bands specified.")
                 sys.exit(1)
 
 
-            fig=plt.figure(figsize=(8,8))
+            fig=plt.figure(figsize=(10,10))
             ax=fig.gca()
 
-            for lc in np.sort(self.images.keys()):
+            for lc in np.sort([x for x in self.images.keys()]):
                 temp=self.color.table[self.color.table['image']==lc]
                 temp=temp[temp[bands[0]+'-'+bands[1]]/temp[bands[0]+'-'+bands[1]+'_err']>5.]
                 ax.errorbar(temp['time'],temp[bands[0]+'-'+bands[1]],yerr=temp[bands[0]+'-'+bands[1]+'_err'],
@@ -318,18 +326,9 @@ class curveDict(dict):
                 i+=1
             if showFit:
                 mod_time=np.arange(np.min(self.color.table['time']),np.max(self.color.table['time']),1)
-                f1=self.color.fits.model.bandflux(bands[0],mod_time,zp=self.table['zp'][self.table['band']==bands[0]][0],
-                                                  zpsys=self.table['zpsys'][self.table['band']==bands[0]][0])
-                f2=self.color.fits.model.bandflux(bands[1],mod_time,zp=self.table['zp'][self.table['band']==bands[1]][0],
-                                                  zpsys=self.table['zpsys'][self.table['band']==bands[1]][0])
-                f2=f2[f1>0]
-                mod_time=mod_time[f1>0]
-                f1=f1[f1>0]
-                f1=f1[f2>=0]
-                mod_time=mod_time[f2>=0]
-                f2=f2[f2>=0]
+                modCol=self.color.fits.model.color(bands[0],bands[1],self.color.table['zpsys'][0],mod_time)
 
-                ax.plot(mod_time,f2/f1,color='y')
+                ax.plot(mod_time,modCol,color='y')
         else:
             if bands == 'all':
                 bands = self.bands
@@ -342,11 +341,11 @@ class curveDict(dict):
                 ncols = nbands
                 nrows = 1
             fig,axlist=plt.subplots(nrows=nrows, ncols=ncols,
-                                    sharex=True, sharey=True)
+                                    sharex=True, sharey=True,figsize=(10,10))
             if nbands==1:
                 axlist = [axlist]
             microAx={b:False for b in bands}
-            for lc in np.sort(self.images.keys()):
+            for lc in np.sort([x for x in self.images.keys()]):
                 for b, ax in zip(bands, axlist):
                     if b==list(bands)[0]:
                         leg.append(
@@ -401,8 +400,10 @@ class curveDict(dict):
                                                self.images[lc].table['time'].max(),
                                                0.1)
                         time_shifted = time_model - self.images[lc].simMeta['td']
+
+
                         flux_magnified = self.model.bandflux(
-                            b, time_shifted, self.images[lc].table['zp'][self.images[lc].table['band']==b],
+                            b, time_shifted, self.images[lc].table['zp'][self.images[lc].table['band']==b][0],
                             self.images[lc].zpsys) * \
                                          self.images[lc].simMeta['mu']
                         ax.plot(time_model, flux_magnified, 'k-')
@@ -411,7 +412,7 @@ class curveDict(dict):
                 i+=1
 
 
-        plt.figlegend(leg,np.sort(self.images.keys()), frameon=False,
+        plt.figlegend(leg,np.sort([x for x in self.images.keys()]), frameon=False,
                       loc='center right', fontsize='medium', numpoints=1)
 
 

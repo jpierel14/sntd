@@ -1,4 +1,5 @@
-import os,sys,math,subprocess
+import os,sys,math,subprocess,sncosmo,abc
+from textwrap import dedent
 
 import numpy as np
 from astropy.io import fits,ascii
@@ -13,10 +14,16 @@ from matplotlib.patches import Circle
 import matplotlib.colors as colors
 from mpl_toolkits.axes_grid1.axes_divider import make_axes_locatable
 import matplotlib.mlab as mlab
+from scipy.interpolate import interp1d,interp2d
+from sncosmo.models import _ModelBase
+import extinction
 
 from .util import __dir__,__current_dir__
+from .mldata import MicrolensingData
 
-__all__=['realizeMicro']
+__all__=['_mlProp','_mlFlux','realizeMicro','microcaustic_field_to_curve',
+         'AchromaticMicrolensing','AchromaticSplineMicrolensing','ChromaticSplineMicrolensing','PeakAchromaticMicrolensing',
+         '_CCM89Dust','_OD94Dust','_F99Dust']
 #def identifyML(lc):
 def realizeMicro(arand=.25,debug=0,kappas=.75,kappac=.15,gamma=.76,eps=.6,nray=300,minmass=10,maxmass=10,power=-2.35,pixmax=5,pixminx=0,pixminy=0,pixdif=10,fracpixd=.3,iwrite=0,verbose=False):
     types=['%.3f','%i','%.2f','%.2f','%.2f','%.3f','%i','%.6f','%.6f','%.3f','%.3f','%.3f','%.3f','%.3f','%.3f','%i']
@@ -43,7 +50,7 @@ def realizeMicro(arand=.25,debug=0,kappas=.75,kappac=.15,gamma=.76,eps=.6,nray=3
 
     #print(outFile)
     #np.savetxt(os.path.join(__dir__,'microlens','input'),outFile,fmt=['%3.3f','%s','%s'],delimiter='tab')
-    thefile=open(os.path.join(__dir__,'microlens','input'),'wb')
+    thefile=open(os.path.join(__dir__,'microlens','input'),'w')
 
     for i in range(len(outFile)-1):
         #thefile.write((types[i]+'\t\t%s\t\t%s\n')%(float(outFile[i][0]),outFile[i][1],outFile[i][2]))
@@ -272,31 +279,307 @@ def mu_from_image(image, center,sizes,brightness,plot,time):
 
     return(mu)
 
-def getDiffCurve(time,num,default=True):
-
-    tab=ascii.read(os.path.join(__dir__,'data','diff'+str(num)+'.dat'))
-def getDiffCurve(time, bandset='bessell'):
-    """Read in a microlensing difference curve from a data file.
+class AchromaticMicrolensing(sncosmo.PropagationEffect):
+    """ Simulated microlensing magnification, read in from an external
+    data file.  The input data file must provide a column for SN phase
+    and magnification (no wavelength dependence).
     """
-    #TODO : interpolate to account for redshift of the lens and source
-    num=np.random.randint(1,5)
-    if bandset.lower()=='bessell':
-        tab=ascii.read(os.path.join(__dir__,'data','diff'+str(num)+'.dat'))
-    elif bandset.lower()=='hst':
-        tab = ascii.read(
-            os.path.join(__dir__, 'data/hstmicrolensing',
-                         'diff' + str(num) + '.dat'))
-    else:
-        raise RuntimeError("bandset must be 'bessell' or 'hst'")
-    outTab=Table()
-    outTab['time']=time
-    for band in [x for x in tab.colnames if x != 'time']:
-        spl=splrep(tab['time']+time[0],10**(-.4*tab[band]))
-        outTab[band]=splev(time,spl)
+    _param_names = []
+    param_names_latex = []
+    _minwave = 0.
+    _maxwave = 10.**6
+
+    #def __init__(self, mlfilename, magformat='multiply', **kwargs):
+    def __init__(self, time,dmag, sigma=None,magformat='multiply', **kwargs):
+        """Read in the achromatic microlensing data file.
+
+        magformat : str
+        Format of the magnification column.  May be ``multiply`` or ``add,``
+        where ``multiply`` means the magnification column provides a
+        multiplicative magnification factor, mu, so the effect is applied to
+        the source as flux * mu, and ``add`` means the magnification column
+        provides an additive magnitude, DeltaM=-2.5*log10(mu).
+
+        Keyword arguments are passed on to astropy.table.Table.read().
+        """
+        self._magformat=magformat
+        self._parameters = np.array([])
+        #mldata = read_mldatafile(mlfilename, magformat=magformat, **kwargs)
+        mldata=MicrolensingData(data={'phase':time,'magnification':dmag},magformat=magformat)
+        self.mu = mldata.magnification_interpolator() #Now always a multiplicative mu
+        if sigma is not None:
+            self.sigma=interp1d(time,sigma,fill_value=0.,kind='cubic',bounds_error=False)
+        else:
+            self.sigma=interp1d(time,np.zeros(len(time)),fill_value=0.,kind='cubic',bounds_error=False)
+
+    def propagate(self,phase, wave, flux):
+        """Propagate the magnification onto the model's flux output."""
+        mu = np.expand_dims(self.mu(phase), 1)
+        return flux * mu
 
 
-    return(outTab)
+
+class PeakAchromaticMicrolensing(sncosmo.PropagationEffect):
+    """ Simulated microlensing magnification, read in from an external
+    data file.  The input data file must provide a column for SN phase
+    and magnification (no wavelength dependence).
+    """
+    _param_names = ['A','D']
+    param_names_latex = ['A','$\Delta$']
+    _minwave = 0.
+    _maxwave = 10.**6
+
+    #def __init__(self, mlfilename, magformat='multiply', **kwargs):
+    def __init__(self, time, magformat='multiply', **kwargs):
+        """Read in the achromatic microlensing data file.
+
+        magformat : str
+        Format of the magnification column.  May be ``multiply`` or ``add,``
+        where ``multiply`` means the magnification column provides a
+        multiplicative magnification factor, mu, so the effect is applied to
+        the source as flux * mu, and ``add`` means the magnification column
+        provides an additive magnitude, DeltaM=-2.5*log10(mu).
+
+        Keyword arguments are passed on to astropy.table.Table.read().
+        """
+        self._magformat=magformat
+        self._parameters = np.array([0.,1.])
+        self._time=time
+        #mldata = read_mldatafile(mlfilename, magformat=magformat, **kwargs)
+        mldata=MicrolensingData(data={'phase':time,'magnification':self._parameters[0]*time+self._parameters[1]},magformat=magformat)
+        self.mu = mldata.magnification_interpolator() #Now always a multiplicative mu
+
+
+    def propagate(self,phase, wave, flux):
+        """Propagate the magnification onto the model's flux output."""
+        self.update_mu()
+        mu = np.expand_dims(self.mu(phase), 1)
+
+        return flux * mu
+
+    def update_mu(self):
+        m,delta=self._parameters
+        mldata=MicrolensingData(data={'phase':self._time,'magnification':m*self._time+delta},magformat='multiply')
+        self.mu = mldata.magnification_interpolator() #Now always a multiplicative mu
 
 
 
 
+class AchromaticSplineMicrolensing(sncosmo.PropagationEffect):
+    """Average of randomly anchored splines, to mimic microlensing.
+    We create a mock microlensing difference curve, giving the change in
+    magnitude as a function of time (no variation with wavelength).
+    A set of `nspl` splines are generated, each passing through `nanchor`
+    anchor points, evenly spaced in time, and with y values (representing
+    Delta magnitude) randomly drawn from a normal distribution with varance
+    equal to `sigmadm` squared.  The final delta magnitude curve is the mean
+    of the set of these `nspl` random spline curves.
+    Caveat emptor: this is just a crude hack. It looks like a reasonable
+    approximation for achromatic SN microlensing, but it is not actually
+    derived from a real lensing simulation.
+    """
+    _param_names = []
+    param_names_latex = []
+    _minwave = 0.
+    _maxwave = 10.**6
+
+    def __init__(self, nanchor=10, sigmadm=2.0, nspl=10):
+        # self._parameters = np.array([nanchor, sigmadm, nspl])
+        self._parameters = np.array([])
+        self._nanchor = nanchor
+        self._nspl = nspl
+        self._sigmadm = sigmadm
+
+        # Define a delta mag curve as an average of random splines
+        # The time dimension spans from 0 to 1, but will be rescaled
+        # when propagated onto a model, so that it stretches from the model
+        # minphase to maxphase.
+        splineset = []
+        tarray = np.linspace(0.0, 1.0, 100)
+        for i in range(nspl):
+            time_anchors = np.linspace(0.0, 1.0, nanchor)
+            deltam_anchors = np.random.normal(0, sigmadm, len(time_anchors))
+            spl1d = Spline1d(time_anchors, deltam_anchors)
+            splineset.append(spl1d(tarray))
+        splmean = np.mean(np.array(splineset), 0)
+        self._deltamag = interp1d(tarray, splmean)
+
+
+    def propagate(self, phase,wave, flux):
+        """Propagate the magnification onto the model's flux output."""
+        # magnify the flux
+        deltamag = np.expand_dims(self._deltamag(phase), 1)
+        return flux * 10**(-0.4 * deltamag)
+
+
+class ChromaticSplineMicrolensing(sncosmo.PropagationEffect):
+    """Average of randomly anchored splines, to mimic microlensing.
+    We create a mock microlensing difference curve as is done for
+    AchromaticSplineMicrolensing, giving the change in
+    magnitude as a function of time. Then we add variation with wavelength
+    by adding a two-dimensional polynomial to the delta mag surface.
+
+    Caveat emptor: this is just a crude hack. It looks like a reasonable
+    approximation for SN microlensing including wavelength variation, but it
+    is not actually derived from a real lensing simulation.
+
+    Note that the "microlensing" this produces does not have any range of
+    SN phase in which the microlensing is achromatic.
+    """
+    _param_names = []
+    param_names_latex = []
+    _minwave = 200.   # Angstroms
+    _maxwave = 25000. # Angstroms
+
+    def __init__(self, nanchor=100, sigmadm=2.0, nspl=100):
+        # self._parameters = np.array([nanchor, sigmadm, nspl])
+        self._parameters = np.array([])
+        self._nanchor = nanchor
+        self._nspl = nspl
+        self._sigmadm = sigmadm
+
+        nsteps = 100
+        tarray = np.linspace(0., 1., nsteps)
+        wavearray = np.linspace(0., 1., nsteps)
+        time_anchors = np.linspace(0., 1., nanchor)
+        wave_anchors = np.linspace(0., 1., nanchor)
+
+        # First surface: make a 1d delta-mag curve that is the mean of a
+        # set of random splines in the time dimension, then extend it
+        # without variation into the wavelength dimension.
+        splfitarray = []
+        for i in range(nspl):
+            deltam_anchors = np.random.normal(
+                0, sigmadm, len(time_anchors))
+            spl1d = Spline1d(time_anchors, deltam_anchors)
+            splfitarray.append(spl1d(tarray))
+        splmean = np.mean(np.array(splfitarray), 0)
+        splmean_surface = np.tile(splmean, nsteps).reshape((nsteps, nsteps))
+
+        # Second surface: a 2-D polynomial grid across time and wavelength,
+        # defined with a random covariance matrix:
+        # each component in the cov matrix is drawn from a normal dist. with
+        # sigma = 1/4th of sigmadeltam.
+        # WARNING: right now this setup is basically totally unsupported
+        # by actual microlensing simulations.
+        cov = np.random.normal(0, sigmadm / 4., 4).reshape(2, 2)
+        polygrid_surface = np.polynomial.polynomial.polygrid2d(
+            tarray, wavearray, cov)
+
+        deltam_surface = splmean_surface + polygrid_surface
+        self._deltamag = interp2d(wavearray, tarray, deltam_surface)
+
+
+    def propagate(self, phase,wave, flux):
+        """Propagate the magnification onto the model's flux output."""
+        # magnify the flux
+        wavefraction = (wave-self._minwave)/(self._maxwave-self._minwave)
+        deltamag = self._deltamag(wavefraction, phase)
+        return flux * 10**(-0.4 * deltamag)
+
+
+def _mlFlux(self,time, wave):
+    """Replacement for sncosmo Array flux function."""
+    a = 1. / (1. + self._parameters[0])
+    phase = (time - self._parameters[1]) * a
+    minphase = (self.mintime() - self._parameters[1]) * a
+    maxphase = (self.maxtime() - self._parameters[1]) * a
+    restwave = wave * a
+
+    # Note that below we multiply by the scale factor to conserve
+    # bolometric luminosity.
+    f = a * self._source._flux(phase, restwave)
+
+    # Pass the flux through the PropagationEffects.
+    for effect, frame, zindex in zip(self._effects, self._effect_frames,
+                                     self._effect_zindicies):
+        if frame == 'obs':
+            effect_wave = wave
+            effect_phase=phase*(1./a)
+        elif frame == 'rest':
+            effect_wave = restwave
+            effect_phase=phase
+        else:  # frame == 'free'
+            effect_a = 1. / (1. + self._parameters[zindex])
+            effect_wave = wave * effect_a
+            effect_phase=phase/a*(1.+self._parameters[zindex])
+
+
+        f = effect.propagate(effect_phase,effect_wave, f)
+
+    return f
+
+def _mlProp(_ModelBase):
+    """Abstract base class for propagation effects.
+
+    Derived classes must define _minwave (float), _maxwave (float).
+    """
+
+    __metaclass__ = abc.ABCMeta
+
+    def minwave(self):
+        return self._minwave
+
+    def maxwave(self):
+        return self._maxwave
+
+    @abc.abstractmethod
+    def propagate(self, wave, flux, phase=None):
+        pass
+
+    def _headsummary(self):
+        summary = """\
+        class           : {0}
+        wavelength range: [{1:.6g}, {2:.6g}] Angstroms""" \
+            .format(self.__class__.__name__, self._minwave, self._maxwave)
+        return dedent(summary)
+
+class _CCM89Dust(sncosmo.PropagationEffect):
+    """Cardelli, Clayton, Mathis (1989) extinction model dust."""
+    _param_names = ['ebv', 'r_v']
+    param_names_latex = ['E(B-V)', 'R_V']
+    _minwave = 1000.
+    _maxwave = 33333.33
+
+    def __init__(self):
+        self._parameters = np.array([0., 3.1])
+
+    def propagate(self, phase,wave, flux):
+        """Propagate the flux."""
+        ebv, r_v = self._parameters
+        return extinction.apply(extinction.ccm89(wave, ebv * r_v, r_v), flux)
+
+
+class _OD94Dust(sncosmo.PropagationEffect):
+    """O'Donnell (1994) extinction model dust."""
+    _param_names = ['ebv', 'r_v']
+    param_names_latex = ['E(B-V)', 'R_V']
+    _minwave = 909.09
+    _maxwave = 33333.33
+
+    def __init__(self):
+        self._parameters = np.array([0., 3.1])
+
+    def propagate(self, phase,wave, flux):
+        """Propagate the flux."""
+        ebv, r_v = self._parameters
+        return extinction.apply(extinction.odonnell94(wave, ebv * r_v, r_v),
+                                flux)
+
+
+class _F99Dust(sncosmo.PropagationEffect):
+    """Fitzpatrick (1999) extinction model dust with fixed R_V."""
+    _minwave = 909.09
+    _maxwave = 60000.
+
+    def __init__(self, r_v=3.1):
+        self._param_names = ['ebv']
+        self.param_names_latex = ['E(B-V)']
+        self._parameters = np.array([0.])
+        self._r_v = r_v
+        self._f = extinction.Fitzpatrick99(r_v=r_v)
+
+    def propagate(self, phase,wave, flux):
+        """Propagate the flux."""
+        ebv = self._parameters[0]
+        return extinction.apply(self._f(wave, ebv * self._r_v), flux)
