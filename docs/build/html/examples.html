@@ -6,7 +6,7 @@
   <head>
     <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
     
-    <title>Core-Collapse Examples &#8212; snsedextend 0.2.7 documentation</title>
+    <title>Simulating with SNTD &#8212; snsedextend 0.2.7 documentation</title>
     
     <link rel="stylesheet" href="_static/classic.css" type="text/css" />
     <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
@@ -17,8 +17,7 @@
         VERSION:     '0.2.7',
         COLLAPSE_INDEX: false,
         FILE_SUFFIX: '.html',
-        HAS_SOURCE:  true,
-        SOURCELINK_SUFFIX: '.txt'
+        HAS_SOURCE:  true
       };
     </script>
     <script type="text/javascript" src="_static/jquery.js"></script>
@@ -27,6 +26,7 @@
     <script type="text/javascript" src="https://cdn.mathjax.org/mathjax/latest/MathJax.js?config=TeX-AMS-MML_HTMLorMML"></script>
     <link rel="index" title="Index" href="genindex.html" />
     <link rel="search" title="Search" href="search.html" />
+    <link rel="top" title="snsedextend 0.2.7 documentation" href="index.html" />
     <link rel="next" title="Reference" href="reference.html" />
     <link rel="prev" title="Installation" href="install.html" /> 
   </head>
@@ -52,115 +52,99 @@
         <div class="bodywrapper">
           <div class="body" role="main">
             
-  <div class="section" id="core-collapse-examples">
-<h1>Core-Collapse Examples<a class="headerlink" href="#core-collapse-examples" title="Permalink to this headline">¶</a></h1>
-<div class="section" id="getting-started">
-<h2>Getting Started<a class="headerlink" href="#getting-started" title="Permalink to this headline">¶</a></h2>
-<p>Read in a lightcurve and the filename of an SED:</p>
-<div class="highlight-python"><div class="highlight"><pre><span></span><span class="kn">from</span> <span class="nn">__future__</span> <span class="kn">import</span> <span class="n">print_function</span>
-<span class="kn">import</span> <span class="nn">snsedextend</span>
-<span class="n">sedFile</span><span class="o">=</span><span class="n">snsedextend</span><span class="o">.</span><span class="n">example_sed</span>
-<span class="n">myLC</span><span class="o">=</span><span class="n">snsedextend</span><span class="o">.</span><span class="n">load_example_lc</span><span class="p">()</span>
-<span class="k">print</span><span class="p">(</span><span class="n">myLC</span><span class="p">)</span>
+  <div class="section" id="simulating-with-sntd">
+<h1>Simulating with SNTD<a class="headerlink" href="#simulating-with-sntd" title="Permalink to this headline">¶</a></h1>
+<div class="section" id="no-microlensing">
+<h2>No Microlensing<a class="headerlink" href="#no-microlensing" title="Permalink to this headline">¶</a></h2>
+<p>Create a simulated multiply-imaged supernova that we can then fit,
+with no microlensing included in the simulation. Note that your final
+printed light curve will be different, as this is a randomly generated
+supernova.</p>
+<div class="highlight-python"><div class="highlight"><pre><span></span><span class="kn">import</span> <span class="nn">sntd</span>
+<span class="kn">import</span> <span class="nn">matplotlib.pyplot</span> <span class="kn">as</span> <span class="nn">plt</span>
+
+<span class="n">myMISN</span> <span class="o">=</span> <span class="n">sntd</span><span class="o">.</span><span class="n">createMultiplyImagedSN</span><span class="p">(</span><span class="n">sourcename</span><span class="o">=</span><span class="s1">&#39;salt2-extended&#39;</span><span class="p">,</span> <span class="n">snType</span><span class="o">=</span><span class="s1">&#39;Ia&#39;</span><span class="p">,</span> <span class="n">redshift</span><span class="o">=</span><span class="mf">1.33</span><span class="p">,</span><span class="n">z_lens</span><span class="o">=.</span><span class="mi">53</span><span class="p">,</span> <span class="n">bands</span><span class="o">=</span><span class="p">[</span><span class="s1">&#39;F110W&#39;</span><span class="p">,</span><span class="s1">&#39;F125W&#39;</span><span class="p">],</span>
+                                <span class="n">zp</span><span class="o">=</span><span class="p">[</span><span class="mf">26.8</span><span class="p">,</span><span class="mf">26.2</span><span class="p">],</span> <span class="n">cadence</span><span class="o">=</span><span class="mf">5.</span><span class="p">,</span> <span class="n">epochs</span><span class="o">=</span><span class="mf">35.</span><span class="p">,</span>
+                                <span class="n">time_delays</span><span class="o">=</span><span class="p">[</span><span class="mf">10.</span><span class="p">,</span> <span class="mf">70.</span><span class="p">],</span> <span class="n">magnifications</span><span class="o">=</span><span class="p">[</span><span class="mi">7</span><span class="p">,</span><span class="mf">3.5</span><span class="p">],</span> <span class="n">objectName</span><span class="o">=</span><span class="s1">&#39;My Type Ia SN&#39;</span><span class="p">,</span><span class="n">telescopename</span><span class="o">=</span><span class="s1">&#39;HST&#39;</span><span class="p">)</span>
+<span class="k">print</span><span class="p">(</span><span class="n">myMISN</span><span class="o">.</span><span class="n">images</span><span class="p">[</span><span class="s1">&#39;image1&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">table</span><span class="p">)</span>
+<span class="n">myMISN</span><span class="o">.</span><span class="n">plot_object</span><span class="p">()</span>
+<span class="n">plt</span><span class="o">.</span><span class="n">show</span><span class="p">()</span>
 </pre></div>
 </div>
 <p>Out:</p>
-<div class="highlight-default"><div class="highlight"><pre><span></span><span class="n">name</span>  <span class="n">band</span>     <span class="n">time</span>     <span class="n">mag</span>   <span class="n">magerr</span>
-<span class="o">------</span> <span class="o">----</span> <span class="o">-----------</span> <span class="o">------</span> <span class="o">------</span>
-<span class="mi">2006</span><span class="n">aj</span>    <span class="n">U</span> <span class="mf">53788.16733</span> <span class="mf">18.039</span>  <span class="mf">0.078</span>
-<span class="mi">2006</span><span class="n">aj</span>    <span class="n">U</span> <span class="mf">53790.12301</span> <span class="mf">17.995</span>  <span class="mf">0.047</span>
-<span class="mi">2006</span><span class="n">aj</span>    <span class="n">U</span> <span class="mf">53790.13652</span> <span class="mf">17.982</span>  <span class="mf">0.057</span>
-<span class="mi">2006</span><span class="n">aj</span>    <span class="n">U</span> <span class="mf">53796.11875</span> <span class="mf">18.599</span>  <span class="mf">0.112</span>
-<span class="mi">2006</span><span class="n">aj</span>    <span class="n">U</span> <span class="mf">53797.11978</span> <span class="mf">18.679</span>  <span class="mf">0.054</span>
-<span class="mi">2006</span><span class="n">aj</span>    <span class="n">U</span> <span class="mf">53798.16206</span> <span class="mf">18.738</span>  <span class="mf">0.058</span>
-<span class="mi">2006</span><span class="n">aj</span>    <span class="n">B</span> <span class="mf">53788.11683</span> <span class="mf">18.438</span>   <span class="mf">0.05</span>
-<span class="o">...</span>  <span class="o">...</span>         <span class="o">...</span>    <span class="o">...</span>    <span class="o">...</span>
-<span class="mi">2006</span><span class="n">aj</span>    <span class="n">H</span>    <span class="mf">53793.12</span> <span class="mf">16.752</span>  <span class="mf">0.047</span>
-<span class="mi">2006</span><span class="n">aj</span>    <span class="n">H</span>   <span class="mf">53798.145</span> <span class="mf">16.635</span>  <span class="mf">0.037</span>
-<span class="mi">2006</span><span class="n">aj</span>    <span class="n">K</span>    <span class="mf">53788.16</span> <span class="mf">17.183</span>   <span class="mf">0.12</span>
-<span class="mi">2006</span><span class="n">aj</span>    <span class="n">K</span>   <span class="mf">53790.133</span> <span class="mf">16.714</span>  <span class="mf">0.094</span>
-<span class="mi">2006</span><span class="n">aj</span>    <span class="n">K</span>   <span class="mf">53792.123</span> <span class="mf">16.406</span>  <span class="mf">0.145</span>
-<span class="mi">2006</span><span class="n">aj</span>    <span class="n">K</span>    <span class="mf">53793.12</span> <span class="mf">16.393</span>   <span class="mf">0.08</span>
-<span class="mi">2006</span><span class="n">aj</span>    <span class="n">K</span>   <span class="mf">53798.145</span> <span class="mf">16.769</span>   <span class="mf">0.08</span>
-<span class="n">Length</span> <span class="o">=</span> <span class="mi">105</span> <span class="n">rows</span>
-</pre></div>
-</div>
-</div>
-<div class="section" id="generate-a-color-table">
-<h2>Generate a Color Table<a class="headerlink" href="#generate-a-color-table" title="Permalink to this headline">¶</a></h2>
-<p>Produce a color table from the example data with some assumptions. You can set any parameter that you would like that is used for SNCosmo fitting.</p>
-<div class="highlight-python"><div class="highlight"><pre><span></span><span class="n">colorTable</span><span class="o">=</span><span class="n">snsedextend</span><span class="o">.</span><span class="n">curveToColor</span><span class="p">(</span><span class="n">myLC</span><span class="p">,</span><span class="n">colors</span><span class="o">=</span><span class="p">[</span><span class="s1">&#39;U-B&#39;</span><span class="p">,</span> <span class="s1">&#39;r-J&#39;</span><span class="p">,</span> <span class="s1">&#39;r-H&#39;</span><span class="p">,</span> <span class="s1">&#39;r-K&#39;</span><span class="p">],</span>
-                 <span class="n">snType</span><span class="o">=</span><span class="s1">&#39;Ic&#39;</span><span class="p">,</span> <span class="n">zpsys</span><span class="o">=</span><span class="s1">&#39;vega&#39;</span><span class="p">,</span> <span class="n">bounds</span><span class="o">=</span><span class="p">{</span><span class="s1">&#39;hostebv&#39;</span><span class="p">:</span> <span class="p">(</span><span class="o">-</span><span class="mi">1</span><span class="p">,</span> <span class="mi">1</span><span class="p">),</span>
-                 <span class="s1">&#39;t0&#39;</span><span class="p">:</span> <span class="p">(</span><span class="mf">53787.94</span><span class="p">,</span> <span class="mf">53797.94</span><span class="p">)},</span><span class="n">constants</span><span class="o">=</span><span class="p">{</span><span class="s1">&#39;mwr_v&#39;</span><span class="p">:</span> <span class="mf">3.1</span><span class="p">,</span>
-                 <span class="s1">&#39;mwebv&#39;</span><span class="p">:</span> <span class="s1">&#39;0.1267&#39;</span><span class="p">,</span> <span class="s1">&#39;z&#39;</span><span class="p">:</span> <span class="s1">&#39;0.033529863&#39;</span><span class="p">,</span> <span class="s1">&#39;hostr_v&#39;</span><span class="p">:</span> <span class="mf">3.1</span><span class="p">},</span>
-                 <span class="n">dust</span><span class="o">=</span><span class="s1">&#39;CCM89Dust&#39;</span><span class="p">,</span> <span class="n">effect_frames</span><span class="o">=</span><span class="p">[</span><span class="s1">&#39;rest&#39;</span><span class="p">,</span> <span class="s1">&#39;obs&#39;</span><span class="p">],</span> <span class="n">effect_names</span><span class="o">=</span><span class="p">[</span><span class="s1">&#39;host&#39;</span><span class="p">,</span> <span class="s1">&#39;mw&#39;</span><span class="p">])</span>
+<div class="highlight-default"><div class="highlight"><pre><span></span><span class="n">time</span>               <span class="n">band</span>        <span class="n">flux</span>             <span class="n">fluxerr</span>        <span class="n">zp</span>  <span class="n">zpsys</span>  <span class="n">image</span>
+<span class="o">------------------</span> <span class="o">-----</span> <span class="o">------------------</span> <span class="o">------------------</span> <span class="o">----</span> <span class="o">-----</span> <span class="o">-------</span>
+<span class="mf">0.0</span>                <span class="n">F110W</span>  <span class="mf">80.83704095305713</span> <span class="mf">1.2196369693362414</span> <span class="mf">26.8</span>    <span class="n">AB</span> <span class="n">image_1</span>
+<span class="mf">5.147058823529412</span>  <span class="n">F110W</span>  <span class="mf">89.91280021212975</span>  <span class="mf">1.284158612608907</span> <span class="mf">26.8</span>    <span class="n">AB</span> <span class="n">image_1</span>
+<span class="mf">10.294117647058824</span> <span class="n">F110W</span>  <span class="mf">96.27127396739887</span> <span class="mf">1.2466015593879611</span> <span class="mf">26.8</span>    <span class="n">AB</span> <span class="n">image_1</span>
+<span class="mf">15.441176470588236</span> <span class="n">F110W</span>  <span class="mf">90.70821457675255</span>   <span class="mf">1.22366765470951</span> <span class="mf">26.8</span>    <span class="n">AB</span> <span class="n">image_1</span>
+<span class="mf">20.58823529411765</span>  <span class="n">F110W</span>  <span class="mf">86.53240018017523</span> <span class="mf">1.2073336440515443</span> <span class="mf">26.8</span>    <span class="n">AB</span> <span class="n">image_1</span>
+<span class="mf">25.73529411764706</span>  <span class="n">F110W</span>  <span class="mf">76.07501959744152</span> <span class="mf">1.2094036308608453</span> <span class="mf">26.8</span>    <span class="n">AB</span> <span class="n">image_1</span>
+<span class="mf">30.88235294117647</span>  <span class="n">F110W</span>  <span class="mf">63.17842848471685</span> <span class="mf">1.1769008597903798</span> <span class="mf">26.8</span>    <span class="n">AB</span> <span class="n">image_1</span>
+<span class="mf">36.029411764705884</span> <span class="n">F110W</span>  <span class="mf">54.15614809883671</span> <span class="mf">1.1548804427431165</span> <span class="mf">26.8</span>    <span class="n">AB</span> <span class="n">image_1</span>
+<span class="mf">41.1764705882353</span>   <span class="n">F110W</span>  <span class="mf">44.63934115659113</span> <span class="mf">1.1351349145266738</span> <span class="mf">26.8</span>    <span class="n">AB</span> <span class="n">image_1</span>
+<span class="mf">46.32352941176471</span>  <span class="n">F110W</span> <span class="mf">37.517811149554156</span> <span class="mf">1.1509488564354409</span> <span class="mf">26.8</span>    <span class="n">AB</span> <span class="n">image_1</span>
+<span class="mf">51.47058823529412</span>  <span class="n">F110W</span> <span class="mf">31.368919986394147</span> <span class="mf">1.1348214534140784</span> <span class="mf">26.8</span>    <span class="n">AB</span> <span class="n">image_1</span>
+<span class="mf">56.617647058823536</span> <span class="n">F110W</span> <span class="mf">26.365621628734704</span> <span class="mf">1.1473493554620837</span> <span class="mf">26.8</span>    <span class="n">AB</span> <span class="n">image_1</span>
+<span class="mf">0.0</span>                <span class="n">F125W</span> <span class="mf">44.652886569466006</span> <span class="mf">1.1844546865198073</span> <span class="mf">26.2</span>    <span class="n">AB</span> <span class="n">image_1</span>
+<span class="mf">5.147058823529412</span>  <span class="n">F125W</span>  <span class="mf">52.12506595181393</span> <span class="mf">1.1882051108553613</span> <span class="mf">26.2</span>    <span class="n">AB</span> <span class="n">image_1</span>
+<span class="mf">10.294117647058824</span> <span class="n">F125W</span>    <span class="mf">56.383959775956</span> <span class="mf">1.2055312873637205</span> <span class="mf">26.2</span>    <span class="n">AB</span> <span class="n">image_1</span>
+<span class="mf">15.441176470588236</span> <span class="n">F125W</span> <span class="mf">52.282478317158144</span> <span class="mf">1.2019364467744396</span> <span class="mf">26.2</span>    <span class="n">AB</span> <span class="n">image_1</span>
+<span class="mf">20.58823529411765</span>  <span class="n">F125W</span>  <span class="mf">51.44217018263837</span> <span class="mf">1.1737524525502405</span> <span class="mf">26.2</span>    <span class="n">AB</span> <span class="n">image_1</span>
+<span class="mf">25.73529411764706</span>  <span class="n">F125W</span>  <span class="mf">45.41787029296782</span> <span class="mf">1.1346437770894173</span> <span class="mf">26.2</span>    <span class="n">AB</span> <span class="n">image_1</span>
+<span class="mf">30.88235294117647</span>  <span class="n">F125W</span>   <span class="mf">41.7399546859917</span>  <span class="mf">1.138562946339325</span> <span class="mf">26.2</span>    <span class="n">AB</span> <span class="n">image_1</span>
+<span class="mf">36.029411764705884</span> <span class="n">F125W</span> <span class="mf">36.249141725372375</span> <span class="mf">1.1633746045379156</span> <span class="mf">26.2</span>    <span class="n">AB</span> <span class="n">image_1</span>
+<span class="mf">41.1764705882353</span>   <span class="n">F125W</span> <span class="mf">30.134015959569542</span>  <span class="mf">1.080202890453433</span> <span class="mf">26.2</span>    <span class="n">AB</span> <span class="n">image_1</span>
+<span class="mf">46.32352941176471</span>  <span class="n">F125W</span> <span class="mf">26.732438252265634</span> <span class="mf">1.1574450238913505</span> <span class="mf">26.2</span>    <span class="n">AB</span> <span class="n">image_1</span>
+<span class="mf">51.47058823529412</span>  <span class="n">F125W</span> <span class="mf">27.135405865133855</span>  <span class="mf">1.071456097317496</span> <span class="mf">26.2</span>    <span class="n">AB</span> <span class="n">image_1</span>
+<span class="mf">56.617647058823536</span> <span class="n">F125W</span> <span class="mf">21.536294532971315</span>  <span class="mf">1.081999880063472</span> <span class="mf">26.2</span>    <span class="n">AB</span> <span class="n">image_1</span>
 </pre></div>
 </div>
 <p>Out:</p>
-<div class="highlight-html"><div class="highlight"><pre><span></span>Getting best fit for: U-B,r-J,r-H,r-K
-No model provided, running series of models.
-Best fit model is &quot;snana-2004fe&quot;, with a Chi-squared of 310.573042
-</pre></div>
+<a class="reference internal image-reference" href="_images/noML.png"><img alt="alternate text" class="align-center" src="_images/noML.png" style="width: 600px; height: 600px;" /></a>
 </div>
-<p>Now print the result:</p>
-<div class="highlight-python"><div class="highlight"><pre><span></span><span class="k">print</span><span class="p">(</span><span class="n">colorTable</span><span class="p">)</span>
-</pre></div>
-</div>
-<p>Out:</p>
-<div class="highlight-html"><div class="highlight"><pre><span></span>time                U-B          ...        rK_err
-------------------- -------------------- ... -------------------
--4.373621809507313                   -- ... 0.14190728435615696
--4.373621809507313                   -- ...                  --
--4.373621809507313                   -- ...                  --
--4.366291809514223  -0.3018462428016375 ...                  --
--2.4106118095078273 -0.05909438979689674 ...                  --
--2.4006218095091754                   -- ...                  --
--2.4006218095091754                   -- ... 0.11584654528008068
-...                  ... ...                 ...
-0.5863781904918142                   -- ...                  --
-3.58512819049065  0.46099767884640763 ...                  --
-4.586158190490096  0.40038613488523844 ...                  --
-5.611378190485993                   -- ...                  --
-5.611378190485993                   -- ...                  --
-5.611378190485993                   -- ... 0.10417369509400125
-5.628438190491579  0.29095420901175495 ...                  --
-Length = 23 rows
-</pre></div>
-</div>
-</div>
-<div class="section" id="color-curve-fitting">
-<h2>Color Curve Fitting<a class="headerlink" href="#color-curve-fitting" title="Permalink to this headline">¶</a></h2>
-<p>Now we can fit this color table and get a best model by minimizing BIC.
-This function returns a python dictionary with colors as keys and an astropy Table object
-with time and color vectors as values:</p>
-<div class="highlight-default"><div class="highlight"><pre><span></span><span class="n">curveDict</span><span class="o">=</span><span class="n">snsedextend</span><span class="o">.</span><span class="n">fitColorCurve</span><span class="p">(</span><span class="n">colorTable</span><span class="p">)</span>
+<div class="section" id="simulating-microlensing">
+<h2>Simulating Microlensing<a class="headerlink" href="#simulating-microlensing" title="Permalink to this headline">¶</a></h2>
+<p>Simulate a microlensing microcaustic, and use it to include a microlensing effect in
+the simulated supernova.</p>
+<div class="highlight-python"><div class="highlight"><pre><span></span><span class="kn">import</span> <span class="nn">numpy</span> <span class="kn">as</span> <span class="nn">np</span>
+
+<span class="n">myML</span><span class="o">=</span><span class="n">sntd</span><span class="o">.</span><span class="n">realizeMicro</span><span class="p">(</span><span class="n">nray</span><span class="o">=</span><span class="mi">50</span><span class="p">,</span><span class="n">kappas</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span><span class="n">kappac</span><span class="o">=.</span><span class="mi">3</span><span class="p">,</span><span class="n">gamma</span><span class="o">=.</span><span class="mi">4</span><span class="p">)</span>
+<span class="n">time</span><span class="p">,</span><span class="n">dmag</span><span class="o">=</span><span class="n">sntd</span><span class="o">.</span><span class="n">microcaustic_field_to_curve</span><span class="p">(</span><span class="n">field</span><span class="o">=</span><span class="n">fitData</span><span class="p">,</span><span class="n">time</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">arange</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span><span class="mi">100</span><span class="p">,</span><span class="mi">1</span><span class="p">),</span><span class="n">zl</span><span class="o">=.</span><span class="mi">5</span><span class="p">,</span><span class="n">zs</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span><span class="n">plot</span><span class="o">=</span><span class="bp">True</span><span class="p">)</span>
+<span class="n">plt</span><span class="o">.</span><span class="n">show</span><span class="p">()</span>
 </pre></div>
 </div>
 <p>Out:</p>
-<div class="highlight-html"><div class="highlight"><pre><span></span>Running BIC for color:
-     U-B
-     r-J
-     r-H
-     r-K
-</pre></div>
+<a class="reference internal image-reference" href="_images/micro.png"><img alt="alternate text" class="align-center" src="_images/micro.png" style="width: 600px; height: 600px;" /></a>
 </div>
-</div>
-<div class="section" id="sed-extrapolation">
-<h2>SED Extrapolation<a class="headerlink" href="#sed-extrapolation" title="Permalink to this headline">¶</a></h2>
-<p>Now you can provide an SED to be extrapolated, and let it do the work (This is a type Ic). This will return an
-sncosmo.Source object and simultanously save the new SED to a file defined by newFileLoc (default current directory).:</p>
-<div class="highlight-default"><div class="highlight"><pre><span></span><span class="n">newSED</span><span class="o">=</span><span class="n">snsedextend</span><span class="o">.</span><span class="n">extendCC</span><span class="p">(</span><span class="n">colorTable</span><span class="p">,</span><span class="n">curveDict</span><span class="p">,</span><span class="n">sedlist</span><span class="o">=</span><span class="p">[</span><span class="n">sedFile</span><span class="p">],</span><span class="n">zpsys</span><span class="o">=</span><span class="s1">&#39;vega&#39;</span><span class="p">,</span><span class="n">showplots</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span><span class="n">verbose</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
-</pre></div>
-</div>
-</div>
-<div class="section" id="plotting-from-timeseries">
-<h2>Plotting from Timeseries<a class="headerlink" href="#plotting-from-timeseries" title="Permalink to this headline">¶</a></h2>
-<p>You can directly plot an SED file.:</p>
-<div class="highlight-default"><div class="highlight"><pre><span></span><span class="n">snsedextend</span><span class="o">.</span><span class="n">plotSED</span><span class="p">(</span><span class="s1">&#39;SEDS/typeIc/SDSS-004012.SED&#39;</span><span class="p">,</span><span class="n">day</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span><span class="n">showPlot</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span><span class="n">MINWAVE</span><span class="o">=</span><span class="mi">4000</span><span class="p">,</span><span class="n">MAXWAVE</span><span class="o">=</span><span class="mi">20000</span><span class="p">,</span><span class="n">saveFig</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
+<div class="section" id="including-microlensing-in-simulations">
+<h2>Including Microlensing in Simulations<a class="headerlink" href="#including-microlensing-in-simulations" title="Permalink to this headline">¶</a></h2>
+<p>Now we can take the simulated microcaustic and use it to include microlensing in a multiply-imaged supernova simulation.</p>
+<div class="highlight-python"><div class="highlight"><pre><span></span><span class="n">myMISN2</span> <span class="o">=</span> <span class="n">sntd</span><span class="o">.</span><span class="n">createMultiplyImagedSN</span><span class="p">(</span><span class="n">sourcename</span><span class="o">=</span><span class="s1">&#39;salt2-extended&#39;</span><span class="p">,</span> <span class="n">snType</span><span class="o">=</span><span class="s1">&#39;Ia&#39;</span><span class="p">,</span> <span class="n">redshift</span><span class="o">=</span><span class="mf">1.33</span><span class="p">,</span><span class="n">z_lens</span><span class="o">=.</span><span class="mi">53</span><span class="p">,</span> <span class="n">bands</span><span class="o">=</span><span class="p">[</span><span class="s1">&#39;F110W&#39;</span><span class="p">,</span><span class="s1">&#39;F125W&#39;</span><span class="p">],</span>
+                     <span class="n">zp</span><span class="o">=</span><span class="p">[</span><span class="mf">26.8</span><span class="p">,</span><span class="mf">26.2</span><span class="p">],</span> <span class="n">cadence</span><span class="o">=</span><span class="mf">5.</span><span class="p">,</span> <span class="n">epochs</span><span class="o">=</span><span class="mf">35.</span><span class="p">,</span>
+                     <span class="n">time_delays</span><span class="o">=</span><span class="p">[</span><span class="mf">10.</span><span class="p">,</span> <span class="mf">70.</span><span class="p">],</span> <span class="n">magnifications</span><span class="o">=</span><span class="p">[</span><span class="mi">7</span><span class="p">,</span><span class="mf">3.5</span><span class="p">],</span> <span class="n">objectName</span><span class="o">=</span><span class="s1">&#39;My Type Ia SN&#39;</span><span class="p">,</span><span class="n">telescopename</span><span class="o">=</span><span class="s1">&#39;HST&#39;</span><span class="p">,</span>
+                     <span class="n">microlensing_type</span><span class="o">=</span><span class="s1">&#39;AchromaticMicrolensing&#39;</span><span class="p">,</span><span class="n">microlensing_params</span><span class="o">=</span><span class="n">myML</span><span class="p">)</span>
+<span class="n">myMISN2</span><span class="o">.</span><span class="n">plot_object</span><span class="p">(</span><span class="n">showMicro</span><span class="o">=</span><span class="bp">True</span><span class="p">,</span><span class="n">showModel</span><span class="o">=</span><span class="bp">True</span><span class="p">)</span>
 </pre></div>
 </div>
 <p>Out:</p>
-<a class="reference internal image-reference" href="_images/example_plot.png"><img alt="alternate text" class="align-center" src="_images/example_plot.png" style="width: 600px; height: 400px;" /></a>
+<a class="reference internal image-reference" href="_images/withML.png"><img alt="alternate text" class="align-center" src="_images/withML.png" style="width: 600px; height: 600px;" /></a>
+</div>
+<div class="section" id="fitting-a-multiply-imaged-supernova">
+<h2>Fitting a Multiply-Imaged Supernova<a class="headerlink" href="#fitting-a-multiply-imaged-supernova" title="Permalink to this headline">¶</a></h2>
+<p>There are 3 methods built into SNTD to measure time delays (separate, combined, color). They are accessed by the same function:</p>
+<div class="highlight-python"><div class="highlight"><pre><span></span><span class="n">fitCurves</span><span class="o">=</span><span class="n">sntd</span><span class="o">.</span><span class="n">fit_data</span><span class="p">(</span><span class="n">myMISN2</span><span class="p">,</span><span class="n">snType</span><span class="o">=</span><span class="s1">&#39;Ia&#39;</span><span class="p">,</span> <span class="n">models</span><span class="o">=</span><span class="s1">&#39;salt2-extended&#39;</span><span class="p">,</span><span class="n">bands</span><span class="o">=</span><span class="p">[</span><span class="s1">&#39;F110W&#39;</span><span class="p">,</span><span class="s1">&#39;F125W&#39;</span><span class="p">],</span>
+            <span class="n">params</span><span class="o">=</span><span class="p">[</span><span class="s1">&#39;x0&#39;</span><span class="p">,</span><span class="s1">&#39;x1&#39;</span><span class="p">,</span><span class="s1">&#39;t0&#39;</span><span class="p">,</span><span class="s1">&#39;c&#39;</span><span class="p">],</span><span class="n">constants</span><span class="o">=</span><span class="p">{</span><span class="s1">&#39;z&#39;</span><span class="p">:</span><span class="mf">1.33</span><span class="p">},</span>
+            <span class="n">bounds</span><span class="o">=</span><span class="p">{</span><span class="s1">&#39;t0&#39;</span><span class="p">:(</span><span class="o">-</span><span class="mi">15</span><span class="p">,</span><span class="mi">15</span><span class="p">),</span><span class="s1">&#39;x1&#39;</span><span class="p">:(</span><span class="o">-</span><span class="mi">2</span><span class="p">,</span><span class="mi">2</span><span class="p">),</span><span class="s1">&#39;c&#39;</span><span class="p">:(</span><span class="mi">0</span><span class="p">,</span><span class="mi">1</span><span class="p">)},</span><span class="n">method</span><span class="o">=</span><span class="s1">&#39;separate&#39;</span><span class="p">,</span><span class="n">microlensing</span><span class="o">=</span><span class="bp">None</span><span class="p">)</span>
+<span class="n">fitCurves</span><span class="o">.</span><span class="n">plot_object</span><span class="p">(</span><span class="n">showFit</span><span class="o">=</span><span class="bp">True</span><span class="p">,</span><span class="n">method</span><span class="o">=</span><span class="s1">&#39;separate&#39;</span><span class="p">)</span>
+<span class="n">plt</span><span class="o">.</span><span class="n">show</span><span class="p">()</span>
+</pre></div>
+</div>
+<p>Out:</p>
+<a class="reference internal image-reference" href="_images/separateFit.png"><img alt="alternate text" class="align-center" src="_images/separateFit.png" style="width: 600px; height: 600px;" /></a>
+</div>
+<div class="section" id="estimating-uncertainty-due-to-microlensing">
+<h2>Estimating Uncertainty Due to Microlensing<a class="headerlink" href="#estimating-uncertainty-due-to-microlensing" title="Permalink to this headline">¶</a></h2>
 </div>
 </div>
 
@@ -174,12 +158,12 @@ sncosmo.Source object and simultanously save the new SED to a file defined by ne
 <p class="caption"><span class="caption-text">Contents:</span></p>
 <ul class="current">
 <li class="toctree-l1"><a class="reference internal" href="install.html">Installation</a></li>
-<li class="toctree-l1 current"><a class="current reference internal" href="#">Core-Collapse Examples</a><ul>
-<li class="toctree-l2"><a class="reference internal" href="#getting-started">Getting Started</a></li>
-<li class="toctree-l2"><a class="reference internal" href="#generate-a-color-table">Generate a Color Table</a></li>
-<li class="toctree-l2"><a class="reference internal" href="#color-curve-fitting">Color Curve Fitting</a></li>
-<li class="toctree-l2"><a class="reference internal" href="#sed-extrapolation">SED Extrapolation</a></li>
-<li class="toctree-l2"><a class="reference internal" href="#plotting-from-timeseries">Plotting from Timeseries</a></li>
+<li class="toctree-l1 current"><a class="current reference internal" href="#">Simulating with SNTD</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="#no-microlensing">No Microlensing</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#simulating-microlensing">Simulating Microlensing</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#including-microlensing-in-simulations">Including Microlensing in Simulations</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#fitting-a-multiply-imaged-supernova">Fitting a Multiply-Imaged Supernova</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#estimating-uncertainty-due-to-microlensing">Estimating Uncertainty Due to Microlensing</a></li>
 </ul>
 </li>
 <li class="toctree-l1"><a class="reference internal" href="reference.html">Reference</a></li>
@@ -194,7 +178,7 @@ sncosmo.Source object and simultanously save the new SED to a file defined by ne
   <div role="note" aria-label="source link">
     <h3>This Page</h3>
     <ul class="this-page-menu">
-      <li><a href="_sources/examples.rst.txt"
+      <li><a href="_sources/examples.txt"
             rel="nofollow">Show Source</a></li>
     </ul>
    </div>
@@ -229,7 +213,7 @@ sncosmo.Source object and simultanously save the new SED to a file defined by ne
     </div>
     <div class="footer" role="contentinfo">
         &#169; Copyright 2018, J.R. Pierel.
-      Created using <a href="http://sphinx-doc.org/">Sphinx</a> 1.5.4.
+      Created using <a href="http://sphinx-doc.org/">Sphinx</a> 1.4.8.
     </div>
   </body>
 </html>

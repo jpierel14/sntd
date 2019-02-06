@@ -17,8 +17,7 @@
         VERSION:     '0.2.7',
         COLLAPSE_INDEX: false,
         FILE_SUFFIX: '.html',
-        HAS_SOURCE:  true,
-        SOURCELINK_SUFFIX: '.txt'
+        HAS_SOURCE:  true
       };
     </script>
     <script type="text/javascript" src="_static/jquery.js"></script>
@@ -27,6 +26,7 @@
     <script type="text/javascript" src="https://cdn.mathjax.org/mathjax/latest/MathJax.js?config=TeX-AMS-MML_HTMLorMML"></script>
     <link rel="index" title="Index" href="genindex.html" />
     <link rel="search" title="Search" href="search.html" />
+    <link rel="top" title="snsedextend 0.2.7 documentation" href="#" />
     <link rel="next" title="Installation" href="install.html" /> 
   </head>
   <body role="document">
@@ -50,23 +50,22 @@
             
   <div class="section" id="welcome-to-sntd-s-documentation">
 <h1>Welcome to SNTD&#8217;s documentation!<a class="headerlink" href="#welcome-to-sntd-s-documentation" title="Permalink to this headline">¶</a></h1>
-<p>SNTD is a software package designed to measure time delays and magnification ratios for multiply-imaged supernovae of any classification.</p>
-<div class="toctree-wrapper compound">
-<p class="caption"><span class="caption-text">Contents:</span></p>
+<p>SNTD is a software package designed to measure time delays and magnification ratios for multiply-imaged supernovae of any classification. This software is described in detail in an accompanying <a class="reference external" href="https://arxiv.org/abs/1902.01260">publication</a>.</p>
+<div class="toctree-wrapper compound" id="contents">
+<p class="caption"><span class="caption-text">Contents:</span><a class="headerlink" href="#contents" title="Permalink to this toctree">¶</a></p>
 <ul>
 <li class="toctree-l1"><a class="reference internal" href="install.html">Installation</a><ul>
 <li class="toctree-l2"><a class="reference internal" href="install.html#install-using-pip">Install using pip</a></li>
-<li class="toctree-l2"><a class="reference internal" href="install.html#setting-environment-variable">Setting Environment Variable</a></li>
 <li class="toctree-l2"><a class="reference internal" href="install.html#install-latest-development-version">Install latest development version</a></li>
 <li class="toctree-l2"><a class="reference internal" href="install.html#optional-dependencies">Optional dependencies</a></li>
 </ul>
 </li>
-<li class="toctree-l1"><a class="reference internal" href="examples.html">Core-Collapse Examples</a><ul>
-<li class="toctree-l2"><a class="reference internal" href="examples.html#getting-started">Getting Started</a></li>
-<li class="toctree-l2"><a class="reference internal" href="examples.html#generate-a-color-table">Generate a Color Table</a></li>
-<li class="toctree-l2"><a class="reference internal" href="examples.html#color-curve-fitting">Color Curve Fitting</a></li>
-<li class="toctree-l2"><a class="reference internal" href="examples.html#sed-extrapolation">SED Extrapolation</a></li>
-<li class="toctree-l2"><a class="reference internal" href="examples.html#plotting-from-timeseries">Plotting from Timeseries</a></li>
+<li class="toctree-l1"><a class="reference internal" href="examples.html">Simulating with SNTD</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="examples.html#no-microlensing">No Microlensing</a></li>
+<li class="toctree-l2"><a class="reference internal" href="examples.html#simulating-microlensing">Simulating Microlensing</a></li>
+<li class="toctree-l2"><a class="reference internal" href="examples.html#including-microlensing-in-simulations">Including Microlensing in Simulations</a></li>
+<li class="toctree-l2"><a class="reference internal" href="examples.html#fitting-a-multiply-imaged-supernova">Fitting a Multiply-Imaged Supernova</a></li>
+<li class="toctree-l2"><a class="reference internal" href="examples.html#estimating-uncertainty-due-to-microlensing">Estimating Uncertainty Due to Microlensing</a></li>
 </ul>
 </li>
 <li class="toctree-l1"><a class="reference internal" href="reference.html">Reference</a><ul>
@@ -96,7 +95,7 @@
 <p class="caption"><span class="caption-text">Contents:</span></p>
 <ul>
 <li class="toctree-l1"><a class="reference internal" href="install.html">Installation</a></li>
-<li class="toctree-l1"><a class="reference internal" href="examples.html">Core-Collapse Examples</a></li>
+<li class="toctree-l1"><a class="reference internal" href="examples.html">Simulating with SNTD</a></li>
 <li class="toctree-l1"><a class="reference internal" href="reference.html">Reference</a></li>
 </ul>
 
@@ -106,7 +105,7 @@
   <div role="note" aria-label="source link">
     <h3>This Page</h3>
     <ul class="this-page-menu">
-      <li><a href="_sources/index.rst.txt"
+      <li><a href="_sources/index.txt"
             rel="nofollow">Show Source</a></li>
     </ul>
    </div>
@@ -138,7 +137,7 @@
     </div>
     <div class="footer" role="contentinfo">
         &#169; Copyright 2018, J.R. Pierel.
-      Created using <a href="http://sphinx-doc.org/">Sphinx</a> 1.5.4.
+      Created using <a href="http://sphinx-doc.org/">Sphinx</a> 1.4.8.
     </div>
   </body>
 </html>

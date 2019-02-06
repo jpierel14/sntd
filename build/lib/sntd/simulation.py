@@ -1,5 +1,7 @@
 import sncosmo,os
-from copy import deepcopy
+from copy import deepcopy,copy
+from collections import OrderedDict
+
 
 from .util import __dir__
 from .io import curve,curveDict
@@ -7,10 +9,24 @@ from astropy.io import ascii
 import numpy as np
 from astropy.table import Table
 from scipy.interpolate import interp1d
+from sncosmo.utils import alias_map
 
-from .ml import microcaustic_field_to_curve
+
+from .ml import *
 
 __all__=['createMultiplyImagedSN']
+
+OBSERVATIONS_REQUIRED_ALIASES = ('time', 'band', 'zp', 'zpsys', 'gain',
+                                 'skynoise')
+
+OBSERVATIONS_ALIASES = OrderedDict([
+    ('time', set(['time', 'date', 'jd', 'mjd', 'mjdobs', 'mjd_obs'])),
+    ('band', set(['band', 'bandpass', 'filter', 'flt'])),
+    ('zp', set(['zp', 'zpt', 'zeropoint', 'zero_point'])),
+    ('zpsys', set(['zpsys', 'zpmagsys', 'magsys'])),
+    ('gain', set(['gain'])),
+    ('skynoise', set(['skynoise']))
+])
 
 def _getAbsoluteDist():
     absolutes=ascii.read(os.path.join(__dir__,'sim','data','absolutes.ref'))
@@ -31,9 +47,9 @@ def _getAbsFromDist(dist):
 
 def createMultiplyImagedSN(
         sourcename, snType, redshift, telescopename='telescope',
-        objectName='object', time_delays=[0., 20.], magnifications=[1., 5.],
-        numImages=2, cadence=5, epochs=50, bands=['F105W', 'F125W', 'F160W'],
-        gain=1000., skynoiseRange=(1, 5), timeArr=None,zpsys='ab', zp=None,
+        objectName='object', time_delays=[10., 50.], magnifications=[2., 1.],
+        numImages=2, cadence=5, epochs=30, bands=['F105W', 'F125W', 'F160W'],
+        gain=200., skynoiseRange=(1, 1.1), timeArr=None,zpsys='ab', zp=None,
         microlensing_type=None, microlensing_params=[],
         dust_model='CCM89Dust', av_host=.3, av_lens=None,
         z_lens=None, minsnr=0.0, scatter=True,snrFunc=None):
@@ -181,6 +197,7 @@ def createMultiplyImagedSN(
     # The sncosmo Model is initially set up with only dust effects, because
     # as currently constructed, dust has the same effect on all images.
     # Microlensing effects are added separately for each SN image below.
+
     model=sncosmo.Model(source=sourcename, effects=dust_effect_list,
                         effect_names=dust_names, effect_frames=dust_frames)
     model.set(z=redshift)
@@ -222,8 +239,8 @@ def createMultiplyImagedSN(
         # can be reflected in the model_i parameters and propagate correctly
         # into realize_lcs for flux uncertainties
         model_i = deepcopy(model)
+        model_i._flux=_mlFlux
         params_i = deepcopy(params)
-
         if snType=='Ia':
             params_i['x0'] *= mu
         else:
@@ -240,14 +257,17 @@ def createMultiplyImagedSN(
                 if microlensing_type.lower().startswith('achromatic'):
                     ml_spline_func = sncosmo.AchromaticSplineMicrolensing
                 else :
-                    ml_spline_func = sncosmo.ChromaticSplineMicrolensing
+                    ml_spline_func = ChromaticSplineMicrolensing
                 ml_effect = ml_spline_func(nanchor=nanchor, sigmadm=sigmadm,
                                            nspl=nspl)
             else:
                 #get magnification curve from the defined microcaustic
-                time,dmag=microcaustic_field_to_curve(microlensing_params,np.arange(0,200,1),z_lens,redshift)
+                mlTime=np.arange(0,times[-1]/(1+redshift)-model_i._source._phase[0]+5,1)
+
+                time,dmag=microcaustic_field_to_curve(microlensing_params,mlTime,z_lens,redshift)
                 dmag/=np.mean(dmag) #to remove overall magnification
-                ml_effect = sncosmo.AchromaticMicrolensing(
+
+                ml_effect = AchromaticMicrolensing(
                     time+model_i._source._phase[0],dmag, magformat='multiply')
                 # time=np.arange(-10,5,.5)
                 # lc1=model_i.bandflux('bessellb',time,zp=26.8,zpsys='ab')
@@ -260,7 +280,7 @@ def createMultiplyImagedSN(
                 # fig=plt.figure()
                 # ax=fig.gca()
                 # ax.plot(time,dmag)
-                ml_effect=sncosmo.AchromaticMicrolensing(time,dmag)
+                #ml_effect=AchromaticMicrolensing(time,dmag)
             model_i.add_effect(ml_effect, 'microlensing', 'rest')
         else:
             ml_effect = None
@@ -269,12 +289,12 @@ def createMultiplyImagedSN(
         # object, and store the simulation metadata
         model_i.set(**params_i)
 
-        table_i = sncosmo.realize_lcs(
+        table_i = realize_lcs(
             obstable , model_i, [params_i],
             trim_observations=True, scatter=scatter,thresh=minsnr,snrFunc=snrFunc)
         tried=0
         while (len(table_i)==0 or len(table_i[0])<numImages) and tried<50:
-            table_i = sncosmo.realize_lcs(
+            table_i = realize_lcs(
                 obstable , model_i, [params_i],
                 trim_observations=True, scatter=scatter,thresh=minsnr,snrFunc=snrFunc)
             tried+=1
@@ -284,6 +304,9 @@ def createMultiplyImagedSN(
             print("Your survey parameters detected no supernovae.")
             return None
         table_i=table_i[0]
+        if timeArr is None:
+            table_i=table_i[table_i['time']<td+50]
+            table_i=table_i[table_i['time']>td-30]
         #create is curve with all parameters and add it to the overall curveDict object from above
         curve_i=curve()
         curve_i.object=None
@@ -316,3 +339,120 @@ def createMultiplyImagedSN(
     curve_obj.model = model
 
     return(curve_obj)
+
+def realize_lcs(observations, model, params, thresh=None,
+                trim_observations=False, scatter=True,snrFunc=None):
+    """***A copy of SNCosmo's function, just to add a SNR function
+    Realize data for a set of SNe given a set of observations.
+
+    Parameters
+    ----------
+    observations : `~astropy.table.Table` or `~numpy.ndarray`
+        Table of observations. Must contain the following column names:
+        ``band``, ``time``, ``zp``, ``zpsys``, ``gain``, ``skynoise``.
+    model : `sncosmo.Model`
+        The model to use in the simulation.
+    params : list (or generator) of dict
+        List of parameters to feed to the model for realizing each light curve.
+    thresh : float, optional
+        If given, light curves are skipped (not returned) if none of the data
+        points have signal-to-noise greater than ``thresh``.
+    trim_observations : bool, optional
+        If True, only observations with times between
+        ``model.mintime()`` and ``model.maxtime()`` are included in
+        result table for each SN. Default is False.
+    scatter : bool, optional
+        If True, the ``flux`` value of the realized data is calculated by
+        adding  a random number drawn from a Normal Distribution with a
+        standard deviation equal to the ``fluxerror`` of the observation to
+        the bandflux value of the observation calculated from model. Default
+        is True.
+
+    Returns
+    -------
+    sne : list of `~astropy.table.Table`
+        Table of realized data for each item in ``params``.
+
+    Notes
+    -----
+    ``skynoise`` is the image background contribution to the flux measurement
+    error (in units corresponding to the specified zeropoint and zeropoint
+    system). To get the error on a given measurement, ``skynoise`` is added
+    in quadrature to the photon noise from the source.
+
+    It is left up to the user to calculate ``skynoise`` as they see fit as the
+    details depend on how photometry is done and possibly how the PSF is
+    is modeled. As a simple example, assuming a Gaussian PSF, and perfect
+    PSF photometry, ``skynoise`` would be ``4 * pi * sigma_PSF * sigma_pixel``
+    where ``sigma_PSF`` is the standard deviation of the PSF in pixels and
+    ``sigma_pixel`` is the background noise in a single pixel in counts.
+
+    """
+
+    RESULT_COLNAMES = ('time', 'band', 'flux', 'fluxerr', 'zp', 'zpsys')
+    lcs = []
+
+    # Copy model so we don't mess up the user's model.
+    model = copy(model)
+
+
+    # get observations as a Table
+    if not isinstance(observations, Table):
+        if isinstance(observations, np.ndarray):
+            observations = Table(observations)
+        else:
+            raise ValueError("observations not understood")
+
+    # map column name aliases
+    colname = alias_map(observations.colnames, OBSERVATIONS_ALIASES,
+                        required=OBSERVATIONS_REQUIRED_ALIASES)
+
+    # result dtype used when there are no observations
+    band_dtype = observations[colname['band']].dtype
+    zpsys_dtype = observations[colname['zpsys']].dtype
+    result_dtype = ('f8', band_dtype, 'f8', 'f8', 'f8', zpsys_dtype)
+
+    for p in params:
+        model.set(**p)
+
+        # Select times for output that fall within tmin amd tmax of the model
+        if trim_observations:
+            mask = ((observations[colname['time']] > model.mintime()) &
+                    (observations[colname['time']] < model.maxtime()))
+            snobs = observations[mask]
+        else:
+            snobs = observations
+
+        # explicitly detect no observations and add an empty table
+        if len(snobs) == 0:
+            if thresh is None:
+                lcs.append(Table(names=RESULT_COLNAMES,
+                                 dtype=result_dtype, meta=p))
+            continue
+        flux = model.bandflux(snobs[colname['band']],
+                              snobs[colname['time']],
+                              zp=snobs[colname['zp']],
+                              zpsys=snobs[colname['zpsys']])
+        if snrFunc is not None:
+            fluxerr=flux/snrFunc(-2.5*np.log10(flux)+snobs[colname['zp']])
+        else:
+            fluxerr = np.sqrt(snobs[colname['skynoise']]**2 +
+                              np.abs(flux) / snobs[colname['gain']])
+
+        # Scatter fluxes by the fluxerr
+        # np.atleast_1d is necessary here because of an apparent bug in
+        # np.random.normal: when the inputs are both length 1 arrays,
+        # the output is a Python float!
+        if scatter:
+            flux = np.atleast_1d(np.random.normal(flux, fluxerr))
+
+        # Check if any of the fluxes are significant
+        if thresh is not None and not np.any(flux/fluxerr > thresh):
+            continue
+
+        data = [snobs[colname['time']], snobs[colname['band']], flux, fluxerr,
+                snobs[colname['zp']], snobs[colname['zpsys']]]
+
+        lcs.append(Table(data, names=RESULT_COLNAMES, meta=p))
+
+    return lcs

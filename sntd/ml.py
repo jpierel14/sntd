@@ -272,10 +272,10 @@ def mu_from_image(image, center,sizes,brightness,plot,time):
         ax_ml.set_xlabel('Time from Explosion (days)',fontsize=18)
         ax_ml.invert_yaxis()
         #ax.plot(sizes[10:-10],dmag[10:-10])
-        plt.savefig('sntd_microlensing.pdf',format='pdf',overwrite=True)
+        #plt.savefig('sntd_microlensing.pdf',format='pdf',overwrite=True)
         #plt.show()
-        plt.clf()
-        plt.close()
+        #plt.clf()
+        #plt.close()
 
     return(mu)
 

@@ -1,0 +1,130 @@
+                   1 jobnu:   number of job
+                    date and time of start:   6. 2.2019    14:11:06
+                    date and time of stop:    6. 2.2019    14:11:07
+CPU-time:         1.27 sec =       0.02 min =     0.00 h
+
+ important parameters:
+                1730 nlens:      total number of lenses within rstars
+                1280 ncell:      total number of cells
+               73.99% ncell/nlens: ratio in percent
+              17.079 avlens:     average number of lenses used per ray
+              75.978 avcell:     average number of cells  used per ray
+         0.000000158 CPU-time/ray: shooting time (CPU-sec) per ray
+               2.139 rayperpi:   average number of rays per pixel
+                  44 pixhigh:    highest number of rays per pixel
+                   0 pixlow:     lowest number of rays per pixel
+               0.191 rayamp1:    number of rays for amplification 1
+              11.176 ampav:      (numerical)   average amplification
+             -14.286 ampth:      (theoretical) average amplification
+             7810000 rayshot:    total number of rays shot in level 3
+             2139109 raysarr:    number of rays arrived in square
+             5670891 rayslost:   number of lost rays
+
+ INPUT parameters:
+               0.250 arand:   input for random number generator
+                   0 debug:   parameter for debugging the program       
+               1.000 sigmas:  surface mass density in compact objects   
+               0.300 sigmac:  surface mass density in compact objects   
+               0.400 gamma:   global shear
+               0.600 eps:     accuracy parameter, (0 <= eps <= 1)
+                  10 nray:    number of rays per row in level 1
+              10.000 minmass: lower cutoff of mass spectrum
+              10.000 maxmass: upper cutoff of mass spectrum
+              -2.350 power:   exponent of mass spectrum (Salpeter: 2.35)
+               5.000 pixmax0: size of field for distribution of stars   
+               0.000 pixminx: left border of receiving field
+               0.000 pixminy: lower border of receiving field
+              10.000 pixdif:  size of receiving field
+               0.300 fracpixd:  fraction added 
+
+                1000 ipix:    size of pixel matrix  IRISxxx
+                  11 factor1: multiplier: # rays from level 1 to level 2
+                  10 factor2: multiplier: # rays from level 2 to level 3
+
+ OUTPUT parameters:
+               0.429 boa:     b / a  :     (1-gamma) / (1+gamma)
+               7.000 bmsoams: b-s/a-s: (1-gamma-sigma) / (1+gamma-sigma)
+              10.000 massav:  average mass of lenses (in solar masses)
+           17300.000 masstot: total mass in all lenses (in solar masses)
+             160.000 raydif:  length of shooting region (level 1)
+                 -13 jxmin:   number of leftmost  ray in level 1
+                  57 jxmax:   number of rightmost ray in level 1
+                  -8 jymin:   number of lowest    ray in level 1
+                   2 jymax:   number of highest   ray in level 1
+             -30.000 rayminx  coordinate of leftmost  ray in level 1
+             130.000 raymaxx  coordinate of rightmost ray in level 1
+             -18.571 rayminy  coordinate of lowest    ray in level 1
+               4.286 raymaxy  coordinate of highest   ray in level 1
+            2.285714 raydist0: distance of adjacent rays in level 1
+            0.228571 raydist1: distance of adjacent rays in level 2
+            0.022857 raydist2: distance of adjacent rays in level 3
+            0.010000 pixlen(1): pixel length in units of Einstein radii
+            0.320000 pixlen(2): pixel length in lens array PIXLENS
+             131.541 rstars:    radius of circle that comprises stars
+          131.417143 xur:       coordinates of leftmost ray in level 3
+            5.702857 yur:       coordinates of lowest   ray in level 3
+             7810000 rayth:     number of rays expected to be shot
+              93.058 avtot:     average # of cells+lenses  used per ray
+            0.053791 avtot/nlens: avtot divided by total # of lenses
+                  11 highle:    highest level used for cell hierarchy
+             4669023 indlens(nlens) number of highest lens
+
+ CPU time used for different parts of the program:
+               0.010 times(1):   time in CPU-sec for subroutine setstar
+                         0.005 times(11): CPU-sec for subroutine rands
+               0.001 times(2):   time in CPU-sec for subroutine numstar
+               0.005 times(3):   time in CPU-sec for subroutine setcell
+                         0.000 times(12): CPU-sec for subroutine setmult
+                         0.000 times(13): CPU-sec for     setup    
+                         0.000 times(14): CPU-sec for sorting lenses
+                         0.000 times(15): CPU-sec for sorting cells
+               1.237 times(7):   time in CPU-sec for    shooting
+                         0.008 times(4): CPU-sec for shootcl  ( 0.69%)
+                         0.310 times(5): CPU-sec for shootfix (25.02%)
+                         0.746 times(6): CPU-sec for shotayco (60.34%)
+               1.268 times(8):   time in CPU-sec whole run
+
+
+      1730 lenses   after sorting: 
+         number               index      x-coord       y-coord      mass
+              1                 154     53.253920    118.861522    10.00
+              2                 271    -56.866495   -117.816276    10.00
+              3                 369    -75.185334    107.736133    10.00
+              4                 370    -68.064073    111.677301    10.00
+              5                 372    -66.334483    105.700773    10.00
+
+           1726             1274212     25.454459    -74.984334    10.00
+           1727             3987193    -30.501598    -50.948489    10.00
+           1728             3987195    -30.482823    -50.998272    10.00
+           1729             4669022     51.595513    -29.131381    10.00
+           1730             4669023     51.471776    -29.256023    10.00
+
+
+      1280  cells   after sorting: 
+         number               index      x-coord       y-coord      mass
+              1                   1    -54.182080     57.835862  4560.00
+              2                   2     56.728581     53.411442  4400.00
+              3                   3    -55.312367    -55.974698  4160.00
+              4                   4     56.900588    -56.398396  4180.00
+              5                   5    -83.736954     82.844195   470.00
+
+           1276              255963    -97.345583    -78.710234    20.00
+           1277              291813     51.533645    -29.193702    20.00
+           1278              318552     25.538804    -74.780022    20.00
+           1279              996798    -30.492211    -50.973380    20.00
+           1280             1167255     51.533645    -29.193702    20.00
+
+
+ distribution of cells and lenses in different levels:
+             level              cells               lenses
+                 1                   4                   0
+                 2                  16                   0
+                 3                  60                   0
+                 4                 213                   2
+                 5                 506                 217
+                 6                 326                 804
+                 7                 115                 470
+                 8                  31                 174
+                 9                   7                  49
+                10                   2                  10
+                11                   0                   4
