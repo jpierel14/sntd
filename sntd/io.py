@@ -5,7 +5,6 @@ import os,string,sncosmo,sys
 from astropy.io import ascii
 from astropy.table import Table,vstack,Column
 from scipy.stats import mode
-from sncosmo import get_magsystem
 from copy import deepcopy,copy
 import matplotlib.pyplot as plt
 from mpl_toolkits.axes_grid1.axes_divider import make_axes_locatable

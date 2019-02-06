@@ -113,7 +113,7 @@ def fit_data(curves, snType='Ia',bands=None, models=None, params=None, bounds={}
     args['sn_func'] = {'minuit': sncosmo.fit_lc, 'mcmc': sncosmo.mcmc_lc, 'nest': sncosmo.nest_lc}
     #get any properties set in kwargs that exist for the defined fitting function
     args['props'] = {x: kwargs[x] for x in kwargs.keys() if
-             x in [y for y in inspect.getargspec(args['sn_func'][method])[0]] and x != 'verbose'}
+             x in [y for y in inspect.getargspec(args['sn_func'][fitting_method])[0]] and x != 'verbose'}
 
     if method not in ['separate','combined','color']:
         raise RuntimeError('Parameter "method" must be "separate","combined", or "color".')
@@ -996,11 +996,11 @@ def _nested_wrapper(curves,data,model,vparams,bounds,guess_amplitude_bound,micro
 
 
         temp=deepcopy(data)
-
         t0s=pyParz.foreach(samples.T,_micro_uncertainty,[nest_fit,np.array(temp),temp.colnames,x_pred,vparam_names,bounds])
         mu,sigma=scipy.stats.norm.fit(t0s)
 
-        nest_res.errors['micro']=sigma
+        nest_res.errors['micro']=np.sqrt(mu**2+9*sigma**2)
+        print(nest_res.errors['micro'])
         bestRes=nest_res
         bestMod=nest_fit
 
@@ -1035,7 +1035,7 @@ def fit_micro(curves,res,fit,dat,zp,zpsys,micro_type='achromatic',kernel='RBF'):
         tempData=data[data['band']==b]
         tempData=tempData[tempData['flux']>.1]
         tempTime=tempData['time']
-        mod=fit.bandflux(b,tempTime+t0,zpsys=zpsys,zp=zp[b])
+        mod=fit.bandflux(b,tempTime+t0,zpsys=zpsys,zp=data['zp'])
         #fig=plt.figure()
         #ax=fig.gca()
         #ax.plot(tempTime,mod)
@@ -1110,7 +1110,6 @@ def fit_micro(curves,res,fit,dat,zp,zpsys,micro_type='achromatic',kernel='RBF'):
         tempX=np.append([fit._source._phase[0]*(1+fit.get('z'))],np.append(tempX,[fit._source._phase[-1]*(1+fit.get('z'))]))
         y_pred=np.append([1.],np.append(y_pred,[1.]))
         sigma=np.append([0.],np.append(sigma,[0.]))
-
         result=sncosmo.AchromaticMicrolensing(tempX/(1+fit.get('z')),y_pred,magformat='multiply')
 
         '''

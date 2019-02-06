@@ -92,11 +92,12 @@ def colorFit(lcs,verbose=True):
             ccurve=splev(time,spl1)/splev(time,spl2)
             figure=plt.figure()
             ax=figure.gca()
-            ax.plot(time,splev(time,spl1))
-            ax.scatter(dcurve.table['time'][dcurve.table['band']==col[0]][ind0min:ind0max+1],dcurve.table['flux'][dcurve.table['band']==col[0]][ind0min:ind0max+1])
-            ax.plot(time,splev(time,spl2))
-            ax.scatter(dcurve.table['time'][dcurve.table['band']==col[1]][ind1min:ind1max+1],dcurve.table['flux'][dcurve.table['band']==col[1]][ind1min:ind1max+1])
-            #ax.plot(time,ccurve)
+            #ax.plot(time,splev(time,spl1))
+            #ax.scatter(dcurve.table['time'][dcurve.table['band']==col[0]][ind0min:ind0max+1],dcurve.table['flux'][dcurve.table['band']==col[0]][ind0min:ind0max+1])
+            #ax.plot(time,splev(time,spl2))
+            #ax.scatter(dcurve.table['time'][dcurve.table['band']==col[1]][ind1min:ind1max+1],dcurve.table['flux'][dcurve.table['band']==col[1]][ind1min:ind1max+1])
+            ax.scatter(tempCurve1['time'][ind0min:ind0max+1],tempCurve1['flux'][ind0min:ind0max+1]/tempCurve2['flux'][ind1min:ind1max])
+            ax.plot(time,ccurve)
             plt.show()
             plt.close()
             #curves.append(dcurve.table['flux'][dcurve.table['band']==col[0]]-dcurve.table['flux'][dcurve.table['band']==col[1]])
@@ -156,9 +157,6 @@ def colorFit(lcs,verbose=True):
     return(finalDelays)
 
 def _guess_time_delays(curves):
-    tds=colorFit(curves)
-    if tds:
-        return tds
     ref=None
     tds=dict([])
     for k in curves.images.keys():

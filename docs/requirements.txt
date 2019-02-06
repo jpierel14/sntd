@@ -1,0 +1,5 @@
+numpy
+cython
+pyParz
+astropy==2.0.4
+scipy

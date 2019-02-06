@@ -249,6 +249,18 @@ def createMultiplyImagedSN(
                 dmag/=np.mean(dmag) #to remove overall magnification
                 ml_effect = sncosmo.AchromaticMicrolensing(
                     time+model_i._source._phase[0],dmag, magformat='multiply')
+                # time=np.arange(-10,5,.5)
+                # lc1=model_i.bandflux('bessellb',time,zp=26.8,zpsys='ab')
+                # lc2=model_i.bandflux('bessellb',time-.5,zp=26.8,zpsys='ab')
+                # lc1/=np.max(lc1)
+                # lc2/=np.max(lc2)
+                # dmag=lc2/lc1
+                # dmag/=np.mean(dmag)
+                # import matplotlib.pyplot as plt
+                # fig=plt.figure()
+                # ax=fig.gca()
+                # ax.plot(time,dmag)
+                ml_effect=sncosmo.AchromaticMicrolensing(time,dmag)
             model_i.add_effect(ml_effect, 'microlensing', 'rest')
         else:
             ml_effect = None

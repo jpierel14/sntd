@@ -1,4 +1,3 @@
-cython
 numpy
 scipy
 sncosmo
@@ -6,6 +5,5 @@ astropy
 matplotlib
 nestle
 pyParz
-pycs
-datetime
+sklearn
 iminuit

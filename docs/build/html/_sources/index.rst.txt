@@ -1,0 +1,26 @@
+.. snsedextend documentation master file, created by
+   sphinx-quickstart on Wed Feb 28 11:59:50 2018.
+   You can adapt this file completely to your liking, but it should at least
+   contain the root `toctree` directive.
+
+Welcome to SNTD's documentation!
+=======================================
+
+SNTD is a software package designed to measure time delays and magnification ratios for multiply-imaged supernovae of any classification.
+
+	     
+.. toctree::
+   :maxdepth: 2
+   :caption: Contents:
+
+   install
+   examples
+   reference
+   
+   
+Indices and tables
+==================
+
+* :ref:`genindex`
+* :ref:`modindex`
+* :ref:`search`

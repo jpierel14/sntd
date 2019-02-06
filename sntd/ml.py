@@ -160,7 +160,7 @@ def realizeMicro(arand=.25,debug=0,kappas=.75,kappac=.15,gamma=.76,eps=.6,nray=3
 #     plt.show()
 #     sys.exit()
 
-def microcaustic_field_to_curve(field,time,zl,zs,velocity=(4*10**4)*(u.kilometer/u.s),M=(1*u.solMass).to(u.kg),loc='Random'):
+def microcaustic_field_to_curve(field,time,zl,zs,velocity=(10**4)*(u.kilometer/u.s),M=(1*u.solMass).to(u.kg),loc='Random',plot=False):
 
     D=cosmo.angular_diameter_distance_z1z2(zl,zs)*cosmo.angular_diameter_distance(zs)/cosmo.angular_diameter_distance(zl)
     D=D.to(u.m)
@@ -203,7 +203,7 @@ def microcaustic_field_to_curve(field,time,zl,zs,velocity=(4*10**4)*(u.kilometer
 
 
 
-    dmag=mu_from_image(field,loc,snSize)
+    dmag=mu_from_image(field,loc,snSize,'disk',plot,time)
 
     return(time,dmag)
 
@@ -263,17 +263,20 @@ class MidpointNormalize(colors.Normalize):
         x, y = [self.vmin, self.midpoint, self.vmax], [0, 0.5, 1]
         return np.ma.masked_array(np.interp(value, x, y), np.isnan(value))
 
-def mu_from_image(image, center,sizes,brightness='disk'):
+def mu_from_image(image, center,sizes,brightness,plot,time):
     h, w = image.shape
     mu = []
+    if plot:
+        fig=plt.figure(figsize=(10,10))
 
-    #fig=plt.figure(figsize=(10,10))
+        ax=fig.gca()
+        plt.imshow(-(image-1024)/256., aspect='equal', interpolation='nearest', cmap=cm.bwr,norm=MidpointNormalize(vmin=-2,vmax=2,midpoint=0),
+                  vmin=-2, vmax=2, origin='lower')
 
-    #ax=fig.gca()
-    #plt.imshow(-(image-1024)/256., aspect='equal', interpolation='nearest', cmap=cm.bwr,norm=MidpointNormalize(vmin=-2,vmax=2,midpoint=0),
-    #          vmin=-2, vmax=2, origin='lower')
-
-
+        ax.set_xticklabels([0,0,2,4,6,8,10],fontsize=14)
+        ax.set_yticklabels([0,0,2,4,6,8,10],fontsize=14)
+        ax.set_xlabel('$R_E$',fontsize=18,labelpad=0)
+        ax.set_ylabel('$R_E$',fontsize=18)
     #for r,a in zip([snSize[l),snSize[150],snSize[-1]],[.4,.5,.7]):
     #
     #print(np.mean(image),np.std(image))
@@ -282,11 +285,12 @@ def mu_from_image(image, center,sizes,brightness='disk'):
     i=0
     alphas=[1,.5,.7]
     for r in sizes:
-        if r in [sizes[int(len(sizes)/10)],sizes[int(len(sizes)/3)],sizes[int(len(sizes)/1.5)]]:
+        if r in [sizes[int(len(sizes)/5)],sizes[int(len(sizes)/2)],sizes[int(len(sizes)-1)]]:
 
             circle = Circle(center, r, color='#004949', alpha=alphas[i])
             i+=1
-            #ax.add_patch(circle)
+            if plot:
+                ax.add_patch(circle)
         if brightness=='disk':
             mask = createCircularMask(h,w,center=center,radius=r)
             try:
@@ -316,31 +320,34 @@ def mu_from_image(image, center,sizes,brightness='disk'):
                 mu.append(np.dot(np.array(totalMags),scale))
 
 
-    #plt.colorbar(pad=.1)
 
     mu = np.array(mu)
+    mu/=np.mean(mu)
+    dmag=-2.5*np.log10(mu)
+    if plot:
+        cbaxes = fig.add_axes([.82, 0.33, 0.04, 0.55])
 
-    #dmag = -2.5*np.log10(mu.astype(float))#/np.min(mu))
-    #print(mu)
-    #cbaxes = fig.add_axes([0.7, 0.3, 0.02, 0.58])
-    #cb = plt.colorbar(cax = cbaxes)
-    #dmag=10**(-0.4*((mu-1024)/256.0))
-    #dmag=-2.5*np.log10(mu)
+        cb = plt.colorbar(cax = cbaxes)
+        cb.ax.set_ylabel('Magnification (Magnitudes)',fontsize=18,rotation=270,labelpad=25)
+        cb.ax.invert_yaxis()
+        cb.ax.tick_params(labelsize=14)
 
-    '''
-    
-    ax_divider = make_axes_locatable(ax)
-    ax_ml = ax_divider.append_axes("bottom", size="25%", pad=.4)
-    ax_ml.plot(sizes[20:],dmag[20:],ls='-',marker=' ', color='#004949')
-    ax_ml.set_ylabel(r'$\Delta m$ (mag)')
-    ax_ml.set_xlabel('Time from Explosion (days)')
-    ax_ml.invert_yaxis()
-    ax.plot(sizes[10:-10],dmag[10:-10])
-    plt.savefig('microlensing4.pdf',format='pdf',overwrite=True)
-    plt.clf()
-    plt.close()
-    '''
-    #print(dmag)
+
+        ax_divider = make_axes_locatable(ax)
+        ax_ml = ax_divider.append_axes("bottom", size="25%", pad=.7)
+        for tick in ax_ml.xaxis.get_major_ticks():
+            tick.label.set_fontsize(14)
+        for tick in ax_ml.yaxis.get_major_ticks():
+            tick.label.set_fontsize(14)
+        ax_ml.plot(time,dmag,ls='-',marker=' ', color='#004949')
+        ax_ml.set_ylabel(r'$\Delta m$ (mag)',fontsize=18)
+        ax_ml.set_xlabel('Time from Explosion (days)',fontsize=18)
+        ax_ml.invert_yaxis()
+        #ax.plot(sizes[10:-10],dmag[10:-10])
+        plt.savefig('sntd_microlensing.pdf',format='pdf',overwrite=True)
+        #plt.show()
+        plt.clf()
+        plt.close()
 
     return(mu)
 

@@ -1,10 +1,12 @@
 from setuptools import setup
+
 setup(
     name='sntd',
-    install_requires=['cython','numpy','scipy','sncosmo',
-    	'astropy','matplotlib','nestle','pyParz','pycs','datetime','iminuit'],
+    setup_requires=['numpy'],
+    install_requires=['numpy','scipy','sncosmo',
+    	'astropy','matplotlib','nestle','pyParz','sklearn','iminuit'],
     packages=['sntd'],
     author='Justin Pierel',
     author_email='jr23@email.sc.edu',
-    version='0.0.4' 
+    version='0.0.7' 
 )
