@@ -100,7 +100,12 @@ Out:
     :align: center
     :height: 600px
     :alt: alternate text
-		
+
+
+*******************************
+Measuring Time Delays with SNTD
+*******************************
+
 Fitting a Multiply-Imaged Supernova
 ===================================
 There are 3 methods built into SNTD to measure time delays (separate, combined, color). They are accessed by the same function:
@@ -115,7 +120,7 @@ There are 3 methods built into SNTD to measure time delays (separate, combined, 
 
 Out:
 
-.. image:: examples/separateFit.png
+.. image:: examples/withML.png
     :width: 600px
     :align: center
     :height: 600px
