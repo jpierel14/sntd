@@ -3,7 +3,7 @@ import numpy as np
 import matplotlib.pyplot as plt
 from copy import deepcopy,copy
 from scipy import stats
-from scipy.interpolate import interp1d,interp2d
+from scipy.interpolate import interp1d
 from astropy.table import Table
 from astropy.extern import six
 import nestle
@@ -13,10 +13,9 @@ from sklearn.gaussian_process.kernels import RBF
 import scipy
 
 from .util import *
-from .io import _sntd_deepcopy,table_factory
-from .spl import spl
-from .plotting import display
-import models
+from .io import _sntd_deepcopy
+from .models import *
+
 __all__=['fit_data']
 
 __thetaSN__=['z','hostebv','screenebv','screenz','rise','fall','sigma','k','x1','c']
@@ -1460,7 +1459,7 @@ def _get_marginal_pdfs( res, nbins=51, verbose=True ):
 
 
 def param_fit(args,modName,fit=False):
-    sources={'NewlingSource':models.NewlingSource,'KarpenkaSource':models.KarpenkaSource,'BazinSource':models.BazinSource,'PierelSource':models.PierelSource}
+    sources={'BazinSource':BazinSource}
 
     source=sources[modName](args['curve'].table)
     mod=sncosmo.Model(source)

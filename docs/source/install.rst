@@ -2,7 +2,7 @@
 Installation
 ************
 
-SNSEDextend works on Python 2.7 and Python 3.4+ and requires the
+SNTD works on Python 2.7 and Python 3.4+ and requires the
 following Python packages:
 
 - `numpy <http://www.numpy.org/>`_

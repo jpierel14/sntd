@@ -1,5 +1,5 @@
 import sncosmo,os
-from copy import deepcopy,copy
+from copy import deepcopy
 
 from .util import __dir__
 from .io import curve,curveDict

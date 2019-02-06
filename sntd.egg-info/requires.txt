@@ -6,4 +6,3 @@ matplotlib
 nestle
 pyParz
 sklearn
-iminuit

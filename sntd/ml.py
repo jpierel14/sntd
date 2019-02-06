@@ -7,7 +7,6 @@ from scipy.interpolate import splrep,splev
 from astropy import units as u
 from astropy import constants as const
 from astropy.cosmology import WMAP9 as cosmo
-from scipy.interpolate import interp1d
 import matplotlib.pyplot as plt
 from matplotlib import cm
 from matplotlib.patches import Circle
@@ -80,85 +79,7 @@ def realizeMicro(arand=.25,debug=0,kappas=.75,kappac=.15,gamma=.76,eps=.6,nray=3
     os.chdir(__current_dir__)
     return(lensPlane)
 
-# def microcaustic_field_to_curve(field,time,zl,zs,velocity=(4*10**4)*(u.kilometer/u.s),M=(1*u.solMass).to(u.kg),loc='Random',end=None,verbose=False):
-#
-#     D=cosmo.angular_diameter_distance_z1z2(zl,zs)*cosmo.angular_diameter_distance(zs)/cosmo.angular_diameter_distance(zl)
-#     D=D.to(u.m)
-#     einsteinRadius=np.sqrt(4*const.G*M*D/const.c**2)
-#     einsteinRadius=einsteinRadius.to(u.kilometer)
-#     try:
-#         velocity.to(u.kilometer/u.s)
-#     except:
-#         print('Assuming velocity is in km/s.')
-#         velocity*=(u.kilometer/u.s)
-#     try:
-#         M.to(u.kg)
-#     except:
-#         print('Assuming mass is in kg.')
-#     #mlimage=fits.getdata(field)
-#     h,w=field.shape
-#
-#     height=10*einsteinRadius.value
-#     width=10*einsteinRadius.value
-#     #center=(width/2,height/2)
-#     pixwidth=width/w
-#     pixheight=height/h
-#     if pixwidth!=pixheight:
-#         print('Hmm, you are not using squares...')
-#         sys.exit()
-#     maxRadius=((np.max(time)*u.d).to(u.s))*velocity
-#     maxRadius=maxRadius.value
-#     maxx=int(math.floor(maxRadius/pixwidth))
-#     maxy=int(math.floor(maxRadius/pixheight))
-#     mlimage=field[maxx:-maxx][maxy:-maxy]
-#
-#
-#     if loc=='Random' or not isinstance(loc,(list,tuple)):
-#         loc=(int(np.random.uniform(maxx,w-maxx)),int(np.random.uniform(maxy,h-maxy)))
-#
-#
-#     tempTime=np.array([((x*u.d).to(u.s)).value for x in time])
-#     snSize=velocity.value*tempTime/pixwidth
-#     if end is None:#not None:
-#         #slope=float(end[1]-loc[1])/float(end[0]-loc[0])
-#         pixfunc=interp1d([loc[0],end[0]],[loc[1],end[1]])
-#         # I think I need an array of the pixel location at each time step?
-#         totalTime=tempTime[-1]-tempTime[0]
-#         dist=math.sqrt((end[1]-loc[1])**2+(end[0]-loc[0])**2)
-#         vel=dist/totalTime
-#         pixTime=vel*tempTime
-#
-#     else:
-#         end=loc
-#     thefile=open(os.path.join(__dir__,'microlens','source'),'wb')
-#     for i in range(len(snSize)):
-#
-#         thefile.write(('%i\n')%(loc[0])
-#         thefile.write(('%i\n')%(loc[1])
-#         thefile.write(outFile[-1])
-#         thefile.close()
-#
-#
-#
-#     import matplotlib.pyplot as plt
-#     from matplotlib import cm
-#     from matplotlib.patches import Circle
-#     fig=plt.figure()
-#     ax=fig.gca()
-#     ax.imshow(field, aspect='equal', interpolation='nearest', cmap=cm.Greys,
-#               vmin=835, vmax=2003, origin='lower')
-#     #for r,a in zip([snSize[l),snSize[150],snSize[-1]],[.4,.5,.7]):
-#     circle = Circle(loc, snSize[-1], color='#004949', alpha=.7)
-#     ax.add_patch(circle)
-#     plt.show()
-#     plt.clf()
-#     plt.close()
-#     dmag=mu_from_image(mlimage,loc,snSize)
-#     fig=plt.figure()
-#     ax=fig.gca()
-#     ax.plot(snSize,dmag)
-#     plt.show()
-#     sys.exit()
+
 
 def microcaustic_field_to_curve(field,time,zl,zs,velocity=(10**4)*(u.kilometer/u.s),M=(1*u.solMass).to(u.kg),loc='Random',plot=False):
 
