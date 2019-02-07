@@ -14,6 +14,7 @@ import scipy
 from .util import *
 from .io import _sntd_deepcopy
 from .models import *
+from .ml import *
 
 __all__=['fit_data']
 
@@ -56,7 +57,7 @@ class newDict(dict):
 def fit_data(curves, snType='Ia',bands=None, models=None, params=None, bounds={}, ignore=None, constants=None,
              method='separate',t0_guess=None,refModel=None,effect_names=[],effect_frames=[],fitting_method='nest',
              dust=None,flip=False,guess_amplitude=True,combinedError=None,showPlots=False,microlensing=None,
-             kernel='RBF',combinedGrids=None,refImage='image_1',**kwargs):
+             kernel='RBF',combinedGrids=None,refImage='image_1',nMicroSamples=100,**kwargs):
 
     """
     The main, high-level fitting function.
@@ -850,7 +851,7 @@ def _fitSeparate(curves,mods,args,bounds):
             guess_amp_bounds=False
         nest_res,nest_fit=_nested_wrapper(curves,tempTable,bestFit,vparams=bestRes.vparam_names,bounds=args['bounds'],
                                           guess_amplitude_bound=guess_amp_bounds,microlensing=args['microlensing'],
-                                          zpsys=curves.images[d].zpsys,kernel=args['kernel'],maxiter=500,npoints=50)
+                                          zpsys=curves.images[d].zpsys,kernel=args['kernel'],maxiter=None,npoints=50,nsamples=args['nMicroSamples'])
 
 
 
@@ -952,26 +953,26 @@ def _micro_uncertainty(args):
     data=Table(data,names=colnames)
 
     temp_nest_mod=deepcopy(nest_fit)
-    tempMicro=sncosmo.AchromaticMicrolensing(x_pred/(1+nest_fit.get('z')),sample,magformat='multiply')
+    tempMicro=AchromaticMicrolensing(x_pred/(1+nest_fit.get('z')),sample,magformat='multiply')
     temp_nest_mod.add_effect(tempMicro,'microlensing','rest')
     tempRes,tempMod=sncosmo.nest_lc(data,temp_nest_mod,vparam_names=vparam_names,bounds=bounds,guess_amplitude_bound=True,maxiter=None,npoints=200)
 
     return float(tempMod.get('t0'))
 
 
-def _nested_wrapper(curves,data,model,vparams,bounds,guess_amplitude_bound,microlensing,zpsys,kernel,maxiter,npoints):
+def _nested_wrapper(curves,data,model,vparams,bounds,guess_amplitude_bound,microlensing,zpsys,kernel,maxiter,npoints,nsamples):
 
     temp=deepcopy(data)
     vparam_names=deepcopy(vparams)
 
 
     if microlensing is not None:
-        nest_res,nest_fit=sncosmo.nest_lc(temp,model,vparam_names=vparam_names,bounds=bounds,guess_amplitude_bound=guess_amplitude_bound,maxiter=None,npoints=200)
+        nest_res,nest_fit=sncosmo.nest_lc(temp,model,vparam_names=vparam_names,bounds=bounds,guess_amplitude_bound=guess_amplitude_bound,maxiter=maxiter,npoints=npoints)
 
 
 
 
-        micro,sigma,x_pred,y_pred,samples=fit_micro(curves,nest_res,nest_fit,temp,zpsys,micro_type=microlensing,kernel=kernel)
+        micro,sigma,x_pred,y_pred,samples=fit_micro(curves,nest_res,nest_fit,temp,zpsys,nsamples,micro_type=microlensing,kernel=kernel)
 
 
         temp=deepcopy(data)
@@ -985,7 +986,7 @@ def _nested_wrapper(curves,data,model,vparams,bounds,guess_amplitude_bound,micro
 
 
     else:
-        bestRes,bestMod=sncosmo.nest_lc(data,model,vparam_names=vparam_names,bounds=bounds,guess_amplitude_bound=guess_amplitude_bound,maxiter=None,npoints=1)
+        bestRes,bestMod=sncosmo.nest_lc(data,model,vparam_names=vparam_names,bounds=bounds,guess_amplitude_bound=guess_amplitude_bound,maxiter=maxiter,npoints=npoints)
     return(bestRes,bestMod)
 
 def _maxFromModel(mod,band,zp,zpsys):
@@ -993,7 +994,7 @@ def _maxFromModel(mod,band,zp,zpsys):
     flux=mod.bandflux(band,time,zp,zpsys)
     return (time[flux==np.max(flux)],np.max(flux))
 
-def fit_micro(curves,res,fit,dat,zpsys,micro_type='achromatic',kernel='RBF'):
+def fit_micro(curves,res,fit,dat,zpsys,nsamples,micro_type='achromatic',kernel='RBF'):
     t0=fit.get('t0')
     fit.set(t0=t0)
     data=deepcopy(dat)
@@ -1058,7 +1059,7 @@ def fit_micro(curves,res,fit,dat,zpsys,micro_type='achromatic',kernel='RBF'):
         X=np.atleast_2d(np.linspace(np.min(allTime), np.max(allTime), 1000)).T
 
         y_pred, sigma = gp.predict(X, return_std=True)
-        samples=gp.sample_y(X,10)
+        samples=gp.sample_y(X,nsamples)
 
 
         '''
@@ -1090,7 +1091,7 @@ def fit_micro(curves,res,fit,dat,zpsys,micro_type='achromatic',kernel='RBF'):
         y_pred=np.append([1.],np.append(y_pred,[1.]))
         sigma=np.append([0.],np.append(sigma,[0.]))
 
-        result=sncosmo.AchromaticMicrolensing(tempX/(1+fit.get('z')),y_pred,magformat='multiply')
+        result=AchromaticMicrolensing(tempX/(1+fit.get('z')),y_pred,magformat='multiply')
 
         '''
         fig=plt.figure()

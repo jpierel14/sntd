@@ -58,7 +58,7 @@
 <h2>No Microlensing<a class="headerlink" href="#no-microlensing" title="Permalink to this headline">¶</a></h2>
 <p>Create a simulated multiply-imaged supernova that we can then fit,
 with no microlensing included in the simulation. Note that your final
-printed light curve will be different, as this is a randomly generated
+printed information will be different, as this is a randomly generated
 supernova.</p>
 <div class="highlight-python"><div class="highlight"><pre><span></span><span class="kn">import</span> <span class="nn">sntd</span>
 <span class="kn">import</span> <span class="nn">matplotlib.pyplot</span> <span class="kn">as</span> <span class="nn">plt</span>
@@ -66,38 +66,53 @@ supernova.</p>
 <span class="n">myMISN</span> <span class="o">=</span> <span class="n">sntd</span><span class="o">.</span><span class="n">createMultiplyImagedSN</span><span class="p">(</span><span class="n">sourcename</span><span class="o">=</span><span class="s1">&#39;salt2-extended&#39;</span><span class="p">,</span> <span class="n">snType</span><span class="o">=</span><span class="s1">&#39;Ia&#39;</span><span class="p">,</span> <span class="n">redshift</span><span class="o">=</span><span class="mf">1.33</span><span class="p">,</span><span class="n">z_lens</span><span class="o">=.</span><span class="mi">53</span><span class="p">,</span> <span class="n">bands</span><span class="o">=</span><span class="p">[</span><span class="s1">&#39;F110W&#39;</span><span class="p">,</span><span class="s1">&#39;F125W&#39;</span><span class="p">],</span>
                                 <span class="n">zp</span><span class="o">=</span><span class="p">[</span><span class="mf">26.8</span><span class="p">,</span><span class="mf">26.2</span><span class="p">],</span> <span class="n">cadence</span><span class="o">=</span><span class="mf">5.</span><span class="p">,</span> <span class="n">epochs</span><span class="o">=</span><span class="mf">35.</span><span class="p">,</span>
                                 <span class="n">time_delays</span><span class="o">=</span><span class="p">[</span><span class="mf">10.</span><span class="p">,</span> <span class="mf">70.</span><span class="p">],</span> <span class="n">magnifications</span><span class="o">=</span><span class="p">[</span><span class="mi">7</span><span class="p">,</span><span class="mf">3.5</span><span class="p">],</span> <span class="n">objectName</span><span class="o">=</span><span class="s1">&#39;My Type Ia SN&#39;</span><span class="p">,</span><span class="n">telescopename</span><span class="o">=</span><span class="s1">&#39;HST&#39;</span><span class="p">)</span>
-<span class="k">print</span><span class="p">(</span><span class="n">myMISN</span><span class="o">.</span><span class="n">images</span><span class="p">[</span><span class="s1">&#39;image1&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">table</span><span class="p">)</span>
+<span class="k">print</span><span class="p">(</span><span class="n">myMISN</span><span class="p">)</span>
 <span class="n">myMISN</span><span class="o">.</span><span class="n">plot_object</span><span class="p">()</span>
 <span class="n">plt</span><span class="o">.</span><span class="n">show</span><span class="p">()</span>
 </pre></div>
 </div>
 <p>Out:</p>
-<div class="highlight-default"><div class="highlight"><pre><span></span><span class="n">time</span>               <span class="n">band</span>        <span class="n">flux</span>             <span class="n">fluxerr</span>        <span class="n">zp</span>  <span class="n">zpsys</span>  <span class="n">image</span>
-<span class="o">------------------</span> <span class="o">-----</span> <span class="o">------------------</span> <span class="o">------------------</span> <span class="o">----</span> <span class="o">-----</span> <span class="o">-------</span>
-<span class="mf">0.0</span>                <span class="n">F110W</span>  <span class="mf">80.83704095305713</span> <span class="mf">1.2196369693362414</span> <span class="mf">26.8</span>    <span class="n">AB</span> <span class="n">image_1</span>
-<span class="mf">5.147058823529412</span>  <span class="n">F110W</span>  <span class="mf">89.91280021212975</span>  <span class="mf">1.284158612608907</span> <span class="mf">26.8</span>    <span class="n">AB</span> <span class="n">image_1</span>
-<span class="mf">10.294117647058824</span> <span class="n">F110W</span>  <span class="mf">96.27127396739887</span> <span class="mf">1.2466015593879611</span> <span class="mf">26.8</span>    <span class="n">AB</span> <span class="n">image_1</span>
-<span class="mf">15.441176470588236</span> <span class="n">F110W</span>  <span class="mf">90.70821457675255</span>   <span class="mf">1.22366765470951</span> <span class="mf">26.8</span>    <span class="n">AB</span> <span class="n">image_1</span>
-<span class="mf">20.58823529411765</span>  <span class="n">F110W</span>  <span class="mf">86.53240018017523</span> <span class="mf">1.2073336440515443</span> <span class="mf">26.8</span>    <span class="n">AB</span> <span class="n">image_1</span>
-<span class="mf">25.73529411764706</span>  <span class="n">F110W</span>  <span class="mf">76.07501959744152</span> <span class="mf">1.2094036308608453</span> <span class="mf">26.8</span>    <span class="n">AB</span> <span class="n">image_1</span>
-<span class="mf">30.88235294117647</span>  <span class="n">F110W</span>  <span class="mf">63.17842848471685</span> <span class="mf">1.1769008597903798</span> <span class="mf">26.8</span>    <span class="n">AB</span> <span class="n">image_1</span>
-<span class="mf">36.029411764705884</span> <span class="n">F110W</span>  <span class="mf">54.15614809883671</span> <span class="mf">1.1548804427431165</span> <span class="mf">26.8</span>    <span class="n">AB</span> <span class="n">image_1</span>
-<span class="mf">41.1764705882353</span>   <span class="n">F110W</span>  <span class="mf">44.63934115659113</span> <span class="mf">1.1351349145266738</span> <span class="mf">26.8</span>    <span class="n">AB</span> <span class="n">image_1</span>
-<span class="mf">46.32352941176471</span>  <span class="n">F110W</span> <span class="mf">37.517811149554156</span> <span class="mf">1.1509488564354409</span> <span class="mf">26.8</span>    <span class="n">AB</span> <span class="n">image_1</span>
-<span class="mf">51.47058823529412</span>  <span class="n">F110W</span> <span class="mf">31.368919986394147</span> <span class="mf">1.1348214534140784</span> <span class="mf">26.8</span>    <span class="n">AB</span> <span class="n">image_1</span>
-<span class="mf">56.617647058823536</span> <span class="n">F110W</span> <span class="mf">26.365621628734704</span> <span class="mf">1.1473493554620837</span> <span class="mf">26.8</span>    <span class="n">AB</span> <span class="n">image_1</span>
-<span class="mf">0.0</span>                <span class="n">F125W</span> <span class="mf">44.652886569466006</span> <span class="mf">1.1844546865198073</span> <span class="mf">26.2</span>    <span class="n">AB</span> <span class="n">image_1</span>
-<span class="mf">5.147058823529412</span>  <span class="n">F125W</span>  <span class="mf">52.12506595181393</span> <span class="mf">1.1882051108553613</span> <span class="mf">26.2</span>    <span class="n">AB</span> <span class="n">image_1</span>
-<span class="mf">10.294117647058824</span> <span class="n">F125W</span>    <span class="mf">56.383959775956</span> <span class="mf">1.2055312873637205</span> <span class="mf">26.2</span>    <span class="n">AB</span> <span class="n">image_1</span>
-<span class="mf">15.441176470588236</span> <span class="n">F125W</span> <span class="mf">52.282478317158144</span> <span class="mf">1.2019364467744396</span> <span class="mf">26.2</span>    <span class="n">AB</span> <span class="n">image_1</span>
-<span class="mf">20.58823529411765</span>  <span class="n">F125W</span>  <span class="mf">51.44217018263837</span> <span class="mf">1.1737524525502405</span> <span class="mf">26.2</span>    <span class="n">AB</span> <span class="n">image_1</span>
-<span class="mf">25.73529411764706</span>  <span class="n">F125W</span>  <span class="mf">45.41787029296782</span> <span class="mf">1.1346437770894173</span> <span class="mf">26.2</span>    <span class="n">AB</span> <span class="n">image_1</span>
-<span class="mf">30.88235294117647</span>  <span class="n">F125W</span>   <span class="mf">41.7399546859917</span>  <span class="mf">1.138562946339325</span> <span class="mf">26.2</span>    <span class="n">AB</span> <span class="n">image_1</span>
-<span class="mf">36.029411764705884</span> <span class="n">F125W</span> <span class="mf">36.249141725372375</span> <span class="mf">1.1633746045379156</span> <span class="mf">26.2</span>    <span class="n">AB</span> <span class="n">image_1</span>
-<span class="mf">41.1764705882353</span>   <span class="n">F125W</span> <span class="mf">30.134015959569542</span>  <span class="mf">1.080202890453433</span> <span class="mf">26.2</span>    <span class="n">AB</span> <span class="n">image_1</span>
-<span class="mf">46.32352941176471</span>  <span class="n">F125W</span> <span class="mf">26.732438252265634</span> <span class="mf">1.1574450238913505</span> <span class="mf">26.2</span>    <span class="n">AB</span> <span class="n">image_1</span>
-<span class="mf">51.47058823529412</span>  <span class="n">F125W</span> <span class="mf">27.135405865133855</span>  <span class="mf">1.071456097317496</span> <span class="mf">26.2</span>    <span class="n">AB</span> <span class="n">image_1</span>
-<span class="mf">56.617647058823536</span> <span class="n">F125W</span> <span class="mf">21.536294532971315</span>  <span class="mf">1.081999880063472</span> <span class="mf">26.2</span>    <span class="n">AB</span> <span class="n">image_1</span>
+<div class="highlight-default"><div class="highlight"><pre><span></span><span class="n">Telescope</span><span class="p">:</span> <span class="n">HST</span>
+<span class="n">Object</span><span class="p">:</span> <span class="n">My</span> <span class="n">Type</span> <span class="n">Ia</span> <span class="n">SN</span>
+<span class="n">Number</span> <span class="n">of</span> <span class="n">bands</span><span class="p">:</span> <span class="mi">2</span>
+
+<span class="o">------------------</span>
+<span class="n">Image</span><span class="p">:</span> <span class="n">image_1</span><span class="p">:</span>
+<span class="n">Bands</span><span class="p">:</span> <span class="p">[</span><span class="s1">&#39;F125W&#39;</span><span class="p">,</span> <span class="s1">&#39;F110W&#39;</span><span class="p">]</span>
+<span class="n">Date</span> <span class="n">Range</span><span class="p">:</span> <span class="mf">0.00000</span><span class="o">-&gt;</span><span class="mf">56.61765</span>
+<span class="n">Number</span> <span class="n">of</span> <span class="n">points</span><span class="p">:</span> <span class="mi">24</span>
+
+<span class="n">Metadata</span><span class="p">:</span>
+ <span class="n">z</span><span class="p">:</span><span class="mf">1.33</span>
+ <span class="n">t0</span><span class="p">:</span><span class="mf">10.0</span>
+ <span class="n">x0</span><span class="p">:</span><span class="mf">6.705277050626183e-06</span>
+ <span class="n">x1</span><span class="p">:</span><span class="mf">1.4432846464012696</span>
+ <span class="n">c</span><span class="p">:</span><span class="mf">0.06617632319259452</span>
+ <span class="n">sourcez</span><span class="p">:</span><span class="mf">1.33</span>
+ <span class="n">hostebv</span><span class="p">:</span><span class="mf">0.0967741935483871</span>
+ <span class="n">lensebv</span><span class="p">:</span><span class="mi">0</span>
+ <span class="n">lensz</span><span class="p">:</span><span class="mf">0.53</span>
+ <span class="n">mu</span><span class="p">:</span><span class="mi">7</span>
+ <span class="n">td</span><span class="p">:</span><span class="mf">10.0</span>
+<span class="o">------------------</span>
+<span class="n">Image</span><span class="p">:</span> <span class="n">image_2</span><span class="p">:</span>
+<span class="n">Bands</span><span class="p">:</span> <span class="p">[</span><span class="s1">&#39;F125W&#39;</span><span class="p">,</span> <span class="s1">&#39;F110W&#39;</span><span class="p">]</span>
+<span class="n">Date</span> <span class="n">Range</span><span class="p">:</span> <span class="mf">41.17647</span><span class="o">-&gt;</span><span class="mf">118.38235</span>
+<span class="n">Number</span> <span class="n">of</span> <span class="n">points</span><span class="p">:</span> <span class="mi">32</span>
+
+<span class="n">Metadata</span><span class="p">:</span>
+ <span class="n">z</span><span class="p">:</span><span class="mf">1.33</span>
+ <span class="n">t0</span><span class="p">:</span><span class="mf">70.0</span>
+ <span class="n">x0</span><span class="p">:</span><span class="mf">3.3526385253130915e-06</span>
+ <span class="n">x1</span><span class="p">:</span><span class="mf">1.4432846464012696</span>
+ <span class="n">c</span><span class="p">:</span><span class="mf">0.06617632319259452</span>
+ <span class="n">sourcez</span><span class="p">:</span><span class="mf">1.33</span>
+ <span class="n">hostebv</span><span class="p">:</span><span class="mf">0.0967741935483871</span>
+ <span class="n">lensebv</span><span class="p">:</span><span class="mi">0</span>
+ <span class="n">lensz</span><span class="p">:</span><span class="mf">0.53</span>
+ <span class="n">mu</span><span class="p">:</span><span class="mf">3.5</span>
+ <span class="n">td</span><span class="p">:</span><span class="mf">70.0</span>
+<span class="o">------------------</span>
 </pre></div>
 </div>
 <p>Out:</p>
@@ -124,7 +139,7 @@ the simulated supernova.</p>
                      <span class="n">zp</span><span class="o">=</span><span class="p">[</span><span class="mf">26.8</span><span class="p">,</span><span class="mf">26.2</span><span class="p">],</span> <span class="n">cadence</span><span class="o">=</span><span class="mf">5.</span><span class="p">,</span> <span class="n">epochs</span><span class="o">=</span><span class="mf">35.</span><span class="p">,</span>
                      <span class="n">time_delays</span><span class="o">=</span><span class="p">[</span><span class="mf">10.</span><span class="p">,</span> <span class="mf">70.</span><span class="p">],</span> <span class="n">magnifications</span><span class="o">=</span><span class="p">[</span><span class="mi">7</span><span class="p">,</span><span class="mf">3.5</span><span class="p">],</span> <span class="n">objectName</span><span class="o">=</span><span class="s1">&#39;My Type Ia SN&#39;</span><span class="p">,</span><span class="n">telescopename</span><span class="o">=</span><span class="s1">&#39;HST&#39;</span><span class="p">,</span>
                      <span class="n">microlensing_type</span><span class="o">=</span><span class="s1">&#39;AchromaticMicrolensing&#39;</span><span class="p">,</span><span class="n">microlensing_params</span><span class="o">=</span><span class="n">myML</span><span class="p">)</span>
-<span class="n">myMISN2</span><span class="o">.</span><span class="n">plot_object</span><span class="p">(</span><span class="n">showMicro</span><span class="o">=</span><span class="bp">True</span><span class="p">,</span><span class="n">showModel</span><span class="o">=</span><span class="bp">True</span><span class="p">)</span>
+<span class="n">myMISN2</span><span class="o">.</span><span class="n">plot_object</span><span class="p">(</span><span class="n">showMicro</span><span class="o">=</span><span class="bp">True</span><span class="p">)</span>
 </pre></div>
 </div>
 <p>Out:</p>
@@ -144,10 +159,22 @@ the simulated supernova.</p>
 </pre></div>
 </div>
 <p>Out:</p>
-<a class="reference internal image-reference" href="_images/withML.png"><img alt="alternate text" class="align-center" src="_images/withML.png" style="width: 600px; height: 600px;" /></a>
+<a class="reference internal image-reference" href="_images/separateFit.png"><img alt="alternate text" class="align-center" src="_images/separateFit.png" style="width: 600px; height: 600px;" /></a>
 </div>
 <div class="section" id="estimating-uncertainty-due-to-microlensing">
 <h2>Estimating Uncertainty Due to Microlensing<a class="headerlink" href="#estimating-uncertainty-due-to-microlensing" title="Permalink to this headline">¶</a></h2>
+<p>Now we can estimate the additioinal uncertainty on the time delay measurement caused by microlensing. The final number printed below
+is just the measured microlensing uncertainty, there is an additional uncertainty on t0 that can be combined in quadrature.</p>
+<div class="highlight-python"><div class="highlight"><pre><span></span><span class="n">fitCurves</span><span class="o">=</span><span class="n">sntd</span><span class="o">.</span><span class="n">fit_data</span><span class="p">(</span><span class="n">myMISN2</span><span class="p">,</span><span class="n">snType</span><span class="o">=</span><span class="s1">&#39;Ia&#39;</span><span class="p">,</span> <span class="n">models</span><span class="o">=</span><span class="s1">&#39;salt2-extended&#39;</span><span class="p">,</span><span class="n">bands</span><span class="o">=</span><span class="p">[</span><span class="s1">&#39;F110W&#39;</span><span class="p">,</span><span class="s1">&#39;F125W&#39;</span><span class="p">],</span>
+            <span class="n">params</span><span class="o">=</span><span class="p">[</span><span class="s1">&#39;x0&#39;</span><span class="p">,</span><span class="s1">&#39;x1&#39;</span><span class="p">,</span><span class="s1">&#39;t0&#39;</span><span class="p">,</span><span class="s1">&#39;c&#39;</span><span class="p">],</span><span class="n">constants</span><span class="o">=</span><span class="p">{</span><span class="s1">&#39;z&#39;</span><span class="p">:</span><span class="mf">1.33</span><span class="p">},</span>
+            <span class="n">bounds</span><span class="o">=</span><span class="p">{</span><span class="s1">&#39;t0&#39;</span><span class="p">:(</span><span class="o">-</span><span class="mi">15</span><span class="p">,</span><span class="mi">15</span><span class="p">),</span><span class="s1">&#39;x1&#39;</span><span class="p">:(</span><span class="o">-</span><span class="mi">2</span><span class="p">,</span><span class="mi">2</span><span class="p">),</span><span class="s1">&#39;c&#39;</span><span class="p">:(</span><span class="mi">0</span><span class="p">,</span><span class="mi">1</span><span class="p">)},</span><span class="n">method</span><span class="o">=</span><span class="s1">&#39;separate&#39;</span><span class="p">,</span><span class="n">microlensing</span><span class="o">=</span><span class="s1">&#39;achromatic&#39;</span><span class="p">,</span><span class="n">nMicroSamples</span><span class="o">=</span><span class="mi">10</span><span class="p">)</span>
+<span class="k">print</span><span class="p">(</span><span class="n">fitCurves</span><span class="o">.</span><span class="n">images</span><span class="p">[</span><span class="s1">&#39;image_1&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">fits</span><span class="o">.</span><span class="n">final_errs</span><span class="p">[</span><span class="s1">&#39;micro&#39;</span><span class="p">])</span>
+</pre></div>
+</div>
+<p>Out:</p>
+<div class="highlight-default"><div class="highlight"><pre><span></span><span class="mf">0.7979254133200879</span>
+</pre></div>
+</div>
 </div>
 </div>
 

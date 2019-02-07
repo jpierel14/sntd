@@ -314,6 +314,7 @@ class curveDict(dict):
                     ax.text(0.95, 0.95, b.upper(), fontsize='large',
                             transform=ax.transAxes, ha='right', va='top')
 
+
                 i+=1
         elif method =='color':
             if bands=='all':
