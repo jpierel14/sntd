@@ -70,7 +70,7 @@ Out::
 
 Out:
 
-.. image:: examples/noML.png
+.. image:: examples/noML_fig.png
     :width: 600px
     :align: center
     :height: 600px
@@ -91,7 +91,7 @@ the simulated supernova.
 
 Out:
 
-.. image:: examples/micro.png
+.. image:: examples/micro_fig.png
     :width: 600px
     :align: center
     :height: 600px
@@ -111,7 +111,7 @@ Now we can take the simulated microcaustic and use it to include microlensing in
 
 Out:
 
-.. image:: examples/withML.png
+.. image:: examples/withML_fig.png
     :width: 600px
     :align: center
     :height: 600px
@@ -136,7 +136,7 @@ There are 3 methods built into SNTD to measure time delays (separate, combined, 
 
 Out:
 
-.. image:: examples/separateFit.png
+.. image:: examples/separateFit_fig.png
     :width: 600px
     :align: center
     :height: 600px
