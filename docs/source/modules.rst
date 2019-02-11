@@ -1,5 +1,5 @@
-sntd
-===========
+SNTD
+====
 
 .. toctree::
    :maxdepth: 4

@@ -3,7 +3,7 @@ Simulating with SNTD
 **********************
 
 No Microlensing
-================
+===============
 
 Create a simulated multiply-imaged supernova that we can then fit,
 with no microlensing included in the simulation. Note that your final
@@ -143,7 +143,7 @@ Out:
     :alt: alternate text
 
 Estimating Uncertainty Due to Microlensing
-=========================================
+==========================================
 Now we can estimate the additioinal uncertainty on the time delay measurement caused by microlensing. The final number printed below
 is just the measured microlensing uncertainty, there is an additional uncertainty on t0 that can be combined in quadrature.
 

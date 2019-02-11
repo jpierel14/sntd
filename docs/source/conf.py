@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 #
-# snsedextend documentation build configuration file, created by
+# sntd documentation build configuration file, created by
 # sphinx-quickstart on Wed Feb 28 14:09:47 2018.
 #
 # This file is execfile()d with the current directory set to its
@@ -44,7 +44,7 @@ sphinx_gallery_conf = {
     #'gallery_dirs': 'examples',   # path to gallery generated examples
     #'backreferences_dir': 'modules/generated',  # path to store the module
                                              # using example template
-    'doc_module': ('snsedextend',),  # documented module(s)
+    'doc_module': ('sntd',),  # documented module(s)
     'download_section_examples': False,
     'download_all_examples': False  # don't package up examples.
     #'default_thumb_file': '_logo/spectral_white_bkg.png',
@@ -62,7 +62,7 @@ source_suffix = '.rst'
 master_doc = 'index'
 
 # General information about the project.
-project = u'snsedextend'
+project = u'sntd'
 copyright = u'2018, J.R. Pierel'
 author = u'J.R. Pierel'
 
@@ -127,7 +127,7 @@ html_static_path = ['_static']
 # -- Options for HTMLHelp output ------------------------------------------
 
 # Output file base name for HTML help builder.
-htmlhelp_basename = 'snsedextenddoc'
+htmlhelp_basename = 'sntddoc'
 
 
 # -- Options for LaTeX output ---------------------------------------------
@@ -154,7 +154,7 @@ latex_elements = {
 # (source start file, target name, title,
 #  author, documentclass [howto, manual, or own class]).
 latex_documents = [
-    (master_doc, 'snsedextend.tex', u'snsedextend Documentation',
+    (master_doc, 'sntd.tex', u'SNTD Documentation',
      u'J.R. Pierel', 'manual'),
 ]
 
@@ -164,7 +164,7 @@ latex_documents = [
 # One entry per manual page. List of tuples
 # (source start file, name, description, authors, manual section).
 man_pages = [
-    (master_doc, 'snsedextend', u'snsedextend Documentation',
+    (master_doc, 'sntd', u'sntd Documentation',
      [author], 1)
 ]
 
@@ -175,8 +175,8 @@ man_pages = [
 # (source start file, target name, title, author,
 #  dir menu entry, description, category)
 texinfo_documents = [
-    (master_doc, 'snsedextend', u'snsedextend Documentation',
-     author, 'snsedextend', 'One line description of project.',
+    (master_doc, 'sntd', u'sntd Documentation',
+     author, 'sntd', 'One line description of project.',
      'Miscellaneous'),
 ]
 

@@ -44,6 +44,10 @@ then::
 Optional dependencies
 =====================
 
+.. note::
+   If you plan to use SNTD to simulate the effects of microlensing, which uses the Wambsganss 1990 microlens code, then you will need a fortran compiler. You can install gfortran `here
+   <https://gcc.gnu.org/wiki/GFortranBinaries>`_.
+
 Several additional packages are recommended for enabling optional
 functionality in SNCosmo.
 

@@ -1,36 +1,26 @@
+
 <!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
   "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
 
-
 <html xmlns="http://www.w3.org/1999/xhtml">
   <head>
+    <meta http-equiv="X-UA-Compatible" content="IE=Edge" />
     <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
-    
-    <title>Simulating with SNTD &#8212; snsedextend 0.2.7 documentation</title>
-    
+    <title>Simulating with SNTD &#8212; sntd 0.2.7 documentation</title>
     <link rel="stylesheet" href="_static/classic.css" type="text/css" />
     <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
     
-    <script type="text/javascript">
-      var DOCUMENTATION_OPTIONS = {
-        URL_ROOT:    './',
-        VERSION:     '0.2.7',
-        COLLAPSE_INDEX: false,
-        FILE_SUFFIX: '.html',
-        HAS_SOURCE:  true
-      };
-    </script>
+    <script type="text/javascript" id="documentation_options" data-url_root="./" src="_static/documentation_options.js"></script>
     <script type="text/javascript" src="_static/jquery.js"></script>
     <script type="text/javascript" src="_static/underscore.js"></script>
     <script type="text/javascript" src="_static/doctools.js"></script>
-    <script type="text/javascript" src="https://cdn.mathjax.org/mathjax/latest/MathJax.js?config=TeX-AMS-MML_HTMLorMML"></script>
+    <script type="text/javascript" src="_static/language_data.js"></script>
+    
     <link rel="index" title="Index" href="genindex.html" />
     <link rel="search" title="Search" href="search.html" />
-    <link rel="top" title="snsedextend 0.2.7 documentation" href="index.html" />
     <link rel="next" title="Reference" href="reference.html" />
     <link rel="prev" title="Installation" href="install.html" /> 
-  </head>
-  <body role="document">
+  </head><body>
     <div class="related" role="navigation" aria-label="related navigation">
       <h3>Navigation</h3>
       <ul>
@@ -38,12 +28,15 @@
           <a href="genindex.html" title="General Index"
              accesskey="I">index</a></li>
         <li class="right" >
+          <a href="py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="right" >
           <a href="reference.html" title="Reference"
              accesskey="N">next</a> |</li>
         <li class="right" >
           <a href="install.html" title="Installation"
              accesskey="P">previous</a> |</li>
-        <li class="nav-item nav-item-0"><a href="index.html">snsedextend 0.2.7 documentation</a> &#187;</li> 
+        <li class="nav-item nav-item-0"><a href="index.html">sntd 0.2.7 documentation</a> &#187;</li> 
       </ul>
     </div>  
 
@@ -60,7 +53,7 @@
 with no microlensing included in the simulation. Note that your final
 printed information will be different, as this is a randomly generated
 supernova.</p>
-<div class="highlight-python"><div class="highlight"><pre><span></span><span class="kn">import</span> <span class="nn">sntd</span>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">import</span> <span class="nn">sntd</span>
 <span class="kn">import</span> <span class="nn">matplotlib.pyplot</span> <span class="kn">as</span> <span class="nn">plt</span>
 
 <span class="n">myMISN</span> <span class="o">=</span> <span class="n">sntd</span><span class="o">.</span><span class="n">createMultiplyImagedSN</span><span class="p">(</span><span class="n">sourcename</span><span class="o">=</span><span class="s1">&#39;salt2-extended&#39;</span><span class="p">,</span> <span class="n">snType</span><span class="o">=</span><span class="s1">&#39;Ia&#39;</span><span class="p">,</span> <span class="n">redshift</span><span class="o">=</span><span class="mf">1.33</span><span class="p">,</span><span class="n">z_lens</span><span class="o">=.</span><span class="mi">53</span><span class="p">,</span> <span class="n">bands</span><span class="o">=</span><span class="p">[</span><span class="s1">&#39;F110W&#39;</span><span class="p">,</span><span class="s1">&#39;F125W&#39;</span><span class="p">],</span>
@@ -72,7 +65,7 @@ supernova.</p>
 </pre></div>
 </div>
 <p>Out:</p>
-<div class="highlight-default"><div class="highlight"><pre><span></span><span class="n">Telescope</span><span class="p">:</span> <span class="n">HST</span>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">Telescope</span><span class="p">:</span> <span class="n">HST</span>
 <span class="n">Object</span><span class="p">:</span> <span class="n">My</span> <span class="n">Type</span> <span class="n">Ia</span> <span class="n">SN</span>
 <span class="n">Number</span> <span class="n">of</span> <span class="n">bands</span><span class="p">:</span> <span class="mi">2</span>
 
@@ -122,7 +115,7 @@ supernova.</p>
 <h2>Simulating Microlensing<a class="headerlink" href="#simulating-microlensing" title="Permalink to this headline">¶</a></h2>
 <p>Simulate a microlensing microcaustic, and use it to include a microlensing effect in
 the simulated supernova.</p>
-<div class="highlight-python"><div class="highlight"><pre><span></span><span class="kn">import</span> <span class="nn">numpy</span> <span class="kn">as</span> <span class="nn">np</span>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">import</span> <span class="nn">numpy</span> <span class="kn">as</span> <span class="nn">np</span>
 
 <span class="n">myML</span><span class="o">=</span><span class="n">sntd</span><span class="o">.</span><span class="n">realizeMicro</span><span class="p">(</span><span class="n">nray</span><span class="o">=</span><span class="mi">50</span><span class="p">,</span><span class="n">kappas</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span><span class="n">kappac</span><span class="o">=.</span><span class="mi">3</span><span class="p">,</span><span class="n">gamma</span><span class="o">=.</span><span class="mi">4</span><span class="p">)</span>
 <span class="n">time</span><span class="p">,</span><span class="n">dmag</span><span class="o">=</span><span class="n">sntd</span><span class="o">.</span><span class="n">microcaustic_field_to_curve</span><span class="p">(</span><span class="n">field</span><span class="o">=</span><span class="n">fitData</span><span class="p">,</span><span class="n">time</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">arange</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span><span class="mi">100</span><span class="p">,</span><span class="mi">1</span><span class="p">),</span><span class="n">zl</span><span class="o">=.</span><span class="mi">5</span><span class="p">,</span><span class="n">zs</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span><span class="n">plot</span><span class="o">=</span><span class="bp">True</span><span class="p">)</span>
@@ -135,7 +128,7 @@ the simulated supernova.</p>
 <div class="section" id="including-microlensing-in-simulations">
 <h2>Including Microlensing in Simulations<a class="headerlink" href="#including-microlensing-in-simulations" title="Permalink to this headline">¶</a></h2>
 <p>Now we can take the simulated microcaustic and use it to include microlensing in a multiply-imaged supernova simulation.</p>
-<div class="highlight-python"><div class="highlight"><pre><span></span><span class="n">myMISN2</span> <span class="o">=</span> <span class="n">sntd</span><span class="o">.</span><span class="n">createMultiplyImagedSN</span><span class="p">(</span><span class="n">sourcename</span><span class="o">=</span><span class="s1">&#39;salt2-extended&#39;</span><span class="p">,</span> <span class="n">snType</span><span class="o">=</span><span class="s1">&#39;Ia&#39;</span><span class="p">,</span> <span class="n">redshift</span><span class="o">=</span><span class="mf">1.33</span><span class="p">,</span><span class="n">z_lens</span><span class="o">=.</span><span class="mi">53</span><span class="p">,</span> <span class="n">bands</span><span class="o">=</span><span class="p">[</span><span class="s1">&#39;F110W&#39;</span><span class="p">,</span><span class="s1">&#39;F125W&#39;</span><span class="p">],</span>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="n">myMISN2</span> <span class="o">=</span> <span class="n">sntd</span><span class="o">.</span><span class="n">createMultiplyImagedSN</span><span class="p">(</span><span class="n">sourcename</span><span class="o">=</span><span class="s1">&#39;salt2-extended&#39;</span><span class="p">,</span> <span class="n">snType</span><span class="o">=</span><span class="s1">&#39;Ia&#39;</span><span class="p">,</span> <span class="n">redshift</span><span class="o">=</span><span class="mf">1.33</span><span class="p">,</span><span class="n">z_lens</span><span class="o">=.</span><span class="mi">53</span><span class="p">,</span> <span class="n">bands</span><span class="o">=</span><span class="p">[</span><span class="s1">&#39;F110W&#39;</span><span class="p">,</span><span class="s1">&#39;F125W&#39;</span><span class="p">],</span>
                      <span class="n">zp</span><span class="o">=</span><span class="p">[</span><span class="mf">26.8</span><span class="p">,</span><span class="mf">26.2</span><span class="p">],</span> <span class="n">cadence</span><span class="o">=</span><span class="mf">5.</span><span class="p">,</span> <span class="n">epochs</span><span class="o">=</span><span class="mf">35.</span><span class="p">,</span>
                      <span class="n">time_delays</span><span class="o">=</span><span class="p">[</span><span class="mf">10.</span><span class="p">,</span> <span class="mf">70.</span><span class="p">],</span> <span class="n">magnifications</span><span class="o">=</span><span class="p">[</span><span class="mi">7</span><span class="p">,</span><span class="mf">3.5</span><span class="p">],</span> <span class="n">objectName</span><span class="o">=</span><span class="s1">&#39;My Type Ia SN&#39;</span><span class="p">,</span><span class="n">telescopename</span><span class="o">=</span><span class="s1">&#39;HST&#39;</span><span class="p">,</span>
                      <span class="n">microlensing_type</span><span class="o">=</span><span class="s1">&#39;AchromaticMicrolensing&#39;</span><span class="p">,</span><span class="n">microlensing_params</span><span class="o">=</span><span class="n">myML</span><span class="p">)</span>
@@ -151,7 +144,7 @@ the simulated supernova.</p>
 <div class="section" id="fitting-a-multiply-imaged-supernova">
 <h2>Fitting a Multiply-Imaged Supernova<a class="headerlink" href="#fitting-a-multiply-imaged-supernova" title="Permalink to this headline">¶</a></h2>
 <p>There are 3 methods built into SNTD to measure time delays (separate, combined, color). They are accessed by the same function:</p>
-<div class="highlight-python"><div class="highlight"><pre><span></span><span class="n">fitCurves</span><span class="o">=</span><span class="n">sntd</span><span class="o">.</span><span class="n">fit_data</span><span class="p">(</span><span class="n">myMISN2</span><span class="p">,</span><span class="n">snType</span><span class="o">=</span><span class="s1">&#39;Ia&#39;</span><span class="p">,</span> <span class="n">models</span><span class="o">=</span><span class="s1">&#39;salt2-extended&#39;</span><span class="p">,</span><span class="n">bands</span><span class="o">=</span><span class="p">[</span><span class="s1">&#39;F110W&#39;</span><span class="p">,</span><span class="s1">&#39;F125W&#39;</span><span class="p">],</span>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="n">fitCurves</span><span class="o">=</span><span class="n">sntd</span><span class="o">.</span><span class="n">fit_data</span><span class="p">(</span><span class="n">myMISN2</span><span class="p">,</span><span class="n">snType</span><span class="o">=</span><span class="s1">&#39;Ia&#39;</span><span class="p">,</span> <span class="n">models</span><span class="o">=</span><span class="s1">&#39;salt2-extended&#39;</span><span class="p">,</span><span class="n">bands</span><span class="o">=</span><span class="p">[</span><span class="s1">&#39;F110W&#39;</span><span class="p">,</span><span class="s1">&#39;F125W&#39;</span><span class="p">],</span>
             <span class="n">params</span><span class="o">=</span><span class="p">[</span><span class="s1">&#39;x0&#39;</span><span class="p">,</span><span class="s1">&#39;x1&#39;</span><span class="p">,</span><span class="s1">&#39;t0&#39;</span><span class="p">,</span><span class="s1">&#39;c&#39;</span><span class="p">],</span><span class="n">constants</span><span class="o">=</span><span class="p">{</span><span class="s1">&#39;z&#39;</span><span class="p">:</span><span class="mf">1.33</span><span class="p">},</span>
             <span class="n">bounds</span><span class="o">=</span><span class="p">{</span><span class="s1">&#39;t0&#39;</span><span class="p">:(</span><span class="o">-</span><span class="mi">15</span><span class="p">,</span><span class="mi">15</span><span class="p">),</span><span class="s1">&#39;x1&#39;</span><span class="p">:(</span><span class="o">-</span><span class="mi">2</span><span class="p">,</span><span class="mi">2</span><span class="p">),</span><span class="s1">&#39;c&#39;</span><span class="p">:(</span><span class="mi">0</span><span class="p">,</span><span class="mi">1</span><span class="p">)},</span><span class="n">method</span><span class="o">=</span><span class="s1">&#39;separate&#39;</span><span class="p">,</span><span class="n">microlensing</span><span class="o">=</span><span class="bp">None</span><span class="p">)</span>
 <span class="n">fitCurves</span><span class="o">.</span><span class="n">plot_object</span><span class="p">(</span><span class="n">showFit</span><span class="o">=</span><span class="bp">True</span><span class="p">,</span><span class="n">method</span><span class="o">=</span><span class="s1">&#39;separate&#39;</span><span class="p">)</span>
@@ -165,14 +158,14 @@ the simulated supernova.</p>
 <h2>Estimating Uncertainty Due to Microlensing<a class="headerlink" href="#estimating-uncertainty-due-to-microlensing" title="Permalink to this headline">¶</a></h2>
 <p>Now we can estimate the additioinal uncertainty on the time delay measurement caused by microlensing. The final number printed below
 is just the measured microlensing uncertainty, there is an additional uncertainty on t0 that can be combined in quadrature.</p>
-<div class="highlight-python"><div class="highlight"><pre><span></span><span class="n">fitCurves</span><span class="o">=</span><span class="n">sntd</span><span class="o">.</span><span class="n">fit_data</span><span class="p">(</span><span class="n">myMISN2</span><span class="p">,</span><span class="n">snType</span><span class="o">=</span><span class="s1">&#39;Ia&#39;</span><span class="p">,</span> <span class="n">models</span><span class="o">=</span><span class="s1">&#39;salt2-extended&#39;</span><span class="p">,</span><span class="n">bands</span><span class="o">=</span><span class="p">[</span><span class="s1">&#39;F110W&#39;</span><span class="p">,</span><span class="s1">&#39;F125W&#39;</span><span class="p">],</span>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="n">fitCurves</span><span class="o">=</span><span class="n">sntd</span><span class="o">.</span><span class="n">fit_data</span><span class="p">(</span><span class="n">myMISN2</span><span class="p">,</span><span class="n">snType</span><span class="o">=</span><span class="s1">&#39;Ia&#39;</span><span class="p">,</span> <span class="n">models</span><span class="o">=</span><span class="s1">&#39;salt2-extended&#39;</span><span class="p">,</span><span class="n">bands</span><span class="o">=</span><span class="p">[</span><span class="s1">&#39;F110W&#39;</span><span class="p">,</span><span class="s1">&#39;F125W&#39;</span><span class="p">],</span>
             <span class="n">params</span><span class="o">=</span><span class="p">[</span><span class="s1">&#39;x0&#39;</span><span class="p">,</span><span class="s1">&#39;x1&#39;</span><span class="p">,</span><span class="s1">&#39;t0&#39;</span><span class="p">,</span><span class="s1">&#39;c&#39;</span><span class="p">],</span><span class="n">constants</span><span class="o">=</span><span class="p">{</span><span class="s1">&#39;z&#39;</span><span class="p">:</span><span class="mf">1.33</span><span class="p">},</span>
             <span class="n">bounds</span><span class="o">=</span><span class="p">{</span><span class="s1">&#39;t0&#39;</span><span class="p">:(</span><span class="o">-</span><span class="mi">15</span><span class="p">,</span><span class="mi">15</span><span class="p">),</span><span class="s1">&#39;x1&#39;</span><span class="p">:(</span><span class="o">-</span><span class="mi">2</span><span class="p">,</span><span class="mi">2</span><span class="p">),</span><span class="s1">&#39;c&#39;</span><span class="p">:(</span><span class="mi">0</span><span class="p">,</span><span class="mi">1</span><span class="p">)},</span><span class="n">method</span><span class="o">=</span><span class="s1">&#39;separate&#39;</span><span class="p">,</span><span class="n">microlensing</span><span class="o">=</span><span class="s1">&#39;achromatic&#39;</span><span class="p">,</span><span class="n">nMicroSamples</span><span class="o">=</span><span class="mi">10</span><span class="p">)</span>
 <span class="k">print</span><span class="p">(</span><span class="n">fitCurves</span><span class="o">.</span><span class="n">images</span><span class="p">[</span><span class="s1">&#39;image_1&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">fits</span><span class="o">.</span><span class="n">final_errs</span><span class="p">[</span><span class="s1">&#39;micro&#39;</span><span class="p">])</span>
 </pre></div>
 </div>
 <p>Out:</p>
-<div class="highlight-default"><div class="highlight"><pre><span></span><span class="mf">0.7979254133200879</span>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="mf">0.7979254133200879</span>
 </pre></div>
 </div>
 </div>
@@ -184,7 +177,7 @@ is just the measured microlensing uncertainty, there is an additional uncertaint
       </div>
       <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
         <div class="sphinxsidebarwrapper">
-<h3><a href="index.html">Table Of Contents</a></h3>
+<h3><a href="index.html">Table of Contents</a></h3>
 <p class="caption"><span class="caption-text">Contents:</span></p>
 <ul class="current">
 <li class="toctree-l1"><a class="reference internal" href="install.html">Installation</a></li>
@@ -200,6 +193,7 @@ is just the measured microlensing uncertainty, there is an additional uncertaint
 </ul>
 </li>
 <li class="toctree-l1"><a class="reference internal" href="reference.html">Reference</a></li>
+<li class="toctree-l1"><a class="reference internal" href="sntd.html">SNTD package</a></li>
 </ul>
 
   <h4>Previous topic</h4>
@@ -211,18 +205,20 @@ is just the measured microlensing uncertainty, there is an additional uncertaint
   <div role="note" aria-label="source link">
     <h3>This Page</h3>
     <ul class="this-page-menu">
-      <li><a href="_sources/examples.txt"
+      <li><a href="_sources/examples.rst.txt"
             rel="nofollow">Show Source</a></li>
     </ul>
    </div>
 <div id="searchbox" style="display: none" role="search">
   <h3>Quick search</h3>
+    <div class="searchformwrapper">
     <form class="search" action="search.html" method="get">
-      <div><input type="text" name="q" /></div>
-      <div><input type="submit" value="Go" /></div>
+      <input type="text" name="q" />
+      <input type="submit" value="Go" />
       <input type="hidden" name="check_keywords" value="yes" />
       <input type="hidden" name="area" value="default" />
     </form>
+    </div>
 </div>
 <script type="text/javascript">$('#searchbox').show(0);</script>
         </div>
@@ -236,17 +232,20 @@ is just the measured microlensing uncertainty, there is an additional uncertaint
           <a href="genindex.html" title="General Index"
              >index</a></li>
         <li class="right" >
+          <a href="py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="right" >
           <a href="reference.html" title="Reference"
              >next</a> |</li>
         <li class="right" >
           <a href="install.html" title="Installation"
              >previous</a> |</li>
-        <li class="nav-item nav-item-0"><a href="index.html">snsedextend 0.2.7 documentation</a> &#187;</li> 
+        <li class="nav-item nav-item-0"><a href="index.html">sntd 0.2.7 documentation</a> &#187;</li> 
       </ul>
     </div>
     <div class="footer" role="contentinfo">
         &#169; Copyright 2018, J.R. Pierel.
-      Created using <a href="http://sphinx-doc.org/">Sphinx</a> 1.4.8.
+      Created using <a href="http://sphinx-doc.org/">Sphinx</a> 1.8.4.
     </div>
   </body>
 </html>

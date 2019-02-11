@@ -60,7 +60,6 @@ def fit_data(curves, snType='Ia',bands=None, models=None, params=None, bounds={}
              kernel='RBF',combinedGrids=None,refImage='image_1',nMicroSamples=100,**kwargs):
 
     """
-    The main, high-level fitting function.
     :param curves: list of objects containing lightcurves to fit, or a single dcurve
     :type curves: ~io.curveDict or list of ~io.curveDict
     :param bands: The list of bands you'd like to fit, optional (all will be fit if you don't specify)
@@ -85,10 +84,9 @@ def fit_data(curves, snType='Ia',bands=None, models=None, params=None, bounds={}
     :type degree: int
     :param micro: If don't want to include microlensing, set to None, otherwise choose poly or spline,optional
     :type micro: str (or None)
-    :return: fits object containing all fit information for each lightcurve
+    :returns: fits object containing all fit information for each lightcurve
     """
-    #curves=deepcopy(lcs)
-    #print(curves.keys())
+
 
     args = locals()
 

@@ -1,23 +1,22 @@
-***************
+*********
 Reference
-***************
+*********
 
 .. currentmodule:: sntd
 
 
-
 Simulating Data
-=======================
+===============
 .. autosummary::
-   #:toctree: source
+   :toctree: api
 	     
    createMultiplyImagedSN
 
 Fitting Data
-==================
+============
 
 .. autosummary::
-   #:toctree: source
+   :toctree: api
 	     
    fit_data
 
