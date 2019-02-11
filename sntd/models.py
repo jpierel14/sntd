@@ -1,14 +1,13 @@
-import sncosmo,sys,math
+import sncosmo
 import numpy as np
 from astropy.table import Table
-from scipy.interpolate import InterpolatedUnivariateSpline as Spline1d,splrep,splev,CubicSpline
+from scipy.interpolate import CubicSpline
 from sncosmo.utils import integration_grid
 from sncosmo.constants import HC_ERG_AA, MODEL_BANDFLUX_SPACING
 from scipy.stats import exponnorm
 
 from collections import Counter
-import matplotlib.pyplot as plt
-from .util import _findMax
+
 
 __all__=['BazinSource']
 

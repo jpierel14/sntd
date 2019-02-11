@@ -12,7 +12,7 @@ from sklearn.gaussian_process.kernels import RBF
 import scipy
 
 from .util import *
-from .io import _sntd_deepcopy
+from .curve_io import _sntd_deepcopy
 from .models import *
 from .ml import *
 
@@ -60,31 +60,21 @@ def fit_data(curves, snType='Ia',bands=None, models=None, params=None, bounds={}
              kernel='RBF',combinedGrids=None,refImage='image_1',nMicroSamples=100,**kwargs):
 
     """
-    :param curves: list of objects containing lightcurves to fit, or a single dcurve
-    :type curves: ~io.curveDict or list of ~io.curveDict
-    :param bands: The list of bands you'd like to fit, optional (all will be fit if you don't specify)
-    :type bands: list
-    :param models: The models to fit, optional (if not present, all will be tried)
-    :type models: str or ~sncosmo.Models
-    :param params: The parameters to be varied in the models,optional (if not present, all default parameters used)
-    :type params: list
-    :param bounds: Bounds for models parameters (necessary for certain parameters)
-    :type bounds: dict, {param:(x0,x1)}
-    :param ignore: Parameters to ignore in models, optional
-    :type ignore: list
-    :param constants: Models parameters to be kept constant (i.e., redshift if known), optional
-    :type constants: dict, {param:value}
-    :param spline: If you'd like to fit a spline to the data instead of an sncosmo template, optional
-    :type spline: Boolean
-    :param knotstep: Number of knots you'd like in your spline if spline=True
-    :type knotstep: int
-    :param poly: If you'd like to fit a polynomial to the data instead of an sncosmo template,optional
-    :type poly: Boolean
-    :param degree: Degree of polynomial if poly=True
-    :type degree: int
-    :param micro: If don't want to include microlensing, set to None, otherwise choose poly or spline,optional
-    :type micro: str (or None)
-    :returns: fits object containing all fit information for each lightcurve
+    The main high-level fitting function.
+
+    Parameters
+    ----------
+    curves: :class:`sntd.curve_io.curveDict`
+        The curveDict object containing the multiple images to fit.
+    snType: str
+        The supernova classification
+    bands: list of :class:`~sncosmo.bandpasses.Bandpass` or str
+        The band(s) to be fit
+    models: list
+
+    Returns
+    -------
+    None
     """
 
 

@@ -12,13 +12,13 @@ supernova.
 
 		
 .. code-block:: python     
-	
+   
      import sntd
      import matplotlib.pyplot as plt
      
      myMISN = sntd.createMultiplyImagedSN(sourcename='salt2-extended', snType='Ia', redshift=1.33,z_lens=.53, bands=['F110W','F125W'],
-                                     zp=[26.8,26.2], cadence=5., epochs=35.,
-                                     time_delays=[10., 70.], magnifications=[7,3.5], objectName='My Type Ia SN',telescopename='HST')
+                   zp=[26.8,26.2], cadence=5., epochs=35.,time_delays=[10., 70.], magnifications=[7,3.5],
+		   objectName='My Type Ia SN',telescopename='HST')
      print(myMISN)
      myMISN.plot_object()
      plt.show()
@@ -75,7 +75,7 @@ Out:
     :align: center
     :height: 600px
     :alt: alternate text
-	  
+      
 Simulating Microlensing
 =======================
 Simulate a microlensing microcaustic, and use it to include a microlensing effect in
@@ -83,11 +83,11 @@ the simulated supernova.
 
 .. code-block:: python
 
-		import numpy as np
-		
-		myML=sntd.realizeMicro(nray=50,kappas=1,kappac=.3,gamma=.4)
-		time,dmag=sntd.microcaustic_field_to_curve(field=fitData,time=np.arange(0,100,1),zl=.5,zs=1,plot=True)
-		plt.show()
+   	import numpy as np
+		       
+	myML=sntd.realizeMicro(nray=50,kappas=1,kappac=.3,gamma=.4)
+	time,dmag=sntd.microcaustic_field_to_curve(field=myML,time=np.arange(0,100,1),zl=.5,zs=1,plot=True)
+	plt.show()
 
 Out:
 
@@ -103,11 +103,11 @@ Now we can take the simulated microcaustic and use it to include microlensing in
 
 .. code-block:: python
 
-		myMISN2 = sntd.createMultiplyImagedSN(sourcename='salt2-extended', snType='Ia', redshift=1.33,z_lens=.53, bands=['F110W','F125W'],
-                                     zp=[26.8,26.2], cadence=5., epochs=35.,
-                                     time_delays=[10., 70.], magnifications=[7,3.5], objectName='My Type Ia SN',telescopename='HST',
-				     microlensing_type='AchromaticMicrolensing',microlensing_params=myML)
-		myMISN2.plot_object(showMicro=True)
+   	myMISN2 = sntd.createMultiplyImagedSN(sourcename='salt2-extended', snType='Ia', redshift=1.33,z_lens=.53, bands=['F110W','F125W'],
+                       zp=[26.8,26.2], cadence=5., epochs=35.,time_delays=[10., 70.], magnifications=[7,3.5],
+		       objectName='My Type Ia SN',telescopename='HST', microlensing_type='AchromaticMicrolensing',microlensing_params=myML)
+	myMISN2.plot_object(showMicro=True)
+	plt.show()
 
 Out:
 
@@ -128,11 +128,11 @@ There are 3 methods built into SNTD to measure time delays (separate, combined, 
 
 .. code-block:: python
 
-		fitCurves=sntd.fit_data(myMISN2,snType='Ia', models='salt2-extended',bands=['F110W','F125W'],
-                            params=['x0','x1','t0','c'],constants={'z':1.33},
-                            bounds={'t0':(-15,15),'x1':(-2,2),'c':(0,1)},method='separate',microlensing=None)
-		fitCurves.plot_object(showFit=True,method='separate')
-		plt.show()
+   	fitCurves=sntd.fit_data(myMISN2,snType='Ia', models='salt2-extended',bands=['F110W','F125W'],
+                 params=['x0','x1','t0','c'],constants={'z':1.33},bounds={'t0':(-15,15),'x1':(-2,2),'c':(0,1)},
+		 method='separate',microlensing=None)
+	fitCurves.plot_object(showFit=True,method='separate')
+	plt.show()
 
 Out:
 
@@ -149,10 +149,10 @@ is just the measured microlensing uncertainty, there is an additional uncertaint
 
 .. code-block:: python
 
-		fitCurves=sntd.fit_data(myMISN2,snType='Ia', models='salt2-extended',bands=['F110W','F125W'],
-                            params=['x0','x1','t0','c'],constants={'z':1.33},
-                            bounds={'t0':(-15,15),'x1':(-2,2),'c':(0,1)},method='separate',microlensing='achromatic',nMicroSamples=10)
-		print(fitCurves.images['image_1'].fits.final_errs['micro'])
+   	fitCurves=sntd.fit_data(myMISN2,snType='Ia', models='salt2-extended',bands=['F110W','F125W'],
+                params=['x0','x1','t0','c'],constants={'z':1.33},bounds={'t0':(-15,15),'x1':(-2,2),'c':(0,1)},
+		method='separate',microlensing='achromatic',nMicroSamples=10)
+	print(fitCurves.images['image_1'].fits.final_errs['micro'])
 
 Out::
 

@@ -4,8 +4,6 @@ import os,sncosmo
 import numpy as np
 from collections import OrderedDict as odict
 from scipy.interpolate import splrep,splev
-from itertools import combinations
-import matplotlib.pyplot as plt
 from copy import copy
 
 

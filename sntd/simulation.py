@@ -2,16 +2,14 @@ import sncosmo,os
 from copy import deepcopy,copy
 from collections import OrderedDict
 
-
-from .util import __dir__
-from .io import curve,curveDict
 from astropy.io import ascii
 import numpy as np
 from astropy.table import Table
 from scipy.interpolate import interp1d
 from sncosmo.utils import alias_map
 
-
+from .util import __dir__
+from .curve_io import curve,curveDict
 from .ml import *
 
 __all__=['createMultiplyImagedSN']

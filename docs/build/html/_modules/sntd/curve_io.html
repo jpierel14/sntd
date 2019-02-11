@@ -1,0 +1,957 @@
+
+
+<!DOCTYPE html>
+<!--[if IE 8]><html class="no-js lt-ie9" lang="en" > <![endif]-->
+<!--[if gt IE 8]><!--> <html class="no-js" lang="en" > <!--<![endif]-->
+<head>
+  <meta charset="utf-8">
+  
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  
+  <title>sntd.curve_io &mdash; SNTD 1.0.1 documentation</title>
+  
+
+  
+  
+  
+  
+
+  
+
+  
+  
+    
+
+  
+
+  <link rel="stylesheet" href="../../_static/css/theme.css" type="text/css" />
+  <link rel="stylesheet" href="../../_static/pygments.css" type="text/css" />
+    <link rel="index" title="Index" href="../../genindex.html" />
+    <link rel="search" title="Search" href="../../search.html" /> 
+
+  
+  <script src="../../_static/js/modernizr.min.js"></script>
+
+</head>
+
+<body class="wy-body-for-nav">
+
+   
+  <div class="wy-grid-for-nav">
+
+    
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search">
+          
+
+          
+            <a href="../../index.html" class="icon icon-home"> SNTD
+          
+
+          
+          </a>
+
+          
+            
+            
+          
+
+          
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+
+          
+        </div>
+
+        <div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="main navigation">
+          
+            
+            
+              
+            
+            
+              <p class="caption"><span class="caption-text">Contents:</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../install.html">Installation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../examples.html">Simulating with SNTD</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../examples.html#measuring-time-delays-with-sntd">Measuring Time Delays with SNTD</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../api.html">API Documentation</a></li>
+</ul>
+
+            
+          
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap">
+
+      
+      <nav class="wy-nav-top" aria-label="top navigation">
+        
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../../index.html">SNTD</a>
+        
+      </nav>
+
+
+      <div class="wy-nav-content">
+        
+        <div class="rst-content">
+        
+          
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<div role="navigation" aria-label="breadcrumbs navigation">
+
+  <ul class="wy-breadcrumbs">
+    
+      <li><a href="../../index.html">Docs</a> &raquo;</li>
+        
+          <li><a href="../index.html">Module code</a> &raquo;</li>
+        
+      <li>sntd.curve_io</li>
+    
+    
+      <li class="wy-breadcrumbs-aside">
+        
+      </li>
+    
+  </ul>
+
+  
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+            
+  <h1>Source code for sntd.curve_io</h1><div class="highlight"><pre>
+<span></span><span class="kn">from</span> <span class="nn">collections</span> <span class="k">import</span> <span class="n">OrderedDict</span> <span class="k">as</span> <span class="n">odict</span>
+
+<span class="kn">import</span> <span class="nn">numpy</span> <span class="k">as</span> <span class="nn">np</span>
+<span class="kn">import</span> <span class="nn">os</span><span class="o">,</span><span class="nn">string</span><span class="o">,</span><span class="nn">sncosmo</span><span class="o">,</span><span class="nn">sys</span>
+<span class="kn">from</span> <span class="nn">astropy.io</span> <span class="k">import</span> <span class="n">ascii</span>
+<span class="kn">from</span> <span class="nn">astropy.table</span> <span class="k">import</span> <span class="n">Table</span><span class="p">,</span><span class="n">vstack</span><span class="p">,</span><span class="n">Column</span>
+<span class="kn">from</span> <span class="nn">scipy.stats</span> <span class="k">import</span> <span class="n">mode</span>
+<span class="kn">from</span> <span class="nn">copy</span> <span class="k">import</span> <span class="n">deepcopy</span><span class="p">,</span><span class="n">copy</span>
+<span class="kn">import</span> <span class="nn">matplotlib.pyplot</span> <span class="k">as</span> <span class="nn">plt</span>
+<span class="kn">from</span> <span class="nn">mpl_toolkits.axes_grid1.axes_divider</span> <span class="k">import</span> <span class="n">make_axes_locatable</span>
+<span class="k">try</span><span class="p">:</span>
+    <span class="kn">import</span> <span class="nn">pickle</span>
+<span class="k">except</span><span class="p">:</span>
+    <span class="kn">import</span> <span class="nn">cPickle</span>
+
+<span class="kn">from</span> <span class="nn">.util</span> <span class="k">import</span> <span class="o">*</span>
+
+<span class="n">__all__</span><span class="o">=</span><span class="p">[</span><span class="s1">&#39;curve&#39;</span><span class="p">,</span><span class="s1">&#39;curveDict&#39;</span><span class="p">,</span><span class="s1">&#39;read_data&#39;</span><span class="p">,</span><span class="s1">&#39;write_data&#39;</span><span class="p">,</span><span class="s1">&#39;table_factory&#39;</span><span class="p">]</span>
+
+<span class="n">_comment_char</span><span class="o">=</span><span class="p">{</span><span class="s1">&#39;#&#39;</span><span class="p">,</span><span class="s1">&#39;=&#39;</span><span class="p">}</span>
+<span class="n">_meta__</span><span class="o">=</span><span class="p">{</span><span class="s1">&#39;@&#39;</span><span class="p">,</span><span class="s1">&#39;$&#39;</span><span class="p">,</span><span class="s1">&#39;%&#39;</span><span class="p">,</span><span class="s1">&#39;!&#39;</span><span class="p">,</span><span class="s1">&#39;&amp;&#39;</span><span class="p">}</span>
+
+<span class="k">def</span> <span class="nf">_sntd_deepcopy</span><span class="p">(</span><span class="n">obj</span><span class="p">):</span>
+    <span class="n">newCurve</span><span class="o">=</span><span class="n">curveDict</span><span class="p">()</span>
+    <span class="k">for</span> <span class="n">k</span> <span class="ow">in</span> <span class="n">obj</span><span class="p">:</span>
+        <span class="nb">setattr</span><span class="p">(</span><span class="n">newCurve</span><span class="p">,</span><span class="n">k</span><span class="p">,</span><span class="n">obj</span><span class="p">[</span><span class="n">k</span><span class="p">])</span>
+    <span class="k">return</span><span class="p">(</span><span class="n">newCurve</span><span class="p">)</span>
+
+<div class="viewcode-block" id="curveDict"><a class="viewcode-back" href="../../api.html#sntd.curve_io.curveDict">[docs]</a><span class="k">class</span> <span class="nc">curveDict</span><span class="p">(</span><span class="nb">dict</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;The main object for SNTD. This organizes a MISN, containing</span>
+<span class="sd">        the multiple light curves in self.images, all the fits, etc.</span>
+<span class="sd">        See documentation for a flowchart of this object.</span>
+
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">def</span> <span class="nf">__deepcopy__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">memo</span><span class="p">):</span>
+        <span class="k">return</span> <span class="n">deepcopy</span><span class="p">(</span><span class="nb">dict</span><span class="p">(</span><span class="bp">self</span><span class="p">))</span>
+
+
+    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span><span class="n">telescopename</span><span class="o">=</span><span class="s2">&quot;Unknown&quot;</span><span class="p">,</span><span class="nb">object</span><span class="o">=</span><span class="s2">&quot;Unknown&quot;</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Constructor for curveDict class. Inherits from the dictionary class, and is the main object of organization used by SNTD.</span>
+<span class="sd">        Parameters</span>
+<span class="sd">        ----------</span>
+<span class="sd">        telescopename : str</span>
+<span class="sd">            Name of the telescope that the data were gathered from</span>
+<span class="sd">        object : str</span>
+<span class="sd">            Name of object of interest</span>
+<span class="sd">        Returns</span>
+<span class="sd">        -------</span>
+<span class="sd">        MISN : `sntd.curveDict`</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="nb">super</span><span class="p">(</span><span class="n">curveDict</span><span class="p">,</span> <span class="bp">self</span><span class="p">)</span><span class="o">.</span><span class="fm">__init__</span><span class="p">()</span> <span class="c1">#init for the super class</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">meta</span> <span class="o">=</span> <span class="p">{</span><span class="s1">&#39;info&#39;</span><span class="p">:</span> <span class="s1">&#39;&#39;</span><span class="p">}</span>
+        <span class="sd">&quot;&quot;&quot;@type: dict</span>
+<span class="sd">            @ivar: The metadata for the curveDict object, intialized with an empty &quot;info&quot; key value pair. It&#39;s</span>
+<span class="sd">            populated by added _metachar__ characters into the header of your data file.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">bands</span><span class="o">=</span><span class="nb">set</span><span class="p">()</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        @type: list</span>
+<span class="sd">        @ivar: The list of bands contained inside this curveDict</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">table</span><span class="o">=</span><span class="kc">None</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        @type:~astropy.table.Table</span>
+<span class="sd">        @ivar: The astropy table containing all of the data in your data file</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">telescopename</span><span class="o">=</span><span class="n">telescopename</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        @type: str</span>
+<span class="sd">        @ivar: Name of the telescope that the data were gathered from</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">object</span><span class="o">=</span><span class="nb">object</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        @type: str</span>
+<span class="sd">        @ivar: Object of interest</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">images</span><span class="o">=</span><span class="nb">dict</span><span class="p">([])</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">combined</span><span class="o">=</span><span class="n">curve</span><span class="p">()</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">color</span><span class="o">=</span><span class="n">curve</span><span class="p">()</span>
+
+
+
+    <span class="c1">#these three functions allow you to access the curveDict via &quot;dot&quot; notation</span>
+    <span class="fm">__setattr__</span> <span class="o">=</span> <span class="nb">dict</span><span class="o">.</span><span class="fm">__setitem__</span>
+    <span class="fm">__delattr__</span> <span class="o">=</span> <span class="nb">dict</span><span class="o">.</span><span class="fm">__delitem__</span>
+    <span class="fm">__getattr__</span> <span class="o">=</span> <span class="nb">dict</span><span class="o">.</span><span class="fm">__getitem__</span>
+
+
+
+    <span class="k">def</span> <span class="nf">__getstate__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        A function necessary for pickling</span>
+<span class="sd">        :return: self</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="bp">self</span>
+
+    <span class="k">def</span> <span class="nf">__setstate__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">d</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        A function necessary for pickling</span>
+<span class="sd">        :param d: A value</span>
+<span class="sd">        :return: self.__dict__</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="vm">__dict__</span> <span class="o">=</span> <span class="n">d</span>
+
+    <span class="k">def</span> <span class="nf">__str__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        A replacement for the print method of the class, so that when you run print(curveDict()), this is how it shows</span>
+<span class="sd">        up.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="nb">print</span><span class="p">(</span><span class="s1">&#39;Telescope: </span><span class="si">%s</span><span class="s1">&#39;</span><span class="o">%</span><span class="bp">self</span><span class="o">.</span><span class="n">telescopename</span><span class="p">)</span>
+        <span class="nb">print</span><span class="p">(</span><span class="s1">&#39;Object: </span><span class="si">%s</span><span class="s1">&#39;</span><span class="o">%</span><span class="bp">self</span><span class="o">.</span><span class="n">object</span><span class="p">)</span>
+        <span class="nb">print</span><span class="p">(</span><span class="s1">&#39;Number of bands: </span><span class="si">%d</span><span class="s1">&#39;</span> <span class="o">%</span><span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">bands</span><span class="p">))</span>
+        <span class="nb">print</span><span class="p">(</span><span class="s1">&#39;&#39;</span><span class="p">)</span>
+        <span class="k">for</span> <span class="n">c</span> <span class="ow">in</span> <span class="n">np</span><span class="o">.</span><span class="n">sort</span><span class="p">([</span><span class="n">x</span> <span class="k">for</span> <span class="n">x</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">images</span><span class="o">.</span><span class="n">keys</span><span class="p">()]):</span>
+            <span class="nb">print</span><span class="p">(</span><span class="s1">&#39;------------------&#39;</span><span class="p">)</span>
+            <span class="nb">print</span><span class="p">(</span><span class="s1">&#39;Image: </span><span class="si">%s</span><span class="s1">:&#39;</span><span class="o">%</span><span class="n">c</span><span class="p">)</span>
+            <span class="nb">print</span><span class="p">(</span><span class="s1">&#39;Bands: </span><span class="si">{}</span><span class="s1">&#39;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">images</span><span class="p">[</span><span class="n">c</span><span class="p">]</span><span class="o">.</span><span class="n">bands</span><span class="p">))</span>
+            <span class="nb">print</span><span class="p">(</span><span class="s1">&#39;Date Range: </span><span class="si">%.5f</span><span class="s1">-&gt;</span><span class="si">%.5f</span><span class="s1">&#39;</span> <span class="o">%</span> <span class="p">(</span>
+            <span class="nb">min</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">images</span><span class="p">[</span><span class="n">c</span><span class="p">]</span><span class="o">.</span><span class="n">table</span><span class="p">[</span><span class="n">_get_default_prop_name</span><span class="p">(</span><span class="s1">&#39;time&#39;</span><span class="p">)]),</span>
+            <span class="nb">max</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">images</span><span class="p">[</span><span class="n">c</span><span class="p">]</span><span class="o">.</span><span class="n">table</span><span class="p">[</span><span class="n">_get_default_prop_name</span><span class="p">(</span><span class="s1">&#39;time&#39;</span><span class="p">)])))</span>
+            <span class="nb">print</span><span class="p">(</span><span class="s1">&#39;Number of points: </span><span class="si">%d</span><span class="s1">&#39;</span> <span class="o">%</span><span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">images</span><span class="p">[</span><span class="n">c</span><span class="p">]</span><span class="o">.</span><span class="n">table</span><span class="p">))</span>
+            <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">images</span><span class="p">[</span><span class="n">c</span><span class="p">]</span><span class="o">.</span><span class="n">simMeta</span><span class="o">.</span><span class="n">keys</span><span class="p">():</span>
+                <span class="nb">print</span><span class="p">(</span><span class="s1">&#39;&#39;</span><span class="p">)</span>
+                <span class="nb">print</span><span class="p">(</span><span class="s1">&#39;Metadata:&#39;</span><span class="p">)</span>
+                <span class="nb">print</span><span class="p">(</span><span class="s1">&#39;</span><span class="se">\n</span><span class="s1">&#39;</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="s1">&#39;   </span><span class="si">{}</span><span class="s1">:</span><span class="si">{}</span><span class="s1">&#39;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="o">*</span><span class="n">t</span><span class="p">)</span> <span class="k">for</span> <span class="n">t</span> <span class="ow">in</span> <span class="nb">zip</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">images</span><span class="p">[</span><span class="n">c</span><span class="p">]</span><span class="o">.</span><span class="n">simMeta</span><span class="o">.</span><span class="n">keys</span><span class="p">(),</span><span class="bp">self</span><span class="o">.</span><span class="n">images</span><span class="p">[</span><span class="n">c</span><span class="p">]</span><span class="o">.</span><span class="n">simMeta</span><span class="o">.</span><span class="n">values</span><span class="p">())</span> <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">t</span><span class="p">[</span><span class="mi">1</span><span class="p">],(</span><span class="nb">str</span><span class="p">,</span><span class="nb">float</span><span class="p">,</span><span class="nb">int</span><span class="p">))))</span>
+        <span class="k">return</span> <span class="s1">&#39;------------------&#39;</span>
+
+<div class="viewcode-block" id="curveDict.add_curve"><a class="viewcode-back" href="../../api.html#sntd.curve_io.curveDict.add_curve">[docs]</a>    <span class="k">def</span> <span class="nf">add_curve</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span><span class="n">myCurve</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Adds a curve object to the existing curveDict (i.e. adds</span>
+<span class="sd">        an image to a MISN)&quot;&quot;&quot;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">bands</span><span class="o">.</span><span class="n">update</span><span class="p">([</span><span class="n">x</span> <span class="k">for</span> <span class="n">x</span> <span class="ow">in</span> <span class="n">myCurve</span><span class="o">.</span><span class="n">bands</span> <span class="k">if</span> <span class="n">x</span> <span class="ow">not</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">bands</span><span class="p">])</span>
+        <span class="n">myCurve</span><span class="o">.</span><span class="n">object</span><span class="o">=</span><span class="s1">&#39;image_&#39;</span><span class="o">+</span><span class="nb">str</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">images</span><span class="p">)</span><span class="o">+</span><span class="mi">1</span><span class="p">)</span>
+
+        <span class="n">myCurve</span><span class="o">.</span><span class="n">table</span><span class="o">.</span><span class="n">add_column</span><span class="p">(</span><span class="n">Column</span><span class="p">([</span><span class="n">myCurve</span><span class="o">.</span><span class="n">object</span> <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">myCurve</span><span class="o">.</span><span class="n">table</span><span class="p">))],</span><span class="n">name</span><span class="o">=</span><span class="s1">&#39;image&#39;</span><span class="p">))</span>
+
+
+
+
+        <span class="n">tempCurve</span><span class="o">=</span><span class="n">_sntd_deepcopy</span><span class="p">(</span><span class="n">myCurve</span><span class="p">)</span>
+
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">images</span><span class="p">[</span><span class="n">myCurve</span><span class="o">.</span><span class="n">object</span><span class="p">]</span><span class="o">=</span><span class="n">tempCurve</span>
+
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">table</span><span class="p">:</span>
+            <span class="k">for</span> <span class="n">row</span> <span class="ow">in</span> <span class="n">tempCurve</span><span class="o">.</span><span class="n">table</span><span class="p">:</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">table</span><span class="o">.</span><span class="n">add_row</span><span class="p">(</span><span class="n">row</span><span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">table</span><span class="o">=</span><span class="n">copy</span><span class="p">(</span><span class="n">tempCurve</span><span class="o">.</span><span class="n">table</span><span class="p">)</span>
+        <span class="k">return</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span></div>
+
+<div class="viewcode-block" id="curveDict.combine_curves"><a class="viewcode-back" href="../../api.html#sntd.curve_io.curveDict.combine_curves">[docs]</a>    <span class="k">def</span> <span class="nf">combine_curves</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span><span class="n">time_delays</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span><span class="n">magnifications</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span><span class="n">referenceImage</span><span class="o">=</span><span class="s1">&#39;image_1&#39;</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Takes the multiple images in self.images and combines</span>
+<span class="sd">            the data into a single light curve using defined</span>
+<span class="sd">            time delays and magnifications or best (quick) guesses.</span>
+
+<span class="sd">        Parameters</span>
+<span class="sd">        ----------</span>
+<span class="sd">        time_delays : dict</span>
+<span class="sd">            Dictionary with image names as keys and relative time</span>
+<span class="sd">            delays as values (e.g. {&#39;image_1&#39;:0,&#39;image_2&#39;:20})</span>
+<span class="sd">        magnifications : dict</span>
+<span class="sd">            Dictionary with image names as keys and relative</span>
+<span class="sd">            magnifications as values (e.g.</span>
+<span class="sd">            {&#39;image_1&#39;:1,&#39;image_2&#39;:1.1})</span>
+
+<span class="sd">        Returns</span>
+<span class="sd">        -------</span>
+<span class="sd">        self: :class:`sntd.curve_io.curveDict`</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">images</span><span class="p">)</span> <span class="o">&lt;</span><span class="mi">2</span><span class="p">:</span>
+            <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;Not enough curves to combine!&quot;</span><span class="p">)</span>
+            <span class="k">return</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="n">time_delays</span><span class="p">:</span>
+            <span class="n">time_delays</span><span class="o">=</span><span class="n">_guess_time_delays</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span><span class="n">referenceImage</span><span class="p">)</span> <span class="c1">#TODO fix these guessing functions</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="n">magnifications</span><span class="p">:</span>
+            <span class="n">magnifications</span><span class="o">=</span><span class="n">_guess_magnifications</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span><span class="n">referenceImage</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">combined</span><span class="o">.</span><span class="n">table</span><span class="o">=</span><span class="n">Table</span><span class="p">(</span><span class="n">names</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">table</span><span class="o">.</span><span class="n">colnames</span><span class="p">,</span><span class="n">dtype</span><span class="o">=</span><span class="p">[</span><span class="bp">self</span><span class="o">.</span><span class="n">table</span><span class="o">.</span><span class="n">dtype</span><span class="p">[</span><span class="n">x</span><span class="p">]</span> <span class="k">for</span> <span class="n">x</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">table</span><span class="o">.</span><span class="n">colnames</span><span class="p">])</span>
+        <span class="k">for</span> <span class="n">k</span> <span class="ow">in</span> <span class="n">np</span><span class="o">.</span><span class="n">sort</span><span class="p">(</span><span class="nb">list</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">images</span><span class="o">.</span><span class="n">keys</span><span class="p">())):</span>
+            <span class="n">temp</span><span class="o">=</span><span class="n">deepcopy</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">images</span><span class="p">[</span><span class="n">k</span><span class="p">]</span><span class="o">.</span><span class="n">table</span><span class="p">)</span>
+            <span class="n">temp</span><span class="p">[</span><span class="s1">&#39;time&#39;</span><span class="p">]</span><span class="o">-=</span><span class="n">time_delays</span><span class="p">[</span><span class="n">k</span><span class="p">]</span>
+            <span class="n">temp</span><span class="p">[</span><span class="s1">&#39;flux&#39;</span><span class="p">]</span><span class="o">/=</span><span class="n">magnifications</span><span class="p">[</span><span class="n">k</span><span class="p">]</span>
+            <span class="n">temp</span><span class="o">.</span><span class="n">meta</span><span class="o">=</span><span class="nb">dict</span><span class="p">([])</span>
+
+            <span class="bp">self</span><span class="o">.</span><span class="n">combined</span><span class="o">.</span><span class="n">table</span><span class="o">=</span><span class="n">vstack</span><span class="p">([</span><span class="bp">self</span><span class="o">.</span><span class="n">combined</span><span class="o">.</span><span class="n">table</span><span class="p">,</span><span class="n">temp</span><span class="p">])</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">combined</span><span class="o">.</span><span class="n">table</span><span class="o">.</span><span class="n">sort</span><span class="p">(</span><span class="s1">&#39;time&#39;</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">combined</span><span class="o">.</span><span class="n">bands</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">bands</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">combined</span><span class="o">.</span><span class="n">meta</span><span class="p">[</span><span class="s1">&#39;td&#39;</span><span class="p">]</span><span class="o">=</span><span class="p">{</span><span class="n">k</span><span class="p">:</span><span class="nb">float</span><span class="p">(</span><span class="n">time_delays</span><span class="p">[</span><span class="n">k</span><span class="p">])</span> <span class="k">for</span> <span class="n">k</span> <span class="ow">in</span> <span class="n">time_delays</span><span class="o">.</span><span class="n">keys</span><span class="p">()}</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">combined</span><span class="o">.</span><span class="n">meta</span><span class="p">[</span><span class="s1">&#39;mu&#39;</span><span class="p">]</span><span class="o">=</span><span class="p">{</span><span class="n">k</span><span class="p">:</span><span class="nb">float</span><span class="p">(</span><span class="n">magnifications</span><span class="p">[</span><span class="n">k</span><span class="p">])</span> <span class="k">for</span> <span class="n">k</span> <span class="ow">in</span> <span class="n">magnifications</span><span class="o">.</span><span class="n">keys</span><span class="p">()}</span>
+        <span class="k">return</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span></div>
+
+
+    <span class="k">def</span> <span class="nf">color_table</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span><span class="n">band1</span><span class="p">,</span><span class="n">band2</span><span class="p">,</span><span class="n">time_delays</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span><span class="n">magnifications</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span><span class="n">image</span><span class="o">=</span><span class="p">[]):</span>
+        <span class="n">image</span><span class="o">=</span><span class="nb">list</span><span class="p">(</span><span class="n">image</span><span class="p">)</span> <span class="k">if</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">image</span><span class="p">,(</span><span class="nb">list</span><span class="p">,</span><span class="nb">tuple</span><span class="p">))</span> <span class="k">else</span> <span class="n">image</span>
+        <span class="n">names</span><span class="o">=</span><span class="p">[</span><span class="s1">&#39;time&#39;</span><span class="p">,</span><span class="s1">&#39;image&#39;</span><span class="p">,</span><span class="s1">&#39;zpsys&#39;</span><span class="p">]</span>
+        <span class="n">dtype</span><span class="o">=</span><span class="p">[</span><span class="bp">self</span><span class="o">.</span><span class="n">table</span><span class="o">.</span><span class="n">dtype</span><span class="p">[</span><span class="n">x</span><span class="p">]</span> <span class="k">for</span> <span class="n">x</span> <span class="ow">in</span> <span class="n">names</span><span class="p">]</span>
+        <span class="n">names</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">names</span><span class="p">,[</span><span class="n">band1</span><span class="o">+</span><span class="s1">&#39;-&#39;</span><span class="o">+</span><span class="n">band2</span><span class="p">,</span><span class="n">band1</span><span class="o">+</span><span class="s1">&#39;-&#39;</span><span class="o">+</span><span class="n">band2</span><span class="o">+</span><span class="s1">&#39;_err&#39;</span><span class="p">])</span>
+        <span class="n">dtype</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">dtype</span><span class="p">,[</span><span class="n">dtype</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span><span class="n">dtype</span><span class="p">[</span><span class="mi">0</span><span class="p">]])</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">color</span><span class="o">.</span><span class="n">table</span><span class="o">=</span><span class="n">Table</span><span class="p">(</span><span class="n">names</span><span class="o">=</span><span class="n">names</span><span class="p">,</span><span class="n">dtype</span><span class="o">=</span><span class="n">dtype</span><span class="p">)</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="n">time_delays</span><span class="p">:</span>
+            <span class="n">time_delays</span><span class="o">=</span><span class="n">_guess_time_delays</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="c1">#TODO fix these guessing functions</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="n">magnifications</span><span class="p">:</span>
+            <span class="n">magnifications</span><span class="o">=</span><span class="n">_guess_magnifications</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span>
+        <span class="k">for</span> <span class="n">im</span> <span class="ow">in</span> <span class="p">[</span><span class="n">x</span> <span class="k">for</span> <span class="n">x</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">images</span><span class="o">.</span><span class="n">keys</span><span class="p">()</span> <span class="k">if</span> <span class="n">x</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">image</span><span class="p">]:</span>
+            <span class="n">temp2</span><span class="o">=</span><span class="n">copy</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">images</span><span class="p">[</span><span class="n">im</span><span class="p">]</span><span class="o">.</span><span class="n">table</span><span class="p">[</span><span class="bp">self</span><span class="o">.</span><span class="n">images</span><span class="p">[</span><span class="n">im</span><span class="p">]</span><span class="o">.</span><span class="n">table</span><span class="p">[</span><span class="s1">&#39;band&#39;</span><span class="p">]</span><span class="o">==</span><span class="n">band2</span><span class="p">])</span>
+            <span class="n">temp1</span><span class="o">=</span><span class="n">copy</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">images</span><span class="p">[</span><span class="n">im</span><span class="p">]</span><span class="o">.</span><span class="n">table</span><span class="p">[</span><span class="bp">self</span><span class="o">.</span><span class="n">images</span><span class="p">[</span><span class="n">im</span><span class="p">]</span><span class="o">.</span><span class="n">table</span><span class="p">[</span><span class="s1">&#39;band&#39;</span><span class="p">]</span><span class="o">==</span><span class="n">band1</span><span class="p">])</span>
+            <span class="n">temp1</span><span class="o">=</span><span class="n">temp1</span><span class="p">[</span><span class="n">temp1</span><span class="p">[</span><span class="s1">&#39;flux&#39;</span><span class="p">]</span><span class="o">&gt;</span><span class="mi">0</span><span class="p">]</span>
+            <span class="n">temp2</span><span class="o">=</span><span class="n">temp2</span><span class="p">[</span><span class="n">temp2</span><span class="p">[</span><span class="s1">&#39;flux&#39;</span><span class="p">]</span><span class="o">&gt;</span><span class="mi">0</span><span class="p">]</span>
+            <span class="n">temp1</span><span class="p">[</span><span class="s1">&#39;flux&#39;</span><span class="p">]</span><span class="o">/=</span><span class="n">magnifications</span><span class="p">[</span><span class="n">im</span><span class="p">]</span>
+            <span class="n">temp2</span><span class="p">[</span><span class="s1">&#39;flux&#39;</span><span class="p">]</span><span class="o">/=</span><span class="n">magnifications</span><span class="p">[</span><span class="n">im</span><span class="p">]</span>
+            <span class="n">temp1</span><span class="p">[</span><span class="s1">&#39;time&#39;</span><span class="p">]</span><span class="o">-=</span><span class="n">time_delays</span><span class="p">[</span><span class="n">im</span><span class="p">]</span>
+            <span class="n">temp2</span><span class="p">[</span><span class="s1">&#39;time&#39;</span><span class="p">]</span><span class="o">-=</span><span class="n">time_delays</span><span class="p">[</span><span class="n">im</span><span class="p">]</span>
+
+
+            <span class="n">temp2</span><span class="p">[</span><span class="s1">&#39;mag&#39;</span><span class="p">]</span><span class="o">=-</span><span class="mf">2.5</span><span class="o">*</span><span class="n">np</span><span class="o">.</span><span class="n">log10</span><span class="p">(</span><span class="n">temp2</span><span class="p">[</span><span class="s1">&#39;flux&#39;</span><span class="p">])</span><span class="o">+</span><span class="n">temp2</span><span class="p">[</span><span class="s1">&#39;zp&#39;</span><span class="p">]</span>
+            <span class="n">temp2</span><span class="p">[</span><span class="s1">&#39;magerr&#39;</span><span class="p">]</span><span class="o">=</span><span class="mf">1.0857</span><span class="o">*</span><span class="n">temp2</span><span class="p">[</span><span class="s1">&#39;fluxerr&#39;</span><span class="p">]</span><span class="o">/</span><span class="n">temp2</span><span class="p">[</span><span class="s1">&#39;flux&#39;</span><span class="p">]</span>
+            <span class="n">temp1</span><span class="p">[</span><span class="s1">&#39;mag&#39;</span><span class="p">]</span><span class="o">=-</span><span class="mf">2.5</span><span class="o">*</span><span class="n">np</span><span class="o">.</span><span class="n">log10</span><span class="p">(</span><span class="n">temp1</span><span class="p">[</span><span class="s1">&#39;flux&#39;</span><span class="p">])</span><span class="o">+</span><span class="n">temp1</span><span class="p">[</span><span class="s1">&#39;zp&#39;</span><span class="p">]</span>
+            <span class="n">temp1</span><span class="p">[</span><span class="s1">&#39;magerr&#39;</span><span class="p">]</span><span class="o">=</span><span class="mf">1.0857</span><span class="o">*</span><span class="n">temp1</span><span class="p">[</span><span class="s1">&#39;fluxerr&#39;</span><span class="p">]</span><span class="o">/</span><span class="n">temp1</span><span class="p">[</span><span class="s1">&#39;flux&#39;</span><span class="p">]</span>
+            <span class="n">temp1_remove</span><span class="o">=</span><span class="p">[</span><span class="n">i</span> <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">temp1</span><span class="p">))</span> <span class="k">if</span> <span class="n">temp1</span><span class="p">[</span><span class="s1">&#39;time&#39;</span><span class="p">][</span><span class="n">i</span><span class="p">]</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">temp2</span><span class="p">[</span><span class="s1">&#39;time&#39;</span><span class="p">]]</span>
+            <span class="n">temp1</span><span class="o">.</span><span class="n">remove_rows</span><span class="p">(</span><span class="n">temp1_remove</span><span class="p">)</span>
+            <span class="n">temp2_remove</span><span class="o">=</span><span class="p">[</span><span class="n">i</span> <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">temp2</span><span class="p">))</span> <span class="k">if</span> <span class="n">temp2</span><span class="p">[</span><span class="s1">&#39;time&#39;</span><span class="p">][</span><span class="n">i</span><span class="p">]</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">temp1</span><span class="p">[</span><span class="s1">&#39;time&#39;</span><span class="p">]]</span>
+            <span class="n">temp2</span><span class="o">.</span><span class="n">remove_rows</span><span class="p">(</span><span class="n">temp2_remove</span><span class="p">)</span>
+
+            <span class="n">temp1</span><span class="p">[</span><span class="s1">&#39;magerr&#39;</span><span class="p">]</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">sqrt</span><span class="p">(</span><span class="n">temp2</span><span class="p">[</span><span class="s1">&#39;magerr&#39;</span><span class="p">]</span><span class="o">**</span><span class="mi">2</span><span class="o">+</span><span class="n">temp1</span><span class="p">[</span><span class="s1">&#39;magerr&#39;</span><span class="p">]</span><span class="o">**</span><span class="mi">2</span><span class="p">)</span>
+
+
+            <span class="n">temp1</span><span class="p">[</span><span class="s1">&#39;mag&#39;</span><span class="p">]</span><span class="o">-=</span><span class="n">temp2</span><span class="p">[</span><span class="s1">&#39;mag&#39;</span><span class="p">]</span>
+            <span class="n">temp1</span><span class="o">.</span><span class="n">rename_column</span><span class="p">(</span><span class="s1">&#39;mag&#39;</span><span class="p">,</span><span class="n">band1</span><span class="o">+</span><span class="s1">&#39;-&#39;</span><span class="o">+</span><span class="n">band2</span><span class="p">)</span>
+            <span class="n">temp1</span><span class="o">.</span><span class="n">rename_column</span><span class="p">(</span><span class="s1">&#39;magerr&#39;</span><span class="p">,</span><span class="n">band1</span><span class="o">+</span><span class="s1">&#39;-&#39;</span><span class="o">+</span><span class="n">band2</span><span class="o">+</span><span class="s1">&#39;_err&#39;</span><span class="p">)</span>
+            <span class="n">to_remove</span><span class="o">=</span><span class="p">[</span><span class="n">x</span> <span class="k">for</span> <span class="n">x</span> <span class="ow">in</span> <span class="n">temp1</span><span class="o">.</span><span class="n">colnames</span> <span class="k">if</span> <span class="n">x</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">names</span><span class="p">]</span>
+            <span class="n">temp1</span><span class="o">.</span><span class="n">remove_columns</span><span class="p">(</span><span class="n">to_remove</span><span class="p">)</span>
+
+
+            <span class="bp">self</span><span class="o">.</span><span class="n">color</span><span class="o">.</span><span class="n">table</span><span class="o">=</span><span class="n">vstack</span><span class="p">([</span><span class="bp">self</span><span class="o">.</span><span class="n">color</span><span class="o">.</span><span class="n">table</span><span class="p">,</span><span class="n">copy</span><span class="p">(</span><span class="n">temp1</span><span class="p">)])</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">color</span><span class="o">.</span><span class="n">table</span><span class="o">.</span><span class="n">sort</span><span class="p">(</span><span class="s1">&#39;time&#39;</span><span class="p">)</span>
+        <span class="k">return</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span>
+
+
+<div class="viewcode-block" id="curveDict.plot_object"><a class="viewcode-back" href="../../api.html#sntd.curve_io.curveDict.plot_object">[docs]</a>    <span class="k">def</span> <span class="nf">plot_object</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">bands</span><span class="o">=</span><span class="s1">&#39;all&#39;</span><span class="p">,</span> <span class="n">savefig</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>
+                    <span class="n">filename</span><span class="o">=</span><span class="s1">&#39;mySN&#39;</span><span class="p">,</span> <span class="n">orientation</span><span class="o">=</span><span class="s1">&#39;horizontal&#39;</span><span class="p">,</span><span class="n">method</span><span class="o">=</span><span class="s1">&#39;separate&#39;</span><span class="p">,</span>
+                    <span class="n">showModel</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span><span class="n">showFit</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span><span class="n">showMicro</span><span class="o">=</span><span class="kc">False</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Plot the multiply-imaged SN light curves and show/save to a file.</span>
+<span class="sd">            Each subplot shows a single-band light curve, for all images of the SN.</span>
+
+<span class="sd">        Parameters</span>
+<span class="sd">        ----------</span>
+<span class="sd">        bands : str or list of str</span>
+<span class="sd">            &#39;all&#39; = plot all bands; or provide a list of bands to plot</span>
+<span class="sd">        savefig : bool</span>
+<span class="sd">            boolean to save or not save plot</span>
+<span class="sd">        filename : str</span>
+<span class="sd">            if savefig is True, this is the output filename</span>
+<span class="sd">        orientation : str</span>
+<span class="sd">            &#39;horizontal&#39; = all subplots are in a single row</span>
+<span class="sd">            &#39;vertical&#39; = all subplots are in a single column</span>
+<span class="sd">        method : str</span>
+<span class="sd">            Plots the result of separate, combined, or color curve method</span>
+<span class="sd">        showModel : bool</span>
+<span class="sd">            If true, the underlying model before microlensing is plotted</span>
+<span class="sd">            as well</span>
+<span class="sd">        showFit : bool</span>
+<span class="sd">            If true and it exists, the best fit model from</span>
+<span class="sd">            self.images[&#39;image&#39;].fits.model is plotted</span>
+<span class="sd">        showMicro : bool</span>
+<span class="sd">            If true and it exists, the simulated microlensing is plotted</span>
+<span class="sd">            as well</span>
+
+<span class="sd">        Returns</span>
+<span class="sd">        -------</span>
+<span class="sd">        figure : `~matplotlib.pyplot.figure`</span>
+
+<span class="sd">        &quot;&quot;&quot;</span>
+
+
+
+
+        <span class="n">colors</span><span class="o">=</span><span class="p">[</span><span class="s1">&#39;r&#39;</span><span class="p">,</span><span class="s1">&#39;g&#39;</span><span class="p">,</span><span class="s1">&#39;b&#39;</span><span class="p">,</span><span class="s1">&#39;k&#39;</span><span class="p">,</span><span class="s1">&#39;m&#39;</span><span class="p">]</span>
+        <span class="n">i</span><span class="o">=</span><span class="mi">0</span>
+        <span class="n">leg</span><span class="o">=</span><span class="p">[]</span>
+
+        <span class="k">if</span> <span class="n">method</span><span class="o">==</span><span class="s1">&#39;combined&#39;</span><span class="p">:</span>
+            <span class="k">if</span> <span class="n">bands</span> <span class="o">==</span> <span class="s1">&#39;all&#39;</span><span class="p">:</span>
+                <span class="n">bands</span> <span class="o">=</span> <span class="nb">set</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">combined</span><span class="o">.</span><span class="n">table</span><span class="p">[</span><span class="s1">&#39;band&#39;</span><span class="p">])</span>
+
+            <span class="n">nbands</span> <span class="o">=</span> <span class="nb">len</span><span class="p">(</span><span class="n">bands</span><span class="p">)</span>
+            <span class="k">if</span> <span class="n">orientation</span><span class="o">.</span><span class="n">startswith</span><span class="p">(</span><span class="s1">&#39;v&#39;</span><span class="p">):</span>
+                <span class="n">ncols</span> <span class="o">=</span> <span class="mi">1</span>
+                <span class="n">nrows</span> <span class="o">=</span> <span class="n">nbands</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="n">ncols</span> <span class="o">=</span> <span class="n">nbands</span>
+                <span class="n">nrows</span> <span class="o">=</span> <span class="mi">1</span>
+            <span class="n">fig</span><span class="p">,</span><span class="n">axlist</span><span class="o">=</span><span class="n">plt</span><span class="o">.</span><span class="n">subplots</span><span class="p">(</span><span class="n">nrows</span><span class="o">=</span><span class="n">nrows</span><span class="p">,</span> <span class="n">ncols</span><span class="o">=</span><span class="n">ncols</span><span class="p">,</span>
+                                    <span class="n">sharex</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">sharey</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span><span class="n">figsize</span><span class="o">=</span><span class="p">(</span><span class="mi">10</span><span class="p">,</span><span class="mi">10</span><span class="p">))</span>
+            <span class="k">if</span> <span class="n">nbands</span><span class="o">==</span><span class="mi">1</span><span class="p">:</span>
+                <span class="n">axlist</span> <span class="o">=</span> <span class="p">[</span><span class="n">axlist</span><span class="p">]</span>
+            <span class="k">for</span> <span class="n">lc</span> <span class="ow">in</span> <span class="n">np</span><span class="o">.</span><span class="n">sort</span><span class="p">([</span><span class="n">x</span> <span class="k">for</span> <span class="n">x</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">images</span><span class="o">.</span><span class="n">keys</span><span class="p">()]):</span>
+                <span class="n">temp</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">combined</span><span class="o">.</span><span class="n">table</span><span class="p">[</span><span class="bp">self</span><span class="o">.</span><span class="n">combined</span><span class="o">.</span><span class="n">table</span><span class="p">[</span><span class="s1">&#39;image&#39;</span><span class="p">]</span><span class="o">==</span><span class="n">lc</span><span class="p">]</span>
+                <span class="k">for</span> <span class="n">b</span><span class="p">,</span> <span class="n">ax</span> <span class="ow">in</span> <span class="nb">zip</span><span class="p">(</span><span class="n">bands</span><span class="p">,</span> <span class="n">axlist</span><span class="p">):</span>
+                    <span class="k">if</span> <span class="n">b</span><span class="o">==</span><span class="nb">list</span><span class="p">(</span><span class="n">bands</span><span class="p">)[</span><span class="mi">0</span><span class="p">]:</span>
+                        <span class="n">leg</span><span class="o">.</span><span class="n">append</span><span class="p">(</span>
+                            <span class="n">ax</span><span class="o">.</span><span class="n">errorbar</span><span class="p">(</span><span class="n">temp</span><span class="p">[</span><span class="s1">&#39;time&#39;</span><span class="p">][</span>
+                                            <span class="n">temp</span><span class="p">[</span><span class="s1">&#39;band&#39;</span><span class="p">]</span><span class="o">==</span><span class="n">b</span><span class="p">],</span>
+                                        <span class="n">temp</span><span class="p">[</span><span class="s1">&#39;flux&#39;</span><span class="p">][</span>
+                                            <span class="n">temp</span><span class="p">[</span><span class="s1">&#39;band&#39;</span><span class="p">]</span><span class="o">==</span><span class="n">b</span><span class="p">],</span>
+                                        <span class="n">yerr</span><span class="o">=</span><span class="n">temp</span><span class="p">[</span><span class="s1">&#39;fluxerr&#39;</span><span class="p">][</span>
+                                            <span class="n">temp</span><span class="p">[</span><span class="s1">&#39;band&#39;</span><span class="p">]</span><span class="o">==</span><span class="n">b</span><span class="p">],</span>
+                                        <span class="n">markersize</span><span class="o">=</span><span class="mi">4</span><span class="p">,</span> <span class="n">fmt</span><span class="o">=</span><span class="n">colors</span><span class="p">[</span><span class="n">i</span><span class="p">]</span><span class="o">+</span><span class="s1">&#39;.&#39;</span><span class="p">))</span>
+                    <span class="k">else</span><span class="p">:</span>
+                        <span class="n">ax</span><span class="o">.</span><span class="n">errorbar</span><span class="p">(</span><span class="n">temp</span><span class="p">[</span><span class="s1">&#39;time&#39;</span><span class="p">][</span>
+                                        <span class="n">temp</span><span class="p">[</span><span class="s1">&#39;band&#39;</span><span class="p">]</span><span class="o">==</span><span class="n">b</span><span class="p">],</span>
+                                    <span class="n">temp</span><span class="p">[</span><span class="s1">&#39;flux&#39;</span><span class="p">][</span>
+                                        <span class="n">temp</span><span class="p">[</span><span class="s1">&#39;band&#39;</span><span class="p">]</span><span class="o">==</span><span class="n">b</span><span class="p">],</span>
+                                    <span class="n">yerr</span><span class="o">=</span><span class="n">temp</span><span class="p">[</span><span class="s1">&#39;fluxerr&#39;</span><span class="p">][</span>
+                                        <span class="n">temp</span><span class="p">[</span><span class="s1">&#39;band&#39;</span><span class="p">]</span><span class="o">==</span><span class="n">b</span><span class="p">],</span>
+                                    <span class="n">markersize</span><span class="o">=</span><span class="mi">4</span><span class="p">,</span> <span class="n">fmt</span><span class="o">=</span><span class="n">colors</span><span class="p">[</span><span class="n">i</span><span class="p">]</span><span class="o">+</span><span class="s1">&#39;.&#39;</span><span class="p">)</span>
+                    <span class="k">if</span> <span class="n">showFit</span><span class="p">:</span>
+                        <span class="n">ax</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">arange</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">min</span><span class="p">(</span><span class="n">temp</span><span class="p">[</span><span class="s1">&#39;time&#39;</span><span class="p">][</span><span class="n">temp</span><span class="p">[</span><span class="s1">&#39;band&#39;</span><span class="p">]</span><span class="o">==</span><span class="n">b</span><span class="p">]),</span><span class="n">np</span><span class="o">.</span><span class="n">max</span><span class="p">(</span><span class="n">temp</span><span class="p">[</span><span class="s1">&#39;time&#39;</span><span class="p">][</span><span class="n">temp</span><span class="p">[</span><span class="s1">&#39;band&#39;</span><span class="p">]</span><span class="o">==</span><span class="n">b</span><span class="p">]),</span><span class="mi">1</span><span class="p">),</span>
+                                <span class="bp">self</span><span class="o">.</span><span class="n">combined</span><span class="o">.</span><span class="n">fits</span><span class="o">.</span><span class="n">model</span><span class="o">.</span><span class="n">bandflux</span><span class="p">(</span><span class="n">b</span><span class="p">,</span><span class="n">np</span><span class="o">.</span><span class="n">arange</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">min</span><span class="p">(</span><span class="n">temp</span><span class="p">[</span><span class="s1">&#39;time&#39;</span><span class="p">][</span><span class="n">temp</span><span class="p">[</span><span class="s1">&#39;band&#39;</span><span class="p">]</span><span class="o">==</span><span class="n">b</span><span class="p">]),</span><span class="n">np</span><span class="o">.</span><span class="n">max</span><span class="p">(</span><span class="n">temp</span><span class="p">[</span><span class="s1">&#39;time&#39;</span><span class="p">][</span><span class="n">temp</span><span class="p">[</span><span class="s1">&#39;band&#39;</span><span class="p">]</span><span class="o">==</span><span class="n">b</span><span class="p">]),</span><span class="mi">1</span><span class="p">),</span>
+                                                                  <span class="n">zp</span><span class="o">=</span><span class="n">temp</span><span class="p">[</span><span class="s1">&#39;zp&#39;</span><span class="p">][</span><span class="n">temp</span><span class="p">[</span><span class="s1">&#39;band&#39;</span><span class="p">]</span><span class="o">==</span><span class="n">b</span><span class="p">][</span><span class="mi">0</span><span class="p">],</span>
+                                                                  <span class="n">zpsys</span><span class="o">=</span><span class="n">temp</span><span class="p">[</span><span class="s1">&#39;zpsys&#39;</span><span class="p">][</span><span class="n">temp</span><span class="p">[</span><span class="s1">&#39;band&#39;</span><span class="p">]</span><span class="o">==</span><span class="n">b</span><span class="p">][</span><span class="mi">0</span><span class="p">]),</span><span class="n">color</span><span class="o">=</span><span class="s1">&#39;y&#39;</span><span class="p">)</span>
+
+                    <span class="n">ax</span><span class="o">.</span><span class="n">text</span><span class="p">(</span><span class="mf">0.95</span><span class="p">,</span> <span class="mf">0.95</span><span class="p">,</span> <span class="n">b</span><span class="o">.</span><span class="n">upper</span><span class="p">(),</span> <span class="n">fontsize</span><span class="o">=</span><span class="s1">&#39;large&#39;</span><span class="p">,</span>
+                            <span class="n">transform</span><span class="o">=</span><span class="n">ax</span><span class="o">.</span><span class="n">transAxes</span><span class="p">,</span> <span class="n">ha</span><span class="o">=</span><span class="s1">&#39;right&#39;</span><span class="p">,</span> <span class="n">va</span><span class="o">=</span><span class="s1">&#39;top&#39;</span><span class="p">)</span>
+
+
+                <span class="n">i</span><span class="o">+=</span><span class="mi">1</span>
+        <span class="k">elif</span> <span class="n">method</span> <span class="o">==</span><span class="s1">&#39;color&#39;</span><span class="p">:</span>
+            <span class="k">if</span> <span class="n">bands</span><span class="o">==</span><span class="s1">&#39;all&#39;</span><span class="p">:</span>
+                <span class="k">if</span> <span class="nb">len</span><span class="p">([</span><span class="n">x</span> <span class="k">for</span> <span class="n">x</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">color</span><span class="o">.</span><span class="n">table</span><span class="o">.</span><span class="n">colnames</span> <span class="k">if</span> <span class="s1">&#39;-&#39;</span> <span class="ow">in</span> <span class="n">x</span> <span class="ow">and</span> <span class="s1">&#39;_&#39;</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">x</span><span class="p">])</span><span class="o">!=</span><span class="mi">1</span><span class="p">:</span>
+                    <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;Want to plot color curves but need 2 bands specified.&quot;</span><span class="p">)</span>
+                    <span class="n">sys</span><span class="o">.</span><span class="n">exit</span><span class="p">(</span><span class="mi">1</span><span class="p">)</span>
+                <span class="k">else</span><span class="p">:</span>
+                    <span class="n">colname</span><span class="o">=</span><span class="p">[</span><span class="n">x</span> <span class="k">for</span> <span class="n">x</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">color</span><span class="o">.</span><span class="n">table</span><span class="o">.</span><span class="n">colnames</span> <span class="k">if</span> <span class="s1">&#39;-&#39;</span> <span class="ow">in</span> <span class="n">x</span> <span class="ow">and</span> <span class="s1">&#39;_&#39;</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">x</span><span class="p">][</span><span class="mi">0</span><span class="p">]</span>
+                    <span class="n">bands</span><span class="o">=</span><span class="p">[</span><span class="n">colname</span><span class="p">[:</span><span class="n">colname</span><span class="o">.</span><span class="n">find</span><span class="p">(</span><span class="s1">&#39;-&#39;</span><span class="p">)],</span><span class="n">colname</span><span class="p">[</span><span class="n">colname</span><span class="o">.</span><span class="n">find</span><span class="p">(</span><span class="s1">&#39;-&#39;</span><span class="p">)</span><span class="o">+</span><span class="mi">1</span><span class="p">:]]</span>
+            <span class="k">elif</span> <span class="nb">len</span><span class="p">(</span><span class="n">bands</span><span class="p">)</span> <span class="o">!=</span><span class="mi">2</span><span class="p">:</span>
+                <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;Want to plot color curves but need 2 bands specified.&quot;</span><span class="p">)</span>
+                <span class="n">sys</span><span class="o">.</span><span class="n">exit</span><span class="p">(</span><span class="mi">1</span><span class="p">)</span>
+
+
+            <span class="n">fig</span><span class="o">=</span><span class="n">plt</span><span class="o">.</span><span class="n">figure</span><span class="p">(</span><span class="n">figsize</span><span class="o">=</span><span class="p">(</span><span class="mi">10</span><span class="p">,</span><span class="mi">10</span><span class="p">))</span>
+            <span class="n">ax</span><span class="o">=</span><span class="n">fig</span><span class="o">.</span><span class="n">gca</span><span class="p">()</span>
+            <span class="k">for</span> <span class="n">lc</span> <span class="ow">in</span> <span class="n">np</span><span class="o">.</span><span class="n">sort</span><span class="p">([</span><span class="n">x</span> <span class="k">for</span> <span class="n">x</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">images</span><span class="o">.</span><span class="n">keys</span><span class="p">()]):</span>
+                <span class="n">temp</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">color</span><span class="o">.</span><span class="n">table</span><span class="p">[</span><span class="bp">self</span><span class="o">.</span><span class="n">color</span><span class="o">.</span><span class="n">table</span><span class="p">[</span><span class="s1">&#39;image&#39;</span><span class="p">]</span><span class="o">==</span><span class="n">lc</span><span class="p">]</span>
+
+
+                <span class="n">ax</span><span class="o">.</span><span class="n">errorbar</span><span class="p">(</span><span class="n">temp</span><span class="p">[</span><span class="s1">&#39;time&#39;</span><span class="p">],</span><span class="n">temp</span><span class="p">[</span><span class="n">bands</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">+</span><span class="s1">&#39;-&#39;</span><span class="o">+</span><span class="n">bands</span><span class="p">[</span><span class="mi">1</span><span class="p">]],</span><span class="n">yerr</span><span class="o">=</span><span class="n">temp</span><span class="p">[</span><span class="n">bands</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">+</span><span class="s1">&#39;-&#39;</span><span class="o">+</span><span class="n">bands</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span><span class="o">+</span><span class="s1">&#39;_err&#39;</span><span class="p">],</span>
+                            <span class="n">markersize</span><span class="o">=</span><span class="mi">4</span><span class="p">,</span> <span class="n">fmt</span><span class="o">=</span><span class="n">colors</span><span class="p">[</span><span class="n">i</span><span class="p">]</span><span class="o">+</span><span class="s1">&#39;.&#39;</span><span class="p">)</span>
+
+                <span class="n">ax</span><span class="o">.</span><span class="n">text</span><span class="p">(</span><span class="mf">0.95</span><span class="p">,</span> <span class="mf">0.95</span><span class="p">,</span> <span class="n">bands</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">upper</span><span class="p">()</span><span class="o">+</span><span class="s1">&#39;-&#39;</span><span class="o">+</span><span class="n">bands</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span><span class="o">.</span><span class="n">upper</span><span class="p">(),</span> <span class="n">fontsize</span><span class="o">=</span><span class="s1">&#39;large&#39;</span><span class="p">,</span>
+                        <span class="n">transform</span><span class="o">=</span><span class="n">ax</span><span class="o">.</span><span class="n">transAxes</span><span class="p">,</span> <span class="n">ha</span><span class="o">=</span><span class="s1">&#39;right&#39;</span><span class="p">,</span> <span class="n">va</span><span class="o">=</span><span class="s1">&#39;top&#39;</span><span class="p">)</span>
+
+                <span class="n">i</span><span class="o">+=</span><span class="mi">1</span>
+            <span class="k">if</span> <span class="n">showFit</span><span class="p">:</span>
+                <span class="n">mod_time</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">arange</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">min</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">color</span><span class="o">.</span><span class="n">table</span><span class="p">[</span><span class="s1">&#39;time&#39;</span><span class="p">]),</span><span class="n">np</span><span class="o">.</span><span class="n">max</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">color</span><span class="o">.</span><span class="n">table</span><span class="p">[</span><span class="s1">&#39;time&#39;</span><span class="p">]),</span><span class="mi">1</span><span class="p">)</span>
+                <span class="n">modCol</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">color</span><span class="o">.</span><span class="n">fits</span><span class="o">.</span><span class="n">model</span><span class="o">.</span><span class="n">color</span><span class="p">(</span><span class="n">bands</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span><span class="n">bands</span><span class="p">[</span><span class="mi">1</span><span class="p">],</span><span class="bp">self</span><span class="o">.</span><span class="n">color</span><span class="o">.</span><span class="n">table</span><span class="p">[</span><span class="s1">&#39;zpsys&#39;</span><span class="p">][</span><span class="mi">0</span><span class="p">],</span><span class="n">mod_time</span><span class="p">)</span>
+
+                <span class="n">ax</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="n">mod_time</span><span class="p">,</span><span class="n">modCol</span><span class="p">,</span><span class="n">color</span><span class="o">=</span><span class="s1">&#39;y&#39;</span><span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="k">if</span> <span class="n">bands</span> <span class="o">==</span> <span class="s1">&#39;all&#39;</span><span class="p">:</span>
+                <span class="n">bands</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">bands</span>
+
+            <span class="n">nbands</span> <span class="o">=</span> <span class="nb">len</span><span class="p">(</span><span class="n">bands</span><span class="p">)</span>
+            <span class="k">if</span> <span class="n">orientation</span><span class="o">.</span><span class="n">startswith</span><span class="p">(</span><span class="s1">&#39;v&#39;</span><span class="p">):</span>
+                <span class="n">ncols</span> <span class="o">=</span> <span class="mi">1</span>
+                <span class="n">nrows</span> <span class="o">=</span> <span class="n">nbands</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="n">ncols</span> <span class="o">=</span> <span class="n">nbands</span>
+                <span class="n">nrows</span> <span class="o">=</span> <span class="mi">1</span>
+            <span class="n">fig</span><span class="p">,</span><span class="n">axlist</span><span class="o">=</span><span class="n">plt</span><span class="o">.</span><span class="n">subplots</span><span class="p">(</span><span class="n">nrows</span><span class="o">=</span><span class="n">nrows</span><span class="p">,</span> <span class="n">ncols</span><span class="o">=</span><span class="n">ncols</span><span class="p">,</span>
+                                    <span class="n">sharex</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">sharey</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span><span class="n">figsize</span><span class="o">=</span><span class="p">(</span><span class="mi">10</span><span class="p">,</span><span class="mi">10</span><span class="p">))</span>
+            <span class="k">if</span> <span class="n">nbands</span><span class="o">==</span><span class="mi">1</span><span class="p">:</span>
+                <span class="n">axlist</span> <span class="o">=</span> <span class="p">[</span><span class="n">axlist</span><span class="p">]</span>
+            <span class="n">microAx</span><span class="o">=</span><span class="p">{</span><span class="n">b</span><span class="p">:</span><span class="kc">False</span> <span class="k">for</span> <span class="n">b</span> <span class="ow">in</span> <span class="n">bands</span><span class="p">}</span>
+            <span class="k">for</span> <span class="n">lc</span> <span class="ow">in</span> <span class="n">np</span><span class="o">.</span><span class="n">sort</span><span class="p">([</span><span class="n">x</span> <span class="k">for</span> <span class="n">x</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">images</span><span class="o">.</span><span class="n">keys</span><span class="p">()]):</span>
+                <span class="k">for</span> <span class="n">b</span><span class="p">,</span> <span class="n">ax</span> <span class="ow">in</span> <span class="nb">zip</span><span class="p">(</span><span class="n">bands</span><span class="p">,</span> <span class="n">axlist</span><span class="p">):</span>
+                    <span class="k">if</span> <span class="n">b</span><span class="o">==</span><span class="nb">list</span><span class="p">(</span><span class="n">bands</span><span class="p">)[</span><span class="mi">0</span><span class="p">]:</span>
+                        <span class="n">leg</span><span class="o">.</span><span class="n">append</span><span class="p">(</span>
+                            <span class="n">ax</span><span class="o">.</span><span class="n">errorbar</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">images</span><span class="p">[</span><span class="n">lc</span><span class="p">]</span><span class="o">.</span><span class="n">table</span><span class="p">[</span><span class="s1">&#39;time&#39;</span><span class="p">][</span>
+                                            <span class="bp">self</span><span class="o">.</span><span class="n">images</span><span class="p">[</span><span class="n">lc</span><span class="p">]</span><span class="o">.</span><span class="n">table</span><span class="p">[</span><span class="s1">&#39;band&#39;</span><span class="p">]</span><span class="o">==</span><span class="n">b</span><span class="p">],</span>
+                                        <span class="bp">self</span><span class="o">.</span><span class="n">images</span><span class="p">[</span><span class="n">lc</span><span class="p">]</span><span class="o">.</span><span class="n">table</span><span class="p">[</span><span class="s1">&#39;flux&#39;</span><span class="p">][</span>
+                                            <span class="bp">self</span><span class="o">.</span><span class="n">images</span><span class="p">[</span><span class="n">lc</span><span class="p">]</span><span class="o">.</span><span class="n">table</span><span class="p">[</span><span class="s1">&#39;band&#39;</span><span class="p">]</span><span class="o">==</span><span class="n">b</span><span class="p">],</span>
+                                        <span class="n">yerr</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">images</span><span class="p">[</span><span class="n">lc</span><span class="p">]</span><span class="o">.</span><span class="n">table</span><span class="p">[</span><span class="s1">&#39;fluxerr&#39;</span><span class="p">][</span>
+                                            <span class="bp">self</span><span class="o">.</span><span class="n">images</span><span class="p">[</span><span class="n">lc</span><span class="p">]</span><span class="o">.</span><span class="n">table</span><span class="p">[</span><span class="s1">&#39;band&#39;</span><span class="p">]</span><span class="o">==</span><span class="n">b</span><span class="p">],</span>
+                                        <span class="n">markersize</span><span class="o">=</span><span class="mi">4</span><span class="p">,</span> <span class="n">fmt</span><span class="o">=</span><span class="n">colors</span><span class="p">[</span><span class="n">i</span><span class="p">]</span><span class="o">+</span><span class="s1">&#39;.&#39;</span><span class="p">))</span>
+                        <span class="k">if</span> <span class="n">showMicro</span><span class="p">:</span>
+                            <span class="n">ax</span><span class="o">.</span><span class="n">set_ylabel</span><span class="p">(</span><span class="s1">&#39;Flux&#39;</span><span class="p">,</span><span class="n">fontsize</span><span class="o">=</span><span class="s1">&#39;large&#39;</span><span class="p">)</span>
+                    <span class="k">else</span><span class="p">:</span>
+                        <span class="n">ax</span><span class="o">.</span><span class="n">errorbar</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">images</span><span class="p">[</span><span class="n">lc</span><span class="p">]</span><span class="o">.</span><span class="n">table</span><span class="p">[</span><span class="s1">&#39;time&#39;</span><span class="p">][</span>
+                                        <span class="bp">self</span><span class="o">.</span><span class="n">images</span><span class="p">[</span><span class="n">lc</span><span class="p">]</span><span class="o">.</span><span class="n">table</span><span class="p">[</span><span class="s1">&#39;band&#39;</span><span class="p">]</span><span class="o">==</span><span class="n">b</span><span class="p">],</span>
+                                    <span class="bp">self</span><span class="o">.</span><span class="n">images</span><span class="p">[</span><span class="n">lc</span><span class="p">]</span><span class="o">.</span><span class="n">table</span><span class="p">[</span><span class="s1">&#39;flux&#39;</span><span class="p">][</span>
+                                        <span class="bp">self</span><span class="o">.</span><span class="n">images</span><span class="p">[</span><span class="n">lc</span><span class="p">]</span><span class="o">.</span><span class="n">table</span><span class="p">[</span><span class="s1">&#39;band&#39;</span><span class="p">]</span><span class="o">==</span><span class="n">b</span><span class="p">],</span>
+                                    <span class="n">yerr</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">images</span><span class="p">[</span><span class="n">lc</span><span class="p">]</span><span class="o">.</span><span class="n">table</span><span class="p">[</span><span class="s1">&#39;fluxerr&#39;</span><span class="p">][</span>
+                                        <span class="bp">self</span><span class="o">.</span><span class="n">images</span><span class="p">[</span><span class="n">lc</span><span class="p">]</span><span class="o">.</span><span class="n">table</span><span class="p">[</span><span class="s1">&#39;band&#39;</span><span class="p">]</span><span class="o">==</span><span class="n">b</span><span class="p">],</span>
+                                    <span class="n">markersize</span><span class="o">=</span><span class="mi">4</span><span class="p">,</span> <span class="n">fmt</span><span class="o">=</span><span class="n">colors</span><span class="p">[</span><span class="n">i</span><span class="p">]</span><span class="o">+</span><span class="s1">&#39;.&#39;</span><span class="p">)</span>
+
+                    <span class="n">ax</span><span class="o">.</span><span class="n">text</span><span class="p">(</span><span class="mf">0.95</span><span class="p">,</span> <span class="mf">0.95</span><span class="p">,</span> <span class="n">b</span><span class="o">.</span><span class="n">upper</span><span class="p">(),</span> <span class="n">fontsize</span><span class="o">=</span><span class="s1">&#39;large&#39;</span><span class="p">,</span>
+                            <span class="n">transform</span><span class="o">=</span><span class="n">ax</span><span class="o">.</span><span class="n">transAxes</span><span class="p">,</span> <span class="n">ha</span><span class="o">=</span><span class="s1">&#39;right&#39;</span><span class="p">,</span> <span class="n">va</span><span class="o">=</span><span class="s1">&#39;top&#39;</span><span class="p">)</span>
+
+                    <span class="k">if</span> <span class="n">showFit</span><span class="p">:</span>
+                        <span class="n">time_model</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">arange</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">images</span><span class="p">[</span><span class="n">lc</span><span class="p">]</span><span class="o">.</span><span class="n">table</span><span class="p">[</span><span class="s1">&#39;time&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">min</span><span class="p">(),</span>
+                                               <span class="bp">self</span><span class="o">.</span><span class="n">images</span><span class="p">[</span><span class="n">lc</span><span class="p">]</span><span class="o">.</span><span class="n">table</span><span class="p">[</span><span class="s1">&#39;time&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">max</span><span class="p">(),</span>
+                                               <span class="mf">0.1</span><span class="p">)</span>
+                        <span class="n">ax</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="n">time_model</span><span class="p">,</span><span class="bp">self</span><span class="o">.</span><span class="n">images</span><span class="p">[</span><span class="n">lc</span><span class="p">]</span><span class="o">.</span><span class="n">fits</span><span class="o">.</span><span class="n">model</span><span class="o">.</span><span class="n">bandflux</span><span class="p">(</span><span class="n">b</span><span class="p">,</span><span class="n">time_model</span><span class="p">,</span>
+                                    <span class="n">np</span><span class="o">.</span><span class="n">mean</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">images</span><span class="p">[</span><span class="n">lc</span><span class="p">]</span><span class="o">.</span><span class="n">table</span><span class="p">[</span><span class="s1">&#39;zp&#39;</span><span class="p">][</span><span class="bp">self</span><span class="o">.</span><span class="n">images</span><span class="p">[</span><span class="n">lc</span><span class="p">]</span><span class="o">.</span><span class="n">table</span><span class="p">[</span><span class="s1">&#39;band&#39;</span><span class="p">]</span><span class="o">==</span><span class="n">b</span><span class="p">]),</span>
+                                    <span class="bp">self</span><span class="o">.</span><span class="n">images</span><span class="p">[</span><span class="n">lc</span><span class="p">]</span><span class="o">.</span><span class="n">zpsys</span><span class="p">),</span><span class="s1">&#39;k-&#39;</span><span class="p">)</span>
+                    <span class="k">if</span> <span class="n">showMicro</span><span class="p">:</span>
+                        <span class="n">time_model</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">arange</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">images</span><span class="p">[</span><span class="n">lc</span><span class="p">]</span><span class="o">.</span><span class="n">table</span><span class="p">[</span><span class="s1">&#39;time&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">min</span><span class="p">(),</span>
+                                             <span class="bp">self</span><span class="o">.</span><span class="n">images</span><span class="p">[</span><span class="n">lc</span><span class="p">]</span><span class="o">.</span><span class="n">table</span><span class="p">[</span><span class="s1">&#39;time&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">max</span><span class="p">(),</span>
+                                             <span class="mf">0.1</span><span class="p">)</span>
+                        <span class="k">if</span> <span class="n">microAx</span><span class="p">[</span><span class="n">b</span><span class="p">]</span> <span class="ow">is</span> <span class="kc">False</span><span class="p">:</span>
+                            <span class="n">ax_divider</span> <span class="o">=</span> <span class="n">make_axes_locatable</span><span class="p">(</span><span class="n">ax</span><span class="p">)</span>
+                            <span class="n">ax_ml</span> <span class="o">=</span> <span class="n">ax_divider</span><span class="o">.</span><span class="n">append_axes</span><span class="p">(</span><span class="s2">&quot;bottom&quot;</span><span class="p">,</span> <span class="n">size</span><span class="o">=</span><span class="s2">&quot;25%&quot;</span><span class="p">,</span> <span class="n">pad</span><span class="o">=.</span><span class="mi">4</span><span class="p">)</span>
+                            <span class="c1">#ax_ml.set_xlabel(&#39;Days (Observer Frame)&#39;,fontsize=&#39;large&#39;)</span>
+                            <span class="k">if</span> <span class="n">b</span><span class="o">==</span><span class="nb">list</span><span class="p">(</span><span class="n">bands</span><span class="p">)[</span><span class="mi">0</span><span class="p">]:</span>
+                                <span class="n">ax_ml</span><span class="o">.</span><span class="n">set_ylabel</span><span class="p">(</span><span class="s1">&#39;Microlensing ($\mu$)&#39;</span><span class="p">,</span><span class="n">fontsize</span><span class="o">=</span><span class="s1">&#39;large&#39;</span><span class="p">)</span>
+                            <span class="n">microAx</span><span class="p">[</span><span class="n">b</span><span class="p">]</span><span class="o">=</span><span class="n">ax_ml</span>
+                        <span class="k">else</span><span class="p">:</span>
+                            <span class="n">ax_ml</span><span class="o">=</span><span class="n">microAx</span><span class="p">[</span><span class="n">b</span><span class="p">]</span>
+                        <span class="n">ax_ml</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="n">time_model</span><span class="p">,</span><span class="bp">self</span><span class="o">.</span><span class="n">images</span><span class="p">[</span><span class="n">lc</span><span class="p">]</span><span class="o">.</span><span class="n">simMeta</span><span class="p">[</span><span class="s1">&#39;microlensing_params&#39;</span><span class="p">](</span><span class="n">time_model</span><span class="o">/</span><span class="p">(</span><span class="mi">1</span><span class="o">+</span><span class="bp">self</span><span class="o">.</span><span class="n">images</span><span class="p">[</span><span class="n">lc</span><span class="p">]</span><span class="o">.</span><span class="n">simMeta</span><span class="p">[</span><span class="s1">&#39;sourcez&#39;</span><span class="p">])),</span><span class="n">color</span><span class="o">=</span><span class="n">colors</span><span class="p">[</span><span class="n">i</span><span class="p">],</span><span class="n">linewidth</span><span class="o">=</span><span class="mi">3</span><span class="p">)</span>
+
+                    <span class="k">if</span> <span class="n">showModel</span><span class="p">:</span>
+                        <span class="c1"># Plot the underlying model, including dust and lensing</span>
+                        <span class="c1"># effects other than microlesning, as a black curve for</span>
+                        <span class="c1"># each simulated SN image</span>
+                        <span class="n">time_model</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">arange</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">images</span><span class="p">[</span><span class="n">lc</span><span class="p">]</span><span class="o">.</span><span class="n">table</span><span class="p">[</span><span class="s1">&#39;time&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">min</span><span class="p">(),</span>
+                                               <span class="bp">self</span><span class="o">.</span><span class="n">images</span><span class="p">[</span><span class="n">lc</span><span class="p">]</span><span class="o">.</span><span class="n">table</span><span class="p">[</span><span class="s1">&#39;time&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">max</span><span class="p">(),</span>
+                                               <span class="mf">0.1</span><span class="p">)</span>
+                        <span class="n">time_shifted</span> <span class="o">=</span> <span class="n">time_model</span> <span class="o">-</span> <span class="bp">self</span><span class="o">.</span><span class="n">images</span><span class="p">[</span><span class="n">lc</span><span class="p">]</span><span class="o">.</span><span class="n">simMeta</span><span class="p">[</span><span class="s1">&#39;td&#39;</span><span class="p">]</span>
+
+
+                        <span class="n">flux_magnified</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">model</span><span class="o">.</span><span class="n">bandflux</span><span class="p">(</span>
+                            <span class="n">b</span><span class="p">,</span> <span class="n">time_shifted</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">images</span><span class="p">[</span><span class="n">lc</span><span class="p">]</span><span class="o">.</span><span class="n">table</span><span class="p">[</span><span class="s1">&#39;zp&#39;</span><span class="p">][</span><span class="bp">self</span><span class="o">.</span><span class="n">images</span><span class="p">[</span><span class="n">lc</span><span class="p">]</span><span class="o">.</span><span class="n">table</span><span class="p">[</span><span class="s1">&#39;band&#39;</span><span class="p">]</span><span class="o">==</span><span class="n">b</span><span class="p">][</span><span class="mi">0</span><span class="p">],</span>
+                            <span class="bp">self</span><span class="o">.</span><span class="n">images</span><span class="p">[</span><span class="n">lc</span><span class="p">]</span><span class="o">.</span><span class="n">zpsys</span><span class="p">)</span> <span class="o">*</span> \
+                                         <span class="bp">self</span><span class="o">.</span><span class="n">images</span><span class="p">[</span><span class="n">lc</span><span class="p">]</span><span class="o">.</span><span class="n">simMeta</span><span class="p">[</span><span class="s1">&#39;mu&#39;</span><span class="p">]</span>
+                        <span class="n">ax</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="n">time_model</span><span class="p">,</span> <span class="n">flux_magnified</span><span class="p">,</span> <span class="s1">&#39;k-&#39;</span><span class="p">)</span>
+
+
+                <span class="n">i</span><span class="o">+=</span><span class="mi">1</span>
+
+
+        <span class="n">plt</span><span class="o">.</span><span class="n">figlegend</span><span class="p">(</span><span class="n">leg</span><span class="p">,</span><span class="n">np</span><span class="o">.</span><span class="n">sort</span><span class="p">([</span><span class="n">x</span> <span class="k">for</span> <span class="n">x</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">images</span><span class="o">.</span><span class="n">keys</span><span class="p">()]),</span> <span class="n">frameon</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>
+                      <span class="n">loc</span><span class="o">=</span><span class="s1">&#39;center right&#39;</span><span class="p">,</span> <span class="n">fontsize</span><span class="o">=</span><span class="s1">&#39;medium&#39;</span><span class="p">,</span> <span class="n">numpoints</span><span class="o">=</span><span class="mi">1</span><span class="p">)</span>
+
+
+        <span class="k">if</span> <span class="ow">not</span> <span class="n">showMicro</span><span class="p">:</span>
+            <span class="n">fig</span><span class="o">.</span><span class="n">text</span><span class="p">(</span><span class="mf">0.02</span><span class="p">,</span> <span class="o">.</span><span class="mi">5</span><span class="p">,</span> <span class="s1">&#39;Flux&#39;</span><span class="p">,</span> <span class="n">va</span><span class="o">=</span><span class="s1">&#39;center&#39;</span><span class="p">,</span>
+                <span class="n">rotation</span><span class="o">=</span><span class="s1">&#39;vertical&#39;</span><span class="p">,</span><span class="n">fontsize</span><span class="o">=</span><span class="s1">&#39;large&#39;</span><span class="p">)</span>
+        <span class="n">fig</span><span class="o">.</span><span class="n">text</span><span class="p">(</span><span class="mf">0.5</span><span class="p">,</span> <span class="mf">0.02</span><span class="p">,</span> <span class="sa">r</span><span class="s1">&#39;Observer-frame time (days)&#39;</span><span class="p">,</span> <span class="n">ha</span><span class="o">=</span><span class="s1">&#39;center&#39;</span><span class="p">,</span>
+                 <span class="n">fontsize</span><span class="o">=</span><span class="s1">&#39;large&#39;</span><span class="p">)</span>
+
+        <span class="n">plt</span><span class="o">.</span><span class="n">suptitle</span><span class="p">(</span><span class="s1">&#39;Multiply-Imaged SN &quot;&#39;</span><span class="o">+</span><span class="bp">self</span><span class="o">.</span><span class="n">object</span><span class="o">+</span><span class="s1">&#39;&quot;--&#39;</span><span class="o">+</span><span class="bp">self</span><span class="o">.</span><span class="n">telescopename</span><span class="p">,</span><span class="n">fontsize</span><span class="o">=</span><span class="mi">16</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">savefig</span><span class="p">:</span>
+            <span class="n">plt</span><span class="o">.</span><span class="n">savefig</span><span class="p">(</span><span class="n">filename</span><span class="o">+</span><span class="s1">&#39;.pdf&#39;</span><span class="p">,</span><span class="nb">format</span><span class="o">=</span><span class="s1">&#39;pdf&#39;</span><span class="p">,</span><span class="n">overwrite</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">fig</span></div></div>
+
+
+
+
+<div class="viewcode-block" id="curve"><a class="viewcode-back" href="../../api.html#sntd.curve_io.curve">[docs]</a><span class="k">class</span> <span class="nc">curve</span><span class="p">(</span><span class="nb">dict</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;SNTD class that describes each image of a MISN</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">def</span> <span class="nf">__deepcopy__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">memo</span><span class="p">):</span>
+        <span class="k">return</span> <span class="n">deepcopy</span><span class="p">(</span><span class="nb">dict</span><span class="p">(</span><span class="bp">self</span><span class="p">))</span>
+
+    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span><span class="n">zpsys</span><span class="o">=</span><span class="s1">&#39;AB&#39;</span><span class="p">):</span>
+        <span class="c1">#todo: implement more general read and write functions</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Constructor for curve class,</span>
+<span class="sd">        :param band, zp, zpsys</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="c1">#todo populate param documentation</span>
+        <span class="nb">super</span><span class="p">(</span><span class="n">curve</span><span class="p">,</span><span class="bp">self</span><span class="p">)</span><span class="o">.</span><span class="fm">__init__</span><span class="p">()</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">meta</span> <span class="o">=</span> <span class="p">{</span><span class="s1">&#39;info&#39;</span><span class="p">:</span> <span class="s1">&#39;&#39;</span><span class="p">}</span>
+        <span class="sd">&quot;&quot;&quot;@type: dict</span>
+<span class="sd">            @ivar: The metadata for the curveDict object, intialized with an empty &quot;info&quot; key value pair. It&#39;s</span>
+<span class="sd">            populated by added _metachar__ characters into the header of your data file.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">table</span><span class="o">=</span><span class="kc">None</span>
+        <span class="sd">&quot;&quot;&quot;@type: ~astropy.table.Table</span>
+<span class="sd">        @ivar: A table containing the data, used for SNCosmo functions, etc.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">bands</span><span class="o">=</span><span class="p">[]</span>
+        <span class="sd">&quot;&quot;&quot;@type: string</span>
+<span class="sd">        @ivar: band names, used</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">zpsys</span><span class="o">=</span><span class="n">zpsys</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">simMeta</span><span class="o">=</span><span class="nb">dict</span><span class="p">([])</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">fits</span><span class="o">=</span><span class="kc">None</span>
+
+
+    <span class="c1">#these three functions allow you to access the curveDict via &quot;dot&quot; notation</span>
+    <span class="fm">__setattr__</span> <span class="o">=</span> <span class="nb">dict</span><span class="o">.</span><span class="fm">__setitem__</span>
+    <span class="fm">__delattr__</span> <span class="o">=</span> <span class="nb">dict</span><span class="o">.</span><span class="fm">__delitem__</span>
+    <span class="fm">__getattr__</span> <span class="o">=</span> <span class="nb">dict</span><span class="o">.</span><span class="fm">__getitem__</span>
+
+
+
+    <span class="k">def</span> <span class="nf">__getstate__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        A function necessary for pickling</span>
+<span class="sd">        :return: self</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="bp">self</span>
+
+    <span class="k">def</span> <span class="nf">__setstate__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">d</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        A function necessary for pickling</span>
+<span class="sd">        :param d: A value</span>
+<span class="sd">        :return: self.__dict__</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="vm">__dict__</span> <span class="o">=</span> <span class="n">d</span>
+
+<div class="viewcode-block" id="curve.validate"><a class="viewcode-back" href="../../api.html#sntd.curve_io.curve.validate">[docs]</a>    <span class="k">def</span> <span class="nf">validate</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">verbose</span><span class="o">=</span><span class="kc">False</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Simply extends the superclass version of validate to include flux</span>
+<span class="sd">        :param verbose: Default=False -&gt; won&#39;t print &quot;Validation done!&quot;</span>
+
+<span class="sd">        :return: None</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">ndates</span><span class="o">=</span><span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span>
+        <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">fluxes</span><span class="p">)</span> <span class="o">!=</span> <span class="n">ndates</span> <span class="ow">or</span> <span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">fluxerrs</span><span class="p">)</span> <span class="o">!=</span> <span class="n">ndates</span> <span class="ow">or</span> <span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">table</span><span class="p">)</span><span class="o">!=</span><span class="n">ndates</span><span class="p">:</span>
+            <span class="k">raise</span><span class="p">(</span><span class="ne">RuntimeError</span><span class="p">,</span> <span class="s2">&quot;The length of your flux/fluxerr arrays are inconsistent with rest of curve!&quot;</span><span class="p">)</span>
+
+        <span class="nb">super</span><span class="p">(</span><span class="n">curve</span><span class="p">,</span><span class="bp">self</span><span class="p">)</span><span class="o">.</span><span class="n">validate</span><span class="p">(</span><span class="n">verbose</span><span class="p">)</span></div></div>
+
+
+
+<div class="viewcode-block" id="table_factory"><a class="viewcode-back" href="../../api.html#sntd.curve_io.table_factory">[docs]</a><span class="k">def</span> <span class="nf">table_factory</span><span class="p">(</span><span class="n">table</span><span class="p">,</span><span class="n">telescopename</span><span class="o">=</span><span class="s2">&quot;Unknown&quot;</span><span class="p">,</span><span class="nb">object</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;This function will create a new curve object using an astropy table.</span>
+
+<span class="sd">    Parameters</span>
+<span class="sd">    ----------</span>
+<span class="sd">    table : `~astropy.table.Table`</span>
+<span class="sd">        Astropy table with all of your data from your data file.</span>
+<span class="sd">    telescopename : str</span>
+<span class="sd">        Name of telescope for labeling purposes inside curve object</span>
+<span class="sd">    object : str</span>
+<span class="sd">        Name of object for labeling purposes inside curve object</span>
+<span class="sd">        (e.g. SN2006jf, etc.)</span>
+
+<span class="sd">    Returns</span>
+<span class="sd">    -------</span>
+<span class="sd">    curve : `~sntd.curve`</span>
+
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">newlc</span><span class="o">=</span><span class="n">curve</span><span class="p">()</span>
+
+
+    <span class="n">table</span><span class="o">=</span><span class="n">standardize_table_colnames</span><span class="p">(</span><span class="n">table</span><span class="p">)</span>
+    <span class="n">newlc</span><span class="o">.</span><span class="n">bands</span><span class="o">=</span><span class="p">{</span><span class="n">x</span> <span class="k">for</span> <span class="n">x</span> <span class="ow">in</span> <span class="n">table</span><span class="p">[</span><span class="n">_get_default_prop_name</span><span class="p">(</span><span class="s1">&#39;band&#39;</span><span class="p">)]}</span>
+    <span class="n">zp_dict</span><span class="o">=</span><span class="nb">dict</span><span class="p">([])</span>
+    <span class="n">zpsys_dict</span><span class="o">=</span><span class="nb">dict</span><span class="p">([])</span>
+    <span class="k">for</span> <span class="n">band</span> <span class="ow">in</span> <span class="n">newlc</span><span class="o">.</span><span class="n">bands</span><span class="p">:</span>
+        <span class="n">zp</span><span class="o">=</span><span class="nb">set</span><span class="p">(</span><span class="n">table</span><span class="p">[</span><span class="n">_get_default_prop_name</span><span class="p">(</span><span class="s1">&#39;zp&#39;</span><span class="p">)][</span><span class="n">table</span><span class="p">[</span><span class="n">_get_default_prop_name</span><span class="p">(</span><span class="s1">&#39;band&#39;</span><span class="p">)]</span><span class="o">==</span><span class="n">band</span><span class="p">])</span>
+        <span class="n">zpsys</span><span class="o">=</span><span class="nb">set</span><span class="p">(</span><span class="n">table</span><span class="p">[</span><span class="n">_get_default_prop_name</span><span class="p">(</span><span class="s1">&#39;zpsys&#39;</span><span class="p">)][</span><span class="n">table</span><span class="p">[</span><span class="n">_get_default_prop_name</span><span class="p">(</span><span class="s1">&#39;band&#39;</span><span class="p">)]</span><span class="o">==</span><span class="n">band</span><span class="p">])</span>
+        <span class="n">zp_dict</span><span class="p">[</span><span class="n">band</span><span class="p">]</span><span class="o">=</span><span class="n">zp</span><span class="o">.</span><span class="n">pop</span><span class="p">()</span> <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">zp</span><span class="p">)</span><span class="o">==</span><span class="mi">1</span> <span class="k">else</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">(</span><span class="n">zp</span><span class="p">)</span>
+        <span class="n">zpsys_dict</span><span class="p">[</span><span class="n">band</span><span class="p">]</span><span class="o">=</span><span class="n">zpsys</span><span class="o">.</span><span class="n">pop</span><span class="p">()</span> <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">zpsys</span><span class="p">)</span><span class="o">==</span><span class="mi">1</span> <span class="k">else</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">(</span><span class="n">zpsys</span><span class="p">)</span>
+
+
+    <span class="n">newlc</span><span class="o">.</span><span class="n">table</span><span class="o">=</span><span class="n">table</span>
+
+
+    <span class="n">newlc</span><span class="o">.</span><span class="n">telescopename</span> <span class="o">=</span> <span class="n">telescopename</span>
+    <span class="n">newlc</span><span class="o">.</span><span class="n">object</span> <span class="o">=</span> <span class="nb">object</span>
+
+
+    <span class="k">return</span> <span class="n">newlc</span></div>
+
+
+<span class="k">def</span> <span class="nf">_switch</span><span class="p">(</span><span class="n">ext</span><span class="p">):</span>
+    <span class="n">switcher</span> <span class="o">=</span> <span class="p">{</span>
+        <span class="s1">&#39;.pkl&#39;</span><span class="p">:</span> <span class="n">_read_pickle</span>
+    <span class="p">}</span>
+    <span class="k">return</span> <span class="n">switcher</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">ext</span><span class="p">,</span> <span class="n">_read_data</span><span class="p">)</span>
+
+
+<div class="viewcode-block" id="write_data"><a class="viewcode-back" href="../../api.html#sntd.curve_io.write_data">[docs]</a><span class="k">def</span> <span class="nf">write_data</span><span class="p">(</span><span class="n">curves</span><span class="p">,</span><span class="n">filename</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span><span class="n">protocol</span><span class="o">=-</span><span class="mi">1</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;Used to write a curveDict object to a pickle</span>
+<span class="sd">        to be read later</span>
+
+<span class="sd">    Parameters</span>
+<span class="sd">    ----------</span>
+<span class="sd">    curves : `~sntd.curveDict`</span>
+<span class="sd">    filename : str</span>
+<span class="sd">        Name of output file</span>
+<span class="sd">    protocol : int</span>
+<span class="sd">        Pickling protocol</span>
+
+<span class="sd">    Returns</span>
+<span class="sd">    -------</span>
+<span class="sd">    None</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">if</span> <span class="ow">not</span> <span class="n">filename</span><span class="p">:</span>
+        <span class="n">filename</span><span class="o">=</span><span class="n">curves</span><span class="o">.</span><span class="n">object</span>
+    <span class="k">with</span> <span class="nb">open</span><span class="p">(</span><span class="n">filename</span><span class="p">,</span><span class="s1">&#39;wb&#39;</span><span class="p">)</span> <span class="k">as</span> <span class="n">handle</span><span class="p">:</span>
+        <span class="k">try</span><span class="p">:</span>
+            <span class="n">pickle</span><span class="o">.</span><span class="n">dump</span><span class="p">(</span><span class="n">curves</span><span class="p">,</span><span class="n">handle</span><span class="p">,</span><span class="n">protocol</span><span class="o">=</span><span class="n">protocol</span><span class="p">)</span>
+        <span class="k">except</span><span class="p">:</span>
+            <span class="n">cPickle</span><span class="o">.</span><span class="n">dump</span><span class="p">(</span><span class="n">curves</span><span class="p">,</span><span class="n">handle</span><span class="p">,</span><span class="n">protocol</span><span class="o">=</span><span class="n">protocol</span><span class="p">)</span>
+    <span class="k">return</span></div>
+
+
+
+
+<div class="viewcode-block" id="read_data"><a class="viewcode-back" href="../../api.html#sntd.curve_io.read_data">[docs]</a><span class="k">def</span> <span class="nf">read_data</span><span class="p">(</span><span class="n">filename</span><span class="p">,</span><span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;Used to read a light curve or curve object in pickle format.</span>
+<span class="sd">        Either way, it&#39;ll come out as a curve object.</span>
+
+<span class="sd">    Parameters</span>
+<span class="sd">    ----------</span>
+<span class="sd">    filename : str</span>
+<span class="sd">        Name of the file to be read (ascii or pickle)</span>
+
+<span class="sd">    Returns</span>
+<span class="sd">    -------</span>
+<span class="sd">    curve : `~sntd.curve` or `~sntd.curveDict`</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">return</span><span class="p">(</span><span class="n">_switch</span><span class="p">(</span><span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">splitext</span><span class="p">(</span><span class="n">filename</span><span class="p">)[</span><span class="mi">1</span><span class="p">])(</span><span class="n">filename</span><span class="p">,</span><span class="o">**</span><span class="n">kwargs</span><span class="p">))</span></div>
+
+
+<span class="k">def</span> <span class="nf">_read_pickle</span><span class="p">(</span><span class="n">filename</span><span class="p">,</span><span class="n">telescopename</span><span class="o">=</span><span class="s2">&quot;Unknown&quot;</span><span class="p">,</span><span class="nb">object</span><span class="o">=</span><span class="s2">&quot;Unknown&quot;</span><span class="p">,</span><span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+    <span class="k">try</span><span class="p">:</span>
+        <span class="k">return</span> <span class="p">(</span><span class="n">pickle</span><span class="o">.</span><span class="n">load</span><span class="p">(</span><span class="nb">open</span><span class="p">(</span><span class="n">filename</span><span class="p">,</span><span class="s1">&#39;rb&#39;</span><span class="p">)))</span>
+    <span class="k">except</span><span class="p">:</span>
+        <span class="k">return</span> <span class="p">(</span><span class="n">cPickle</span><span class="o">.</span><span class="n">load</span><span class="p">(</span><span class="nb">open</span><span class="p">(</span><span class="n">filename</span><span class="p">,</span><span class="s1">&#39;rb&#39;</span><span class="p">)))</span>
+
+
+
+<span class="k">def</span> <span class="nf">standardize_table_colnames</span><span class="p">(</span><span class="n">table</span><span class="p">):</span>
+    <span class="k">for</span> <span class="n">col</span> <span class="ow">in</span> <span class="n">table</span><span class="o">.</span><span class="n">colnames</span><span class="p">:</span>
+        <span class="k">if</span> <span class="n">col</span> <span class="o">!=</span> <span class="n">_get_default_prop_name</span><span class="p">(</span><span class="n">col</span><span class="o">.</span><span class="n">lower</span><span class="p">()):</span>
+            <span class="n">table</span><span class="o">.</span><span class="n">rename_column</span><span class="p">(</span><span class="n">col</span><span class="p">,</span> <span class="n">_get_default_prop_name</span><span class="p">(</span><span class="n">col</span><span class="o">.</span><span class="n">lower</span><span class="p">()))</span>
+    <span class="k">return</span> <span class="n">table</span>
+
+<span class="k">def</span> <span class="nf">_read_data</span><span class="p">(</span><span class="n">filename</span><span class="p">,</span><span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+    <span class="n">table_done</span><span class="o">=</span><span class="kc">True</span>
+    <span class="k">try</span><span class="p">:</span>
+        <span class="n">table</span> <span class="o">=</span> <span class="n">sncosmo</span><span class="o">.</span><span class="n">read_lc</span><span class="p">(</span><span class="n">filename</span><span class="p">,</span> <span class="n">masked</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span><span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
+        <span class="k">for</span> <span class="n">col</span> <span class="ow">in</span> <span class="n">table</span><span class="o">.</span><span class="n">colnames</span><span class="p">:</span>
+            <span class="k">if</span> <span class="n">col</span> <span class="o">!=</span> <span class="n">_get_default_prop_name</span><span class="p">(</span><span class="n">col</span><span class="o">.</span><span class="n">lower</span><span class="p">()):</span>
+                <span class="n">table</span><span class="o">.</span><span class="n">rename_column</span><span class="p">(</span><span class="n">col</span><span class="p">,</span> <span class="n">_get_default_prop_name</span><span class="p">(</span><span class="n">col</span><span class="o">.</span><span class="n">lower</span><span class="p">()))</span>
+    <span class="k">except</span><span class="p">:</span>
+        <span class="k">try</span><span class="p">:</span>
+            <span class="n">table</span> <span class="o">=</span> <span class="n">ascii</span><span class="o">.</span><span class="n">read</span><span class="p">(</span><span class="n">filename</span><span class="p">,</span> <span class="n">masked</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span><span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
+            <span class="k">for</span> <span class="n">col</span> <span class="ow">in</span> <span class="n">table</span><span class="o">.</span><span class="n">colnames</span><span class="p">:</span>
+                <span class="k">if</span> <span class="n">col</span> <span class="o">!=</span> <span class="n">_get_default_prop_name</span><span class="p">(</span><span class="n">col</span><span class="o">.</span><span class="n">lower</span><span class="p">()):</span>
+                    <span class="n">table</span><span class="o">.</span><span class="n">rename_column</span><span class="p">(</span><span class="n">col</span><span class="p">,</span> <span class="n">_get_default_prop_name</span><span class="p">(</span><span class="n">col</span><span class="o">.</span><span class="n">lower</span><span class="p">()))</span>
+        <span class="k">except</span><span class="p">:</span>
+            <span class="n">table</span> <span class="o">=</span> <span class="n">Table</span><span class="p">(</span><span class="n">masked</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+            <span class="n">table_done</span><span class="o">=</span><span class="kc">False</span>
+
+
+    <span class="n">delim</span> <span class="o">=</span> <span class="n">kwargs</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s1">&#39;delim&#39;</span><span class="p">,</span> <span class="kc">None</span><span class="p">)</span>
+    <span class="n">myCurve</span><span class="o">=</span><span class="n">curve</span><span class="p">()</span>
+    <span class="k">with</span> <span class="n">anyOpen</span><span class="p">(</span><span class="n">filename</span><span class="p">)</span> <span class="k">as</span> <span class="n">f</span><span class="p">:</span>
+        <span class="n">lines</span><span class="o">=</span><span class="n">f</span><span class="o">.</span><span class="n">readlines</span><span class="p">()</span>
+        <span class="n">length</span><span class="o">=</span><span class="n">mode</span><span class="p">([</span><span class="nb">len</span><span class="p">(</span><span class="n">l</span><span class="o">.</span><span class="n">split</span><span class="p">())</span> <span class="k">for</span> <span class="n">l</span> <span class="ow">in</span> <span class="n">lines</span><span class="p">])[</span><span class="mi">0</span><span class="p">][</span><span class="mi">0</span><span class="p">]</span><span class="c1">#uses the most common line length as the correct length</span>
+        <span class="k">for</span> <span class="n">i</span><span class="p">,</span><span class="n">line</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">lines</span><span class="p">):</span>
+            <span class="k">if</span> <span class="n">np</span><span class="o">.</span><span class="n">any</span><span class="p">([</span><span class="n">x</span> <span class="ow">in</span> <span class="n">line</span> <span class="k">for</span> <span class="n">x</span> <span class="ow">in</span> <span class="n">_comment_char</span><span class="p">]):</span>
+                <span class="k">continue</span>
+            <span class="n">line</span> <span class="o">=</span> <span class="n">line</span><span class="o">.</span><span class="n">strip</span><span class="p">(</span><span class="n">delim</span><span class="p">)</span>
+
+            <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">line</span><span class="p">)</span><span class="o">==</span><span class="mi">0</span><span class="p">:</span>
+                <span class="k">continue</span>
+            <span class="k">if</span> <span class="n">np</span><span class="o">.</span><span class="n">any</span><span class="p">([</span><span class="n">x</span> <span class="ow">in</span> <span class="n">line</span> <span class="k">for</span> <span class="n">x</span> <span class="ow">in</span> <span class="n">_meta__</span><span class="p">]):</span>
+                <span class="n">pos</span> <span class="o">=</span> <span class="n">line</span><span class="o">.</span><span class="n">find</span><span class="p">(</span><span class="s1">&#39; &#39;</span><span class="p">)</span>
+                <span class="k">if</span> <span class="p">(</span><span class="n">lines</span><span class="p">[</span><span class="n">i</span> <span class="o">+</span> <span class="mi">1</span><span class="p">][</span><span class="mi">0</span><span class="p">]</span> <span class="ow">in</span> <span class="n">_meta__</span> <span class="ow">or</span> <span class="n">lines</span><span class="p">[</span><span class="n">i</span> <span class="o">+</span> <span class="mi">1</span><span class="p">][</span><span class="mi">0</span><span class="p">]</span> <span class="ow">in</span> <span class="n">_comment_char</span> <span class="ow">or</span> <span class="nb">len</span><span class="p">(</span>
+                        <span class="n">line</span><span class="p">)</span> <span class="o">!=</span> <span class="n">length</span><span class="p">):</span>  <span class="c1"># just making sure we&#39;re not about to put the col names into meta</span>
+                    <span class="k">if</span> <span class="p">(</span><span class="n">pos</span> <span class="o">==</span> <span class="o">-</span><span class="mi">1</span> <span class="ow">or</span> <span class="ow">not</span> <span class="nb">any</span><span class="p">([</span><span class="n">_isfloat</span><span class="p">(</span><span class="n">x</span><span class="p">)</span> <span class="k">for</span> <span class="n">x</span> <span class="ow">in</span> <span class="n">line</span><span class="o">.</span><span class="n">split</span><span class="p">()])):</span>
+                        <span class="k">if</span> <span class="n">line</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">string</span><span class="o">.</span><span class="n">punctuation</span><span class="p">:</span>
+                            <span class="n">line</span><span class="o">=</span><span class="n">line</span><span class="o">+</span><span class="s1">&#39;.&#39;</span>
+                    <span class="k">else</span><span class="p">:</span>
+                        <span class="n">myCurve</span><span class="o">.</span><span class="n">meta</span><span class="p">[</span><span class="n">line</span><span class="p">[</span><span class="mi">1</span><span class="p">:</span><span class="n">pos</span><span class="p">]]</span> <span class="o">=</span> <span class="n">_cast_str</span><span class="p">(</span><span class="n">line</span><span class="p">[</span><span class="n">pos</span><span class="p">:])</span>
+                <span class="k">continue</span>
+            <span class="n">line</span><span class="o">=</span><span class="n">line</span><span class="o">.</span><span class="n">split</span><span class="p">()</span>
+            <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">line</span><span class="p">)</span><span class="o">!=</span> <span class="n">length</span><span class="p">:</span>
+                <span class="k">raise</span><span class="p">(</span><span class="ne">RuntimeError</span><span class="p">,</span><span class="s2">&quot;Make sure your data are in a square matrix.&quot;</span><span class="p">)</span>
+            <span class="k">if</span> <span class="n">table</span><span class="o">.</span><span class="n">colnames</span><span class="p">:</span>
+                <span class="n">colnames</span><span class="o">=</span><span class="n">table</span><span class="o">.</span><span class="n">colnames</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="n">colnames</span> <span class="o">=</span> <span class="n">odict</span><span class="o">.</span><span class="n">fromkeys</span><span class="p">([</span><span class="n">_get_default_prop_name</span><span class="p">(</span><span class="n">x</span><span class="o">.</span><span class="n">lower</span><span class="p">())</span> <span class="k">for</span> <span class="n">x</span> <span class="ow">in</span> <span class="n">line</span><span class="p">])</span>
+                <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">colnames</span><span class="p">)</span> <span class="o">!=</span> <span class="nb">len</span><span class="p">(</span><span class="n">line</span><span class="p">):</span>
+                    <span class="k">raise</span> <span class="p">(</span><span class="ne">RuntimeError</span><span class="p">,</span> <span class="s2">&quot;Do you have duplicate column names?&quot;</span><span class="p">)</span>
+                <span class="n">colnames</span><span class="o">=</span><span class="n">odict</span><span class="p">(</span><span class="nb">zip</span><span class="p">(</span><span class="n">colnames</span><span class="p">,</span><span class="nb">range</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">colnames</span><span class="p">))))</span>
+            <span class="n">startLine</span><span class="o">=</span><span class="n">i</span>
+            <span class="k">break</span>
+    <span class="n">f</span><span class="o">.</span><span class="n">close</span><span class="p">()</span>
+    <span class="k">if</span> <span class="ow">not</span> <span class="n">table_done</span><span class="p">:</span>
+        <span class="n">lines</span> <span class="o">=</span> <span class="p">[</span><span class="n">x</span><span class="o">.</span><span class="n">strip</span><span class="p">()</span><span class="o">.</span><span class="n">split</span><span class="p">()</span> <span class="k">for</span> <span class="n">x</span> <span class="ow">in</span> <span class="n">lines</span><span class="p">[</span><span class="n">startLine</span> <span class="o">+</span> <span class="mi">1</span><span class="p">:]</span> <span class="k">if</span> <span class="ow">not</span> <span class="n">np</span><span class="o">.</span><span class="n">any</span><span class="p">([</span><span class="n">y</span> <span class="ow">in</span> <span class="n">x</span> <span class="k">for</span> <span class="n">y</span> <span class="ow">in</span> <span class="n">_comment_char</span><span class="p">])]</span>
+
+        <span class="k">for</span> <span class="n">col</span> <span class="ow">in</span> <span class="n">colnames</span><span class="p">:</span>
+            <span class="n">table</span><span class="p">[</span><span class="n">col</span><span class="p">]</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">asarray</span><span class="p">([</span><span class="n">_cast_str</span><span class="p">(</span><span class="n">x</span><span class="p">[</span><span class="n">colnames</span><span class="p">[</span><span class="n">col</span><span class="p">]])</span> <span class="k">for</span> <span class="n">x</span> <span class="ow">in</span> <span class="n">lines</span><span class="p">])</span>
+        <span class="n">colnames</span><span class="o">=</span><span class="n">colnames</span><span class="o">.</span><span class="n">keys</span><span class="p">()</span>
+
+    <span class="k">for</span> <span class="n">col</span> <span class="ow">in</span> <span class="p">[</span><span class="n">_get_default_prop_name</span><span class="p">(</span><span class="n">x</span><span class="p">)</span> <span class="k">for</span> <span class="n">x</span> <span class="ow">in</span> <span class="p">[</span><span class="s1">&#39;band&#39;</span><span class="p">,</span><span class="s1">&#39;zp&#39;</span><span class="p">,</span><span class="s1">&#39;zpsys&#39;</span><span class="p">]]:</span>
+        <span class="k">if</span> <span class="n">col</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">colnames</span><span class="p">:</span>
+            <span class="n">temp</span><span class="o">=</span><span class="n">kwargs</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">col</span><span class="p">,</span><span class="kc">None</span><span class="p">)</span>
+            <span class="k">if</span> <span class="n">temp</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+                <span class="n">table</span><span class="p">[</span><span class="n">col</span><span class="p">]</span><span class="o">=</span><span class="n">temp</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="nb">print</span><span class="p">(</span><span class="s1">&#39;Column &quot;</span><span class="si">%s</span><span class="s1">&quot; is not in your file and you did not define it in kwargs.&#39;</span><span class="o">%</span><span class="n">col</span><span class="p">)</span>
+                <span class="n">sys</span><span class="o">.</span><span class="n">exit</span><span class="p">(</span><span class="mi">1</span><span class="p">)</span>
+    <span class="n">table</span><span class="o">=</span><span class="n">standardize_table_colnames</span><span class="p">(</span><span class="n">table</span><span class="p">)</span>
+    <span class="n">bnds</span> <span class="o">=</span> <span class="p">{</span><span class="n">x</span> <span class="k">for</span> <span class="n">x</span> <span class="ow">in</span> <span class="n">table</span><span class="p">[</span><span class="n">_get_default_prop_name</span><span class="p">(</span><span class="s1">&#39;band&#39;</span><span class="p">)]}</span>
+    <span class="n">table</span><span class="o">=</span><span class="n">_norm_flux_mag</span><span class="p">(</span><span class="n">table</span><span class="p">)</span>
+    <span class="k">for</span> <span class="n">band</span> <span class="ow">in</span> <span class="n">bnds</span><span class="p">:</span>
+        <span class="k">if</span> <span class="n">_isfloat</span><span class="p">(</span><span class="n">band</span><span class="p">[</span><span class="mi">0</span><span class="p">]):</span>
+            <span class="n">band</span><span class="o">=</span><span class="s1">&#39;band_&#39;</span><span class="o">+</span><span class="n">band</span>
+        <span class="k">try</span><span class="p">:</span>
+            <span class="k">if</span> <span class="n">band</span><span class="p">[</span><span class="mi">0</span><span class="p">:</span><span class="mi">5</span><span class="p">]</span><span class="o">==</span><span class="s1">&#39;band_&#39;</span><span class="p">:</span>
+                <span class="n">sncosmo</span><span class="o">.</span><span class="n">get_bandpass</span><span class="p">(</span><span class="n">band</span><span class="p">[</span><span class="mi">5</span><span class="p">:])</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="n">sncosmo</span><span class="o">.</span><span class="n">get_bandpass</span><span class="p">(</span><span class="n">band</span><span class="p">)</span>
+        <span class="k">except</span><span class="p">:</span>
+            <span class="nb">print</span><span class="p">(</span><span class="s1">&#39;Skipping band </span><span class="si">%s</span><span class="s1">, not in registry.&#39;</span> <span class="o">%</span><span class="n">band</span><span class="p">)</span>
+            <span class="n">table</span><span class="o">.</span><span class="n">mask</span><span class="p">[</span><span class="n">table</span><span class="p">[</span><span class="n">_get_default_prop_name</span><span class="p">(</span><span class="s1">&#39;band&#39;</span><span class="p">)]</span><span class="o">==</span><span class="n">band</span><span class="p">]</span><span class="o">=</span><span class="kc">True</span>
+            <span class="k">continue</span>
+        <span class="n">myCurve</span><span class="o">.</span><span class="n">bands</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">band</span><span class="p">)</span>
+
+    <span class="n">myCurve</span><span class="o">.</span><span class="n">table</span><span class="o">=</span><span class="n">table</span>
+    <span class="n">myCurve</span><span class="o">.</span><span class="n">zpsys</span><span class="o">=</span><span class="n">table</span><span class="p">[</span><span class="s1">&#39;zpsys&#39;</span><span class="p">][</span><span class="mi">0</span><span class="p">]</span>
+    <span class="k">return</span> <span class="n">myCurve</span>
+
+<span class="k">def</span> <span class="nf">_norm_flux_mag</span><span class="p">(</span><span class="n">table</span><span class="p">):</span>
+    <span class="k">if</span> <span class="s1">&#39;mag&#39;</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">table</span><span class="o">.</span><span class="n">colnames</span><span class="p">:</span>
+        <span class="k">if</span> <span class="s1">&#39;flux&#39;</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">table</span><span class="o">.</span><span class="n">colnames</span><span class="p">:</span>
+            <span class="nb">print</span><span class="p">(</span><span class="s1">&#39;No Mag or Flux data.&#39;</span><span class="p">)</span>
+            <span class="n">sys</span><span class="o">.</span><span class="n">exit</span><span class="p">(</span><span class="mi">1</span><span class="p">)</span>
+        <span class="n">table</span><span class="o">=</span><span class="n">_flux_to_mag</span><span class="p">(</span><span class="n">table</span><span class="p">)</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="k">if</span> <span class="s1">&#39;flux&#39;</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">table</span><span class="o">.</span><span class="n">colnames</span><span class="p">:</span>
+            <span class="n">table</span><span class="o">=</span><span class="n">_mag_to_flux</span><span class="p">(</span><span class="n">table</span><span class="p">)</span>
+    <span class="k">return</span> <span class="n">table</span>
+
+
+<span class="k">def</span> <span class="nf">_flux_to_mag</span><span class="p">(</span><span class="n">table</span><span class="p">):</span>
+    <span class="n">table</span><span class="p">[</span><span class="n">_get_default_prop_name</span><span class="p">(</span><span class="s1">&#39;mag&#39;</span><span class="p">)]</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">asarray</span><span class="p">(</span><span class="nb">map</span><span class="p">(</span><span class="k">lambda</span> <span class="n">x</span><span class="p">,</span> <span class="n">y</span><span class="p">:</span> <span class="o">-</span><span class="mf">2.5</span> <span class="o">*</span> <span class="n">np</span><span class="o">.</span><span class="n">log10</span><span class="p">(</span><span class="n">x</span><span class="p">)</span> <span class="o">+</span> <span class="n">y</span><span class="p">,</span> <span class="n">table</span><span class="p">[</span><span class="n">_get_default_prop_name</span><span class="p">(</span><span class="s1">&#39;flux&#39;</span><span class="p">)],</span>
+                                  <span class="n">table</span><span class="p">[</span><span class="n">_get_default_prop_name</span><span class="p">(</span><span class="s1">&#39;zp&#39;</span><span class="p">)]))</span>
+    <span class="n">table</span><span class="p">[</span><span class="n">_get_default_prop_name</span><span class="p">(</span><span class="s1">&#39;magerr&#39;</span><span class="p">)]</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">asarray</span><span class="p">(</span><span class="nb">map</span><span class="p">(</span><span class="k">lambda</span> <span class="n">x</span><span class="p">,</span> <span class="n">y</span><span class="p">:</span> <span class="mf">2.5</span> <span class="o">*</span> <span class="n">np</span><span class="o">.</span><span class="n">log10</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">e</span><span class="p">)</span> <span class="o">*</span> <span class="n">y</span> <span class="o">/</span> <span class="n">x</span><span class="p">,</span> <span class="n">table</span><span class="p">[</span><span class="n">_get_default_prop_name</span><span class="p">(</span><span class="s1">&#39;flux&#39;</span><span class="p">)],</span>
+                                     <span class="n">table</span><span class="p">[</span><span class="n">_get_default_prop_name</span><span class="p">(</span><span class="s1">&#39;fluxerr&#39;</span><span class="p">)]))</span>
+    <span class="n">table</span><span class="p">[</span><span class="n">_get_default_prop_name</span><span class="p">(</span><span class="s1">&#39;magerr&#39;</span><span class="p">)][</span><span class="n">np</span><span class="o">.</span><span class="n">isnan</span><span class="p">(</span><span class="n">table</span><span class="p">[</span><span class="n">_get_default_prop_name</span><span class="p">(</span><span class="s1">&#39;mag&#39;</span><span class="p">)])]</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">nan</span>
+    <span class="k">return</span> <span class="n">table</span>
+
+
+<span class="k">def</span> <span class="nf">_mag_to_flux</span><span class="p">(</span><span class="n">table</span><span class="p">):</span>
+    <span class="n">table</span><span class="p">[</span><span class="n">_get_default_prop_name</span><span class="p">(</span><span class="s1">&#39;flux&#39;</span><span class="p">)]</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">asarray</span><span class="p">(</span>
+        <span class="nb">map</span><span class="p">(</span><span class="k">lambda</span> <span class="n">x</span><span class="p">,</span> <span class="n">y</span><span class="p">:</span> <span class="mi">10</span> <span class="o">**</span> <span class="p">(</span><span class="o">-.</span><span class="mi">4</span> <span class="o">*</span> <span class="p">(</span><span class="n">x</span> <span class="o">-</span><span class="n">y</span><span class="p">)),</span> <span class="n">table</span><span class="p">[</span><span class="n">_get_default_prop_name</span><span class="p">(</span><span class="s1">&#39;mag&#39;</span><span class="p">)],</span>
+            <span class="n">table</span><span class="p">[</span><span class="n">_get_default_prop_name</span><span class="p">(</span><span class="s1">&#39;zp&#39;</span><span class="p">)]))</span>
+    <span class="n">table</span><span class="p">[</span><span class="n">_get_default_prop_name</span><span class="p">(</span><span class="s1">&#39;fluxerr&#39;</span><span class="p">)]</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">asarray</span><span class="p">(</span>
+        <span class="nb">map</span><span class="p">(</span><span class="k">lambda</span> <span class="n">x</span><span class="p">,</span> <span class="n">y</span><span class="p">:</span> <span class="n">x</span> <span class="o">*</span> <span class="n">y</span> <span class="o">/</span> <span class="p">(</span><span class="mf">2.5</span> <span class="o">*</span> <span class="n">np</span><span class="o">.</span><span class="n">log10</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">e</span><span class="p">)),</span> <span class="n">table</span><span class="p">[</span><span class="n">_get_default_prop_name</span><span class="p">(</span><span class="s1">&#39;magerr&#39;</span><span class="p">)],</span>
+            <span class="n">table</span><span class="p">[</span><span class="n">_get_default_prop_name</span><span class="p">(</span><span class="s1">&#39;flux&#39;</span><span class="p">)]))</span>
+    <span class="k">return</span> <span class="n">table</span>
+
+
+
+</pre></div>
+
+           </div>
+           
+          </div>
+          <footer>
+  
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>
+        &copy; Copyright 2019, Justin Pierel
+
+    </p>
+  </div>
+  Built with <a href="http://sphinx-doc.org/">Sphinx</a> using a <a href="https://github.com/rtfd/sphinx_rtd_theme">theme</a> provided by <a href="https://readthedocs.org">Read the Docs</a>. 
+
+</footer>
+
+        </div>
+      </div>
+
+    </section>
+
+  </div>
+  
+
+
+  
+
+    
+    
+      <script type="text/javascript" id="documentation_options" data-url_root="../../" src="../../_static/documentation_options.js"></script>
+        <script type="text/javascript" src="../../_static/jquery.js"></script>
+        <script type="text/javascript" src="../../_static/underscore.js"></script>
+        <script type="text/javascript" src="../../_static/doctools.js"></script>
+        <script type="text/javascript" src="../../_static/language_data.js"></script>
+    
+
+  
+
+  <script type="text/javascript" src="../../_static/js/theme.js"></script>
+
+  <script type="text/javascript">
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>
