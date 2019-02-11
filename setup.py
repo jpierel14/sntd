@@ -23,6 +23,7 @@ data_files = [f[len(PACKAGENAME)+1:] for f in data_files]
 
 setup(
     name='sntd',
+    setup_requires['numpy'],
     install_requires=['numpy','scipy','sncosmo',
     	'astropy','matplotlib','nestle','pyParz','sklearn'],
     packages=['sntd'],
