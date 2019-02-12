@@ -128,7 +128,18 @@ class curveDict(dict):
 
     def add_curve(self,myCurve):
         """Adds a curve object to the existing curveDict (i.e. adds
-        an image to a MISN)"""
+        an image to a MISN)
+
+        Parameters
+        ----------
+        myCurve: :class:`sntd.curve`
+            The curve to add to self.
+
+        Returns
+        -------
+        self: :class:`sntd.curve_io.curveDict`
+        """
+
         self.bands.update([x for x in myCurve.bands if x not in self.bands])
         myCurve.object='image_'+str(len(self.images)+1)
 
@@ -156,13 +167,15 @@ class curveDict(dict):
 
         Parameters
         ----------
-        time_delays : dict
+        time_delays : :class:`dict`
             Dictionary with image names as keys and relative time
             delays as values (e.g. {'image_1':0,'image_2':20})
         magnifications : dict
             Dictionary with image names as keys and relative
             magnifications as values (e.g.
             {'image_1':1,'image_2':1.1})
+        referenceImage: str
+            The image you want to be the reference (e.g. iamge_1, image_2, etc.)
 
         Returns
         -------
@@ -191,18 +204,45 @@ class curveDict(dict):
         return(self)
 
 
-    def color_table(self,band1,band2,time_delays=None,magnifications=None,image=[]):
-        image=list(image) if not isinstance(image,(list,tuple)) else image
+    def color_table(self,band1,band2,time_delays=None,magnifications=None,referenceImage='image_1',ignore_images=[]):
+        """Takes the multiple images in self.images and combines
+            the data into a single color curve using defined
+            time delays and magnifications or best (quick) guesses.
+
+        Parameters
+        ----------
+        band1: str
+            The first band for color curve
+        band2: str
+            The second band for color curve
+        time_delays : :class:`dict`
+            Dictionary with image names as keys and relative time
+            delays as values (e.g. {'image_1':0,'image_2':20})
+        magnifications : dict
+            Dictionary with image names as keys and relative
+            magnifications as values (e.g.
+            {'image_1':1,'image_2':1.1})
+        referenceImage: str
+            The image you want to be the reference (e.g. iamge_1, image_2, etc.)
+        ignore_images: list
+            List of images you do not want to include in the color curve.
+
+        Returns
+        -------
+        self: :class:`sntd.curve_io.curveDict`
+        """
+
+        ignore_images=list(ignore_images) if not isinstance(ignore_images,(list,tuple)) else ignore_images
         names=['time','image','zpsys']
         dtype=[self.table.dtype[x] for x in names]
         names=np.append(names,[band1+'-'+band2,band1+'-'+band2+'_err'])
         dtype=np.append(dtype,[dtype[0],dtype[0]])
         self.color.table=Table(names=names,dtype=dtype)
         if not time_delays:
-            time_delays=_guess_time_delays(self) #TODO fix these guessing functions
+            time_delays=_guess_time_delays(self,referenceImage) #TODO fix these guessing functions
         if not magnifications:
-            magnifications=_guess_magnifications(self)
-        for im in [x for x in self.images.keys() if x not in image]:
+            magnifications=_guess_magnifications(self,referenceImage)
+        for im in [x for x in self.images.keys() if x not in ignore_images]:
             temp2=copy(self.images[im].table[self.images[im].table['band']==band2])
             temp1=copy(self.images[im].table[self.images[im].table['band']==band1])
             temp1=temp1[temp1['flux']>0]
@@ -472,23 +512,30 @@ class curve(dict):
         #todo populate param documentation
         super(curve,self).__init__()
         self.meta = {'info': ''}
-        """@type: dict
-            @ivar: The metadata for the curveDict object, intialized with an empty "info" key value pair. It's
+        """@type: :class:`dict`
+            The metadata for the curveDict object, intialized with an empty "info" key value pair. It's
             populated by added _metachar__ characters into the header of your data file.
         """
         self.table=None
-        """@type: ~astropy.table.Table
+        """@type: :class:`astropy.table.Table`
         @ivar: A table containing the data, used for SNCosmo functions, etc.
         """
         self.bands=[]
-        """@type: string
-        @ivar: band names, used
+        """@type: str
+        @ivar: band names used
         """
         self.zpsys=zpsys
+        """@type: str
+        @ivar: the zero-point system for this curve object
+        """
 
         self.simMeta=dict([])
+        """@type: :class:`dict`
+        @ivar: A dictionary containing simulation metadata if this is a simulated curve object"""
 
         self.fits=None
+        """@type: :class:`~sntd.fitting.newDict`
+        @ivar: Contains fit information from fit_data"""
 
 
     #these three functions allow you to access the curveDict via "dot" notation
@@ -513,18 +560,7 @@ class curve(dict):
         """
         self.__dict__ = d
 
-    def validate(self, verbose=False):
-        """
-        Simply extends the superclass version of validate to include flux
-        :param verbose: Default=False -> won't print "Validation done!"
 
-        :return: None
-        """
-        ndates=len(self)
-        if len(self.fluxes) != ndates or len(self.fluxerrs) != ndates or len(self.table)!=ndates:
-            raise(RuntimeError, "The length of your flux/fluxerr arrays are inconsistent with rest of curve!")
-
-        super(curve,self).validate(verbose)
 
 
 
@@ -543,7 +579,7 @@ def table_factory(table,telescopename="Unknown",object=None):
 
     Returns
     -------
-    curve : `~sntd.curve`
+    curve : :class:`~sntd.curve`
 
     """
     newlc=curve()
@@ -616,7 +652,7 @@ def read_data(filename,**kwargs):
 
     Returns
     -------
-    curve : `~sntd.curve` or `~sntd.curveDict`
+    curve : :class:`~sntd.curve` or :class:`~sntd.curveDict`
     """
     return(_switch(os.path.splitext(filename)[1])(filename,**kwargs))
 

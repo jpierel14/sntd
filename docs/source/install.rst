@@ -25,6 +25,11 @@ Using pip::
     You will need a C compiler (e.g. ``gcc`` or ``clang``) to be
     installed for the installation to succeed due to SNCosmo.
 
+.. note::
+
+   Sometimes there is an issue with the install related to numpy. If this happens, try installing numpy using pip, and then installing SNTD using pip.
+   
+
 
 Install latest development version
 ==================================

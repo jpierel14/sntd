@@ -169,21 +169,47 @@
 <col class="field-body" />
 <tbody valign="top">
 <tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first simple">
-<li><strong>curves</strong> (<a class="reference internal" href="#sntd.curve_io.curveDict" title="sntd.curve_io.curveDict"><code class="xref py py-class docutils literal notranslate"><span class="pre">sntd.curve_io.curveDict</span></code></a>) – The curveDict object containing the multiple images to fit.</li>
+<li><strong>curves</strong> (<a class="reference internal" href="#sntd.curve_io.curveDict" title="sntd.curve_io.curveDict"><code class="xref py py-class docutils literal notranslate"><span class="pre">curveDict</span></code></a>) – The curveDict object containing the multiple images to fit.</li>
 <li><strong>snType</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.7)"><em>str</em></a>) – The supernova classification</li>
-<li><strong>bands</strong> (list of <code class="xref py py-class docutils literal notranslate"><span class="pre">Bandpass</span></code> or str) – The band(s) to be fit</li>
-<li><strong>models</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#list" title="(in Python v3.7)"><em>list</em></a>) – </li>
+<li><strong>bands</strong> (list of <code class="xref py py-class docutils literal notranslate"><span class="pre">sncosmo.Bandpass</span></code> or str, or <code class="xref py py-class docutils literal notranslate"><span class="pre">sncosmo.Bandpass</span></code> or str) – The band(s) to be fit</li>
+<li><strong>models</strong> (list of <code class="xref py py-class docutils literal notranslate"><span class="pre">sncosmo.Model</span></code> or str, or <code class="xref py py-class docutils literal notranslate"><span class="pre">sncosmo.Model</span></code> or str) – The model(s) to be used for fitting to the data</li>
+<li><strong>params</strong> (<em>list of str</em>) – The parameters to be fit for the models inside of the parameter models</li>
+<li><strong>bounds</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#dict" title="(in Python v3.7)"><code class="xref py py-class docutils literal notranslate"><span class="pre">dict</span></code></a>) – A dictionary with parameters in params as keys and a tuple of bounds as values</li>
+<li><strong>ignore</strong> (<em>list of str</em>) – List of parameters to ignore</li>
+<li><strong>constants</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#dict" title="(in Python v3.7)"><code class="xref py py-class docutils literal notranslate"><span class="pre">dict</span></code></a>) – Dictionary with parameters as keys and the constant value you want to set them to as values</li>
+<li><strong>method</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.7)"><em>str</em></a>) – Needs to be ‘separate’, ‘combined’, or ‘color’</li>
+<li><strong>t0_guess</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#dict" title="(in Python v3.7)"><code class="xref py py-class docutils literal notranslate"><span class="pre">dict</span></code></a>) – Dictionary with image names (i.e. ‘image_1’,’image_2’) as keys and a guess for time of peak as values</li>
+<li><strong>refModel</strong> (<code class="xref py py-class docutils literal notranslate"><span class="pre">scipy.interpolate.interp1d</span></code> or <code class="xref py py-class docutils literal notranslate"><span class="pre">sncosmo.Model</span></code>) – If doing a combined or color fit, a reference model that will be used to fit all the data at once is required.</li>
+<li><strong>effect_names</strong> (<em>list of str</em>) – List of effect names if model contains a <code class="xref py py-class docutils literal notranslate"><span class="pre">sncosmo.PropagationEffect</span></code>.</li>
+<li><strong>effect_frames</strong> (<em>list of str</em>) – List of the frames (e.g. obs or rest) that correspond to the effects in effect_names</li>
+<li><strong>fitting_method</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.7)"><em>str</em></a>) – Must be ‘nest’, ‘mcmc’, or ‘minuit’. This is only used when you are trying to find the best of a list of models.</li>
+<li><strong>dust</strong> (<code class="xref py py-class docutils literal notranslate"><span class="pre">sncosmo.PropagationEffect</span></code>) – An sncosmo dust propagation effect to include in the model</li>
+<li><strong>flip</strong> (<em>Boolean</em>) – If True, the time axis of the model is flipped</li>
+<li><strong>guess_amplitude</strong> (<em>Boolean</em>) – If True, the amplitude parameter for the model is estimated, as well as its bounds</li>
+<li><strong>combinedError</strong> (<code class="xref py py-class docutils literal notranslate"><span class="pre">scipy.interpolate.interp1d</span></code>) – If doing a combined or color fit, this is the uncertainty on the reference model.</li>
+<li><strong>showPlots</strong> (<em>Boolean</em>) – If true, <code class="xref py py-func docutils literal notranslate"><span class="pre">sncosmo.plot_lc()</span></code> function is called during the fitting</li>
+<li><strong>microlensing</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.7)"><em>str</em></a>) – If None microlensing is ignored, otherwise should be str (e.g. achromatic, chromatic)</li>
+<li><strong>kernel</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.7)"><em>str</em></a>) – The kernel to use for microlensing GPR</li>
+<li><strong>combinedGrids</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#dict" title="(in Python v3.7)"><code class="xref py py-class docutils literal notranslate"><span class="pre">dict</span></code></a>) – A dictionary with ‘td’ or ‘mu’ as keys and tuples with additive bounds as values</li>
+<li><strong>refImage</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.7)"><em>str</em></a>) – The name of the image you want to be the reference image (i.e. image_1,image_2, etc.)</li>
+<li><strong>nMicroSamples</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(in Python v3.7)"><em>int</em></a>) – The number of pulls from the GPR posterior you want to use for microlensing uncertainty estimation</li>
 </ul>
 </td>
 </tr>
-<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body"><p class="first"></p>
+<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body"><p class="first"><strong>fitted_curveDict</strong> – The same curveDict that was passed to fit_data, but with new fits and time delay measurements included</p>
 </td>
 </tr>
-<tr class="field-odd field"><th class="field-name">Return type:</th><td class="field-body"><p class="first last"><a class="reference external" href="https://docs.python.org/3/library/constants.html#None" title="(in Python v3.7)">None</a></p>
+<tr class="field-odd field"><th class="field-name">Return type:</th><td class="field-body"><p class="first last"><a class="reference internal" href="#sntd.curve_io.curveDict" title="sntd.curve_io.curveDict"><code class="xref py py-class docutils literal notranslate"><span class="pre">curveDict</span></code></a></p>
 </td>
 </tr>
 </tbody>
 </table>
+<p class="rubric">Examples</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="n">fitCurves</span><span class="o">=</span><span class="n">sntd</span><span class="o">.</span><span class="n">fit_data</span><span class="p">(</span><span class="n">myMISN2</span><span class="p">,</span><span class="n">snType</span><span class="o">=</span><span class="s1">&#39;Ia&#39;</span><span class="p">,</span> <span class="n">models</span><span class="o">=</span><span class="s1">&#39;salt2-extended&#39;</span><span class="p">,</span><span class="n">bands</span><span class="o">=</span><span class="p">[</span><span class="s1">&#39;F110W&#39;</span><span class="p">,</span><span class="s1">&#39;F125W&#39;</span><span class="p">],</span>
+<span class="go">    params=[&#39;x0&#39;,&#39;x1&#39;,&#39;t0&#39;,&#39;c&#39;],constants={&#39;z&#39;:1.33},bounds={&#39;t0&#39;:(-15,15),&#39;x1&#39;:(-2,2),&#39;c&#39;:(0,1)},</span>
+<span class="go">    method=&#39;separate&#39;,microlensing=None)</span>
+</pre></div>
+</div>
 </dd></dl>
 
 <div class="line-block">
@@ -273,8 +299,23 @@ and the simulation parameters.</p>
 <dl class="attribute">
 <dt id="sntd.curve_io.curve.bands">
 <code class="descname">bands</code><em class="property"> = None</em><a class="headerlink" href="#sntd.curve_io.curve.bands" title="Permalink to this definition">¶</a></dt>
-<dd><p>string
-&#64;ivar: band names, used</p>
+<dd><p>str
+&#64;ivar: band names used</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Type:</th><td class="field-body">&#64;type</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="attribute">
+<dt id="sntd.curve_io.curve.fits">
+<code class="descname">fits</code><em class="property"> = None</em><a class="headerlink" href="#sntd.curve_io.curve.fits" title="Permalink to this definition">¶</a></dt>
+<dd><p><code class="xref py py-class docutils literal notranslate"><span class="pre">newDict</span></code>
+&#64;ivar: Contains fit information from fit_data</p>
 <table class="docutils field-list" frame="void" rules="none">
 <col class="field-name" />
 <col class="field-body" />
@@ -288,9 +329,24 @@ and the simulation parameters.</p>
 <dl class="attribute">
 <dt id="sntd.curve_io.curve.meta">
 <code class="descname">meta</code><em class="property"> = None</em><a class="headerlink" href="#sntd.curve_io.curve.meta" title="Permalink to this definition">¶</a></dt>
-<dd><p>dict
-&#64;ivar: The metadata for the curveDict object, intialized with an empty “info” key value pair. It’s
+<dd><p><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#dict" title="(in Python v3.7)"><code class="xref py py-class docutils literal notranslate"><span class="pre">dict</span></code></a>
+The metadata for the curveDict object, intialized with an empty “info” key value pair. It’s
 populated by added _metachar__ characters into the header of your data file.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Type:</th><td class="field-body">&#64;type</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="attribute">
+<dt id="sntd.curve_io.curve.simMeta">
+<code class="descname">simMeta</code><em class="property"> = None</em><a class="headerlink" href="#sntd.curve_io.curve.simMeta" title="Permalink to this definition">¶</a></dt>
+<dd><p><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#dict" title="(in Python v3.7)"><code class="xref py py-class docutils literal notranslate"><span class="pre">dict</span></code></a>
+&#64;ivar: A dictionary containing simulation metadata if this is a simulated curve object</p>
 <table class="docutils field-list" frame="void" rules="none">
 <col class="field-name" />
 <col class="field-body" />
@@ -304,7 +360,7 @@ populated by added _metachar__ characters into the header of your data file.</p>
 <dl class="attribute">
 <dt id="sntd.curve_io.curve.table">
 <code class="descname">table</code><em class="property"> = None</em><a class="headerlink" href="#sntd.curve_io.curve.table" title="Permalink to this definition">¶</a></dt>
-<dd><p>~astropy.table.Table
+<dd><p><code class="xref py py-class docutils literal notranslate"><span class="pre">astropy.table.Table</span></code>
 &#64;ivar: A table containing the data, used for SNCosmo functions, etc.</p>
 <table class="docutils field-list" frame="void" rules="none">
 <col class="field-name" />
@@ -316,16 +372,16 @@ populated by added _metachar__ characters into the header of your data file.</p>
 </table>
 </dd></dl>
 
-<dl class="method">
-<dt id="sntd.curve_io.curve.validate">
-<code class="descname">validate</code><span class="sig-paren">(</span><em>verbose=False</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/sntd/curve_io.html#curve.validate"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#sntd.curve_io.curve.validate" title="Permalink to this definition">¶</a></dt>
-<dd><p>Simply extends the superclass version of validate to include flux
-:param verbose: Default=False -&gt; won’t print “Validation done!”</p>
+<dl class="attribute">
+<dt id="sntd.curve_io.curve.zpsys">
+<code class="descname">zpsys</code><em class="property"> = None</em><a class="headerlink" href="#sntd.curve_io.curve.zpsys" title="Permalink to this definition">¶</a></dt>
+<dd><p>str
+&#64;ivar: the zero-point system for this curve object</p>
 <table class="docutils field-list" frame="void" rules="none">
 <col class="field-name" />
 <col class="field-body" />
 <tbody valign="top">
-<tr class="field-odd field"><th class="field-name">Returns:</th><td class="field-body">None</td>
+<tr class="field-odd field"><th class="field-name">Type:</th><td class="field-body">&#64;type</td>
 </tr>
 </tbody>
 </table>
@@ -344,6 +400,18 @@ See documentation for a flowchart of this object.</p>
 <code class="descname">add_curve</code><span class="sig-paren">(</span><em>myCurve</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/sntd/curve_io.html#curveDict.add_curve"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#sntd.curve_io.curveDict.add_curve" title="Permalink to this definition">¶</a></dt>
 <dd><p>Adds a curve object to the existing curveDict (i.e. adds
 an image to a MISN)</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><strong>myCurve</strong> (<code class="xref py py-class docutils literal notranslate"><span class="pre">sntd.curve</span></code>) – The curve to add to self.</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body"><strong>self</strong></td>
+</tr>
+<tr class="field-odd field"><th class="field-name">Return type:</th><td class="field-body"><a class="reference internal" href="#sntd.curve_io.curveDict" title="sntd.curve_io.curveDict"><code class="xref py py-class docutils literal notranslate"><span class="pre">sntd.curve_io.curveDict</span></code></a></td>
+</tr>
+</tbody>
+</table>
 </dd></dl>
 
 <dl class="attribute">
@@ -362,6 +430,41 @@ an image to a MISN)</p>
 </dd></dl>
 
 <dl class="method">
+<dt id="sntd.curve_io.curveDict.color_table">
+<code class="descname">color_table</code><span class="sig-paren">(</span><em>band1</em>, <em>band2</em>, <em>time_delays=None</em>, <em>magnifications=None</em>, <em>referenceImage='image_1'</em>, <em>ignore_images=[]</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/sntd/curve_io.html#curveDict.color_table"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#sntd.curve_io.curveDict.color_table" title="Permalink to this definition">¶</a></dt>
+<dd><dl class="docutils">
+<dt>Takes the multiple images in self.images and combines</dt>
+<dd>the data into a single color curve using defined
+time delays and magnifications or best (quick) guesses.</dd>
+</dl>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first simple">
+<li><strong>band1</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.7)"><em>str</em></a>) – The first band for color curve</li>
+<li><strong>band2</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.7)"><em>str</em></a>) – The second band for color curve</li>
+<li><strong>time_delays</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#dict" title="(in Python v3.7)"><code class="xref py py-class docutils literal notranslate"><span class="pre">dict</span></code></a>) – Dictionary with image names as keys and relative time
+delays as values (e.g. {‘image_1’:0,’image_2’:20})</li>
+<li><strong>magnifications</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#dict" title="(in Python v3.7)"><em>dict</em></a>) – Dictionary with image names as keys and relative
+magnifications as values (e.g.
+{‘image_1’:1,’image_2’:1.1})</li>
+<li><strong>referenceImage</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.7)"><em>str</em></a>) – The image you want to be the reference (e.g. iamge_1, image_2, etc.)</li>
+<li><strong>ignore_images</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#list" title="(in Python v3.7)"><em>list</em></a>) – List of images you do not want to include in the color curve.</li>
+</ul>
+</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body"><p class="first"><strong>self</strong></p>
+</td>
+</tr>
+<tr class="field-odd field"><th class="field-name">Return type:</th><td class="field-body"><p class="first last"><a class="reference internal" href="#sntd.curve_io.curveDict" title="sntd.curve_io.curveDict"><code class="xref py py-class docutils literal notranslate"><span class="pre">sntd.curve_io.curveDict</span></code></a></p>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="method">
 <dt id="sntd.curve_io.curveDict.combine_curves">
 <code class="descname">combine_curves</code><span class="sig-paren">(</span><em>time_delays=None</em>, <em>magnifications=None</em>, <em>referenceImage='image_1'</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/sntd/curve_io.html#curveDict.combine_curves"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#sntd.curve_io.curveDict.combine_curves" title="Permalink to this definition">¶</a></dt>
 <dd><dl class="docutils">
@@ -374,11 +477,12 @@ time delays and magnifications or best (quick) guesses.</dd>
 <col class="field-body" />
 <tbody valign="top">
 <tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first simple">
-<li><strong>time_delays</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#dict" title="(in Python v3.7)"><em>dict</em></a>) – Dictionary with image names as keys and relative time
+<li><strong>time_delays</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#dict" title="(in Python v3.7)"><code class="xref py py-class docutils literal notranslate"><span class="pre">dict</span></code></a>) – Dictionary with image names as keys and relative time
 delays as values (e.g. {‘image_1’:0,’image_2’:20})</li>
 <li><strong>magnifications</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#dict" title="(in Python v3.7)"><em>dict</em></a>) – Dictionary with image names as keys and relative
 magnifications as values (e.g.
 {‘image_1’:1,’image_2’:1.1})</li>
+<li><strong>referenceImage</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.7)"><em>str</em></a>) – The image you want to be the reference (e.g. iamge_1, image_2, etc.)</li>
 </ul>
 </td>
 </tr>
@@ -507,7 +611,7 @@ as well</li>
 </tr>
 <tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body"><strong>curve</strong></td>
 </tr>
-<tr class="field-odd field"><th class="field-name">Return type:</th><td class="field-body"><cite>~sntd.curve</cite> or <cite>~sntd.curveDict</cite></td>
+<tr class="field-odd field"><th class="field-name">Return type:</th><td class="field-body"><code class="xref py py-class docutils literal notranslate"><span class="pre">curve</span></code> or <code class="xref py py-class docutils literal notranslate"><span class="pre">curveDict</span></code></td>
 </tr>
 </tbody>
 </table>
@@ -560,7 +664,7 @@ as well</li>
 <tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body"><p class="first"><strong>curve</strong></p>
 </td>
 </tr>
-<tr class="field-odd field"><th class="field-name">Return type:</th><td class="field-body"><p class="first last"><cite>~sntd.curve</cite></p>
+<tr class="field-odd field"><th class="field-name">Return type:</th><td class="field-body"><p class="first last"><code class="xref py py-class docutils literal notranslate"><span class="pre">curve</span></code></p>
 </td>
 </tr>
 </tbody>
@@ -570,6 +674,46 @@ as well</li>
 </div>
 <div class="section" id="module-sntd.ml">
 <span id="microlensing"></span><h2>Microlensing<a class="headerlink" href="#module-sntd.ml" title="Permalink to this headline">¶</a></h2>
+<dl class="function">
+<dt id="sntd.ml.realizeMicro">
+<code class="descclassname">sntd.ml.</code><code class="descname">realizeMicro</code><span class="sig-paren">(</span><em>arand=0.25</em>, <em>debug=0</em>, <em>kappas=0.75</em>, <em>kappac=0.15</em>, <em>gamma=0.76</em>, <em>eps=0.6</em>, <em>nray=300</em>, <em>minmass=10</em>, <em>maxmass=10</em>, <em>power=-2.35</em>, <em>pixmax=5</em>, <em>pixminx=0</em>, <em>pixminy=0</em>, <em>pixdif=10</em>, <em>fracpixd=0.3</em>, <em>iwrite=0</em>, <em>verbose=False</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/sntd/ml.html#realizeMicro"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#sntd.ml.realizeMicro" title="Permalink to this definition">¶</a></dt>
+<dd><dl class="docutils">
+<dt>Creates a microcaustic realization based on Wambsganss 1990 microlens code. All parameters are optional as they</dt>
+<dd>have defaults, see Wambsganss documentation for details on parameters.</dd>
+</dl>
+</dd></dl>
+
+<dl class="function">
+<dt id="sntd.ml.microcaustic_field_to_curve">
+<code class="descclassname">sntd.ml.</code><code class="descname">microcaustic_field_to_curve</code><span class="sig-paren">(</span><em>field</em>, <em>time</em>, <em>zl</em>, <em>zs</em>, <em>velocity=&lt;Quantity 10000. km / s&gt;</em>, <em>M=&lt;Quantity 1.98847542e+30 kg&gt;</em>, <em>loc='Random'</em>, <em>plot=False</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/sntd/ml.html#microcaustic_field_to_curve"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#sntd.ml.microcaustic_field_to_curve" title="Permalink to this definition">¶</a></dt>
+<dd><p>Convolves an expanding photosphere (achromatic disc) with a microcaustic to generate a magnification curve.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first simple">
+<li><strong>field</strong> (<code class="xref py py-class docutils literal notranslate"><span class="pre">numpy.ndarray</span></code>) – An opened fits file of a microcaustic, can be generated by realizeMicro</li>
+<li><strong>time</strong> (<code class="xref py py-class docutils literal notranslate"><span class="pre">numpy.array</span></code>) – Time array you want for microlensing magnification curve, explosion time is 0</li>
+<li><strong>zl</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.7)"><em>float</em></a>) – redshift of the lens</li>
+<li><strong>zs</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.7)"><em>float</em></a>) – redshift of the source</li>
+<li><strong>velocity</strong> (float* <code class="xref py py-class docutils literal notranslate"><span class="pre">astropy.units.Unit</span></code>) – The average velocity of the expanding photosphere</li>
+<li><strong>M</strong> (float* <code class="xref py py-class docutils literal notranslate"><span class="pre">astropy.units.Unit</span></code>) – The mass of the deflector</li>
+<li><strong>loc</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.7)"><em>str</em></a><em> or </em><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#tuple" title="(in Python v3.7)"><em>tuple</em></a>) – Random is defualt for location of the supernova, or pixel (x,y) coordiante can be specified</li>
+<li><strong>plot</strong> (<em>Boolean</em>) – If true, plots the expanding photosphere on the microcaustic</li>
+</ul>
+</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body"><p class="first last"><ul class="simple">
+<li><strong>time</strong> (<code class="xref py py-class docutils literal notranslate"><span class="pre">numpy.array</span></code>) – The time array for the magnification curve</li>
+<li><strong>dmag</strong> (<code class="xref py py-class docutils literal notranslate"><span class="pre">numpy.array</span></code>) – The magnification curve.</li>
+</ul>
+</p>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
 <dl class="class">
 <dt id="sntd.ml.AchromaticMicrolensing">
 <em class="property">class </em><code class="descclassname">sntd.ml.</code><code class="descname">AchromaticMicrolensing</code><span class="sig-paren">(</span><em>time</em>, <em>dmag</em>, <em>sigma=None</em>, <em>magformat='multiply'</em>, <em>**kwargs</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/sntd/ml.html#AchromaticMicrolensing"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#sntd.ml.AchromaticMicrolensing" title="Permalink to this definition">¶</a></dt>

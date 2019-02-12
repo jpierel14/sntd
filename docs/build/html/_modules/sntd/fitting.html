@@ -211,17 +211,65 @@
 
 <span class="sd">    Parameters</span>
 <span class="sd">    ----------</span>
-<span class="sd">    curves: :class:`sntd.curve_io.curveDict`</span>
+<span class="sd">    curves: :class:`~sntd.curve_io.curveDict`</span>
 <span class="sd">        The curveDict object containing the multiple images to fit.</span>
 <span class="sd">    snType: str</span>
 <span class="sd">        The supernova classification</span>
-<span class="sd">    bands: list of :class:`~sncosmo.bandpasses.Bandpass` or str</span>
+<span class="sd">    bands: list of :class:`sncosmo.Bandpass` or str, or :class:`sncosmo.Bandpass` or str</span>
 <span class="sd">        The band(s) to be fit</span>
-<span class="sd">    models: list</span>
+<span class="sd">    models: list of :class:`sncosmo.Model` or str, or :class:`sncosmo.Model` or str</span>
+<span class="sd">        The model(s) to be used for fitting to the data</span>
+<span class="sd">    params: list of str</span>
+<span class="sd">        The parameters to be fit for the models inside of the parameter models</span>
+<span class="sd">    bounds: :class:`dict`</span>
+<span class="sd">        A dictionary with parameters in params as keys and a tuple of bounds as values</span>
+<span class="sd">    ignore: list of str</span>
+<span class="sd">        List of parameters to ignore</span>
+<span class="sd">    constants: :class:`dict`</span>
+<span class="sd">        Dictionary with parameters as keys and the constant value you want to set them to as values</span>
+<span class="sd">    method: str</span>
+<span class="sd">        Needs to be &#39;separate&#39;, &#39;combined&#39;, or &#39;color&#39;</span>
+<span class="sd">    t0_guess: :class:`dict`</span>
+<span class="sd">        Dictionary with image names (i.e. &#39;image_1&#39;,&#39;image_2&#39;) as keys and a guess for time of peak as values</span>
+<span class="sd">    refModel: :class:`scipy.interpolate.interp1d` or :class:`sncosmo.Model`</span>
+<span class="sd">        If doing a combined or color fit, a reference model that will be used to fit all the data at once is required.</span>
+<span class="sd">    effect_names: list of str</span>
+<span class="sd">        List of effect names if model contains a :class:`sncosmo.PropagationEffect`.</span>
+<span class="sd">    effect_frames: list of str</span>
+<span class="sd">        List of the frames (e.g. obs or rest) that correspond to the effects in effect_names</span>
+<span class="sd">    fitting_method: str</span>
+<span class="sd">        Must be &#39;nest&#39;, &#39;mcmc&#39;, or &#39;minuit&#39;. This is only used when you are trying to find the best of a list of models.</span>
+<span class="sd">    dust: :class:`sncosmo.PropagationEffect`</span>
+<span class="sd">        An sncosmo dust propagation effect to include in the model</span>
+<span class="sd">    flip: Boolean</span>
+<span class="sd">        If True, the time axis of the model is flipped</span>
+<span class="sd">    guess_amplitude: Boolean</span>
+<span class="sd">        If True, the amplitude parameter for the model is estimated, as well as its bounds</span>
+<span class="sd">    combinedError: :class:`scipy.interpolate.interp1d`</span>
+<span class="sd">        If doing a combined or color fit, this is the uncertainty on the reference model.</span>
+<span class="sd">    showPlots: Boolean</span>
+<span class="sd">        If true, :func:`sncosmo.plot_lc` function is called during the fitting</span>
+<span class="sd">    microlensing: str</span>
+<span class="sd">        If None microlensing is ignored, otherwise should be str (e.g. achromatic, chromatic)</span>
+<span class="sd">    kernel: str</span>
+<span class="sd">        The kernel to use for microlensing GPR</span>
+<span class="sd">    combinedGrids: :class:`dict`</span>
+<span class="sd">        A dictionary with &#39;td&#39; or &#39;mu&#39; as keys and tuples with additive bounds as values</span>
+<span class="sd">    refImage: str</span>
+<span class="sd">        The name of the image you want to be the reference image (i.e. image_1,image_2, etc.)</span>
+<span class="sd">    nMicroSamples: int</span>
+<span class="sd">        The number of pulls from the GPR posterior you want to use for microlensing uncertainty estimation</span>
 
 <span class="sd">    Returns</span>
 <span class="sd">    -------</span>
-<span class="sd">    None</span>
+<span class="sd">    fitted_curveDict: :class:`~sntd.curve_io.curveDict`</span>
+<span class="sd">        The same curveDict that was passed to fit_data, but with new fits and time delay measurements included</span>
+<span class="sd">    Examples</span>
+<span class="sd">    --------</span>
+<span class="sd">    &gt;&gt;&gt; fitCurves=sntd.fit_data(myMISN2,snType=&#39;Ia&#39;, models=&#39;salt2-extended&#39;,bands=[&#39;F110W&#39;,&#39;F125W&#39;],</span>
+<span class="sd">        params=[&#39;x0&#39;,&#39;x1&#39;,&#39;t0&#39;,&#39;c&#39;],constants={&#39;z&#39;:1.33},bounds={&#39;t0&#39;:(-15,15),&#39;x1&#39;:(-2,2),&#39;c&#39;:(0,1)},</span>
+<span class="sd">        method=&#39;separate&#39;,microlensing=None)</span>
+
 <span class="sd">    &quot;&quot;&quot;</span>
 
 

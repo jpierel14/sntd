@@ -64,17 +64,65 @@ def fit_data(curves, snType='Ia',bands=None, models=None, params=None, bounds={}
 
     Parameters
     ----------
-    curves: :class:`sntd.curve_io.curveDict`
+    curves: :class:`~sntd.curve_io.curveDict`
         The curveDict object containing the multiple images to fit.
     snType: str
         The supernova classification
-    bands: list of :class:`~sncosmo.bandpasses.Bandpass` or str
+    bands: list of :class:`sncosmo.Bandpass` or str, or :class:`sncosmo.Bandpass` or str
         The band(s) to be fit
-    models: list
+    models: list of :class:`sncosmo.Model` or str, or :class:`sncosmo.Model` or str
+        The model(s) to be used for fitting to the data
+    params: list of str
+        The parameters to be fit for the models inside of the parameter models
+    bounds: :class:`dict`
+        A dictionary with parameters in params as keys and a tuple of bounds as values
+    ignore: list of str
+        List of parameters to ignore
+    constants: :class:`dict`
+        Dictionary with parameters as keys and the constant value you want to set them to as values
+    method: str
+        Needs to be 'separate', 'combined', or 'color'
+    t0_guess: :class:`dict`
+        Dictionary with image names (i.e. 'image_1','image_2') as keys and a guess for time of peak as values
+    refModel: :class:`scipy.interpolate.interp1d` or :class:`sncosmo.Model`
+        If doing a combined or color fit, a reference model that will be used to fit all the data at once is required.
+    effect_names: list of str
+        List of effect names if model contains a :class:`sncosmo.PropagationEffect`.
+    effect_frames: list of str
+        List of the frames (e.g. obs or rest) that correspond to the effects in effect_names
+    fitting_method: str
+        Must be 'nest', 'mcmc', or 'minuit'. This is only used when you are trying to find the best of a list of models.
+    dust: :class:`sncosmo.PropagationEffect`
+        An sncosmo dust propagation effect to include in the model
+    flip: Boolean
+        If True, the time axis of the model is flipped
+    guess_amplitude: Boolean
+        If True, the amplitude parameter for the model is estimated, as well as its bounds
+    combinedError: :class:`scipy.interpolate.interp1d`
+        If doing a combined or color fit, this is the uncertainty on the reference model.
+    showPlots: Boolean
+        If true, :func:`sncosmo.plot_lc` function is called during the fitting
+    microlensing: str
+        If None microlensing is ignored, otherwise should be str (e.g. achromatic, chromatic)
+    kernel: str
+        The kernel to use for microlensing GPR
+    combinedGrids: :class:`dict`
+        A dictionary with 'td' or 'mu' as keys and tuples with additive bounds as values
+    refImage: str
+        The name of the image you want to be the reference image (i.e. image_1,image_2, etc.)
+    nMicroSamples: int
+        The number of pulls from the GPR posterior you want to use for microlensing uncertainty estimation
 
     Returns
     -------
-    None
+    fitted_curveDict: :class:`~sntd.curve_io.curveDict`
+        The same curveDict that was passed to fit_data, but with new fits and time delay measurements included
+    Examples
+    --------
+    >>> fitCurves=sntd.fit_data(myMISN2,snType='Ia', models='salt2-extended',bands=['F110W','F125W'],
+        params=['x0','x1','t0','c'],constants={'z':1.33},bounds={'t0':(-15,15),'x1':(-2,2),'c':(0,1)},
+        method='separate',microlensing=None)
+
     """
 
 

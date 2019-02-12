@@ -275,7 +275,18 @@
 
 <div class="viewcode-block" id="curveDict.add_curve"><a class="viewcode-back" href="../../api.html#sntd.curve_io.curveDict.add_curve">[docs]</a>    <span class="k">def</span> <span class="nf">add_curve</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span><span class="n">myCurve</span><span class="p">):</span>
         <span class="sd">&quot;&quot;&quot;Adds a curve object to the existing curveDict (i.e. adds</span>
-<span class="sd">        an image to a MISN)&quot;&quot;&quot;</span>
+<span class="sd">        an image to a MISN)</span>
+
+<span class="sd">        Parameters</span>
+<span class="sd">        ----------</span>
+<span class="sd">        myCurve: :class:`sntd.curve`</span>
+<span class="sd">            The curve to add to self.</span>
+
+<span class="sd">        Returns</span>
+<span class="sd">        -------</span>
+<span class="sd">        self: :class:`sntd.curve_io.curveDict`</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+
         <span class="bp">self</span><span class="o">.</span><span class="n">bands</span><span class="o">.</span><span class="n">update</span><span class="p">([</span><span class="n">x</span> <span class="k">for</span> <span class="n">x</span> <span class="ow">in</span> <span class="n">myCurve</span><span class="o">.</span><span class="n">bands</span> <span class="k">if</span> <span class="n">x</span> <span class="ow">not</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">bands</span><span class="p">])</span>
         <span class="n">myCurve</span><span class="o">.</span><span class="n">object</span><span class="o">=</span><span class="s1">&#39;image_&#39;</span><span class="o">+</span><span class="nb">str</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">images</span><span class="p">)</span><span class="o">+</span><span class="mi">1</span><span class="p">)</span>
 
@@ -303,13 +314,15 @@
 
 <span class="sd">        Parameters</span>
 <span class="sd">        ----------</span>
-<span class="sd">        time_delays : dict</span>
+<span class="sd">        time_delays : :class:`dict`</span>
 <span class="sd">            Dictionary with image names as keys and relative time</span>
 <span class="sd">            delays as values (e.g. {&#39;image_1&#39;:0,&#39;image_2&#39;:20})</span>
 <span class="sd">        magnifications : dict</span>
 <span class="sd">            Dictionary with image names as keys and relative</span>
 <span class="sd">            magnifications as values (e.g.</span>
 <span class="sd">            {&#39;image_1&#39;:1,&#39;image_2&#39;:1.1})</span>
+<span class="sd">        referenceImage: str</span>
+<span class="sd">            The image you want to be the reference (e.g. iamge_1, image_2, etc.)</span>
 
 <span class="sd">        Returns</span>
 <span class="sd">        -------</span>
@@ -338,18 +351,45 @@
         <span class="k">return</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span></div>
 
 
-    <span class="k">def</span> <span class="nf">color_table</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span><span class="n">band1</span><span class="p">,</span><span class="n">band2</span><span class="p">,</span><span class="n">time_delays</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span><span class="n">magnifications</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span><span class="n">image</span><span class="o">=</span><span class="p">[]):</span>
-        <span class="n">image</span><span class="o">=</span><span class="nb">list</span><span class="p">(</span><span class="n">image</span><span class="p">)</span> <span class="k">if</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">image</span><span class="p">,(</span><span class="nb">list</span><span class="p">,</span><span class="nb">tuple</span><span class="p">))</span> <span class="k">else</span> <span class="n">image</span>
+<div class="viewcode-block" id="curveDict.color_table"><a class="viewcode-back" href="../../api.html#sntd.curve_io.curveDict.color_table">[docs]</a>    <span class="k">def</span> <span class="nf">color_table</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span><span class="n">band1</span><span class="p">,</span><span class="n">band2</span><span class="p">,</span><span class="n">time_delays</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span><span class="n">magnifications</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span><span class="n">referenceImage</span><span class="o">=</span><span class="s1">&#39;image_1&#39;</span><span class="p">,</span><span class="n">ignore_images</span><span class="o">=</span><span class="p">[]):</span>
+        <span class="sd">&quot;&quot;&quot;Takes the multiple images in self.images and combines</span>
+<span class="sd">            the data into a single color curve using defined</span>
+<span class="sd">            time delays and magnifications or best (quick) guesses.</span>
+
+<span class="sd">        Parameters</span>
+<span class="sd">        ----------</span>
+<span class="sd">        band1: str</span>
+<span class="sd">            The first band for color curve</span>
+<span class="sd">        band2: str</span>
+<span class="sd">            The second band for color curve</span>
+<span class="sd">        time_delays : :class:`dict`</span>
+<span class="sd">            Dictionary with image names as keys and relative time</span>
+<span class="sd">            delays as values (e.g. {&#39;image_1&#39;:0,&#39;image_2&#39;:20})</span>
+<span class="sd">        magnifications : dict</span>
+<span class="sd">            Dictionary with image names as keys and relative</span>
+<span class="sd">            magnifications as values (e.g.</span>
+<span class="sd">            {&#39;image_1&#39;:1,&#39;image_2&#39;:1.1})</span>
+<span class="sd">        referenceImage: str</span>
+<span class="sd">            The image you want to be the reference (e.g. iamge_1, image_2, etc.)</span>
+<span class="sd">        ignore_images: list</span>
+<span class="sd">            List of images you do not want to include in the color curve.</span>
+
+<span class="sd">        Returns</span>
+<span class="sd">        -------</span>
+<span class="sd">        self: :class:`sntd.curve_io.curveDict`</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+
+        <span class="n">ignore_images</span><span class="o">=</span><span class="nb">list</span><span class="p">(</span><span class="n">ignore_images</span><span class="p">)</span> <span class="k">if</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">ignore_images</span><span class="p">,(</span><span class="nb">list</span><span class="p">,</span><span class="nb">tuple</span><span class="p">))</span> <span class="k">else</span> <span class="n">ignore_images</span>
         <span class="n">names</span><span class="o">=</span><span class="p">[</span><span class="s1">&#39;time&#39;</span><span class="p">,</span><span class="s1">&#39;image&#39;</span><span class="p">,</span><span class="s1">&#39;zpsys&#39;</span><span class="p">]</span>
         <span class="n">dtype</span><span class="o">=</span><span class="p">[</span><span class="bp">self</span><span class="o">.</span><span class="n">table</span><span class="o">.</span><span class="n">dtype</span><span class="p">[</span><span class="n">x</span><span class="p">]</span> <span class="k">for</span> <span class="n">x</span> <span class="ow">in</span> <span class="n">names</span><span class="p">]</span>
         <span class="n">names</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">names</span><span class="p">,[</span><span class="n">band1</span><span class="o">+</span><span class="s1">&#39;-&#39;</span><span class="o">+</span><span class="n">band2</span><span class="p">,</span><span class="n">band1</span><span class="o">+</span><span class="s1">&#39;-&#39;</span><span class="o">+</span><span class="n">band2</span><span class="o">+</span><span class="s1">&#39;_err&#39;</span><span class="p">])</span>
         <span class="n">dtype</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">dtype</span><span class="p">,[</span><span class="n">dtype</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span><span class="n">dtype</span><span class="p">[</span><span class="mi">0</span><span class="p">]])</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">color</span><span class="o">.</span><span class="n">table</span><span class="o">=</span><span class="n">Table</span><span class="p">(</span><span class="n">names</span><span class="o">=</span><span class="n">names</span><span class="p">,</span><span class="n">dtype</span><span class="o">=</span><span class="n">dtype</span><span class="p">)</span>
         <span class="k">if</span> <span class="ow">not</span> <span class="n">time_delays</span><span class="p">:</span>
-            <span class="n">time_delays</span><span class="o">=</span><span class="n">_guess_time_delays</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="c1">#TODO fix these guessing functions</span>
+            <span class="n">time_delays</span><span class="o">=</span><span class="n">_guess_time_delays</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span><span class="n">referenceImage</span><span class="p">)</span> <span class="c1">#TODO fix these guessing functions</span>
         <span class="k">if</span> <span class="ow">not</span> <span class="n">magnifications</span><span class="p">:</span>
-            <span class="n">magnifications</span><span class="o">=</span><span class="n">_guess_magnifications</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span>
-        <span class="k">for</span> <span class="n">im</span> <span class="ow">in</span> <span class="p">[</span><span class="n">x</span> <span class="k">for</span> <span class="n">x</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">images</span><span class="o">.</span><span class="n">keys</span><span class="p">()</span> <span class="k">if</span> <span class="n">x</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">image</span><span class="p">]:</span>
+            <span class="n">magnifications</span><span class="o">=</span><span class="n">_guess_magnifications</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span><span class="n">referenceImage</span><span class="p">)</span>
+        <span class="k">for</span> <span class="n">im</span> <span class="ow">in</span> <span class="p">[</span><span class="n">x</span> <span class="k">for</span> <span class="n">x</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">images</span><span class="o">.</span><span class="n">keys</span><span class="p">()</span> <span class="k">if</span> <span class="n">x</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">ignore_images</span><span class="p">]:</span>
             <span class="n">temp2</span><span class="o">=</span><span class="n">copy</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">images</span><span class="p">[</span><span class="n">im</span><span class="p">]</span><span class="o">.</span><span class="n">table</span><span class="p">[</span><span class="bp">self</span><span class="o">.</span><span class="n">images</span><span class="p">[</span><span class="n">im</span><span class="p">]</span><span class="o">.</span><span class="n">table</span><span class="p">[</span><span class="s1">&#39;band&#39;</span><span class="p">]</span><span class="o">==</span><span class="n">band2</span><span class="p">])</span>
             <span class="n">temp1</span><span class="o">=</span><span class="n">copy</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">images</span><span class="p">[</span><span class="n">im</span><span class="p">]</span><span class="o">.</span><span class="n">table</span><span class="p">[</span><span class="bp">self</span><span class="o">.</span><span class="n">images</span><span class="p">[</span><span class="n">im</span><span class="p">]</span><span class="o">.</span><span class="n">table</span><span class="p">[</span><span class="s1">&#39;band&#39;</span><span class="p">]</span><span class="o">==</span><span class="n">band1</span><span class="p">])</span>
             <span class="n">temp1</span><span class="o">=</span><span class="n">temp1</span><span class="p">[</span><span class="n">temp1</span><span class="p">[</span><span class="s1">&#39;flux&#39;</span><span class="p">]</span><span class="o">&gt;</span><span class="mi">0</span><span class="p">]</span>
@@ -381,7 +421,7 @@
 
             <span class="bp">self</span><span class="o">.</span><span class="n">color</span><span class="o">.</span><span class="n">table</span><span class="o">=</span><span class="n">vstack</span><span class="p">([</span><span class="bp">self</span><span class="o">.</span><span class="n">color</span><span class="o">.</span><span class="n">table</span><span class="p">,</span><span class="n">copy</span><span class="p">(</span><span class="n">temp1</span><span class="p">)])</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">color</span><span class="o">.</span><span class="n">table</span><span class="o">.</span><span class="n">sort</span><span class="p">(</span><span class="s1">&#39;time&#39;</span><span class="p">)</span>
-        <span class="k">return</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span>
+        <span class="k">return</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span></div>
 
 
 <div class="viewcode-block" id="curveDict.plot_object"><a class="viewcode-back" href="../../api.html#sntd.curve_io.curveDict.plot_object">[docs]</a>    <span class="k">def</span> <span class="nf">plot_object</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">bands</span><span class="o">=</span><span class="s1">&#39;all&#39;</span><span class="p">,</span> <span class="n">savefig</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>
@@ -619,23 +659,30 @@
         <span class="c1">#todo populate param documentation</span>
         <span class="nb">super</span><span class="p">(</span><span class="n">curve</span><span class="p">,</span><span class="bp">self</span><span class="p">)</span><span class="o">.</span><span class="fm">__init__</span><span class="p">()</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">meta</span> <span class="o">=</span> <span class="p">{</span><span class="s1">&#39;info&#39;</span><span class="p">:</span> <span class="s1">&#39;&#39;</span><span class="p">}</span>
-        <span class="sd">&quot;&quot;&quot;@type: dict</span>
-<span class="sd">            @ivar: The metadata for the curveDict object, intialized with an empty &quot;info&quot; key value pair. It&#39;s</span>
+        <span class="sd">&quot;&quot;&quot;@type: :class:`dict`</span>
+<span class="sd">            The metadata for the curveDict object, intialized with an empty &quot;info&quot; key value pair. It&#39;s</span>
 <span class="sd">            populated by added _metachar__ characters into the header of your data file.</span>
 <span class="sd">        &quot;&quot;&quot;</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">table</span><span class="o">=</span><span class="kc">None</span>
-        <span class="sd">&quot;&quot;&quot;@type: ~astropy.table.Table</span>
+        <span class="sd">&quot;&quot;&quot;@type: :class:`astropy.table.Table`</span>
 <span class="sd">        @ivar: A table containing the data, used for SNCosmo functions, etc.</span>
 <span class="sd">        &quot;&quot;&quot;</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">bands</span><span class="o">=</span><span class="p">[]</span>
-        <span class="sd">&quot;&quot;&quot;@type: string</span>
-<span class="sd">        @ivar: band names, used</span>
+        <span class="sd">&quot;&quot;&quot;@type: str</span>
+<span class="sd">        @ivar: band names used</span>
 <span class="sd">        &quot;&quot;&quot;</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">zpsys</span><span class="o">=</span><span class="n">zpsys</span>
+        <span class="sd">&quot;&quot;&quot;@type: str</span>
+<span class="sd">        @ivar: the zero-point system for this curve object</span>
+<span class="sd">        &quot;&quot;&quot;</span>
 
         <span class="bp">self</span><span class="o">.</span><span class="n">simMeta</span><span class="o">=</span><span class="nb">dict</span><span class="p">([])</span>
+        <span class="sd">&quot;&quot;&quot;@type: :class:`dict`</span>
+<span class="sd">        @ivar: A dictionary containing simulation metadata if this is a simulated curve object&quot;&quot;&quot;</span>
 
         <span class="bp">self</span><span class="o">.</span><span class="n">fits</span><span class="o">=</span><span class="kc">None</span>
+        <span class="sd">&quot;&quot;&quot;@type: :class:`~sntd.fitting.newDict`</span>
+<span class="sd">        @ivar: Contains fit information from fit_data&quot;&quot;&quot;</span>
 
 
     <span class="c1">#these three functions allow you to access the curveDict via &quot;dot&quot; notation</span>
@@ -658,20 +705,9 @@
 <span class="sd">        :param d: A value</span>
 <span class="sd">        :return: self.__dict__</span>
 <span class="sd">        &quot;&quot;&quot;</span>
-        <span class="bp">self</span><span class="o">.</span><span class="vm">__dict__</span> <span class="o">=</span> <span class="n">d</span>
+        <span class="bp">self</span><span class="o">.</span><span class="vm">__dict__</span> <span class="o">=</span> <span class="n">d</span></div>
 
-<div class="viewcode-block" id="curve.validate"><a class="viewcode-back" href="../../api.html#sntd.curve_io.curve.validate">[docs]</a>    <span class="k">def</span> <span class="nf">validate</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">verbose</span><span class="o">=</span><span class="kc">False</span><span class="p">):</span>
-        <span class="sd">&quot;&quot;&quot;</span>
-<span class="sd">        Simply extends the superclass version of validate to include flux</span>
-<span class="sd">        :param verbose: Default=False -&gt; won&#39;t print &quot;Validation done!&quot;</span>
 
-<span class="sd">        :return: None</span>
-<span class="sd">        &quot;&quot;&quot;</span>
-        <span class="n">ndates</span><span class="o">=</span><span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span>
-        <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">fluxes</span><span class="p">)</span> <span class="o">!=</span> <span class="n">ndates</span> <span class="ow">or</span> <span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">fluxerrs</span><span class="p">)</span> <span class="o">!=</span> <span class="n">ndates</span> <span class="ow">or</span> <span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">table</span><span class="p">)</span><span class="o">!=</span><span class="n">ndates</span><span class="p">:</span>
-            <span class="k">raise</span><span class="p">(</span><span class="ne">RuntimeError</span><span class="p">,</span> <span class="s2">&quot;The length of your flux/fluxerr arrays are inconsistent with rest of curve!&quot;</span><span class="p">)</span>
-
-        <span class="nb">super</span><span class="p">(</span><span class="n">curve</span><span class="p">,</span><span class="bp">self</span><span class="p">)</span><span class="o">.</span><span class="n">validate</span><span class="p">(</span><span class="n">verbose</span><span class="p">)</span></div></div>
 
 
 
@@ -690,7 +726,7 @@
 
 <span class="sd">    Returns</span>
 <span class="sd">    -------</span>
-<span class="sd">    curve : `~sntd.curve`</span>
+<span class="sd">    curve : :class:`~sntd.curve`</span>
 
 <span class="sd">    &quot;&quot;&quot;</span>
     <span class="n">newlc</span><span class="o">=</span><span class="n">curve</span><span class="p">()</span>
@@ -763,7 +799,7 @@
 
 <span class="sd">    Returns</span>
 <span class="sd">    -------</span>
-<span class="sd">    curve : `~sntd.curve` or `~sntd.curveDict`</span>
+<span class="sd">    curve : :class:`~sntd.curve` or :class:`~sntd.curveDict`</span>
 <span class="sd">    &quot;&quot;&quot;</span>
     <span class="k">return</span><span class="p">(</span><span class="n">_switch</span><span class="p">(</span><span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">splitext</span><span class="p">(</span><span class="n">filename</span><span class="p">)[</span><span class="mi">1</span><span class="p">])(</span><span class="n">filename</span><span class="p">,</span><span class="o">**</span><span class="n">kwargs</span><span class="p">))</span></div>
 
