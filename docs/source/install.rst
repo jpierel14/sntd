@@ -20,16 +20,27 @@ Using pip::
 
     pip install sntd
 
-.. note::
-
-    You will need a C compiler (e.g. ``gcc`` or ``clang``) to be
-    installed for the installation to succeed due to SNCosmo.
-
-.. note::
-
-   Sometimes there is an issue with the install related to numpy. If this happens, try installing numpy using pip, and then installing SNTD using pip.
+If you plan to use SNTD to simulate the effects of microlensing,
+which uses the `[Wambsganss 1999] <https://www.sciencedirect.com/science/article/pii/S0377042799001648>`_
+microlens code, then you will need
+a fortran compiler. You can install gfortran `here <https://gcc.gnu.org/wiki/GFortranBinaries>`_.
    
 
+Common Installation Issues
+==========================
+
+1. You will need a C compiler (e.g. ``gcc`` or ``clang``) to be
+   installed for the installation to succeed due to SNCosmo.
+
+2. Sometimes there is an issue with the install related to numpy,
+   particularly if you are installing in a fresh build of python
+   (e.g. a new virtual environment). If this happens, try
+   installing numpy using pip, and then installing SNTD using pip.
+
+3. On MacOS and a fresh python build, you may have an issue with
+   importing sntd because of matplotlib and an error saying python
+   was not installed as a framework. A fix for that issue is on
+   `stack overflow <https://stackoverflow.com/questions/21784641/installation-issue-with-matplotlib-python>`_.
 
 Install latest development version
 ==================================
@@ -48,10 +59,6 @@ then::
 
 Optional dependencies
 =====================
-
-.. note::
-   If you plan to use SNTD to simulate the effects of microlensing, which uses the Wambsganss 1990 microlens code, then you will need a fortran compiler. You can install gfortran `here
-   <https://gcc.gnu.org/wiki/GFortranBinaries>`_.
 
 Several additional packages are recommended for enabling optional
 functionality in SNCosmo.

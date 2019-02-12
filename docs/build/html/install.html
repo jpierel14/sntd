@@ -82,6 +82,7 @@
 <ul class="current">
 <li class="toctree-l1 current"><a class="current reference internal" href="#">Installation</a><ul>
 <li class="toctree-l2"><a class="reference internal" href="#install-using-pip">Install using pip</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#common-installation-issues">Common Installation Issues</a></li>
 <li class="toctree-l2"><a class="reference internal" href="#install-latest-development-version">Install latest development version</a></li>
 <li class="toctree-l2"><a class="reference internal" href="#optional-dependencies">Optional dependencies</a></li>
 </ul>
@@ -171,15 +172,25 @@ following Python packages:</p>
 <div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">pip</span> <span class="n">install</span> <span class="n">sntd</span>
 </pre></div>
 </div>
-<div class="admonition note">
-<p class="first admonition-title">Note</p>
-<p class="last">You will need a C compiler (e.g. <code class="docutils literal notranslate"><span class="pre">gcc</span></code> or <code class="docutils literal notranslate"><span class="pre">clang</span></code>) to be
-installed for the installation to succeed due to SNCosmo.</p>
+<p>If you plan to use SNTD to simulate the effects of microlensing,
+which uses the <a class="reference external" href="https://www.sciencedirect.com/science/article/pii/S0377042799001648">[Wambsganss 1999]</a>
+microlens code, then you will need
+a fortran compiler. You can install gfortran <a class="reference external" href="https://gcc.gnu.org/wiki/GFortranBinaries">here</a>.</p>
 </div>
-<div class="admonition note">
-<p class="first admonition-title">Note</p>
-<p class="last">Sometimes there is an issue with the install related to numpy. If this happens, try installing numpy using pip, and then installing SNTD using pip.</p>
-</div>
+<div class="section" id="common-installation-issues">
+<h2>Common Installation Issues<a class="headerlink" href="#common-installation-issues" title="Permalink to this headline">¶</a></h2>
+<ol class="arabic simple">
+<li>You will need a C compiler (e.g. <code class="docutils literal notranslate"><span class="pre">gcc</span></code> or <code class="docutils literal notranslate"><span class="pre">clang</span></code>) to be
+installed for the installation to succeed due to SNCosmo.</li>
+<li>Sometimes there is an issue with the install related to numpy,
+particularly if you are installing in a fresh build of python
+(e.g. a new virtual environment). If this happens, try
+installing numpy using pip, and then installing SNTD using pip.</li>
+<li>On MacOS and a fresh python build, you may have an issue with
+importing sntd because of matplotlib and an error saying python
+was not installed as a framework. A fix for that issue is on
+<a class="reference external" href="https://stackoverflow.com/questions/21784641/installation-issue-with-matplotlib-python">stack overflow</a>.</li>
+</ol>
 </div>
 <div class="section" id="install-latest-development-version">
 <h2>Install latest development version<a class="headerlink" href="#install-latest-development-version" title="Permalink to this headline">¶</a></h2>
@@ -196,10 +207,6 @@ version using <code class="docutils literal notranslate"><span class="pre">git</
 </div>
 <div class="section" id="optional-dependencies">
 <h2>Optional dependencies<a class="headerlink" href="#optional-dependencies" title="Permalink to this headline">¶</a></h2>
-<div class="admonition note">
-<p class="first admonition-title">Note</p>
-<p class="last">If you plan to use SNTD to simulate the effects of microlensing, which uses the Wambsganss 1990 microlens code, then you will need a fortran compiler. You can install gfortran <a class="reference external" href="https://gcc.gnu.org/wiki/GFortranBinaries">here</a>.</p>
-</div>
 <p>Several additional packages are recommended for enabling optional
 functionality in SNCosmo.</p>
 <ul class="simple">
