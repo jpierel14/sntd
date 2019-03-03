@@ -1,18 +1,17 @@
 import sncosmo
 import numpy as np
 from astropy.table import Table
-from scipy.interpolate import CubicSpline
+from scipy.interpolate import CubicSpline,interp1d
 from sncosmo.utils import integration_grid
 from sncosmo.constants import HC_ERG_AA, MODEL_BANDFLUX_SPACING
 from scipy.stats import exponnorm
-
 from collections import Counter
 
 
 __all__=['BazinSource']
 
 
-def _param_to_source(source,phase,wave):
+def _param_to_source(source,wave,color_curve=None,band1=None,band2=None,ref_color=False):
     band=None
     for b in np.unique(source.lc['band']):
         temp=sncosmo.get_bandpass(b)
@@ -20,6 +19,17 @@ def _param_to_source(source,phase,wave):
             band=sncosmo.get_bandpass(b)
     if band is None:
         raise RuntimeError("Hmm, your data do not contain the band you want to fit.")
+    finalPhase=source._phase
+    if color_curve is not None and not ref_color:
+        zp1=source.lc['zp'][source.lc['band']==band1][0]
+        zp2=source.lc['zp'][source.lc['band']==band2][0]
+        flux1=sncosmo.Model(source._ts_sources[band1]).bandflux(band1,source._phase,zp1,
+                                                                source.lc['zpsys'][source.lc['band']==band1][0])
+
+        temp_flux=flux1/10**(-.4*(color_curve(source._phase)-(zp1-zp2)))
+
+    else:
+        temp_flux=np.ones(len(finalPhase))
     try:
         zpnorm = 10.**(0.4 * source.lc['zp'][source.lc['band']==band.name.lower()][0])
         band.name=band.name.lower()
@@ -27,19 +37,16 @@ def _param_to_source(source,phase,wave):
         zpnorm = 10.**(0.4 * source.lc['zp'][source.lc['band']==band.name.upper()][0])
         band.name=band.name.upper()
 
-    #t0=np.mean([np.min(source.lc['time'][source.lc['band']==band.name])-phase[0],np.max(source.lc['time'][source.lc['band']==band.name])-phase[-1]])
-
-    #finalPhase=np.append(np.arange(timeInterval[0],0,source._tstep),np.arange(0,timeInterval[-1]+source._tstep,source._tstep))
-    finalPhase=source._phase
 
     wave, dwave = integration_grid(band.minwave(), band.maxwave(),
                                    MODEL_BANDFLUX_SPACING)
 
     ms = sncosmo.get_magsystem(source.lc['zpsys'][0])
     zpnorm = zpnorm / ms.zpbandflux(band)
-    flux=np.ones(len(finalPhase))*HC_ERG_AA/(dwave*np.sum(wave*band(wave))*zpnorm)
+    flux=temp_flux*HC_ERG_AA/(dwave*np.sum(wave*band(wave))*zpnorm)
     finalWave=np.arange(wave[0]-dwave*10,wave[-1]+dwave*10,dwave)
     finalFlux=np.zeros((len(finalPhase),len(finalWave)))
+
     for i in range(len(finalPhase)):
         #if finalPhase[i]>= np.min(timeArr) and finalPhase[i] <= np.max(timeArr):
         for j in range(len(finalWave)):
@@ -107,7 +114,7 @@ class BazinSource(sncosmo.Source):
     _param_names=['amplitude','B','fall','rise']
     param_names_latex=['A','B','t_{fall}','t_{rise}']
 
-    def __init__(self,data,name='BazinSource', version=None,tstep=1):
+    def __init__(self,data,name='BazinSource', version=None,tstep=1,colorCurve=None):
         super(sncosmo.Source, self).__init__() #init for the super class
         self.name = name
         self.version = version
@@ -124,7 +131,18 @@ class BazinSource(sncosmo.Source):
         self._phase=np.arange(-300,300,1)
         self._parameters=np.array([1.,0.,15.,5.])
         self._tstep=tstep
-        self._ts_sources={b:_param_to_source(self,self._phase,sncosmo.get_bandpass(b).wave) for b in np.unique(self.lc['band'])}
+        if colorCurve is not None:
+            color=[x for x in colorCurve.colnames if x!='time'][0]
+            curve=interp1d(colorCurve['time'],colorCurve[color],fill_value=0.,bounds_error=False)
+            self._ts_sources=dict([])
+            i=0
+            for b in [color[0:color.find('-')],color[color.find('-')+1:]]:
+                self._ts_sources[b]=_param_to_source(self,sncosmo.get_bandpass(b).wave,curve,
+                                                     color[0:color.find('-')],color[color.find('-')+1:],ref_color=i==0)
+                i+=1
+        else:
+            self._ts_sources={b:_param_to_source(self,sncosmo.get_bandpass(b).wave) for b in np.unique(self.lc['band'])}
+
 
     def _constantBazin(self,length,B):
         return(np.ones(length)*B)

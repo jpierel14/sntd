@@ -57,7 +57,7 @@ class newDict(dict):
 def fit_data(curves, snType='Ia',bands=None, models=None, params=None, bounds={}, ignore=None, constants=None,
              method='separate',t0_guess=None,refModel=None,effect_names=[],effect_frames=[],fitting_method='nest',
              dust=None,flip=False,guess_amplitude=True,combinedError=None,showPlots=False,microlensing=None,
-             kernel='RBF',combinedGrids=None,refImage='image_1',nMicroSamples=100,**kwargs):
+             kernel='RBF',combinedGrids=None,refImage='image_1',nMicroSamples=100,color_curve=None,**kwargs):
 
     """
     The main high-level fitting function.
@@ -112,7 +112,8 @@ def fit_data(curves, snType='Ia',bands=None, models=None, params=None, bounds={}
         The name of the image you want to be the reference image (i.e. image_1,image_2, etc.)
     nMicroSamples: int
         The number of pulls from the GPR posterior you want to use for microlensing uncertainty estimation
-
+    color_curve: :class:`astropy.Table`
+        A color curve to define the relationship between bands for parameterized light curve model.
     Returns
     -------
     fitted_curveDict: :class:`~sntd.curve_io.curveDict`
@@ -1479,7 +1480,7 @@ def _get_marginal_pdfs( res, nbins=51, verbose=True ):
 def param_fit(args,modName,fit=False):
     sources={'BazinSource':BazinSource}
 
-    source=sources[modName](args['curve'].table)
+    source=sources[modName](args['curve'].table,colorCurve=args['color_curve'])
     mod=sncosmo.Model(source)
     if args['constants']:
         mod.set(**args['constants'])
