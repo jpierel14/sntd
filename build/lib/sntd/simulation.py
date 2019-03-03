@@ -2,16 +2,14 @@ import sncosmo,os
 from copy import deepcopy,copy
 from collections import OrderedDict
 
-
-from .util import __dir__
-from .io import curve,curveDict
 from astropy.io import ascii
 import numpy as np
 from astropy.table import Table
 from scipy.interpolate import interp1d
 from sncosmo.utils import alias_map
 
-
+from .util import __dir__
+from .curve_io import curve,curveDict
 from .ml import *
 
 __all__=['createMultiplyImagedSN']
@@ -55,6 +53,7 @@ def createMultiplyImagedSN(
         z_lens=None, minsnr=0.0, scatter=True,snrFunc=None):
     """Generate a multiply-imaged SN light curve set, with user-specified time
     delays and magnifications.
+
     Parameters
     ----------
     sourcename : `~sncosmo.Source` or str
@@ -123,7 +122,7 @@ def createMultiplyImagedSN(
 
 
     Returns
-    -----
+    -------
     MISN : `~sntd.curveDict`
         A curveDict object containing each of the multiply-imaged SN light curves
         and the simulation parameters.

@@ -12,7 +12,7 @@ from sklearn.gaussian_process.kernels import RBF
 import scipy
 
 from .util import *
-from .io import _sntd_deepcopy
+from .curve_io import _sntd_deepcopy
 from .models import *
 from .ml import *
 
@@ -60,35 +60,71 @@ def fit_data(curves, snType='Ia',bands=None, models=None, params=None, bounds={}
              kernel='RBF',combinedGrids=None,refImage='image_1',nMicroSamples=100,**kwargs):
 
     """
-    The main, high-level fitting function.
-    :param curves: list of objects containing lightcurves to fit, or a single dcurve
-    :type curves: ~io.curveDict or list of ~io.curveDict
-    :param bands: The list of bands you'd like to fit, optional (all will be fit if you don't specify)
-    :type bands: list
-    :param models: The models to fit, optional (if not present, all will be tried)
-    :type models: str or ~sncosmo.Models
-    :param params: The parameters to be varied in the models,optional (if not present, all default parameters used)
-    :type params: list
-    :param bounds: Bounds for models parameters (necessary for certain parameters)
-    :type bounds: dict, {param:(x0,x1)}
-    :param ignore: Parameters to ignore in models, optional
-    :type ignore: list
-    :param constants: Models parameters to be kept constant (i.e., redshift if known), optional
-    :type constants: dict, {param:value}
-    :param spline: If you'd like to fit a spline to the data instead of an sncosmo template, optional
-    :type spline: Boolean
-    :param knotstep: Number of knots you'd like in your spline if spline=True
-    :type knotstep: int
-    :param poly: If you'd like to fit a polynomial to the data instead of an sncosmo template,optional
-    :type poly: Boolean
-    :param degree: Degree of polynomial if poly=True
-    :type degree: int
-    :param micro: If don't want to include microlensing, set to None, otherwise choose poly or spline,optional
-    :type micro: str (or None)
-    :return: fits object containing all fit information for each lightcurve
+    The main high-level fitting function.
+
+    Parameters
+    ----------
+    curves: :class:`~sntd.curve_io.curveDict`
+        The curveDict object containing the multiple images to fit.
+    snType: str
+        The supernova classification
+    bands: list of :class:`sncosmo.Bandpass` or str, or :class:`sncosmo.Bandpass` or str
+        The band(s) to be fit
+    models: list of :class:`sncosmo.Model` or str, or :class:`sncosmo.Model` or str
+        The model(s) to be used for fitting to the data
+    params: list of str
+        The parameters to be fit for the models inside of the parameter models
+    bounds: :class:`dict`
+        A dictionary with parameters in params as keys and a tuple of bounds as values
+    ignore: list of str
+        List of parameters to ignore
+    constants: :class:`dict`
+        Dictionary with parameters as keys and the constant value you want to set them to as values
+    method: str
+        Needs to be 'separate', 'combined', or 'color'
+    t0_guess: :class:`dict`
+        Dictionary with image names (i.e. 'image_1','image_2') as keys and a guess for time of peak as values
+    refModel: :class:`scipy.interpolate.interp1d` or :class:`sncosmo.Model`
+        If doing a combined or color fit, a reference model that will be used to fit all the data at once is required.
+    effect_names: list of str
+        List of effect names if model contains a :class:`sncosmo.PropagationEffect`.
+    effect_frames: list of str
+        List of the frames (e.g. obs or rest) that correspond to the effects in effect_names
+    fitting_method: str
+        Must be 'nest', 'mcmc', or 'minuit'. This is only used when you are trying to find the best of a list of models.
+    dust: :class:`sncosmo.PropagationEffect`
+        An sncosmo dust propagation effect to include in the model
+    flip: Boolean
+        If True, the time axis of the model is flipped
+    guess_amplitude: Boolean
+        If True, the amplitude parameter for the model is estimated, as well as its bounds
+    combinedError: :class:`scipy.interpolate.interp1d`
+        If doing a combined or color fit, this is the uncertainty on the reference model.
+    showPlots: Boolean
+        If true, :func:`sncosmo.plot_lc` function is called during the fitting
+    microlensing: str
+        If None microlensing is ignored, otherwise should be str (e.g. achromatic, chromatic)
+    kernel: str
+        The kernel to use for microlensing GPR
+    combinedGrids: :class:`dict`
+        A dictionary with 'td' or 'mu' as keys and tuples with additive bounds as values
+    refImage: str
+        The name of the image you want to be the reference image (i.e. image_1,image_2, etc.)
+    nMicroSamples: int
+        The number of pulls from the GPR posterior you want to use for microlensing uncertainty estimation
+
+    Returns
+    -------
+    fitted_curveDict: :class:`~sntd.curve_io.curveDict`
+        The same curveDict that was passed to fit_data, but with new fits and time delay measurements included
+    Examples
+    --------
+    >>> fitCurves=sntd.fit_data(myMISN2,snType='Ia', models='salt2-extended',bands=['F110W','F125W'],
+        params=['x0','x1','t0','c'],constants={'z':1.33},bounds={'t0':(-15,15),'x1':(-2,2),'c':(0,1)},
+        method='separate',microlensing=None)
+
     """
-    #curves=deepcopy(lcs)
-    #print(curves.keys())
+
 
     args = locals()
 
@@ -766,7 +802,7 @@ def _fitSeparate(curves,mods,args,bounds):
                 maxTime=args['curve'].table['time'][args['curve'].table['flux']==maxFlux]
                 args['bounds']['t0']=(t0Bounds[0]+maxTime,t0Bounds[1]+maxTime)
 
-        if 'amplitude' in args['bounds'] and args['guess_amp']:
+        if 'amplitude' in args['bounds'] and args['guess_amplitude']:
             args['bounds']['amplitude']=(ampBounds[0]*np.max(args['curve'].table['flux']),ampBounds[1]*np.max(args['curve'].table['flux']))
 
 
@@ -843,7 +879,7 @@ def _fitSeparate(curves,mods,args,bounds):
                 args['bounds']['t0']=(t0Bounds[0]+maxTime,t0Bounds[1]+maxTime)
         if args['snType']=='Ia' and 'x1' not in args['bounds']:
             args['bounds']['x1']=(-1,1)
-        if 'amplitude' in args['bounds'] and args['guess_amp']:
+        if 'amplitude' in args['bounds'] and args['guess_amplitude']:
             args['bounds']['amplitude']=(ampBounds[0]*np.max(tempTable['flux']),ampBounds[1]*np.max(tempTable['flux']))
         if 'amplitude' not in args['bounds']:
             guess_amp_bounds=True
@@ -851,7 +887,7 @@ def _fitSeparate(curves,mods,args,bounds):
             guess_amp_bounds=False
         nest_res,nest_fit=_nested_wrapper(curves,tempTable,bestFit,vparams=bestRes.vparam_names,bounds=args['bounds'],
                                           guess_amplitude_bound=guess_amp_bounds,microlensing=args['microlensing'],
-                                          zpsys=curves.images[d].zpsys,kernel=args['kernel'],maxiter=None,npoints=50,nsamples=args['nMicroSamples'])
+                                          zpsys=curves.images[d].zpsys,kernel=args['kernel'],maxiter=None,npoints=200,nsamples=args['nMicroSamples'])
 
 
 
@@ -904,7 +940,7 @@ def _fitSeparate(curves,mods,args,bounds):
                         curves.images[d].fits.model.set(**{p:joint[p][0]})
                         errs[p]=joint[p][1]
 
-            finalRes,finalFit=sncosmo.nest_lc(tempTable,curves.images[d].fits.model,final_vparams,bounds=bds,guess_amplitude_bound=guess_amp_bounds,maxiter=None)
+            finalRes,finalFit=sncosmo.nest_lc(tempTable,curves.images[d].fits.model,final_vparams,bounds=bds,guess_amplitude_bound=True,maxiter=None)
 
             finalRes.ndof=dofs[d]
             curves.images[d].fits=newDict()
@@ -932,6 +968,7 @@ def _fitSeparate(curves,mods,args,bounds):
 
     if args['showPlots']:
         for d in curves.images.keys():
+            print(d)
             tempTable=copy(curves.images[d].table)
             for b in [x for x in np.unique(tempTable['band']) if x not in args['bands']]:
                 tempTable=tempTable[tempTable['band']!=b]
@@ -1196,7 +1233,7 @@ def timeDelaysAndMagnifications(curves):
             mag_errs[im]=0
 
         else:
-            delays[im]=ref1-times[im]
+            delays[im]=times[im]-ref1
             mags[im]=fluxes[im]/ref2
             delay_errs[im]=math.sqrt(time_errors[im]**2+ref1_err**2)
 
@@ -1292,9 +1329,8 @@ def _fit_data(args):
     params=args['params'] if args['params'] else [x for x in smod.param_names]
     fits=newDict()
     dcurve=args['curve']
-    if not np.any([smod.bandoverlap(band) for band in dcurve.bands]):
-        print('yep')
-        raise RuntimeError("No band overlap for model %s"%modName)
+    #if not np.any([smod.bandoverlap(band) for band in dcurve.bands]):
+    #    raise RuntimeError("No band overlap for model %s"%modName)
     fits.method=args['fitting_method']
     fits.bounds=args['bounds'] if args['bounds'] else {}
     fits.ignore=args['ignore'] if args['ignore'] else []

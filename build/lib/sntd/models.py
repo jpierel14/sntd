@@ -1,14 +1,13 @@
-import sncosmo,sys,math
+import sncosmo
 import numpy as np
 from astropy.table import Table
-from scipy.interpolate import InterpolatedUnivariateSpline as Spline1d,splrep,splev,CubicSpline
+from scipy.interpolate import CubicSpline
 from sncosmo.utils import integration_grid
 from sncosmo.constants import HC_ERG_AA, MODEL_BANDFLUX_SPACING
 from scipy.stats import exponnorm
 
 from collections import Counter
-import matplotlib.pyplot as plt
-from .util import _findMax
+
 
 __all__=['BazinSource']
 
@@ -122,7 +121,7 @@ class BazinSource(sncosmo.Source):
         wave=np.append(wave,[1.01*wave[-1]])
         self._wave=wave
         #self._phase=np.arange(-(np.max(data['time'])-np.min(data['time'])),np.max(data['time'])-np.min(data['time']),tstep)
-        self._phase=np.arange(-800,800,1)
+        self._phase=np.arange(-300,300,1)
         self._parameters=np.array([1.,0.,15.,5.])
         self._tstep=tstep
         self._ts_sources={b:_param_to_source(self,self._phase,sncosmo.get_bandpass(b).wave) for b in np.unique(self.lc['band'])}

@@ -802,7 +802,7 @@ def _fitSeparate(curves,mods,args,bounds):
                 maxTime=args['curve'].table['time'][args['curve'].table['flux']==maxFlux]
                 args['bounds']['t0']=(t0Bounds[0]+maxTime,t0Bounds[1]+maxTime)
 
-        if 'amplitude' in args['bounds'] and args['guess_amp']:
+        if 'amplitude' in args['bounds'] and args['guess_amplitude']:
             args['bounds']['amplitude']=(ampBounds[0]*np.max(args['curve'].table['flux']),ampBounds[1]*np.max(args['curve'].table['flux']))
 
 
@@ -879,7 +879,7 @@ def _fitSeparate(curves,mods,args,bounds):
                 args['bounds']['t0']=(t0Bounds[0]+maxTime,t0Bounds[1]+maxTime)
         if args['snType']=='Ia' and 'x1' not in args['bounds']:
             args['bounds']['x1']=(-1,1)
-        if 'amplitude' in args['bounds'] and args['guess_amp']:
+        if 'amplitude' in args['bounds'] and args['guess_amplitude']:
             args['bounds']['amplitude']=(ampBounds[0]*np.max(tempTable['flux']),ampBounds[1]*np.max(tempTable['flux']))
         if 'amplitude' not in args['bounds']:
             guess_amp_bounds=True
@@ -887,7 +887,7 @@ def _fitSeparate(curves,mods,args,bounds):
             guess_amp_bounds=False
         nest_res,nest_fit=_nested_wrapper(curves,tempTable,bestFit,vparams=bestRes.vparam_names,bounds=args['bounds'],
                                           guess_amplitude_bound=guess_amp_bounds,microlensing=args['microlensing'],
-                                          zpsys=curves.images[d].zpsys,kernel=args['kernel'],maxiter=None,npoints=50,nsamples=args['nMicroSamples'])
+                                          zpsys=curves.images[d].zpsys,kernel=args['kernel'],maxiter=None,npoints=200,nsamples=args['nMicroSamples'])
 
 
 
@@ -940,7 +940,7 @@ def _fitSeparate(curves,mods,args,bounds):
                         curves.images[d].fits.model.set(**{p:joint[p][0]})
                         errs[p]=joint[p][1]
 
-            finalRes,finalFit=sncosmo.nest_lc(tempTable,curves.images[d].fits.model,final_vparams,bounds=bds,guess_amplitude_bound=guess_amp_bounds,maxiter=None)
+            finalRes,finalFit=sncosmo.nest_lc(tempTable,curves.images[d].fits.model,final_vparams,bounds=bds,guess_amplitude_bound=True,maxiter=None)
 
             finalRes.ndof=dofs[d]
             curves.images[d].fits=newDict()
@@ -968,6 +968,7 @@ def _fitSeparate(curves,mods,args,bounds):
 
     if args['showPlots']:
         for d in curves.images.keys():
+            print(d)
             tempTable=copy(curves.images[d].table)
             for b in [x for x in np.unique(tempTable['band']) if x not in args['bands']]:
                 tempTable=tempTable[tempTable['band']!=b]
@@ -1232,7 +1233,7 @@ def timeDelaysAndMagnifications(curves):
             mag_errs[im]=0
 
         else:
-            delays[im]=ref1-times[im]
+            delays[im]=times[im]-ref1
             mags[im]=fluxes[im]/ref2
             delay_errs[im]=math.sqrt(time_errors[im]**2+ref1_err**2)
 
@@ -1328,9 +1329,8 @@ def _fit_data(args):
     params=args['params'] if args['params'] else [x for x in smod.param_names]
     fits=newDict()
     dcurve=args['curve']
-    if not np.any([smod.bandoverlap(band) for band in dcurve.bands]):
-        print('yep')
-        raise RuntimeError("No band overlap for model %s"%modName)
+    #if not np.any([smod.bandoverlap(band) for band in dcurve.bands]):
+    #    raise RuntimeError("No band overlap for model %s"%modName)
     fits.method=args['fitting_method']
     fits.bounds=args['bounds'] if args['bounds'] else {}
     fits.ignore=args['ignore'] if args['ignore'] else []

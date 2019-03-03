@@ -121,7 +121,7 @@ class BazinSource(sncosmo.Source):
         wave=np.append(wave,[1.01*wave[-1]])
         self._wave=wave
         #self._phase=np.arange(-(np.max(data['time'])-np.min(data['time'])),np.max(data['time'])-np.min(data['time']),tstep)
-        self._phase=np.arange(-800,800,1)
+        self._phase=np.arange(-300,300,1)
         self._parameters=np.array([1.,0.,15.,5.])
         self._tstep=tstep
         self._ts_sources={b:_param_to_source(self,self._phase,sncosmo.get_bandpass(b).wave) for b in np.unique(self.lc['band'])}

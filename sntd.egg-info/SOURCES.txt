@@ -1,8 +1,8 @@
 README.md
 setup.py
 sntd/__init__.py
+sntd/curve_io.py
 sntd/fitting.py
-sntd/io.py
 sntd/ml.py
 sntd/mldata.py
 sntd/models.py
