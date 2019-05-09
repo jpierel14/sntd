@@ -1,8 +1,9 @@
-import sntd,sncosmo,sys
+import sntd,sncosmo,sys,os
 import matplotlib.pyplot as plt
 import snsedextend
 import numpy as np
 from astropy.table import Table
+from astropy.io import ascii
 
 def get_curve(temp_table,band1,band2,band1zp,band2zp):
     temp_table['time']=temp_table['time'].astype(int)
@@ -25,13 +26,24 @@ def get_curve(temp_table,band1,band2,band1zp,band2zp):
     color_table['time']+=temp_time
     return(curveDict['B-V'],color_table)
 
+ex_1,ex_2=sntd.load_example_data()
+new_MISN=sntd.table_factory([ex_1,ex_2],telescopename='HST',object_name='example_SN')
+fitCurves=sntd.fit_data(new_MISN,snType='Ia', models='salt2-extended',bands=['F125W','F160W'],
+                                                     params=['x0','x1','t0','c'],constants={'z':1.33},
+                                                     bounds={'t0':(-15,15),'x1':(-2,2),'c':(0,1)})
+print(fitCurves.time_delays)
+fitCurves.plot_object(showFit=True)
+plt.savefig('example_fit.png',format='png',overwrite=True)
+sys.exit()
 
 myMISN = sntd.createMultiplyImagedSN('salt2-extended', 'Ia', 1.33,z_lens=.53, bands=['F125W','F160W'],
                                           zp=[26.8,26.2], cadence=2., epochs=90.,
                                           time_delays=[10., 70.], magnifications=[7,3.5], objectName='My Type Ia SN',
                                           telescopename='HST',minsnr=5.0,microlensing_type=None)
 
-
+for im in myMISN.images:
+    ascii.write(myMISN.images[im].table,os.path.join(sntd.util.__dir__,'data','examples','example_'+im+'.dat'))
+sys.exit()
 curve,tab=get_curve(myMISN.images['image_2'].table,'F125W','F160W',26.8,26.2)
 fig=plt.figure()
 ax=fig.gca()

@@ -81,6 +81,7 @@
 <li class="toctree-l1"><a class="reference internal" href="../../install.html">Installation</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../../examples.html">Simulating with SNTD</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../../examples.html#measuring-time-delays-with-sntd">Measuring Time Delays with SNTD</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../examples.html#using-your-own-data-with-sntd">Using Your Own Data with SNTD</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../../api.html">API Documentation</a></li>
 </ul>
 
@@ -273,7 +274,7 @@
                 <span class="nb">print</span><span class="p">(</span><span class="s1">&#39;</span><span class="se">\n</span><span class="s1">&#39;</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="s1">&#39;   </span><span class="si">{}</span><span class="s1">:</span><span class="si">{}</span><span class="s1">&#39;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="o">*</span><span class="n">t</span><span class="p">)</span> <span class="k">for</span> <span class="n">t</span> <span class="ow">in</span> <span class="nb">zip</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">images</span><span class="p">[</span><span class="n">c</span><span class="p">]</span><span class="o">.</span><span class="n">simMeta</span><span class="o">.</span><span class="n">keys</span><span class="p">(),</span><span class="bp">self</span><span class="o">.</span><span class="n">images</span><span class="p">[</span><span class="n">c</span><span class="p">]</span><span class="o">.</span><span class="n">simMeta</span><span class="o">.</span><span class="n">values</span><span class="p">())</span> <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">t</span><span class="p">[</span><span class="mi">1</span><span class="p">],(</span><span class="nb">str</span><span class="p">,</span><span class="nb">float</span><span class="p">,</span><span class="nb">int</span><span class="p">))))</span>
         <span class="k">return</span> <span class="s1">&#39;------------------&#39;</span>
 
-<div class="viewcode-block" id="curveDict.add_curve"><a class="viewcode-back" href="../../api.html#sntd.curve_io.curveDict.add_curve">[docs]</a>    <span class="k">def</span> <span class="nf">add_curve</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span><span class="n">myCurve</span><span class="p">):</span>
+<div class="viewcode-block" id="curveDict.add_curve"><a class="viewcode-back" href="../../api.html#sntd.curve_io.curveDict.add_curve">[docs]</a>    <span class="k">def</span> <span class="nf">add_curve</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span><span class="n">myCurve</span><span class="p">,</span><span class="n">key</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
         <span class="sd">&quot;&quot;&quot;Adds a curve object to the existing curveDict (i.e. adds</span>
 <span class="sd">        an image to a MISN)</span>
 
@@ -281,6 +282,8 @@
 <span class="sd">        ----------</span>
 <span class="sd">        myCurve: :class:`sntd.curve`</span>
 <span class="sd">            The curve to add to self.</span>
+<span class="sd">        key: str</span>
+<span class="sd">            The key you want to save this as, default is &#39;image_1,image_2,etc.&#39;</span>
 
 <span class="sd">        Returns</span>
 <span class="sd">        -------</span>
@@ -288,9 +291,14 @@
 <span class="sd">        &quot;&quot;&quot;</span>
 
         <span class="bp">self</span><span class="o">.</span><span class="n">bands</span><span class="o">.</span><span class="n">update</span><span class="p">([</span><span class="n">x</span> <span class="k">for</span> <span class="n">x</span> <span class="ow">in</span> <span class="n">myCurve</span><span class="o">.</span><span class="n">bands</span> <span class="k">if</span> <span class="n">x</span> <span class="ow">not</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">bands</span><span class="p">])</span>
-        <span class="n">myCurve</span><span class="o">.</span><span class="n">object</span><span class="o">=</span><span class="s1">&#39;image_&#39;</span><span class="o">+</span><span class="nb">str</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">images</span><span class="p">)</span><span class="o">+</span><span class="mi">1</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">key</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="n">myCurve</span><span class="o">.</span><span class="n">object</span><span class="o">=</span><span class="s1">&#39;image_&#39;</span><span class="o">+</span><span class="nb">str</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">images</span><span class="p">)</span><span class="o">+</span><span class="mi">1</span><span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">myCurve</span><span class="o">.</span><span class="n">object</span><span class="o">=</span><span class="n">key</span>
 
-        <span class="n">myCurve</span><span class="o">.</span><span class="n">table</span><span class="o">.</span><span class="n">add_column</span><span class="p">(</span><span class="n">Column</span><span class="p">([</span><span class="n">myCurve</span><span class="o">.</span><span class="n">object</span> <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">myCurve</span><span class="o">.</span><span class="n">table</span><span class="p">))],</span><span class="n">name</span><span class="o">=</span><span class="s1">&#39;image&#39;</span><span class="p">))</span>
+        <span class="k">if</span> <span class="s1">&#39;image&#39;</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">myCurve</span><span class="o">.</span><span class="n">table</span><span class="o">.</span><span class="n">colnames</span><span class="p">:</span>
+            <span class="n">myCurve</span><span class="o">.</span><span class="n">table</span><span class="o">.</span><span class="n">add_column</span><span class="p">(</span><span class="n">Column</span><span class="p">([</span><span class="n">myCurve</span><span class="o">.</span><span class="n">object</span> <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">myCurve</span><span class="o">.</span><span class="n">table</span><span class="p">))],</span><span class="n">name</span><span class="o">=</span><span class="s1">&#39;image&#39;</span><span class="p">))</span>
+
 
 
 
@@ -711,16 +719,16 @@
 
 
 
-<div class="viewcode-block" id="table_factory"><a class="viewcode-back" href="../../api.html#sntd.curve_io.table_factory">[docs]</a><span class="k">def</span> <span class="nf">table_factory</span><span class="p">(</span><span class="n">table</span><span class="p">,</span><span class="n">telescopename</span><span class="o">=</span><span class="s2">&quot;Unknown&quot;</span><span class="p">,</span><span class="nb">object</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
-    <span class="sd">&quot;&quot;&quot;This function will create a new curve object using an astropy table.</span>
+<div class="viewcode-block" id="table_factory"><a class="viewcode-back" href="../../api.html#sntd.curve_io.table_factory">[docs]</a><span class="k">def</span> <span class="nf">table_factory</span><span class="p">(</span><span class="n">tables</span><span class="p">,</span><span class="n">telescopename</span><span class="o">=</span><span class="s2">&quot;Unknown&quot;</span><span class="p">,</span><span class="n">object_name</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;This function will create a new curve object using an astropy table or tables.</span>
 
 <span class="sd">    Parameters</span>
 <span class="sd">    ----------</span>
-<span class="sd">    table : `~astropy.table.Table`</span>
-<span class="sd">        Astropy table with all of your data from your data file.</span>
+<span class="sd">    tables : `~astropy.table.Table` or list</span>
+<span class="sd">        Astropy table with all of your data from your data file, or a list of such tables.</span>
 <span class="sd">    telescopename : str</span>
 <span class="sd">        Name of telescope for labeling purposes inside curve object</span>
-<span class="sd">    object : str</span>
+<span class="sd">    object_name : str</span>
 <span class="sd">        Name of object for labeling purposes inside curve object</span>
 <span class="sd">        (e.g. SN2006jf, etc.)</span>
 
@@ -729,28 +737,34 @@
 <span class="sd">    curve : :class:`~sntd.curve`</span>
 
 <span class="sd">    &quot;&quot;&quot;</span>
-    <span class="n">newlc</span><span class="o">=</span><span class="n">curve</span><span class="p">()</span>
+
+    <span class="n">new_SN</span><span class="o">=</span><span class="n">curveDict</span><span class="p">(</span><span class="n">telescopename</span><span class="p">,</span><span class="n">object_name</span><span class="p">)</span>
+    <span class="k">if</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">tables</span><span class="p">,(</span><span class="nb">list</span><span class="p">,</span><span class="nb">tuple</span><span class="p">)):</span>
+        <span class="n">tables</span><span class="o">=</span><span class="p">[</span><span class="n">tables</span><span class="p">]</span>
+    <span class="k">for</span> <span class="n">table</span> <span class="ow">in</span> <span class="n">tables</span><span class="p">:</span>
+        <span class="n">newlc</span><span class="o">=</span><span class="n">curve</span><span class="p">()</span>
+        <span class="n">table</span><span class="o">=</span><span class="n">standardize_table_colnames</span><span class="p">(</span><span class="n">table</span><span class="p">)</span>
+        <span class="n">newlc</span><span class="o">.</span><span class="n">bands</span><span class="o">=</span><span class="p">{</span><span class="n">x</span> <span class="k">for</span> <span class="n">x</span> <span class="ow">in</span> <span class="n">table</span><span class="p">[</span><span class="n">_get_default_prop_name</span><span class="p">(</span><span class="s1">&#39;band&#39;</span><span class="p">)]}</span>
+        <span class="n">zp_dict</span><span class="o">=</span><span class="nb">dict</span><span class="p">([])</span>
+        <span class="n">zpsys_dict</span><span class="o">=</span><span class="nb">dict</span><span class="p">([])</span>
+        <span class="k">for</span> <span class="n">band</span> <span class="ow">in</span> <span class="n">newlc</span><span class="o">.</span><span class="n">bands</span><span class="p">:</span>
+            <span class="n">zp</span><span class="o">=</span><span class="nb">set</span><span class="p">(</span><span class="n">table</span><span class="p">[</span><span class="n">_get_default_prop_name</span><span class="p">(</span><span class="s1">&#39;zp&#39;</span><span class="p">)][</span><span class="n">table</span><span class="p">[</span><span class="n">_get_default_prop_name</span><span class="p">(</span><span class="s1">&#39;band&#39;</span><span class="p">)]</span><span class="o">==</span><span class="n">band</span><span class="p">])</span>
+            <span class="n">zpsys</span><span class="o">=</span><span class="nb">set</span><span class="p">(</span><span class="n">table</span><span class="p">[</span><span class="n">_get_default_prop_name</span><span class="p">(</span><span class="s1">&#39;zpsys&#39;</span><span class="p">)][</span><span class="n">table</span><span class="p">[</span><span class="n">_get_default_prop_name</span><span class="p">(</span><span class="s1">&#39;band&#39;</span><span class="p">)]</span><span class="o">==</span><span class="n">band</span><span class="p">])</span>
+            <span class="n">zp_dict</span><span class="p">[</span><span class="n">band</span><span class="p">]</span><span class="o">=</span><span class="n">zp</span><span class="o">.</span><span class="n">pop</span><span class="p">()</span> <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">zp</span><span class="p">)</span><span class="o">==</span><span class="mi">1</span> <span class="k">else</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">(</span><span class="n">zp</span><span class="p">)</span>
+            <span class="n">zpsys_dict</span><span class="p">[</span><span class="n">band</span><span class="p">]</span><span class="o">=</span><span class="n">zpsys</span><span class="o">.</span><span class="n">pop</span><span class="p">()</span> <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">zpsys</span><span class="p">)</span><span class="o">==</span><span class="mi">1</span> <span class="k">else</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">(</span><span class="n">zpsys</span><span class="p">)</span>
 
 
-    <span class="n">table</span><span class="o">=</span><span class="n">standardize_table_colnames</span><span class="p">(</span><span class="n">table</span><span class="p">)</span>
-    <span class="n">newlc</span><span class="o">.</span><span class="n">bands</span><span class="o">=</span><span class="p">{</span><span class="n">x</span> <span class="k">for</span> <span class="n">x</span> <span class="ow">in</span> <span class="n">table</span><span class="p">[</span><span class="n">_get_default_prop_name</span><span class="p">(</span><span class="s1">&#39;band&#39;</span><span class="p">)]}</span>
-    <span class="n">zp_dict</span><span class="o">=</span><span class="nb">dict</span><span class="p">([])</span>
-    <span class="n">zpsys_dict</span><span class="o">=</span><span class="nb">dict</span><span class="p">([])</span>
-    <span class="k">for</span> <span class="n">band</span> <span class="ow">in</span> <span class="n">newlc</span><span class="o">.</span><span class="n">bands</span><span class="p">:</span>
-        <span class="n">zp</span><span class="o">=</span><span class="nb">set</span><span class="p">(</span><span class="n">table</span><span class="p">[</span><span class="n">_get_default_prop_name</span><span class="p">(</span><span class="s1">&#39;zp&#39;</span><span class="p">)][</span><span class="n">table</span><span class="p">[</span><span class="n">_get_default_prop_name</span><span class="p">(</span><span class="s1">&#39;band&#39;</span><span class="p">)]</span><span class="o">==</span><span class="n">band</span><span class="p">])</span>
-        <span class="n">zpsys</span><span class="o">=</span><span class="nb">set</span><span class="p">(</span><span class="n">table</span><span class="p">[</span><span class="n">_get_default_prop_name</span><span class="p">(</span><span class="s1">&#39;zpsys&#39;</span><span class="p">)][</span><span class="n">table</span><span class="p">[</span><span class="n">_get_default_prop_name</span><span class="p">(</span><span class="s1">&#39;band&#39;</span><span class="p">)]</span><span class="o">==</span><span class="n">band</span><span class="p">])</span>
-        <span class="n">zp_dict</span><span class="p">[</span><span class="n">band</span><span class="p">]</span><span class="o">=</span><span class="n">zp</span><span class="o">.</span><span class="n">pop</span><span class="p">()</span> <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">zp</span><span class="p">)</span><span class="o">==</span><span class="mi">1</span> <span class="k">else</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">(</span><span class="n">zp</span><span class="p">)</span>
-        <span class="n">zpsys_dict</span><span class="p">[</span><span class="n">band</span><span class="p">]</span><span class="o">=</span><span class="n">zpsys</span><span class="o">.</span><span class="n">pop</span><span class="p">()</span> <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">zpsys</span><span class="p">)</span><span class="o">==</span><span class="mi">1</span> <span class="k">else</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">(</span><span class="n">zpsys</span><span class="p">)</span>
+        <span class="n">newlc</span><span class="o">.</span><span class="n">table</span><span class="o">=</span><span class="n">table</span>
 
+        <span class="n">newlc</span><span class="o">.</span><span class="n">telescopename</span> <span class="o">=</span> <span class="n">telescopename</span>
+        <span class="n">newlc</span><span class="o">.</span><span class="n">object</span> <span class="o">=</span> <span class="n">object_name</span>
+        <span class="k">if</span> <span class="s1">&#39;image&#39;</span> <span class="ow">in</span> <span class="n">newlc</span><span class="o">.</span><span class="n">table</span><span class="o">.</span><span class="n">colnames</span><span class="p">:</span>
+            <span class="n">im_key</span><span class="o">=</span><span class="n">newlc</span><span class="o">.</span><span class="n">table</span><span class="p">[</span><span class="s1">&#39;image&#39;</span><span class="p">][</span><span class="mi">0</span><span class="p">]</span>
+            <span class="n">new_SN</span><span class="o">.</span><span class="n">add_curve</span><span class="p">(</span><span class="n">newlc</span><span class="p">,</span><span class="n">key</span><span class="o">=</span><span class="n">im_key</span><span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">new_SN</span><span class="o">.</span><span class="n">add_curve</span><span class="p">(</span><span class="n">newlc</span><span class="p">)</span>
 
-    <span class="n">newlc</span><span class="o">.</span><span class="n">table</span><span class="o">=</span><span class="n">table</span>
-
-
-    <span class="n">newlc</span><span class="o">.</span><span class="n">telescopename</span> <span class="o">=</span> <span class="n">telescopename</span>
-    <span class="n">newlc</span><span class="o">.</span><span class="n">object</span> <span class="o">=</span> <span class="nb">object</span>
-
-
-    <span class="k">return</span> <span class="n">newlc</span></div>
+    <span class="k">return</span> <span class="n">new_SN</span></div>
 
 
 <span class="k">def</span> <span class="nf">_switch</span><span class="p">(</span><span class="n">ext</span><span class="p">):</span>

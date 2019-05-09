@@ -1,6 +1,7 @@
 #!/Users/jpierel/anaconda3/envs/astro2/bin python2
 
-import os,sncosmo
+import os,sncosmo,glob
+from astropy.io import ascii
 import numpy as np
 from collections import OrderedDict as odict
 from scipy.interpolate import splrep,splev
@@ -14,7 +15,8 @@ NORMAL = 0    # use python zip libraries
 PROCESS = 1   # use (zcat, gzip) or (bzcat, bzip2)
 PARALLEL = 2  # (pigz -dc, pigz) or (pbzip2 -dc, pbzip2)
 
-__all__=['flux_to_mag','_cast_str','_get_default_prop_name','_isfloat','anyOpen','_props','_findMax','_findMin','_guess_time_delays','_guess_magnifications','__dir__']
+__all__=['flux_to_mag','_cast_str','_get_default_prop_name','_isfloat','anyOpen','_props','_findMax','_findMin',
+         '_guess_time_delays','_guess_magnifications','__dir__','load_example_data']
 _props=odict([
     ('time',{'mjd', 'mjdobs', 'jd', 'time', 'date', 'mjd_obs','mhjd','jds'}),
     ('band',{'filter', 'band', 'flt', 'bandpass'}),
@@ -27,7 +29,9 @@ _props=odict([
 ])
 
 
-
+def load_example_data():
+    example_files=glob.glob(os.path.join(__dir__,'data','examples','*.dat'))
+    return(ascii.read(example_files[0]),ascii.read(example_files[1]))
 
 def _guess_magnifications(curves,referenceImage):
     """Guess t0 and amplitude of the model based on the data.

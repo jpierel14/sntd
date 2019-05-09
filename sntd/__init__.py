@@ -4,6 +4,7 @@ from .curve_io import *
 from .simulation import *
 from .fitting import *
 from .ml import *
+from .util import load_example_data
 
 import sncosmo
 sncosmo.Model._flux=_mlFlux

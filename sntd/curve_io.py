@@ -126,7 +126,7 @@ class curveDict(dict):
                 print('\n'.join('   {}:{}'.format(*t) for t in zip(self.images[c].simMeta.keys(),self.images[c].simMeta.values()) if isinstance(t[1],(str,float,int))))
         return '------------------'
 
-    def add_curve(self,myCurve,key='image_'):
+    def add_curve(self,myCurve,key=None):
         """Adds a curve object to the existing curveDict (i.e. adds
         an image to a MISN)
 
@@ -143,9 +143,14 @@ class curveDict(dict):
         """
 
         self.bands.update([x for x in myCurve.bands if x not in self.bands])
-        myCurve.object=key+str(len(self.images)+1)
+        if key is None:
+            myCurve.object='image_'+str(len(self.images)+1)
+        else:
+            myCurve.object=key
 
-        myCurve.table.add_column(Column([myCurve.object for i in range(len(myCurve.table))],name='image'))
+        if 'image' not in myCurve.table.colnames:
+            myCurve.table.add_column(Column([myCurve.object for i in range(len(myCurve.table))],name='image'))
+
 
 
 
@@ -566,16 +571,16 @@ class curve(dict):
 
 
 
-def table_factory(table,telescopename="Unknown",object=None):
-    """This function will create a new curve object using an astropy table.
+def table_factory(tables,telescopename="Unknown",object_name=None):
+    """This function will create a new curve object using an astropy table or tables.
 
     Parameters
     ----------
-    table : `~astropy.table.Table`
-        Astropy table with all of your data from your data file.
+    tables : `~astropy.table.Table` or list
+        Astropy table with all of your data from your data file, or a list of such tables.
     telescopename : str
         Name of telescope for labeling purposes inside curve object
-    object : str
+    object_name : str
         Name of object for labeling purposes inside curve object
         (e.g. SN2006jf, etc.)
 
@@ -584,28 +589,34 @@ def table_factory(table,telescopename="Unknown",object=None):
     curve : :class:`~sntd.curve`
 
     """
-    newlc=curve()
+
+    new_SN=curveDict(telescopename,object_name)
+    if not isinstance(tables,(list,tuple)):
+        tables=[tables]
+    for table in tables:
+        newlc=curve()
+        table=standardize_table_colnames(table)
+        newlc.bands={x for x in table[_get_default_prop_name('band')]}
+        zp_dict=dict([])
+        zpsys_dict=dict([])
+        for band in newlc.bands:
+            zp=set(table[_get_default_prop_name('zp')][table[_get_default_prop_name('band')]==band])
+            zpsys=set(table[_get_default_prop_name('zpsys')][table[_get_default_prop_name('band')]==band])
+            zp_dict[band]=zp.pop() if len(zp)==1 else np.array(zp)
+            zpsys_dict[band]=zpsys.pop() if len(zpsys)==1 else np.array(zpsys)
 
 
-    table=standardize_table_colnames(table)
-    newlc.bands={x for x in table[_get_default_prop_name('band')]}
-    zp_dict=dict([])
-    zpsys_dict=dict([])
-    for band in newlc.bands:
-        zp=set(table[_get_default_prop_name('zp')][table[_get_default_prop_name('band')]==band])
-        zpsys=set(table[_get_default_prop_name('zpsys')][table[_get_default_prop_name('band')]==band])
-        zp_dict[band]=zp.pop() if len(zp)==1 else np.array(zp)
-        zpsys_dict[band]=zpsys.pop() if len(zpsys)==1 else np.array(zpsys)
+        newlc.table=table
 
+        newlc.telescopename = telescopename
+        newlc.object = object_name
+        if 'image' in newlc.table.colnames:
+            im_key=newlc.table['image'][0]
+            new_SN.add_curve(newlc,key=im_key)
+        else:
+            new_SN.add_curve(newlc)
 
-    newlc.table=table
-
-
-    newlc.telescopename = telescopename
-    newlc.object = object
-
-
-    return newlc
+    return new_SN
 
 
 def _switch(ext):

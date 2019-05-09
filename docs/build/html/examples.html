@@ -92,6 +92,7 @@
 <li class="toctree-l2"><a class="reference internal" href="#estimating-uncertainty-due-to-microlensing">Estimating Uncertainty Due to Microlensing</a></li>
 </ul>
 </li>
+<li class="toctree-l1"><a class="reference internal" href="#using-your-own-data-with-sntd">Using Your Own Data with SNTD</a></li>
 <li class="toctree-l1"><a class="reference internal" href="api.html">API Documentation</a></li>
 </ul>
 
@@ -281,6 +282,84 @@ is just the measured microlensing uncertainty, there is an additional uncertaint
 </pre></div>
 </div>
 </div>
+</div>
+<div class="section" id="using-your-own-data-with-sntd">
+<h1>Using Your Own Data with SNTD<a class="headerlink" href="#using-your-own-data-with-sntd" title="Permalink to this headline">¶</a></h1>
+<p>In order to fit your own data, you must turn your light curve into an astropy table. There is an example multiply-imaged
+SN example provided for reference. In this example, we have a doubly-imaged SN with image files (in the sntd/data/examples folder)
+‘example_image_1.dat’ and ‘example_image_2.dat’. The only optional column in these files is “image”, which sets the name of the key
+used to reference this SN image. If you do not provide flux/fluxerr but instead magnitude/magerr SNTD will attemp to translate to
+flux/fluxerr, but it’s best to simply provide flux from the beginning to avoid conversion errors. First we can read in these tables:</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="n">ex_1</span><span class="p">,</span><span class="n">ex_2</span><span class="o">=</span><span class="n">sntd</span><span class="o">.</span><span class="n">load_example_data</span><span class="p">()</span>
+<span class="k">print</span><span class="p">(</span><span class="n">ex_1</span><span class="p">)</span>
+</pre></div>
+</div>
+<p>Out:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span>       <span class="n">time</span>         <span class="n">band</span>        <span class="n">flux</span>        <span class="o">...</span>  <span class="n">zp</span>  <span class="n">zpsys</span>  <span class="n">image</span>
+<span class="o">------------------</span> <span class="o">-----</span> <span class="o">------------------</span> <span class="o">...</span> <span class="o">----</span> <span class="o">-----</span> <span class="o">-------</span>
+               <span class="mf">0.0</span> <span class="n">F125W</span>  <span class="mf">64.59429430606906</span> <span class="o">...</span> <span class="mf">26.8</span>    <span class="n">AB</span> <span class="n">image_1</span>
+<span class="mf">2.0224719101123596</span> <span class="n">F125W</span>    <span class="mf">62.408324396966</span> <span class="o">...</span> <span class="mf">26.8</span>    <span class="n">AB</span> <span class="n">image_1</span>
+ <span class="mf">4.044943820224719</span> <span class="n">F125W</span>  <span class="mf">68.10359798573809</span> <span class="o">...</span> <span class="mf">26.8</span>    <span class="n">AB</span> <span class="n">image_1</span>
+ <span class="mf">6.067415730337078</span> <span class="n">F125W</span>  <span class="mf">71.76160753594853</span> <span class="o">...</span> <span class="mf">26.8</span>    <span class="n">AB</span> <span class="n">image_1</span>
+ <span class="mf">8.089887640449438</span> <span class="n">F125W</span>  <span class="mf">73.43467553050705</span> <span class="o">...</span> <span class="mf">26.8</span>    <span class="n">AB</span> <span class="n">image_1</span>
+<span class="mf">10.112359550561798</span> <span class="n">F125W</span>  <span class="mf">74.34296720689296</span> <span class="o">...</span> <span class="mf">26.8</span>    <span class="n">AB</span> <span class="n">image_1</span>
+<span class="mf">12.134831460674157</span> <span class="n">F125W</span>  <span class="mf">71.73347707161632</span> <span class="o">...</span> <span class="mf">26.8</span>    <span class="n">AB</span> <span class="n">image_1</span>
+<span class="mf">14.157303370786517</span> <span class="n">F125W</span>  <span class="mf">72.93187923529568</span> <span class="o">...</span> <span class="mf">26.8</span>    <span class="n">AB</span> <span class="n">image_1</span>
+<span class="mf">16.179775280898877</span> <span class="n">F125W</span>  <span class="mf">70.64111678688164</span> <span class="o">...</span> <span class="mf">26.8</span>    <span class="n">AB</span> <span class="n">image_1</span>
+<span class="mf">18.202247191011235</span> <span class="n">F125W</span>  <span class="mf">69.31085357488871</span> <span class="o">...</span> <span class="mf">26.8</span>    <span class="n">AB</span> <span class="n">image_1</span>
+               <span class="o">...</span>   <span class="o">...</span>                <span class="o">...</span> <span class="o">...</span>  <span class="o">...</span>   <span class="o">...</span>     <span class="o">...</span>
+<span class="mf">38.426966292134836</span> <span class="n">F160W</span> <span class="mf">19.950527074094737</span> <span class="o">...</span> <span class="mf">26.2</span>    <span class="n">AB</span> <span class="n">image_1</span>
+<span class="mf">40.449438202247194</span> <span class="n">F160W</span> <span class="mf">20.963076283234553</span> <span class="o">...</span> <span class="mf">26.2</span>    <span class="n">AB</span> <span class="n">image_1</span>
+ <span class="mf">42.47191011235955</span> <span class="n">F160W</span> <span class="mf">21.402880246191344</span> <span class="o">...</span> <span class="mf">26.2</span>    <span class="n">AB</span> <span class="n">image_1</span>
+ <span class="mf">44.49438202247191</span> <span class="n">F160W</span>  <span class="mf">18.28098879531828</span> <span class="o">...</span> <span class="mf">26.2</span>    <span class="n">AB</span> <span class="n">image_1</span>
+ <span class="mf">46.51685393258427</span> <span class="n">F160W</span> <span class="mf">18.947732390210522</span> <span class="o">...</span> <span class="mf">26.2</span>    <span class="n">AB</span> <span class="n">image_1</span>
+ <span class="mf">48.53932584269663</span> <span class="n">F160W</span> <span class="mf">15.987591900959364</span> <span class="o">...</span> <span class="mf">26.2</span>    <span class="n">AB</span> <span class="n">image_1</span>
+ <span class="mf">50.56179775280899</span> <span class="n">F160W</span> <span class="mf">20.011941798193966</span> <span class="o">...</span> <span class="mf">26.2</span>    <span class="n">AB</span> <span class="n">image_1</span>
+ <span class="mf">52.58426966292135</span> <span class="n">F160W</span> <span class="mf">15.516064719260328</span> <span class="o">...</span> <span class="mf">26.2</span>    <span class="n">AB</span> <span class="n">image_1</span>
+ <span class="mf">54.60674157303371</span> <span class="n">F160W</span>   <span class="mf">17.1543325162061</span> <span class="o">...</span> <span class="mf">26.2</span>    <span class="n">AB</span> <span class="n">image_1</span>
+ <span class="mf">56.62921348314607</span> <span class="n">F160W</span>  <span class="mf">18.25136177909449</span> <span class="o">...</span> <span class="mf">26.2</span>    <span class="n">AB</span> <span class="n">image_1</span>
+<span class="mf">58.651685393258425</span> <span class="n">F160W</span> <span class="mf">17.198071229182016</span> <span class="o">...</span> <span class="mf">26.2</span>    <span class="n">AB</span> <span class="n">image_1</span>
+<span class="n">Length</span> <span class="o">=</span> <span class="mi">60</span> <span class="n">rows</span>
+</pre></div>
+</div>
+<p>Now, to turn these two data tables into an SNTD curveDict object that will be fit, we use the table_factory function:</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="n">new_MISN</span><span class="o">=</span><span class="n">sntd</span><span class="o">.</span><span class="n">table_factory</span><span class="p">([</span><span class="n">ex_1</span><span class="p">,</span><span class="n">ex_2</span><span class="p">],</span><span class="n">telescopename</span><span class="o">=</span><span class="s1">&#39;HST&#39;</span><span class="p">,</span><span class="n">object_name</span><span class="o">=</span><span class="s1">&#39;example_SN&#39;</span><span class="p">)</span>
+<span class="k">print</span><span class="p">(</span><span class="n">new_MISN</span><span class="p">)</span>
+</pre></div>
+</div>
+<p>Out:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">Telescope</span><span class="p">:</span> <span class="n">HST</span>
+<span class="n">Object</span><span class="p">:</span> <span class="n">example_SN</span>
+<span class="n">Number</span> <span class="n">of</span> <span class="n">bands</span><span class="p">:</span> <span class="mi">2</span>
+
+<span class="o">------------------</span>
+<span class="n">Image</span><span class="p">:</span> <span class="n">image_1</span><span class="p">:</span>
+<span class="n">Bands</span><span class="p">:</span> <span class="nb">set</span><span class="p">([</span><span class="s1">&#39;F160W&#39;</span><span class="p">,</span> <span class="s1">&#39;F125W&#39;</span><span class="p">])</span>
+<span class="n">Date</span> <span class="n">Range</span><span class="p">:</span> <span class="mf">0.00000</span><span class="o">-&gt;</span><span class="mf">58.65169</span>
+<span class="n">Number</span> <span class="n">of</span> <span class="n">points</span><span class="p">:</span> <span class="mi">60</span>
+<span class="o">------------------</span>
+<span class="n">Image</span><span class="p">:</span> <span class="n">image_2</span><span class="p">:</span>
+<span class="n">Bands</span><span class="p">:</span> <span class="nb">set</span><span class="p">([</span><span class="s1">&#39;F160W&#39;</span><span class="p">,</span> <span class="s1">&#39;F125W&#39;</span><span class="p">])</span>
+<span class="n">Date</span> <span class="n">Range</span><span class="p">:</span> <span class="mf">40.44944</span><span class="o">-&gt;</span><span class="mf">119.32584</span>
+<span class="n">Number</span> <span class="n">of</span> <span class="n">points</span><span class="p">:</span> <span class="mi">80</span>
+<span class="o">------------------</span>
+</pre></div>
+</div>
+<p>And finally let’s fit this SN, which is a Type Ia, with the SALT2 model (your exact time delay may
+be slightly different after fitting the example data). For reference, the true delay here is 60 days.</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="n">fitCurves</span><span class="o">=</span><span class="n">sntd</span><span class="o">.</span><span class="n">fit_data</span><span class="p">(</span><span class="n">new_MISN</span><span class="p">,</span><span class="n">snType</span><span class="o">=</span><span class="s1">&#39;Ia&#39;</span><span class="p">,</span> <span class="n">models</span><span class="o">=</span><span class="s1">&#39;salt2&#39;</span><span class="p">,</span><span class="n">bands</span><span class="o">=</span><span class="p">[</span><span class="s1">&#39;F125W&#39;</span><span class="p">,</span><span class="s1">&#39;F160W&#39;</span><span class="p">],</span>
+                <span class="n">params</span><span class="o">=</span><span class="p">[</span><span class="s1">&#39;x0&#39;</span><span class="p">,</span><span class="s1">&#39;x1&#39;</span><span class="p">,</span><span class="s1">&#39;t0&#39;</span><span class="p">,</span><span class="s1">&#39;c&#39;</span><span class="p">],</span><span class="n">constants</span><span class="o">=</span><span class="p">{</span><span class="s1">&#39;z&#39;</span><span class="p">:</span><span class="mf">1.33</span><span class="p">},</span>
+                <span class="n">bounds</span><span class="o">=</span><span class="p">{</span><span class="s1">&#39;t0&#39;</span><span class="p">:(</span><span class="o">-</span><span class="mi">15</span><span class="p">,</span><span class="mi">15</span><span class="p">),</span><span class="s1">&#39;x1&#39;</span><span class="p">:(</span><span class="o">-</span><span class="mi">2</span><span class="p">,</span><span class="mi">2</span><span class="p">),</span><span class="s1">&#39;c&#39;</span><span class="p">:(</span><span class="mi">0</span><span class="p">,</span><span class="mi">1</span><span class="p">)})</span>
+<span class="k">print</span><span class="p">(</span><span class="n">fitCurves</span><span class="o">.</span><span class="n">time_delays</span><span class="p">)</span>
+<span class="n">fitCurves</span><span class="o">.</span><span class="n">plot_object</span><span class="p">(</span><span class="n">showFit</span><span class="o">=</span><span class="bp">True</span><span class="p">)</span>
+<span class="n">plt</span><span class="o">.</span><span class="n">show</span><span class="p">()</span>
+</pre></div>
+</div>
+<p>Out:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="p">{</span><span class="s1">&#39;image_1&#39;</span><span class="p">:</span> <span class="mi">0</span><span class="p">,</span> <span class="s1">&#39;image_2&#39;</span><span class="p">:</span> <span class="mf">60.2649320870058</span><span class="p">}</span>
+</pre></div>
+</div>
+<a class="reference internal image-reference" href="_images/example_fit.png"><img alt="alternate text" class="align-center" src="_images/example_fit.png" style="width: 600px; height: 600px;" /></a>
 </div>
 
 
