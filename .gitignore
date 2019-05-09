@@ -1,7 +1,9 @@
+salt2-extended
+
 .idea
 .idea/workspace.xml
 
-*.py[cod]
+main.py
 .idea
 *~
 \#*\#

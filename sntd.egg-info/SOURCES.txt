@@ -17,6 +17,8 @@ sntd/data/diff1.dat
 sntd/data/diff2.dat
 sntd/data/diff3.dat
 sntd/data/diff4.dat
+sntd/data/examples/example_image_1.dat
+sntd/data/examples/example_image_2.dat
 sntd/data/hstmicrolensing/diff1.dat
 sntd/data/hstmicrolensing/diff2.dat
 sntd/data/hstmicrolensing/diff3.dat

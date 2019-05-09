@@ -29,6 +29,6 @@ setup(
     packages=['sntd'],
     author='Justin Pierel',
     author_email='jr23@email.sc.edu',
-    version='1.0.1',
+    version='1.0.3',
     package_data={'sntd':data_files}
 )
