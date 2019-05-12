@@ -142,6 +142,10 @@ Out:
     :height: 600px
     :alt: alternate text
 
+**Note that the bounds for the 't0' parameter are not absolute, the actual peak time will be estimated (unless t0_guess is defined)
+and the defined bounds will be added to this value. Similarly for amplitude, where bounds are multiplicative**
+
+
 Estimating Uncertainty Due to Microlensing
 ==========================================
 Now we can estimate the additioinal uncertainty on the time delay measurement caused by microlensing. The final number printed below
@@ -250,3 +254,40 @@ Out::
     :align: center
     :height: 600px
     :alt: alternate text
+
+Fitting Using Extra Propagation Effects
+=======================================
+
+You might also want to include other propagation effects in your fitting model, and fit relevant parameters. This can be done by
+simply adding effects to an SNCosmo model, in the same way as if you were fitting a single SN with SNCosmo (using the same
+new_MISN as above):
+
+.. code-block:: python
+
+	dust = sncosmo.CCM89Dust()
+	salt2_model=sncosmo.Model('salt2',effects=[dust],effect_names=['lens'],effect_frames=['free'])
+	fitCurves=sntd.fit_data(new_MISN,snType='Ia', models=salt2_model,bands=['F125W','F160W'],
+	                                                     params=['x0','x1','t0','c','lensebv'],
+	                                                     constants={'z':1.33,'lensr_v':3.1,'lensz':0.5},
+	                                                     bounds={'t0':(-15,15),'x1':(-2,2),'c':(0,1),'lensebv':(0,.1)},
+	                                                     showPlots=True)
+
+Out::
+
+	Image 1:
+
+.. image:: examples/example_plot_dust_image_1.png
+    :width: 600px
+    :align: center
+    :height: 600px
+    :alt: alternate text
+
+Out:: 
+
+	Image 2:
+
+.. image:: examples/example_plot_dust_image_2.png
+    :width: 600px
+    :align: center
+    :height: 600px
+    :alt: alternate text	

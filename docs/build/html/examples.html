@@ -92,7 +92,10 @@
 <li class="toctree-l2"><a class="reference internal" href="#estimating-uncertainty-due-to-microlensing">Estimating Uncertainty Due to Microlensing</a></li>
 </ul>
 </li>
-<li class="toctree-l1"><a class="reference internal" href="#using-your-own-data-with-sntd">Using Your Own Data with SNTD</a></li>
+<li class="toctree-l1"><a class="reference internal" href="#using-your-own-data-with-sntd">Using Your Own Data with SNTD</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="#fitting-using-extra-propagation-effects">Fitting Using Extra Propagation Effects</a></li>
+</ul>
+</li>
 <li class="toctree-l1"><a class="reference internal" href="api.html">API Documentation</a></li>
 </ul>
 
@@ -266,6 +269,8 @@ the simulated supernova.</p>
 </div>
 <p>Out:</p>
 <a class="reference internal image-reference" href="_images/separateFit_fig.png"><img alt="alternate text" class="align-center" src="_images/separateFit_fig.png" style="width: 600px; height: 600px;" /></a>
+<p><strong>Note that the bounds for the ‘t0’ parameter are not absolute, the actual peak time will be estimated (unless t0_guess is defined)
+and the defined bounds will be added to this value. Similarly for amplitude, where bounds are multiplicative</strong></p>
 </div>
 <div class="section" id="estimating-uncertainty-due-to-microlensing">
 <h2>Estimating Uncertainty Due to Microlensing<a class="headerlink" href="#estimating-uncertainty-due-to-microlensing" title="Permalink to this headline">¶</a></h2>
@@ -360,6 +365,31 @@ be slightly different after fitting the example data). For reference, the true d
 </pre></div>
 </div>
 <a class="reference internal image-reference" href="_images/example_fit.png"><img alt="alternate text" class="align-center" src="_images/example_fit.png" style="width: 600px; height: 600px;" /></a>
+<div class="section" id="fitting-using-extra-propagation-effects">
+<h2>Fitting Using Extra Propagation Effects<a class="headerlink" href="#fitting-using-extra-propagation-effects" title="Permalink to this headline">¶</a></h2>
+<p>You might also want to include other propagation effects in your fitting model, and fit relevant parameters. This can be done by
+simply adding effects to an SNCosmo model, in the same way as if you were fitting a single SN with SNCosmo (using the same
+new_MISN as above):</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="n">dust</span> <span class="o">=</span> <span class="n">sncosmo</span><span class="o">.</span><span class="n">CCM89Dust</span><span class="p">()</span>
+<span class="n">salt2_model</span><span class="o">=</span><span class="n">sncosmo</span><span class="o">.</span><span class="n">Model</span><span class="p">(</span><span class="s1">&#39;salt2&#39;</span><span class="p">,</span><span class="n">effects</span><span class="o">=</span><span class="p">[</span><span class="n">dust</span><span class="p">],</span><span class="n">effect_names</span><span class="o">=</span><span class="p">[</span><span class="s1">&#39;lens&#39;</span><span class="p">],</span><span class="n">effect_frames</span><span class="o">=</span><span class="p">[</span><span class="s1">&#39;free&#39;</span><span class="p">])</span>
+<span class="n">fitCurves</span><span class="o">=</span><span class="n">sntd</span><span class="o">.</span><span class="n">fit_data</span><span class="p">(</span><span class="n">new_MISN</span><span class="p">,</span><span class="n">snType</span><span class="o">=</span><span class="s1">&#39;Ia&#39;</span><span class="p">,</span> <span class="n">models</span><span class="o">=</span><span class="n">salt2_model</span><span class="p">,</span><span class="n">bands</span><span class="o">=</span><span class="p">[</span><span class="s1">&#39;F125W&#39;</span><span class="p">,</span><span class="s1">&#39;F160W&#39;</span><span class="p">],</span>
+                                                     <span class="n">params</span><span class="o">=</span><span class="p">[</span><span class="s1">&#39;x0&#39;</span><span class="p">,</span><span class="s1">&#39;x1&#39;</span><span class="p">,</span><span class="s1">&#39;t0&#39;</span><span class="p">,</span><span class="s1">&#39;c&#39;</span><span class="p">,</span><span class="s1">&#39;lensebv&#39;</span><span class="p">],</span>
+                                                     <span class="n">constants</span><span class="o">=</span><span class="p">{</span><span class="s1">&#39;z&#39;</span><span class="p">:</span><span class="mf">1.33</span><span class="p">,</span><span class="s1">&#39;lensr_v&#39;</span><span class="p">:</span><span class="mf">3.1</span><span class="p">,</span><span class="s1">&#39;lensz&#39;</span><span class="p">:</span><span class="mf">0.5</span><span class="p">},</span>
+                                                     <span class="n">bounds</span><span class="o">=</span><span class="p">{</span><span class="s1">&#39;t0&#39;</span><span class="p">:(</span><span class="o">-</span><span class="mi">15</span><span class="p">,</span><span class="mi">15</span><span class="p">),</span><span class="s1">&#39;x1&#39;</span><span class="p">:(</span><span class="o">-</span><span class="mi">2</span><span class="p">,</span><span class="mi">2</span><span class="p">),</span><span class="s1">&#39;c&#39;</span><span class="p">:(</span><span class="mi">0</span><span class="p">,</span><span class="mi">1</span><span class="p">),</span><span class="s1">&#39;lensebv&#39;</span><span class="p">:(</span><span class="mi">0</span><span class="p">,</span><span class="o">.</span><span class="mi">1</span><span class="p">)},</span>
+                                                     <span class="n">showPlots</span><span class="o">=</span><span class="bp">True</span><span class="p">)</span>
+</pre></div>
+</div>
+<p>Out:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">Image</span> <span class="mi">1</span><span class="p">:</span>
+</pre></div>
+</div>
+<a class="reference internal image-reference" href="_images/example_plot_dust_image_1.png"><img alt="alternate text" class="align-center" src="_images/example_plot_dust_image_1.png" style="width: 600px; height: 600px;" /></a>
+<p>Out:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">Image</span> <span class="mi">2</span><span class="p">:</span>
+</pre></div>
+</div>
+<a class="reference internal image-reference" href="_images/example_plot_dust_image_2.png"><img alt="alternate text" class="align-center" src="_images/example_plot_dust_image_2.png" style="width: 600px; height: 600px;" /></a>
+</div>
 </div>
 
 

@@ -3,6 +3,8 @@ salt2-extended
 .idea
 .idea/workspace.xml
 
+venv
+
 main.py
 .idea
 *~
