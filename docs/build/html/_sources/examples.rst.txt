@@ -145,6 +145,94 @@ Out:
 **Note that the bounds for the 't0' parameter are not absolute, the actual peak time will be estimated (unless t0_guess is defined)
 and the defined bounds will be added to this value. Similarly for amplitude, where bounds are multiplicative**
 
+Fitting Using Extra Propagation Effects
+=======================================
+
+You might also want to include other propagation effects in your fitting model, and fit relevant parameters. This can be done by
+simply adding effects to an SNCosmo model, in the same way as if you were fitting a single SN with SNCosmo. First we can add some
+extreme dust in the source and lens frames (your final simulations may look slightly different as **c** is chosen randomly):
+
+.. code-block:: python
+
+	myMISN = sntd.createMultiplyImagedSN(sourcename='salt2', snType='Ia', redshift=1.45,z_lens=.53, bands=['F110W','F160W'],
+              zp=[26.9,26.2], cadence=5., epochs=35.,time_delays=[10., 70.], magnifications=[10,5],
+              objectName='My Type Ia SN',telescopename='HST',av_lens=1.5,
+              av_host=1)
+	print(myMISN.images['image_1'].simMeta['lensebv'],
+	     myMISN.images['image_1'].simMeta['hostebv'], 
+	     myMISN.images['image_1'].simMeta['c'])
+
+Out:: 
+
+	0.48387096774193544 0.3225806451612903 0.0980253825067111
+
+Okay, now we can fit the MISN first without taking these effects into account:
+
+.. code-block:: python 
+
+	fitCurves=sntd.fit_data(myMISN,snType='Ia', models='salt2',bands=['F110W','F160W'],
+                                                     params=['x0','x1','t0','c'],
+                                                     constants={'z':1.45},
+                                                     bounds={'t0':(-15,15),'x1':(-2,2),'c':(-1,1)},
+                                                     showPlots=True)
+
+Out::
+
+	Image 1:
+
+.. image:: examples/example_plot_no_dust_image_1.png
+    :width: 600px
+    :align: center
+    :height: 400px
+    :alt: alternate text
+
+Out:: 
+
+	Image 2:
+
+.. image:: examples/example_plot_no_dust_image_2.png
+    :width: 600px
+    :align: center
+    :height: 400px
+    :alt: alternate text
+
+
+We can see that the fitter has done reasonably well, and the time delay is still accurate (True delay is 60 days). 
+However, one issue is that the measured value for **c** (0.805) is vastly different than the actual value (0.098) 
+as it attempts to compensate for extinction without a propagation effect. Now let's add in the propagation effects:
+
+.. code-block:: python
+
+	dust = sncosmo.CCM89Dust()
+	salt2_model=sncosmo.Model('salt2',effects=[dust,dust],effect_names=['lens','host'],effect_frames=['free','rest'])
+	fitCurves=sntd.fit_data(myMISN,snType='Ia', models=salt2_model,bands=['F110W','F160W'],
+                        params=['x0','x1','t0','c','lensebv','hostebv'],
+                        constants={'z':1.45,'lensr_v':3.1,'lensz':0.53,'hostr_v':3.1},
+                        bounds={'t0':(-15,15),'x1':(-2,2),'c':(-1,1),'lensebv':(0,1.),'hostebv':(0,1.)},
+                        showPlots=True)
+
+Out::
+
+	Image 1:
+
+.. image:: examples/example_plot_dust_image_1.png
+    :width: 600px
+    :align: center
+    :height: 400px
+    :alt: alternate text
+
+Out:: 
+
+	Image 2:
+
+.. image:: examples/example_plot_dust_image_2.png
+    :width: 600px
+    :align: center
+    :height: 400px
+    :alt: alternate text	
+
+Now the measured value for **c** (0.057) is much closer to reality, and the measured times of peak are somewhat
+more accurate. 
 
 Estimating Uncertainty Due to Microlensing
 ==========================================
@@ -255,39 +343,3 @@ Out::
     :height: 600px
     :alt: alternate text
 
-Fitting Using Extra Propagation Effects
-=======================================
-
-You might also want to include other propagation effects in your fitting model, and fit relevant parameters. This can be done by
-simply adding effects to an SNCosmo model, in the same way as if you were fitting a single SN with SNCosmo (using the same
-new_MISN as above):
-
-.. code-block:: python
-
-	dust = sncosmo.CCM89Dust()
-	salt2_model=sncosmo.Model('salt2',effects=[dust],effect_names=['lens'],effect_frames=['free'])
-	fitCurves=sntd.fit_data(new_MISN,snType='Ia', models=salt2_model,bands=['F125W','F160W'],
-	                                                     params=['x0','x1','t0','c','lensebv'],
-	                                                     constants={'z':1.33,'lensr_v':3.1,'lensz':0.5},
-	                                                     bounds={'t0':(-15,15),'x1':(-2,2),'c':(0,1),'lensebv':(0,.1)},
-	                                                     showPlots=True)
-
-Out::
-
-	Image 1:
-
-.. image:: examples/example_plot_dust_image_1.png
-    :width: 600px
-    :align: center
-    :height: 600px
-    :alt: alternate text
-
-Out:: 
-
-	Image 2:
-
-.. image:: examples/example_plot_dust_image_2.png
-    :width: 600px
-    :align: center
-    :height: 600px
-    :alt: alternate text	

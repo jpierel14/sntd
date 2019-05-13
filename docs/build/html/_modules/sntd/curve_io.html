@@ -300,8 +300,11 @@
             <span class="n">myCurve</span><span class="o">.</span><span class="n">table</span><span class="o">.</span><span class="n">add_column</span><span class="p">(</span><span class="n">Column</span><span class="p">([</span><span class="n">myCurve</span><span class="o">.</span><span class="n">object</span> <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">myCurve</span><span class="o">.</span><span class="n">table</span><span class="p">))],</span><span class="n">name</span><span class="o">=</span><span class="s1">&#39;image&#39;</span><span class="p">))</span>
 
 
-
-
+        <span class="k">if</span> <span class="s1">&#39;zpsys&#39;</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">myCurve</span><span class="o">.</span><span class="n">table</span><span class="o">.</span><span class="n">colnames</span><span class="p">:</span>
+            <span class="nb">print</span><span class="p">(</span><span class="s1">&#39;Assuming AB magsystem...&#39;</span><span class="p">)</span>
+            <span class="n">myCurve</span><span class="o">.</span><span class="n">table</span><span class="p">[</span><span class="s1">&#39;zpsys&#39;</span><span class="p">]</span><span class="o">=</span><span class="s1">&#39;AB&#39;</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">myCurve</span><span class="o">.</span><span class="n">zpsys</span><span class="o">=</span><span class="n">myCurve</span><span class="o">.</span><span class="n">table</span><span class="p">[</span><span class="s1">&#39;zpsys&#39;</span><span class="p">][</span><span class="mi">0</span><span class="p">]</span>
 
         <span class="n">tempCurve</span><span class="o">=</span><span class="n">_sntd_deepcopy</span><span class="p">(</span><span class="n">myCurve</span><span class="p">)</span>
 

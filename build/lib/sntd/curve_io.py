@@ -152,8 +152,11 @@ class curveDict(dict):
             myCurve.table.add_column(Column([myCurve.object for i in range(len(myCurve.table))],name='image'))
 
 
-
-
+        if 'zpsys' not in myCurve.table.colnames:
+            print('Assuming AB magsystem...')
+            myCurve.table['zpsys']='AB'
+        else:
+            myCurve.zpsys=myCurve.table['zpsys'][0]
 
         tempCurve=_sntd_deepcopy(myCurve)
 

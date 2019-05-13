@@ -19,7 +19,7 @@ from .ml import *
 __all__=['fit_data']
 
 __thetaSN__=['z','hostebv','screenebv','screenz','rise','fall','sigma','k','x1','c']
-__thetaL__=['t0','amplitude','dt0','A','B','t1','psi','phi','s','x0','microlensingA','microlensingD','ebv','r_v']
+__thetaL__=['t0','amplitude','dt0','A','B','t1','psi','phi','s','x0']
 
 
 _needs_bounds={'z'}
@@ -782,7 +782,7 @@ def nest_combined_lc(curves,vparam_names,bounds,snBounds,snVparam_names,ref,gues
 
 
 
-def _fitSeparate(curves,mods,args,bounds):
+def _fitSeparate(curves,mods,args,bounds,npoints=100,maxiter=None,**kwargs):
     resList=dict([])
     fitDict=dict([])
     if 't0' in args['bounds']:
@@ -886,9 +886,10 @@ def _fitSeparate(curves,mods,args,bounds):
             guess_amp_bounds=True
         else:
             guess_amp_bounds=False
+
         nest_res,nest_fit=_nested_wrapper(curves,tempTable,bestFit,vparams=bestRes.vparam_names,bounds=args['bounds'],
                                           guess_amplitude_bound=guess_amp_bounds,microlensing=args['microlensing'],
-                                          zpsys=curves.images[d].zpsys,kernel=args['kernel'],maxiter=None,npoints=200,nsamples=args['nMicroSamples'])
+                                          zpsys=curves.images[d].zpsys,kernel=args['kernel'],maxiter=maxiter,npoints=npoints,nsamples=args['nMicroSamples'])
 
 
 
@@ -978,7 +979,7 @@ def _fitSeparate(curves,mods,args,bounds):
             sncosmo.plot_lc(tempTable,model=tempMod)
 
             #plt.savefig(nest_fit._source.name+'_'+tempTable['band'][0]+'_refs_'+d+'.pdf',format='pdf',overwrik4ite=True)
-            plt.savefig('example_plot_dust_image_'+str(d[-1])+'.png',format='png',overwrite=True)
+            #plt.savefig('example_plot_dust_image_'+str(d[-1])+'.png',format='png',overwrite=True)
             plt.show()
             plt.clf()
             plt.close()
@@ -1372,8 +1373,9 @@ def _joint_likelihood(resList,verbose=False):
     params=[]
     for res in resList.values():
         params=list(set(np.append(params,res.vparam_names)))
-    otherParams=[x for x in params if x in __thetaL__ or 'ebv' in x or 'r_v' in x]
-    snparams=[x for x in params if x in __thetaSN__ or x[-1] =='z']
+    otherParams=[x for x in params if x in __thetaL__ ]
+    snparams=[x for x in params if x in __thetaSN__ or x[-1] =='z' or 'ebv' in x or 'r_v' in x]
+
     outDict={p:dict([]) for p in otherParams}
     for param in params:
         if verbose:

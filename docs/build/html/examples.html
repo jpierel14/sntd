@@ -89,13 +89,11 @@
 </li>
 <li class="toctree-l1"><a class="reference internal" href="#measuring-time-delays-with-sntd">Measuring Time Delays with SNTD</a><ul>
 <li class="toctree-l2"><a class="reference internal" href="#fitting-a-multiply-imaged-supernova">Fitting a Multiply-Imaged Supernova</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#fitting-using-extra-propagation-effects">Fitting Using Extra Propagation Effects</a></li>
 <li class="toctree-l2"><a class="reference internal" href="#estimating-uncertainty-due-to-microlensing">Estimating Uncertainty Due to Microlensing</a></li>
 </ul>
 </li>
-<li class="toctree-l1"><a class="reference internal" href="#using-your-own-data-with-sntd">Using Your Own Data with SNTD</a><ul>
-<li class="toctree-l2"><a class="reference internal" href="#fitting-using-extra-propagation-effects">Fitting Using Extra Propagation Effects</a></li>
-</ul>
-</li>
+<li class="toctree-l1"><a class="reference internal" href="#using-your-own-data-with-sntd">Using Your Own Data with SNTD</a></li>
 <li class="toctree-l1"><a class="reference internal" href="api.html">API Documentation</a></li>
 </ul>
 
@@ -272,6 +270,67 @@ the simulated supernova.</p>
 <p><strong>Note that the bounds for the ‘t0’ parameter are not absolute, the actual peak time will be estimated (unless t0_guess is defined)
 and the defined bounds will be added to this value. Similarly for amplitude, where bounds are multiplicative</strong></p>
 </div>
+<div class="section" id="fitting-using-extra-propagation-effects">
+<h2>Fitting Using Extra Propagation Effects<a class="headerlink" href="#fitting-using-extra-propagation-effects" title="Permalink to this headline">¶</a></h2>
+<p>You might also want to include other propagation effects in your fitting model, and fit relevant parameters. This can be done by
+simply adding effects to an SNCosmo model, in the same way as if you were fitting a single SN with SNCosmo. First we can add some
+extreme dust in the source and lens frames (your final simulations may look slightly different as <strong>c</strong> is chosen randomly):</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="n">myMISN</span> <span class="o">=</span> <span class="n">sntd</span><span class="o">.</span><span class="n">createMultiplyImagedSN</span><span class="p">(</span><span class="n">sourcename</span><span class="o">=</span><span class="s1">&#39;salt2&#39;</span><span class="p">,</span> <span class="n">snType</span><span class="o">=</span><span class="s1">&#39;Ia&#39;</span><span class="p">,</span> <span class="n">redshift</span><span class="o">=</span><span class="mf">1.45</span><span class="p">,</span><span class="n">z_lens</span><span class="o">=.</span><span class="mi">53</span><span class="p">,</span> <span class="n">bands</span><span class="o">=</span><span class="p">[</span><span class="s1">&#39;F110W&#39;</span><span class="p">,</span><span class="s1">&#39;F160W&#39;</span><span class="p">],</span>
+      <span class="n">zp</span><span class="o">=</span><span class="p">[</span><span class="mf">26.9</span><span class="p">,</span><span class="mf">26.2</span><span class="p">],</span> <span class="n">cadence</span><span class="o">=</span><span class="mf">5.</span><span class="p">,</span> <span class="n">epochs</span><span class="o">=</span><span class="mf">35.</span><span class="p">,</span><span class="n">time_delays</span><span class="o">=</span><span class="p">[</span><span class="mf">10.</span><span class="p">,</span> <span class="mf">70.</span><span class="p">],</span> <span class="n">magnifications</span><span class="o">=</span><span class="p">[</span><span class="mi">10</span><span class="p">,</span><span class="mi">5</span><span class="p">],</span>
+      <span class="n">objectName</span><span class="o">=</span><span class="s1">&#39;My Type Ia SN&#39;</span><span class="p">,</span><span class="n">telescopename</span><span class="o">=</span><span class="s1">&#39;HST&#39;</span><span class="p">,</span><span class="n">av_lens</span><span class="o">=</span><span class="mf">1.5</span><span class="p">,</span>
+      <span class="n">av_host</span><span class="o">=</span><span class="mi">1</span><span class="p">)</span>
+<span class="k">print</span><span class="p">(</span><span class="n">myMISN</span><span class="o">.</span><span class="n">images</span><span class="p">[</span><span class="s1">&#39;image_1&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">simMeta</span><span class="p">[</span><span class="s1">&#39;lensebv&#39;</span><span class="p">],</span>
+     <span class="n">myMISN</span><span class="o">.</span><span class="n">images</span><span class="p">[</span><span class="s1">&#39;image_1&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">simMeta</span><span class="p">[</span><span class="s1">&#39;hostebv&#39;</span><span class="p">],</span>
+     <span class="n">myMISN</span><span class="o">.</span><span class="n">images</span><span class="p">[</span><span class="s1">&#39;image_1&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">simMeta</span><span class="p">[</span><span class="s1">&#39;c&#39;</span><span class="p">])</span>
+</pre></div>
+</div>
+<p>Out:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="mf">0.48387096774193544</span> <span class="mf">0.3225806451612903</span> <span class="mf">0.0980253825067111</span>
+</pre></div>
+</div>
+<p>Okay, now we can fit the MISN first without taking these effects into account:</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="n">fitCurves</span><span class="o">=</span><span class="n">sntd</span><span class="o">.</span><span class="n">fit_data</span><span class="p">(</span><span class="n">myMISN</span><span class="p">,</span><span class="n">snType</span><span class="o">=</span><span class="s1">&#39;Ia&#39;</span><span class="p">,</span> <span class="n">models</span><span class="o">=</span><span class="s1">&#39;salt2&#39;</span><span class="p">,</span><span class="n">bands</span><span class="o">=</span><span class="p">[</span><span class="s1">&#39;F110W&#39;</span><span class="p">,</span><span class="s1">&#39;F160W&#39;</span><span class="p">],</span>
+                                             <span class="n">params</span><span class="o">=</span><span class="p">[</span><span class="s1">&#39;x0&#39;</span><span class="p">,</span><span class="s1">&#39;x1&#39;</span><span class="p">,</span><span class="s1">&#39;t0&#39;</span><span class="p">,</span><span class="s1">&#39;c&#39;</span><span class="p">],</span>
+                                             <span class="n">constants</span><span class="o">=</span><span class="p">{</span><span class="s1">&#39;z&#39;</span><span class="p">:</span><span class="mf">1.45</span><span class="p">},</span>
+                                             <span class="n">bounds</span><span class="o">=</span><span class="p">{</span><span class="s1">&#39;t0&#39;</span><span class="p">:(</span><span class="o">-</span><span class="mi">15</span><span class="p">,</span><span class="mi">15</span><span class="p">),</span><span class="s1">&#39;x1&#39;</span><span class="p">:(</span><span class="o">-</span><span class="mi">2</span><span class="p">,</span><span class="mi">2</span><span class="p">),</span><span class="s1">&#39;c&#39;</span><span class="p">:(</span><span class="o">-</span><span class="mi">1</span><span class="p">,</span><span class="mi">1</span><span class="p">)},</span>
+                                             <span class="n">showPlots</span><span class="o">=</span><span class="bp">True</span><span class="p">)</span>
+</pre></div>
+</div>
+<p>Out:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">Image</span> <span class="mi">1</span><span class="p">:</span>
+</pre></div>
+</div>
+<a class="reference internal image-reference" href="_images/example_plot_no_dust_image_1.png"><img alt="alternate text" class="align-center" src="_images/example_plot_no_dust_image_1.png" style="width: 600px; height: 400px;" /></a>
+<p>Out:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">Image</span> <span class="mi">2</span><span class="p">:</span>
+</pre></div>
+</div>
+<a class="reference internal image-reference" href="_images/example_plot_no_dust_image_2.png"><img alt="alternate text" class="align-center" src="_images/example_plot_no_dust_image_2.png" style="width: 600px; height: 400px;" /></a>
+<p>We can see that the fitter has done reasonably well, and the time delay is still accurate (True delay is 60 days).
+However, one issue is that the measured value for <strong>c</strong> (0.805) is vastly different than the actual value (0.098)
+as it attempts to compensate for extinction without a propagation effect. Now let’s add in the propagation effects:</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="n">dust</span> <span class="o">=</span> <span class="n">sncosmo</span><span class="o">.</span><span class="n">CCM89Dust</span><span class="p">()</span>
+<span class="n">salt2_model</span><span class="o">=</span><span class="n">sncosmo</span><span class="o">.</span><span class="n">Model</span><span class="p">(</span><span class="s1">&#39;salt2&#39;</span><span class="p">,</span><span class="n">effects</span><span class="o">=</span><span class="p">[</span><span class="n">dust</span><span class="p">,</span><span class="n">dust</span><span class="p">],</span><span class="n">effect_names</span><span class="o">=</span><span class="p">[</span><span class="s1">&#39;lens&#39;</span><span class="p">,</span><span class="s1">&#39;host&#39;</span><span class="p">],</span><span class="n">effect_frames</span><span class="o">=</span><span class="p">[</span><span class="s1">&#39;free&#39;</span><span class="p">,</span><span class="s1">&#39;rest&#39;</span><span class="p">])</span>
+<span class="n">fitCurves</span><span class="o">=</span><span class="n">sntd</span><span class="o">.</span><span class="n">fit_data</span><span class="p">(</span><span class="n">myMISN</span><span class="p">,</span><span class="n">snType</span><span class="o">=</span><span class="s1">&#39;Ia&#39;</span><span class="p">,</span> <span class="n">models</span><span class="o">=</span><span class="n">salt2_model</span><span class="p">,</span><span class="n">bands</span><span class="o">=</span><span class="p">[</span><span class="s1">&#39;F110W&#39;</span><span class="p">,</span><span class="s1">&#39;F160W&#39;</span><span class="p">],</span>
+                <span class="n">params</span><span class="o">=</span><span class="p">[</span><span class="s1">&#39;x0&#39;</span><span class="p">,</span><span class="s1">&#39;x1&#39;</span><span class="p">,</span><span class="s1">&#39;t0&#39;</span><span class="p">,</span><span class="s1">&#39;c&#39;</span><span class="p">,</span><span class="s1">&#39;lensebv&#39;</span><span class="p">,</span><span class="s1">&#39;hostebv&#39;</span><span class="p">],</span>
+                <span class="n">constants</span><span class="o">=</span><span class="p">{</span><span class="s1">&#39;z&#39;</span><span class="p">:</span><span class="mf">1.45</span><span class="p">,</span><span class="s1">&#39;lensr_v&#39;</span><span class="p">:</span><span class="mf">3.1</span><span class="p">,</span><span class="s1">&#39;lensz&#39;</span><span class="p">:</span><span class="mf">0.53</span><span class="p">,</span><span class="s1">&#39;hostr_v&#39;</span><span class="p">:</span><span class="mf">3.1</span><span class="p">},</span>
+                <span class="n">bounds</span><span class="o">=</span><span class="p">{</span><span class="s1">&#39;t0&#39;</span><span class="p">:(</span><span class="o">-</span><span class="mi">15</span><span class="p">,</span><span class="mi">15</span><span class="p">),</span><span class="s1">&#39;x1&#39;</span><span class="p">:(</span><span class="o">-</span><span class="mi">2</span><span class="p">,</span><span class="mi">2</span><span class="p">),</span><span class="s1">&#39;c&#39;</span><span class="p">:(</span><span class="o">-</span><span class="mi">1</span><span class="p">,</span><span class="mi">1</span><span class="p">),</span><span class="s1">&#39;lensebv&#39;</span><span class="p">:(</span><span class="mi">0</span><span class="p">,</span><span class="mf">1.</span><span class="p">),</span><span class="s1">&#39;hostebv&#39;</span><span class="p">:(</span><span class="mi">0</span><span class="p">,</span><span class="mf">1.</span><span class="p">)},</span>
+                <span class="n">showPlots</span><span class="o">=</span><span class="bp">True</span><span class="p">)</span>
+</pre></div>
+</div>
+<p>Out:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">Image</span> <span class="mi">1</span><span class="p">:</span>
+</pre></div>
+</div>
+<a class="reference internal image-reference" href="_images/example_plot_dust_image_1.png"><img alt="alternate text" class="align-center" src="_images/example_plot_dust_image_1.png" style="width: 600px; height: 400px;" /></a>
+<p>Out:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">Image</span> <span class="mi">2</span><span class="p">:</span>
+</pre></div>
+</div>
+<a class="reference internal image-reference" href="_images/example_plot_dust_image_2.png"><img alt="alternate text" class="align-center" src="_images/example_plot_dust_image_2.png" style="width: 600px; height: 400px;" /></a>
+<p>Now the measured value for <strong>c</strong> (0.057) is much closer to reality, and the measured times of peak are somewhat
+more accurate.</p>
+</div>
 <div class="section" id="estimating-uncertainty-due-to-microlensing">
 <h2>Estimating Uncertainty Due to Microlensing<a class="headerlink" href="#estimating-uncertainty-due-to-microlensing" title="Permalink to this headline">¶</a></h2>
 <p>Now we can estimate the additioinal uncertainty on the time delay measurement caused by microlensing. The final number printed below
@@ -365,31 +424,6 @@ be slightly different after fitting the example data). For reference, the true d
 </pre></div>
 </div>
 <a class="reference internal image-reference" href="_images/example_fit.png"><img alt="alternate text" class="align-center" src="_images/example_fit.png" style="width: 600px; height: 600px;" /></a>
-<div class="section" id="fitting-using-extra-propagation-effects">
-<h2>Fitting Using Extra Propagation Effects<a class="headerlink" href="#fitting-using-extra-propagation-effects" title="Permalink to this headline">¶</a></h2>
-<p>You might also want to include other propagation effects in your fitting model, and fit relevant parameters. This can be done by
-simply adding effects to an SNCosmo model, in the same way as if you were fitting a single SN with SNCosmo (using the same
-new_MISN as above):</p>
-<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="n">dust</span> <span class="o">=</span> <span class="n">sncosmo</span><span class="o">.</span><span class="n">CCM89Dust</span><span class="p">()</span>
-<span class="n">salt2_model</span><span class="o">=</span><span class="n">sncosmo</span><span class="o">.</span><span class="n">Model</span><span class="p">(</span><span class="s1">&#39;salt2&#39;</span><span class="p">,</span><span class="n">effects</span><span class="o">=</span><span class="p">[</span><span class="n">dust</span><span class="p">],</span><span class="n">effect_names</span><span class="o">=</span><span class="p">[</span><span class="s1">&#39;lens&#39;</span><span class="p">],</span><span class="n">effect_frames</span><span class="o">=</span><span class="p">[</span><span class="s1">&#39;free&#39;</span><span class="p">])</span>
-<span class="n">fitCurves</span><span class="o">=</span><span class="n">sntd</span><span class="o">.</span><span class="n">fit_data</span><span class="p">(</span><span class="n">new_MISN</span><span class="p">,</span><span class="n">snType</span><span class="o">=</span><span class="s1">&#39;Ia&#39;</span><span class="p">,</span> <span class="n">models</span><span class="o">=</span><span class="n">salt2_model</span><span class="p">,</span><span class="n">bands</span><span class="o">=</span><span class="p">[</span><span class="s1">&#39;F125W&#39;</span><span class="p">,</span><span class="s1">&#39;F160W&#39;</span><span class="p">],</span>
-                                                     <span class="n">params</span><span class="o">=</span><span class="p">[</span><span class="s1">&#39;x0&#39;</span><span class="p">,</span><span class="s1">&#39;x1&#39;</span><span class="p">,</span><span class="s1">&#39;t0&#39;</span><span class="p">,</span><span class="s1">&#39;c&#39;</span><span class="p">,</span><span class="s1">&#39;lensebv&#39;</span><span class="p">],</span>
-                                                     <span class="n">constants</span><span class="o">=</span><span class="p">{</span><span class="s1">&#39;z&#39;</span><span class="p">:</span><span class="mf">1.33</span><span class="p">,</span><span class="s1">&#39;lensr_v&#39;</span><span class="p">:</span><span class="mf">3.1</span><span class="p">,</span><span class="s1">&#39;lensz&#39;</span><span class="p">:</span><span class="mf">0.5</span><span class="p">},</span>
-                                                     <span class="n">bounds</span><span class="o">=</span><span class="p">{</span><span class="s1">&#39;t0&#39;</span><span class="p">:(</span><span class="o">-</span><span class="mi">15</span><span class="p">,</span><span class="mi">15</span><span class="p">),</span><span class="s1">&#39;x1&#39;</span><span class="p">:(</span><span class="o">-</span><span class="mi">2</span><span class="p">,</span><span class="mi">2</span><span class="p">),</span><span class="s1">&#39;c&#39;</span><span class="p">:(</span><span class="mi">0</span><span class="p">,</span><span class="mi">1</span><span class="p">),</span><span class="s1">&#39;lensebv&#39;</span><span class="p">:(</span><span class="mi">0</span><span class="p">,</span><span class="o">.</span><span class="mi">1</span><span class="p">)},</span>
-                                                     <span class="n">showPlots</span><span class="o">=</span><span class="bp">True</span><span class="p">)</span>
-</pre></div>
-</div>
-<p>Out:</p>
-<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">Image</span> <span class="mi">1</span><span class="p">:</span>
-</pre></div>
-</div>
-<a class="reference internal image-reference" href="_images/example_plot_dust_image_1.png"><img alt="alternate text" class="align-center" src="_images/example_plot_dust_image_1.png" style="width: 600px; height: 600px;" /></a>
-<p>Out:</p>
-<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">Image</span> <span class="mi">2</span><span class="p">:</span>
-</pre></div>
-</div>
-<a class="reference internal image-reference" href="_images/example_plot_dust_image_2.png"><img alt="alternate text" class="align-center" src="_images/example_plot_dust_image_2.png" style="width: 600px; height: 600px;" /></a>
-</div>
 </div>
 
 

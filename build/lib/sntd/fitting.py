@@ -19,7 +19,7 @@ from .ml import *
 __all__=['fit_data']
 
 __thetaSN__=['z','hostebv','screenebv','screenz','rise','fall','sigma','k','x1','c']
-__thetaL__=['t0','amplitude','dt0','A','B','t1','psi','phi','s','x0','microlensingA','microlensingD']
+__thetaL__=['t0','amplitude','dt0','A','B','t1','psi','phi','s','x0']
 
 
 _needs_bounds={'z'}
@@ -782,7 +782,7 @@ def nest_combined_lc(curves,vparam_names,bounds,snBounds,snVparam_names,ref,gues
 
 
 
-def _fitSeparate(curves,mods,args,bounds):
+def _fitSeparate(curves,mods,args,bounds,npoints=100,maxiter=None,**kwargs):
     resList=dict([])
     fitDict=dict([])
     if 't0' in args['bounds']:
@@ -812,7 +812,7 @@ def _fitSeparate(curves,mods,args,bounds):
         if True or len(args['curve'].table)>63 or len(mods)==1 or args['snType']=='Ia':
             fits=[]
             for mod in mods:
-                if mod in ['BazinSource','KarpenkaSource','NewlingSource','PierelSource']:
+                if mod =='BazinSource' or isinstance(mod,BazinSource):
                     fits.append(param_fit(args,mod))
 
 
@@ -886,9 +886,10 @@ def _fitSeparate(curves,mods,args,bounds):
             guess_amp_bounds=True
         else:
             guess_amp_bounds=False
+
         nest_res,nest_fit=_nested_wrapper(curves,tempTable,bestFit,vparams=bestRes.vparam_names,bounds=args['bounds'],
                                           guess_amplitude_bound=guess_amp_bounds,microlensing=args['microlensing'],
-                                          zpsys=curves.images[d].zpsys,kernel=args['kernel'],maxiter=None,npoints=200,nsamples=args['nMicroSamples'])
+                                          zpsys=curves.images[d].zpsys,kernel=args['kernel'],maxiter=maxiter,npoints=npoints,nsamples=args['nMicroSamples'])
 
 
 
@@ -969,7 +970,6 @@ def _fitSeparate(curves,mods,args,bounds):
 
     if args['showPlots']:
         for d in curves.images.keys():
-            print(d)
             tempTable=copy(curves.images[d].table)
             for b in [x for x in np.unique(tempTable['band']) if x not in args['bands']]:
                 tempTable=tempTable[tempTable['band']!=b]
@@ -979,6 +979,7 @@ def _fitSeparate(curves,mods,args,bounds):
             sncosmo.plot_lc(tempTable,model=tempMod)
 
             #plt.savefig(nest_fit._source.name+'_'+tempTable['band'][0]+'_refs_'+d+'.pdf',format='pdf',overwrik4ite=True)
+            plt.savefig('example_plot_dust_image_'+str(d[-1])+'.png',format='png',overwrite=True)
             plt.show()
             plt.clf()
             plt.close()
@@ -1025,6 +1026,7 @@ def _nested_wrapper(curves,data,model,vparams,bounds,guess_amplitude_bound,micro
 
     else:
         bestRes,bestMod=sncosmo.nest_lc(data,model,vparam_names=vparam_names,bounds=bounds,guess_amplitude_bound=guess_amplitude_bound,maxiter=maxiter,npoints=npoints)
+
     return(bestRes,bestMod)
 
 def _maxFromModel(mod,band,zp,zpsys):
@@ -1323,10 +1325,11 @@ def _fit_data(args):
     else:
         modName=mod.name+'_'+version if version else deepcopy(mod)
 
-    source=sncosmo.get_source(mod)
-
-    #print(mod)
-    smod = sncosmo.Model(source=source,effects=effects,effect_names=effect_names,effect_frames=effect_frames)
+    if isinstance(mod,str) or isinstance(mod,sncosmo.Source):
+        source=sncosmo.get_source(mod)
+        smod = sncosmo.Model(source=source,effects=effects,effect_names=effect_names,effect_frames=effect_frames)
+    else:
+        smod=mod
     params=args['params'] if args['params'] else [x for x in smod.param_names]
     fits=newDict()
     dcurve=args['curve']
@@ -1343,9 +1346,11 @@ def _fit_data(args):
         params=list(set(params)-no_bound)
     params= [x for x in params if x not in fits.ignore and x not in fits.constants.keys()]
     fits.params = params
-    if fits.constants:
-        constants = {x: fits.constants[x] for x in fits.constants.keys() if x in smod.param_names}
-        smod.set(**constants)
+    if fits.constants is not None:
+        try:
+            smod.set(**fits.constants)
+        except:
+            raise RuntimeError('You may have some parameters in "constants" that are not in your model.')
 
     if args['doFit']:
         if args['fitting_method']=='mcmc':
@@ -1368,8 +1373,9 @@ def _joint_likelihood(resList,verbose=False):
     params=[]
     for res in resList.values():
         params=list(set(np.append(params,res.vparam_names)))
-    otherParams=[x for x in params if x in __thetaL__]
-    snparams=[x for x in params if x in __thetaSN__]
+    otherParams=[x for x in params if x in __thetaL__ ]
+    snparams=[x for x in params if x in __thetaSN__ or x[-1] =='z' or 'ebv' in x or 'r_v' in x]
+
     outDict={p:dict([]) for p in otherParams}
     for param in params:
         if verbose:
