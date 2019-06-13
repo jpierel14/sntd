@@ -173,8 +173,7 @@ def createMultiplyImagedSN(
     dust_names = []
     dust_effect_list = []
     if dust_model and (av_lens or av_host):
-        dust_effect = {'SFD98Map': sncosmo.SFD98Map,
-                       'CCM89Dust': sncosmo.CCM89Dust,
+        dust_effect = {'CCM89Dust': sncosmo.CCM89Dust,
                        'OD94Dust': sncosmo.OD94Dust,
                        'F99Dust': sncosmo.F99Dust}[dust_model]()
         if av_host:

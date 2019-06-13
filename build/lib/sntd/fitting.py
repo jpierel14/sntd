@@ -979,7 +979,7 @@ def _fitSeparate(curves,mods,args,bounds,npoints=100,maxiter=None,**kwargs):
             sncosmo.plot_lc(tempTable,model=tempMod)
 
             #plt.savefig(nest_fit._source.name+'_'+tempTable['band'][0]+'_refs_'+d+'.pdf',format='pdf',overwrik4ite=True)
-            plt.savefig('example_plot_dust_image_'+str(d[-1])+'.png',format='png',overwrite=True)
+            #plt.savefig('example_plot_dust_image_'+str(d[-1])+'.png',format='png',overwrite=True)
             plt.show()
             plt.clf()
             plt.close()
@@ -1306,7 +1306,7 @@ def _fit_data(args):
         mod = mod[0]
     else:
         version = None
-    dust_dict={'SFD98Map':sncosmo.SFD98Map,'CCM89Dust':sncosmo.CCM89Dust,'OD94Dust':sncosmo.OD94Dust,'F99Dust':sncosmo.F99Dust}
+    dust_dict={sncosmo.SFD98Map,'CCM89Dust':sncosmo.CCM89Dust,'OD94Dust':sncosmo.OD94Dust,'F99Dust':sncosmo.F99Dust}
     if args['dust']:
         dust=dust_dict[args['dust']]()
     else:
