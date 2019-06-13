@@ -1,0 +1,16 @@
+
+		# open rest-lambda range WAAAY beyond nominal 2900-7000 A range.
+		RESTLAMBDA_RANGE: 1695. 24995.
+		COLORLAW_VERSION: 1
+		COLORCOR_PARAMS: 2800 10000 4  -0.98462437 0.42685586 -0.08311382 0.00571099
+		COLOR_OFFSET:  0.0
+
+		MAG_OFFSET: 0.27
+		SEDFLUX_INTERP_OPT: 1  # 1=>linear,    2=>spline
+		ERRMAP_INTERP_OPT:  1  # 0=snake off;  1=>linear  2=>spline
+		ERRMAP_KCOR_OPT:    1  # 1/0 => on/off
+
+		MAGERR_FLOOR:   0.005            # don;t allow smaller error than this
+		MAGERR_LAMOBS:  0.1  2000  4000  # magerr minlam maxlam
+		MAGERR_LAMREST: 0.1   100   200  # magerr minlam maxlam
+		

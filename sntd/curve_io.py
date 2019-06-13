@@ -164,8 +164,7 @@ class curveDict(dict):
         self.images[myCurve.object]=tempCurve
 
         if self.table:
-            for row in tempCurve.table:
-                self.table.add_row(row)
+            self.table=vstack([tempCurve.table])
         else:
             self.table=copy(tempCurve.table)
         return(self)
