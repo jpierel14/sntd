@@ -1306,7 +1306,7 @@ def _fit_data(args):
         mod = mod[0]
     else:
         version = None
-    dust_dict={sncosmo.SFD98Map,'CCM89Dust':sncosmo.CCM89Dust,'OD94Dust':sncosmo.OD94Dust,'F99Dust':sncosmo.F99Dust}
+    dust_dict={'CCM89Dust':sncosmo.CCM89Dust,'OD94Dust':sncosmo.OD94Dust,'F99Dust':sncosmo.F99Dust}
     if args['dust']:
         dust=dust_dict[args['dust']]()
     else:
