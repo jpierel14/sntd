@@ -10,11 +10,13 @@ from collections import OrderedDict
 from sklearn.gaussian_process import GaussianProcessRegressor
 from sklearn.gaussian_process.kernels import RBF
 import scipy
+from sncosmo import nest_lc
 
 from .util import *
 from .curve_io import _sntd_deepcopy
 from .models import *
 from .ml import *
+#from .sncosmo_fitting import nest_lc
 
 __all__=['fit_data']
 
@@ -146,7 +148,7 @@ def fit_data(curves, snType='Ia',bands=None, models=None, params=None, bounds={}
         mods=models
     mods=set(mods)
 
-    args['sn_func'] = {'minuit': sncosmo.fit_lc, 'mcmc': sncosmo.mcmc_lc, 'nest': sncosmo.nest_lc}
+    args['sn_func'] = {'minuit': sncosmo.fit_lc, 'mcmc': sncosmo.mcmc_lc, 'nest': nest_lc}
     #get any properties set in kwargs that exist for the defined fitting function
     args['props'] = {x: kwargs[x] for x in kwargs.keys() if
                      x in [y for y in inspect.getargspec(args['sn_func'][fitting_method])[0]] and x != 'verbose'}
@@ -740,7 +742,7 @@ def nest_combined_lc(curves,vparam_names,bounds,snBounds,snVparam_names,ref,gues
         tempCurve.combine_curves(time_delays=tempTds,magnifications=tempMus,referenceImage=ref)
 
         tempCurve.combined.table=tempCurve.combined.table[tempCurve.combined.table['band']==band]
-        tempRes,tempMod=sncosmo.nest_lc(tempCurve.combined.table,refModel,
+        tempRes,tempMod=nest_lc(tempCurve.combined.table,refModel,
                                         vparam_names=snVparam_names,bounds=snBounds,guess_amplitude_bound=False,maxiter=10,npoints=5)
         global best_comb_Res
         global best_comb_Mod
@@ -923,7 +925,7 @@ def _fitSeparate(curves,mods,args,bounds,npoints=100,maxiter=None,**kwargs):
 
             final_vparams=[]
             for p in joint.keys():
-                if p in curves.images[d].fits.res.param_names:
+                if p in curves.images[d].fits.res.vparam_names:
                     if isinstance(joint[p],dict):
                         if p=='t0':
                             bds[p]=(-3+joint[p][d][0],3+joint[p][d][0])
@@ -942,7 +944,7 @@ def _fitSeparate(curves,mods,args,bounds,npoints=100,maxiter=None,**kwargs):
                         curves.images[d].fits.model.set(**{p:joint[p][0]})
                         errs[p]=joint[p][1]
 
-            finalRes,finalFit=sncosmo.nest_lc(tempTable,curves.images[d].fits.model,final_vparams,bounds=bds,guess_amplitude_bound=True,maxiter=None)
+            finalRes,finalFit=nest_lc(tempTable,curves.images[d].fits.model,final_vparams,bounds=bds,guess_amplitude_bound=True,maxiter=None)
 
             finalRes.ndof=dofs[d]
             curves.images[d].fits=newDict()
@@ -994,7 +996,7 @@ def _micro_uncertainty(args):
     temp_nest_mod=deepcopy(nest_fit)
     tempMicro=AchromaticMicrolensing(x_pred/(1+nest_fit.get('z')),sample,magformat='multiply')
     temp_nest_mod.add_effect(tempMicro,'microlensing','rest')
-    tempRes,tempMod=sncosmo.nest_lc(data,temp_nest_mod,vparam_names=vparam_names,bounds=bounds,guess_amplitude_bound=True,maxiter=None,npoints=200)
+    tempRes,tempMod=nest_lc(data,temp_nest_mod,vparam_names=vparam_names,bounds=bounds,guess_amplitude_bound=True,maxiter=None,npoints=200)
 
     return float(tempMod.get('t0'))
 
@@ -1006,7 +1008,7 @@ def _nested_wrapper(curves,data,model,vparams,bounds,guess_amplitude_bound,micro
 
 
     if microlensing is not None:
-        nest_res,nest_fit=sncosmo.nest_lc(temp,model,vparam_names=vparam_names,bounds=bounds,guess_amplitude_bound=guess_amplitude_bound,maxiter=maxiter,npoints=npoints)
+        nest_res,nest_fit=nest_lc(temp,model,vparam_names=vparam_names,bounds=bounds,guess_amplitude_bound=guess_amplitude_bound,maxiter=maxiter,npoints=npoints)
 
 
 
@@ -1025,7 +1027,7 @@ def _nested_wrapper(curves,data,model,vparams,bounds,guess_amplitude_bound,micro
 
 
     else:
-        bestRes,bestMod=sncosmo.nest_lc(data,model,vparam_names=vparam_names,bounds=bounds,guess_amplitude_bound=guess_amplitude_bound,maxiter=maxiter,npoints=npoints)
+        bestRes,bestMod=nest_lc(data,model,vparam_names=vparam_names,bounds=bounds,guess_amplitude_bound=guess_amplitude_bound,maxiter=maxiter,npoints=npoints)
 
     return(bestRes,bestMod)
 
@@ -1504,6 +1506,6 @@ def param_fit(args,modName,fit=False):
 
 
 
-        res,mod=sncosmo.nest_lc(args['curve'].table,mod,vparam_names=args['params'],bounds=args['bounds'],guess_amplitude_bound=guess_amp_bound,maxiter=1000,npoints=200)
+        res,mod=nest_lc(args['curve'].table,mod,vparam_names=args['params'],bounds=args['bounds'],guess_amplitude_bound=guess_amp_bound,maxiter=1000,npoints=200)
     return({'res':res,'model':mod})
 

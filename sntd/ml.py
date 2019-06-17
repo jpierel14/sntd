@@ -518,10 +518,10 @@ def _mlFlux(self,time, wave):
     minphase = (self.mintime() - self._parameters[1]) * a
     maxphase = (self.maxtime() - self._parameters[1]) * a
     restwave = wave * a
-
     # Note that below we multiply by the scale factor to conserve
     # bolometric luminosity.
-    f = a * self._source._flux(phase, restwave)
+
+    f = a * self._source._flux(np.round(phase,1).astype(np.double), np.round(restwave,1).astype(np.double))
 
     # Pass the flux through the PropagationEffects.
     for effect, frame, zindex in zip(self._effects, self._effect_frames,
