@@ -923,7 +923,7 @@ def _fitSeparate(curves,mods,args,bounds,npoints=100,maxiter=None,**kwargs):
 
             final_vparams=[]
             for p in joint.keys():
-                if p in curves.images[d].fits.res.param_names:
+                if p in curves.images[d].fits.res.vparam_names:
                     if isinstance(joint[p],dict):
                         if p=='t0':
                             bds[p]=(-3+joint[p][d][0],3+joint[p][d][0])
@@ -951,7 +951,7 @@ def _fitSeparate(curves,mods,args,bounds,npoints=100,maxiter=None,**kwargs):
 
         else:
             for p in joint.keys():
-                if p in curves.images[d].fits.res.param_names:
+                if p in curves.images[d].fits.res.vparam_names:
                     if isinstance(joint[p],dict):
                         curves.images[d].fits.model.set(**{p:joint[p][d][0]})
                         errs[p]=joint[p][d][1]
