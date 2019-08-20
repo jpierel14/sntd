@@ -130,7 +130,8 @@ def fit_data(curves, snType='Ia',bands=None, models=None, params=None, bounds={}
 
 
     args = locals()
-
+    for k in kwargs.keys():
+        args[k]=kwargs[k]
     args['curves']=_sntd_deepcopy(curves)
     args['bands'] = [bands] if bands and not isinstance(bands,(tuple,list)) else bands
     #sets the bands to user's if defined (set, so that they're unique), otherwise to all the bands that exist in curves
@@ -864,7 +865,8 @@ def _fitSeparate(curves,mods,args,bounds,npoints=100,maxiter=None,**kwargs):
                     fitDict[d][2]=f['res']
                     break
     dofs=dict([])
-
+    if 'priors' not in args.keys():
+        args['priors']={}
     for d in fitDict.keys():
         _,bestFit,bestMod=fitDict[d]
         tempTable=deepcopy(curves.images[d].table)
@@ -880,8 +882,8 @@ def _fitSeparate(curves,mods,args,bounds,npoints=100,maxiter=None,**kwargs):
                 maxFlux=np.max(tempTable['flux'])
                 maxTime=tempTable['time'][tempTable['flux']==maxFlux]
                 args['bounds']['t0']=(t0Bounds[0]+maxTime,t0Bounds[1]+maxTime)
-        if args['snType']=='Ia' and 'x1' not in args['bounds']:
-            args['bounds']['x1']=(-1,1)
+
+
         if 'amplitude' in args['bounds'] and args['guess_amplitude']:
             args['bounds']['amplitude']=(ampBounds[0]*np.max(tempTable['flux']),ampBounds[1]*np.max(tempTable['flux']))
         if 'amplitude' not in args['bounds']:
@@ -889,7 +891,10 @@ def _fitSeparate(curves,mods,args,bounds,npoints=100,maxiter=None,**kwargs):
         else:
             guess_amp_bounds=False
 
-        nest_res,nest_fit=_nested_wrapper(curves,tempTable,bestFit,vparams=bestRes.vparam_names,bounds=args['bounds'],
+
+
+
+        nest_res,nest_fit=_nested_wrapper(curves,tempTable,bestFit,vparams=bestRes.vparam_names,bounds=args['bounds'],priors=args['priors'],
                                           guess_amplitude_bound=guess_amp_bounds,microlensing=args['microlensing'],
                                           zpsys=curves.images[d].zpsys,kernel=args['kernel'],maxiter=maxiter,npoints=npoints,nsamples=args['nMicroSamples'])
 
@@ -934,7 +939,7 @@ def _fitSeparate(curves,mods,args,bounds,npoints=100,maxiter=None,**kwargs):
                             if joint[p][d][1]==0 or np.round(joint[p][d][1]/joint[p][d][0],6)==0:
                                 bds[p]=(joint[p][d][0]-.05*joint[p][d][0],joint[p][d][0]+.05*joint[p][d][0])
                             else:
-                                bds[p]=(joint[p][d][0]-joint[p][d][1],joint[p][d][0]+joint[p][d][1])
+                                bds[p]=(joint[p][d][0]-3*joint[p][d][1],joint[p][d][0]+3*joint[p][d][1])
                         errs[p]=joint[p][d][1]
                         final_vparams.append(p)
 
@@ -944,12 +949,12 @@ def _fitSeparate(curves,mods,args,bounds,npoints=100,maxiter=None,**kwargs):
                         curves.images[d].fits.model.set(**{p:joint[p][0]})
                         errs[p]=joint[p][1]
 
-            finalRes,finalFit=nest_lc(tempTable,curves.images[d].fits.model,final_vparams,bounds=bds,guess_amplitude_bound=True,maxiter=None)
+            finalRes,finalFit=nest_lc(tempTable,curves.images[d].fits.model,final_vparams,bounds=bds,guess_amplitude_bound=True,maxiter=None,priors=args['priors'])
 
             finalRes.ndof=dofs[d]
-            curves.images[d].fits=newDict()
-            curves.images[d].fits['model']=finalFit
-            curves.images[d].fits['res']=finalRes
+
+            curves.images[d].fits['final_model']=finalFit
+            curves.images[d].fits['final_res']=finalRes
 
         else:
             for p in joint.keys():
@@ -990,25 +995,25 @@ def _fitSeparate(curves,mods,args,bounds,npoints=100,maxiter=None,**kwargs):
 
 def _micro_uncertainty(args):
     sample,other=args
-    nest_fit,data,colnames,x_pred,vparam_names,bounds=other
+    nest_fit,data,colnames,x_pred,vparam_names,bounds,priors=other
     data=Table(data,names=colnames)
 
     temp_nest_mod=deepcopy(nest_fit)
     tempMicro=AchromaticMicrolensing(x_pred/(1+nest_fit.get('z')),sample,magformat='multiply')
     temp_nest_mod.add_effect(tempMicro,'microlensing','rest')
-    tempRes,tempMod=nest_lc(data,temp_nest_mod,vparam_names=vparam_names,bounds=bounds,guess_amplitude_bound=True,maxiter=None,npoints=200)
+    tempRes,tempMod=nest_lc(data,temp_nest_mod,vparam_names=vparam_names,bounds=bounds,guess_amplitude_bound=True,maxiter=None,npoints=200,priors=priors)
 
     return float(tempMod.get('t0'))
 
 
-def _nested_wrapper(curves,data,model,vparams,bounds,guess_amplitude_bound,microlensing,zpsys,kernel,maxiter,npoints,nsamples):
+def _nested_wrapper(curves,data,model,vparams,bounds,priors,guess_amplitude_bound,microlensing,zpsys,kernel,maxiter,npoints,nsamples):
 
     temp=deepcopy(data)
     vparam_names=deepcopy(vparams)
 
 
     if microlensing is not None:
-        nest_res,nest_fit=nest_lc(temp,model,vparam_names=vparam_names,bounds=bounds,guess_amplitude_bound=guess_amplitude_bound,maxiter=maxiter,npoints=npoints)
+        nest_res,nest_fit=nest_lc(temp,model,vparam_names=vparam_names,bounds=bounds,guess_amplitude_bound=guess_amplitude_bound,maxiter=maxiter,npoints=npoints,priors=priors)
 
 
 
@@ -1017,7 +1022,7 @@ def _nested_wrapper(curves,data,model,vparams,bounds,guess_amplitude_bound,micro
 
 
         temp=deepcopy(data)
-
+        return(nest_res,nest_fit)
         t0s=pyParz.foreach(samples.T,_micro_uncertainty,[nest_fit,np.array(temp),temp.colnames,x_pred,vparam_names,bounds])
         mu,sigma=scipy.stats.norm.fit(t0s)
 
@@ -1027,7 +1032,9 @@ def _nested_wrapper(curves,data,model,vparams,bounds,guess_amplitude_bound,micro
 
 
     else:
-        bestRes,bestMod=nest_lc(data,model,vparam_names=vparam_names,bounds=bounds,guess_amplitude_bound=guess_amplitude_bound,maxiter=maxiter,npoints=npoints)
+        bestRes,bestMod=nest_lc(data,model,vparam_names=vparam_names,bounds=bounds,
+                                guess_amplitude_bound=guess_amplitude_bound,maxiter=maxiter,npoints=npoints,
+                                priors=priors)
 
     return(bestRes,bestMod)
 
@@ -1104,7 +1111,7 @@ def fit_micro(curves,res,fit,dat,zpsys,nsamples,micro_type='achromatic',kernel='
         samples=gp.sample_y(X,nsamples)
 
 
-        '''
+
         plt.close()
         fig=plt.figure()
         ax=fig.gca()
@@ -1114,19 +1121,20 @@ def fit_micro(curves,res,fit,dat,zpsys,nsamples,micro_type='achromatic',kernel='
             else:
                 ax.plot(X, samples[:,i],alpha=.1,color='b')
         ax.errorbar(allTime.ravel(), allResid, allErr, fmt='r.', markersize=10, label=u'Observations')
-        print(len(allResid))
+
         ax.plot(X, y_pred - 3 * sigma, '--g')
         ax.plot(X, y_pred + 3 * sigma, '--g',label='$3\sigma$ Bounds')
         ax.plot(X,y_pred,'k-.',label="GPR Prediction")
 
         ax.set_ylabel('Magnification ($\mu$)')
         ax.set_xlabel('Observer Frame Time (Days)')
-        ax.plot(X,curves.images['S2'].simMeta['microlensing_params'](X/(1+1.33))/np.median(curves.images['S2'].simMeta['microlensing_params'](X/(1+1.33))),'k',label='True $\mu$-Lensing')
+        ax.plot(X,curves.images['image_2'].simMeta['microlensing_params'](X/(1+1.33))/np.median(curves.images['image_2'].simMeta['microlensing_params'](X/(1+1.33))),'k',label='True $\mu$-Lensing')
         ax.legend(fontsize=10)
-        plt.savefig('microlensing_gpr.pdf',format='pdf',overwrite=True)
+        plt.show()
+        #plt.savefig('microlensing_gpr.pdf',format='pdf',overwrite=True)
         plt.close()
-        sys.exit()
-        '''
+        #sys.exit()
+
 
         tempX=X[:,0]
         tempX=np.append([fit._source._phase[0]*(1+fit.get('z'))],np.append(tempX,[fit._source._phase[-1]*(1+fit.get('z'))]))

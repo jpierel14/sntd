@@ -8,7 +8,11 @@
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/main.py" beforeDir="false" afterPath="$PROJECT_DIR$/main.py" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/sntd/fitting.py" beforeDir="false" afterPath="$PROJECT_DIR$/sntd/fitting.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/sntd/ml.py" beforeDir="false" afterPath="$PROJECT_DIR$/sntd/ml.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/sntd/microlens/IRIS001" beforeDir="false" afterPath="$PROJECT_DIR$/sntd/microlens/IRIS001" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/sntd/microlens/IRIS001.fits" beforeDir="false" afterPath="$PROJECT_DIR$/sntd/microlens/IRIS001.fits" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/sntd/microlens/dat.001" beforeDir="false" afterPath="$PROJECT_DIR$/sntd/microlens/dat.001" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/sntd/microlens/fort.222" beforeDir="false" afterPath="$PROJECT_DIR$/sntd/microlens/fort.222" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/sntd/microlens/input" beforeDir="false" afterPath="$PROJECT_DIR$/sntd/microlens/input" afterDir="false" />
     </list>
     <option name="EXCLUDED_CONVERTED_TO_IGNORED" value="true" />
     <option name="SHOW_DIALOG" value="false" />
@@ -26,12 +30,12 @@
     <option name="PATCH_PATH" value="" />
   </component>
   <component name="FileEditorManager">
-    <leaf>
+    <leaf SIDE_TABS_SIZE_LIMIT_KEY="375">
       <file pinned="false" current-in-tab="false">
         <entry file="file://$PROJECT_DIR$/main.py">
           <provider selected="true" editor-type-id="text-editor">
-            <state relative-caret-position="120">
-              <caret line="8" selection-start-line="8" selection-end-line="8" />
+            <state relative-caret-position="240">
+              <caret line="16" column="10" selection-end-line="16" selection-end-column="10" />
               <folding>
                 <element signature="e#0#16#0" expanded="true" />
               </folding>
@@ -39,7 +43,7 @@
           </provider>
         </entry>
       </file>
-      <file pinned="false" current-in-tab="true">
+      <file pinned="false" current-in-tab="false">
         <entry file="file://$PROJECT_DIR$/sntd/ml.py">
           <provider selected="true" editor-type-id="text-editor">
             <state relative-caret-position="344">
@@ -63,8 +67,8 @@
       <file pinned="false" current-in-tab="false">
         <entry file="file://$PROJECT_DIR$/sntd/simulation.py">
           <provider selected="true" editor-type-id="text-editor">
-            <state relative-caret-position="2445">
-              <caret line="175" column="23" selection-start-line="175" selection-start-column="23" selection-end-line="175" selection-end-column="23" />
+            <state relative-caret-position="471">
+              <caret line="155" column="12" selection-start-line="155" selection-start-column="4" selection-end-line="155" selection-end-column="12" />
               <folding>
                 <element signature="e#0#17#0" expanded="true" />
               </folding>
@@ -75,7 +79,7 @@
       <file pinned="false" current-in-tab="false">
         <entry file="file://$PROJECT_DIR$/sntd/__init__.py">
           <provider selected="true" editor-type-id="text-editor">
-            <state relative-caret-position="75">
+            <state relative-caret-position="195">
               <caret line="13" column="24" selection-start-line="13" selection-start-column="24" selection-end-line="13" selection-end-column="24" />
               <folding>
                 <element signature="e#0#37#0" expanded="true" />
@@ -87,7 +91,7 @@
       <file pinned="false" current-in-tab="false">
         <entry file="file://$PROJECT_DIR$/sntd/util.py">
           <provider selected="true" editor-type-id="text-editor">
-            <state relative-caret-position="3705">
+            <state relative-caret-position="3780">
               <caret line="252" selection-start-line="252" selection-end-line="252" />
               <folding>
                 <element signature="e#52#74#0" expanded="true" />
@@ -96,32 +100,14 @@
           </provider>
         </entry>
       </file>
-      <file pinned="false" current-in-tab="false">
+      <file pinned="false" current-in-tab="true">
         <entry file="file://$PROJECT_DIR$/sntd/fitting.py">
           <provider selected="true" editor-type-id="text-editor">
-            <state relative-caret-position="195">
-              <caret line="13" selection-start-line="13" selection-end-line="13" />
-            </state>
-          </provider>
-        </entry>
-      </file>
-      <file pinned="false" current-in-tab="false">
-        <entry file="file://$PROJECT_DIR$/sntd/sncosmo_fitting.py">
-          <provider selected="true" editor-type-id="text-editor">
-            <state relative-caret-position="603">
-              <caret line="698" selection-start-line="698" selection-end-line="698" />
+            <state relative-caret-position="134">
+              <caret line="1052" column="30" selection-start-line="1052" selection-start-column="30" selection-end-line="1052" selection-end-column="30" />
               <folding>
-                <element signature="e#65#84#0" expanded="true" />
+                <element signature="e#0#50#0" expanded="true" />
               </folding>
-            </state>
-          </provider>
-        </entry>
-      </file>
-      <file pinned="false" current-in-tab="false">
-        <entry file="file://$PROJECT_DIR$/sntd/cython_helpers.pyx">
-          <provider selected="true" editor-type-id="text-editor">
-            <state relative-caret-position="-50">
-              <caret line="4" column="14" selection-start-line="4" selection-end-line="5" />
             </state>
           </provider>
         </entry>
@@ -137,8 +123,6 @@
   </component>
   <component name="FindInProjectRecents">
     <findStrings>
-      <find>achromatic</find>
-      <find>colorF</find>
       <find>:class</find>
       <find>nested</find>
       <find>refModel</find>
@@ -167,6 +151,8 @@
       <find>mlFlux</find>
       <find>change_sn</find>
       <find>print('sn</find>
+      <find>cov</find>
+      <find>kwar</find>
     </findStrings>
   </component>
   <component name="Git.Settings">
@@ -199,19 +185,19 @@
         <option value="$PROJECT_DIR$/sntd/simulation.py" />
         <option value="$PROJECT_DIR$/sntd/curve_io.py" />
         <option value="$PROJECT_DIR$/sntd/util.py" />
-        <option value="$PROJECT_DIR$/main.py" />
         <option value="$PROJECT_DIR$/sntd/sncosmo_fitting.py" />
         <option value="$PROJECT_DIR$/sntd/cython_helpers.pyx" />
-        <option value="$PROJECT_DIR$/sntd/fitting.py" />
         <option value="$PROJECT_DIR$/sntd/ml.py" />
+        <option value="$PROJECT_DIR$/main.py" />
+        <option value="$PROJECT_DIR$/sntd/fitting.py" />
       </list>
     </option>
   </component>
   <component name="ProjectFrameBounds" extendedState="6">
-    <option name="x" value="1441" />
-    <option name="y" value="-517" />
-    <option name="width" value="2560" />
-    <option name="height" value="1417" />
+    <option name="x" value="2305" />
+    <option name="y" value="-326" />
+    <option name="width" value="1080" />
+    <option name="height" value="655" />
   </component>
   <component name="ProjectInspectionProfilesVisibleTreeState">
     <entry key="Project Default">
@@ -535,6 +521,7 @@
       <workItem from="1560268063709" duration="619000" />
       <workItem from="1560354934165" duration="3135000" />
       <workItem from="1560442063044" duration="28601000" />
+      <workItem from="1560786783741" duration="5925000" />
     </task>
     <task id="LOCAL-00001" summary="&quot;Initializing SNTD project with modules&quot;">
       <created>1485887822745</created>
@@ -589,7 +576,7 @@
     <servers />
   </component>
   <component name="TimeTrackingManager">
-    <option name="totallyTimeSpent" value="47031000" />
+    <option name="totallyTimeSpent" value="52956000" />
   </component>
   <component name="TodoView" selected-index="1">
     <todo-panel id="selected-file">
@@ -601,7 +588,7 @@
     </todo-panel>
   </component>
   <component name="ToolWindowManager">
-    <frame x="1441" y="-517" width="2560" height="1417" extended-state="6" />
+    <frame x="0" y="23" width="1440" height="873" extended-state="1" />
     <editor active="true" />
     <layout>
       <window_info id="Favorites" order="0" side_tool="true" />
@@ -614,7 +601,7 @@
       <window_info anchor="bottom" id="Terminal" order="4" weight="0.32953367" />
       <window_info anchor="bottom" id="Message" order="5" />
       <window_info anchor="bottom" id="Find" order="6" weight="0.32929516" />
-      <window_info active="true" anchor="bottom" id="Run" order="7" visible="true" weight="0.22970903" />
+      <window_info active="true" anchor="bottom" id="Run" order="7" visible="true" weight="0.39370078" />
       <window_info anchor="bottom" id="Debug" order="8" weight="0.4" />
       <window_info anchor="bottom" id="Cvs" order="9" weight="0.25" />
       <window_info anchor="bottom" id="Inspection" order="10" weight="0.4" />
@@ -626,7 +613,7 @@
       <window_info anchor="right" id="Ant Build" order="2" weight="0.25" />
       <window_info anchor="right" content_ui="combo" id="Hierarchy" order="3" weight="0.25" />
       <window_info anchor="right" id="Data View" order="4" />
-      <window_info anchor="right" id="SciView" order="5" visible="true" weight="0.22089314" />
+      <window_info anchor="right" id="SciView" order="5" visible="true" weight="0.39913544" />
       <window_info anchor="right" id="Coverage" order="6" side_tool="true" />
     </layout>
     <layout-to-restore>
@@ -683,7 +670,7 @@
     </breakpoint-manager>
   </component>
   <component name="com.intellij.coverage.CoverageDataManagerImpl">
-    <SUITE FILE_PATH="coverage/sntd$main.coverage" NAME="main Coverage Results" MODIFIED="1560785869460" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="coverage.py" COVERAGE_BY_TEST_ENABLED="true" COVERAGE_TRACING_ENABLED="false" WORKING_DIRECTORY="$PROJECT_DIR$" />
+    <SUITE FILE_PATH="coverage/sntd$main.coverage" NAME="main Coverage Results" MODIFIED="1560786823009" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="coverage.py" COVERAGE_BY_TEST_ENABLED="true" COVERAGE_TRACING_ENABLED="false" WORKING_DIRECTORY="$PROJECT_DIR$" />
   </component>
   <component name="editorHistoryManager">
     <entry file="file://$APPLICATION_HOME_DIR$/helpers/pydev/_pydev_imps/_pydev_saved_modules.py">
@@ -802,46 +789,7 @@
         </state>
       </provider>
     </entry>
-    <entry file="file://$PROJECT_DIR$/sntd/util.py">
-      <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="3705">
-          <caret line="252" selection-start-line="252" selection-end-line="252" />
-          <folding>
-            <element signature="e#52#74#0" expanded="true" />
-          </folding>
-        </state>
-      </provider>
-    </entry>
-    <entry file="file://$PROJECT_DIR$/sntd/__init__.py">
-      <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="75">
-          <caret line="13" column="24" selection-start-line="13" selection-start-column="24" selection-end-line="13" selection-end-column="24" />
-          <folding>
-            <element signature="e#0#37#0" expanded="true" />
-          </folding>
-        </state>
-      </provider>
-    </entry>
-    <entry file="file://$PROJECT_DIR$/sntd/simulation.py">
-      <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="2445">
-          <caret line="175" column="23" selection-start-line="175" selection-start-column="23" selection-end-line="175" selection-end-column="23" />
-          <folding>
-            <element signature="e#0#17#0" expanded="true" />
-          </folding>
-        </state>
-      </provider>
-    </entry>
-    <entry file="file://$PROJECT_DIR$/main.py">
-      <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="120">
-          <caret line="8" selection-start-line="8" selection-end-line="8" />
-          <folding>
-            <element signature="e#0#16#0" expanded="true" />
-          </folding>
-        </state>
-      </provider>
-    </entry>
+    <entry file="file://$PROJECT_DIR$/sntd/cython_helpers.pyx" />
     <entry file="file://$PROJECT_DIR$/sntd/models.py">
       <provider selected="true" editor-type-id="text-editor">
         <state relative-caret-position="15">
@@ -849,27 +797,33 @@
         </state>
       </provider>
     </entry>
-    <entry file="file://$PROJECT_DIR$/sntd/cython_helpers.pyx">
+    <entry file="file://$PROJECT_DIR$/sntd/__init__.py">
       <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="-50">
-          <caret line="4" column="14" selection-start-line="4" selection-end-line="5" />
+        <state relative-caret-position="195">
+          <caret line="13" column="24" selection-start-line="13" selection-start-column="24" selection-end-line="13" selection-end-column="24" />
+          <folding>
+            <element signature="e#0#37#0" expanded="true" />
+          </folding>
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/sntd/util.py">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="3780">
+          <caret line="252" selection-start-line="252" selection-end-line="252" />
+          <folding>
+            <element signature="e#52#74#0" expanded="true" />
+          </folding>
         </state>
       </provider>
     </entry>
     <entry file="file://$PROJECT_DIR$/sntd/sncosmo_fitting.py">
       <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="603">
+        <state relative-caret-position="10215">
           <caret line="698" selection-start-line="698" selection-end-line="698" />
           <folding>
             <element signature="e#65#84#0" expanded="true" />
           </folding>
-        </state>
-      </provider>
-    </entry>
-    <entry file="file://$PROJECT_DIR$/sntd/fitting.py">
-      <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="195">
-          <caret line="13" selection-start-line="13" selection-end-line="13" />
         </state>
       </provider>
     </entry>
@@ -879,6 +833,36 @@
           <caret line="523" column="106" selection-start-line="523" selection-start-column="106" selection-end-line="523" selection-end-column="106" />
           <folding>
             <element signature="e#0#41#0" expanded="true" />
+          </folding>
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/main.py">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="240">
+          <caret line="16" column="10" selection-end-line="16" selection-end-column="10" />
+          <folding>
+            <element signature="e#0#16#0" expanded="true" />
+          </folding>
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/sntd/simulation.py">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="471">
+          <caret line="155" column="12" selection-start-line="155" selection-start-column="4" selection-end-line="155" selection-end-column="12" />
+          <folding>
+            <element signature="e#0#17#0" expanded="true" />
+          </folding>
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/sntd/fitting.py">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="134">
+          <caret line="1052" column="30" selection-start-line="1052" selection-start-column="30" selection-end-line="1052" selection-end-column="30" />
+          <folding>
+            <element signature="e#0#50#0" expanded="true" />
           </folding>
         </state>
       </provider>
