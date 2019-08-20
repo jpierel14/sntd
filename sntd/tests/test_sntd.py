@@ -55,21 +55,21 @@ def test_sntd():
 			print(traceback.format_exc())
 			failed+=1
 
-	for method in ['parallel','series','color']:
-		try:
-			total+=1
-			print('Testing fitting MISN with microlensing using %s method...'%method,end='')
-			fitCurves=sntd.fit_data(myMISN_ml,snType='Ia', models='salt2-extended',bands=['F110W','F125W'],
-				params=['x0','x1','t0','c'],constants={'z':1.33},bounds={'t0':(-15,15),'x1':(-2,2),'c':(0,1)},
-				method=method,seriesGrids={'td':(-5,5),'mu':(.8,1.2)},microlensing='achromatic',
-				refModel=fitCurves.images['image_1'].fits.model if method!='parallel' else None,
-				nMicroSamples=1,maxiter=1,outer_maxiter=1,inner_maxiter=1,outer_npoints=1,inner_npoints=1)
+	
+	try:
+		total+=1
+		print('Testing fitting MISN with microlensing using parallel method...',end='')
+		fitCurves=sntd.fit_data(myMISN_ml,snType='Ia', models='salt2-extended',bands=['F110W','F125W'],
+			params=['x0','x1','t0','c'],constants={'z':1.33},bounds={'t0':(-15,15),'x1':(-2,2),'c':(0,1)},
+			method='parallel',seriesGrids={'td':(-5,5),'mu':(.8,1.2)},microlensing='achromatic',
+			refModel=fitCurves.images['image_1'].fits.model if method!='parallel' else None,
+			nMicroSamples=1,maxiter=1,outer_maxiter=1,inner_maxiter=1,outer_npoints=1,inner_npoints=1)
 
-			print('Passed!')
-		except Exception as e:
-			print('Failed')
-			print(traceback.format_exc())
-			failed+=1
+		print('Passed!')
+	except Exception as e:
+		print('Failed')
+		print(traceback.format_exc())
+		failed+=1
 	try:
 		total+=1
 		print('Testing example data loading...',end='')
