@@ -1,4 +1,4 @@
-import inspect,sncosmo,os,sys,warnings,pyParz,math
+import inspect,sncosmo,os,sys,warnings,pyParz,math,multiprocessing
 import numpy as np
 import matplotlib.pyplot as plt
 from copy import deepcopy,copy
@@ -133,7 +133,13 @@ def fit_data(curves, snType='Ia',bands=None, models=None, params=None, bounds={}
     for k in kwargs.keys():
         args[k]=kwargs[k]
 
-    args['curves']=_sntd_deepcopy(curves)
+    if isinstance(curves,(list,tuple)):
+        args['curves']=[_sntd_deepcopy(curve) for curve in curves]
+        args['parlist']=True
+    else:
+        args['curves']=_sntd_deepcopy(curves)
+        args['parlist']=False
+
     args['bands'] = [bands] if bands and not isinstance(bands,(tuple,list)) else bands
     #sets the bands to user's if defined (set, so that they're unique), otherwise to all the bands that exist in curves
     args['bands'] = list(set(bands)) if bands else list(curves.bands)
@@ -159,17 +165,35 @@ def fit_data(curves, snType='Ia',bands=None, models=None, params=None, bounds={}
 
     if method not in ['parallel','series','color']:
         raise RuntimeError('Parameter "method" must be "parallel","series", or "color".')
-    if method=='parallel':
-        curves=_fitparallel(args)
-    elif method=='series':
+    if microlensing is not None and method !='parallel':
+        print('Microlensing uncertainty only set up for parallel right now, switching to parallel method...')
+        method='parallel'
 
-        curves=_fitseries(args)
+    if method=='parallel':
+        if args['parlist']:
+            curves=pyParz.foreach(args['curves'],_fitparallel,[args])
+        else:
+            curves=_fitparallel(args)
+    elif method=='series':
+        if args['parlist']:
+            curves=pyParz.foreach(args['curves'],_fitseries,[args for i in range(len(args['curves']))])
+        else:
+            curves=_fitseries(args)
+
     else:
-        curves=_fitColor(args)
+        if args['parlist']:
+            curves=pyParz.foreach(args['curves'],_fitColor,[args for i in range(len(args['curves']))])
+        else:
+            curves=_fitColor(args)
+
     return curves
 
-def _fitColor(args):
-
+def _fitColor(all_args):
+    if isinstance(all_args,np.ndarray):
+        curves,args=all_args
+        args['curves']=curves
+    else:
+        args=all_args
     args['bands']=list(args['bands'])
     if len(args['bands'])!=2:
         raise RuntimeError("If you want to analyze color curves, you need two bands!")
@@ -547,8 +571,12 @@ def _inner_color_nest_lc(data, model, bands,vparam_names, bounds,zp, zpsys,guess
 
     return res, model
 
-def _fitseries(args):
-
+def _fitseries(all_args):
+    if isinstance(all_args,np.ndarray):
+        curves,args=all_args
+        args['curves']=curves
+    else:
+        args=all_args
     args['bands']=list(args['bands'])
     if not args['curves'].series.table:
         args['curves'].combine_curves(referenceImage=args['refImage'])
@@ -792,11 +820,51 @@ def nest_series_lc(curves,vparam_names,bounds,snBounds,snVparam_names,ref,guess_
     return all_delays,all_mus,all_delay_err,all_mu_err,best_comb_Res,best_comb_Mod
 
 
+def par_fit_parallel(all_args):
+    d,fitDict,args,bestFit,bestRes=all_args
+    _,bestFit,bestMod=fitDict[d]
+    tempTable=deepcopy(args['curves'].images[d].table)
+    for b in [x for x in np.unique(tempTable['band']) if x not in args['bands']]:
+        tempTable=tempTable[tempTable['band']!=b]
+    if args['flip']:
+        tempTable['flux']=np.flip(tempTable['flux'],axis=0)
 
 
 
-def _fitparallel(args):
-    resList=dict([])
+
+    if 'amplitude' not in args['bounds']:
+        guess_amp_bounds=True
+    else:
+        guess_amp_bounds=False
+
+
+
+
+    nest_res,nest_fit=_nested_wrapper(args['curves'],tempTable,bestFit,vparams=bestRes.vparam_names,bounds=args['bounds'],
+                                      priors=args.get('priors',None), ppfs=args.get('None'), method=args.get('nest_method','single'),
+                                      maxcall=args.get('maxcall',None), modelcov=args.get('modelcov',False),
+                                      rstate=args.get('rstate',None),
+                                      guess_amplitude_bound=guess_amp_bounds,microlensing=args['microlensing'],
+                                      zpsys=args['curves'].images[d].zpsys,kernel=args['kernel'],
+                                      maxiter=args.get('maxiter',None),npoints=args.get('npoints',100),nsamples=args['nMicroSamples'])
+
+
+
+
+
+
+
+
+    return([d,nest_fit,nest_res,len(tempTable)- len(nest_res.vparam_names)])
+
+
+def _fitparallel(all_args):
+    if isinstance(all_args,np.ndarray):
+        curves,args=all_args
+        args['curves']=curves
+    else:
+        args=all_args
+
     fitDict=dict([])
     if 't0' in args['bounds']:
         t0Bounds=copy(args['bounds']['t0'])
@@ -874,53 +942,25 @@ def _fitparallel(args):
                     fitDict[d][1]=f['model']
                     fitDict[d][2]=f['res']
                     break
-    dofs=dict([])
-    if 'priors' not in args.keys():
-        args['priors']={}
-    for d in fitDict.keys():
-        _,bestFit,bestMod=fitDict[d]
-        tempTable=deepcopy(args['curves'].images[d].table)
-        for b in [x for x in np.unique(tempTable['band']) if x not in args['bands']]:
-            tempTable=tempTable[tempTable['band']!=b]
-        if args['flip']:
-            tempTable['flux']=np.flip(tempTable['flux'],axis=0)
-
-        if 't0' in args['bounds']:
-            if args['t0_guess'] is not None:
-                args['bounds']['t0']=(t0Bounds[0]+args['t0_guess'][d],t0Bounds[1]+args['t0_guess'][d])
-            else:
-                maxFlux=np.max(tempTable['flux'])
-                maxTime=tempTable['time'][tempTable['flux']==maxFlux]
-                args['bounds']['t0']=(t0Bounds[0]+maxTime,t0Bounds[1]+maxTime)
-
-
-        if 'amplitude' in args['bounds'] and args['guess_amplitude']:
-            args['bounds']['amplitude']=(ampBounds[0]*np.max(tempTable['flux']),ampBounds[1]*np.max(tempTable['flux']))
-        if 'amplitude' not in args['bounds']:
-            guess_amp_bounds=True
-        else:
-            guess_amp_bounds=False
 
 
 
+    if args['microlensing'] is None and not args['parlist']:
+        res=pyParz.foreach(list(args['curves'].images.keys()),par_fit_parallel,[fitDict,args,bestFit,bestRes],
+                       min(multiprocessing.cpu_count(),len(list(args['curves'].images.keys()))))
+    else:
+        res=[]
+        for d in args['curves'].images.keys():
+            res.append(par_fit_parallel(np.append([d],[fitDict,args,bestFit,bestRes])))
 
-        nest_res,nest_fit=_nested_wrapper(args['curves'],tempTable,bestFit,vparams=bestRes.vparam_names,bounds=args['bounds'],priors=args['priors'],
-                                          guess_amplitude_bound=guess_amp_bounds,microlensing=args['microlensing'],
-                                          zpsys=args['curves'].images[d].zpsys,kernel=args['kernel'],maxiter=args.get('maxiter',None),npoints=args.get('npoints',100),nsamples=args['nMicroSamples'])
-
-
-
-
-        if nest_res.ndof != len(tempTable)- len(nest_res.vparam_names):
-            dofs[d]=len(tempTable)- len(nest_res.vparam_names)
-        else:
-            dofs[d]=nest_res.ndof
-
-
-        resList[d]=nest_res
-        args['curves'].images[d].fits=newDict()
-        args['curves'].images[d].fits['model']=nest_fit
-        args['curves'].images[d].fits['res']=nest_res
+    dofs={}
+    resList={}
+    for i in range(len(res)):
+        dofs[res[i][0]]=res[i][-1]
+        resList[res[i][0]]=res[i][2]
+        args['curves'].images[res[i][0]].fits=newDict()
+        args['curves'].images[res[i][0]].fits['model']=res[i][1]
+        args['curves'].images[res[i][0]].fits['res']=res[i][2]
 
 
     joint=_joint_likelihood(resList,verbose=False)
@@ -959,7 +999,7 @@ def _fitparallel(args):
                         args['curves'].images[d].fits.model.set(**{p:joint[p][0]})
                         errs[p]=joint[p][1]
 
-            finalRes,finalFit=nest_lc(tempTable,args['curves'].images[d].fits.model,final_vparams,bounds=bds,guess_amplitude_bound=True,maxiter=None,priors=args['priors'])
+            finalRes,finalFit=nest_lc(tempTable,args['curves'].images[d].fits.model,final_vparams,bounds=bds,guess_amplitude_bound=True,maxiter=None,priors=args.get('priors',None))
 
             finalRes.ndof=dofs[d]
 
@@ -1011,29 +1051,37 @@ def _micro_uncertainty(args):
     temp_nest_mod=deepcopy(nest_fit)
     tempMicro=AchromaticMicrolensing(x_pred/(1+nest_fit.get('z')),sample,magformat='multiply')
     temp_nest_mod.add_effect(tempMicro,'microlensing','rest')
-    tempRes,tempMod=nest_lc(data,temp_nest_mod,vparam_names=vparam_names,bounds=bounds,guess_amplitude_bound=True,maxiter=None,npoints=200,priors=priors)
+    tempRes,tempMod=nest_lc(data,temp_nest_mod,vparam_names=vparam_names,bounds=bounds,
+                            guess_amplitude_bound=True,maxiter=None,npoints=200,priors=priors)
 
     return float(tempMod.get('t0'))
 
 
-def _nested_wrapper(curves,data,model,vparams,bounds,priors,guess_amplitude_bound,microlensing,zpsys,kernel,maxiter,npoints,nsamples):
+def _nested_wrapper(curves,data,model,vparams,bounds,priors,guess_amplitude_bound,
+                    microlensing,zpsys,kernel,maxiter,npoints,nsamples,ppfs, method,
+                    maxcall, modelcov,
+                    rstate):
 
     temp=deepcopy(data)
     vparam_names=deepcopy(vparams)
 
 
     if microlensing is not None:
-        nest_res,nest_fit=nest_lc(temp,model,vparam_names=vparam_names,bounds=bounds,guess_amplitude_bound=guess_amplitude_bound,maxiter=maxiter,npoints=npoints,priors=priors)
+        nest_res,nest_fit=nest_lc(temp,model,vparam_names=vparam_names,bounds=bounds,ppfs=ppfs,
+                                  guess_amplitude_bound=guess_amplitude_bound,maxiter=maxiter,npoints=npoints,
+                                  priors=priors,method=method,maxcall=maxcall,modelcov=modelcov,rstate=rstate)
 
 
 
 
-        micro,sigma,x_pred,y_pred,samples=fit_micro(curves,nest_res,nest_fit,temp,zpsys,nsamples,micro_type=microlensing,kernel=kernel)
+        micro,sigma,x_pred,y_pred,samples=fit_micro(curves,nest_res,nest_fit,temp,zpsys,nsamples,
+                                                    micro_type=microlensing,kernel=kernel)
 
 
-        temp=deepcopy(data)
-        return(nest_res,nest_fit)
-        t0s=pyParz.foreach(samples.T,_micro_uncertainty,[nest_fit,np.array(temp),temp.colnames,x_pred,vparam_names,bounds])
+        #temp=deepcopy(data)
+        #print(samples.shape)
+        #return(nest_res,nest_fit)
+        t0s=pyParz.foreach(samples.T,_micro_uncertainty,[nest_fit,np.array(temp),temp.colnames,x_pred,vparam_names,bounds,priors])
         mu,sigma=scipy.stats.norm.fit(t0s)
 
         nest_res.errors['micro']=np.sqrt(np.abs(nest_fit.get('t0')-mu)**2+(3*sigma)**2)
@@ -1042,9 +1090,9 @@ def _nested_wrapper(curves,data,model,vparams,bounds,priors,guess_amplitude_boun
 
 
     else:
-        bestRes,bestMod=nest_lc(data,model,vparam_names=vparam_names,bounds=bounds,
+        bestRes,bestMod=nest_lc(data,model,vparam_names=vparam_names,bounds=bounds,ppfs=ppfs,
                                 guess_amplitude_bound=guess_amplitude_bound,maxiter=maxiter,npoints=npoints,
-                                priors=priors)
+                                priors=priors,method=method,maxcall=maxcall,modelcov=modelcov,rstate=rstate)
 
     return(bestRes,bestMod)
 
@@ -1080,8 +1128,10 @@ def fit_micro(curves,res,fit,dat,zpsys,nsamples,micro_type='achromatic',kernel='
         #ax.plot(tempTime,mod)
         #ax.scatter(tempData['time'],tempData['flux'])
         #plt.show()
-        tempData=tempData[mod>.1]
-        residual=tempData['flux']/mod[mod>.1]
+        #tempData=tempData[mod>.1]
+        residual=tempData['flux']/mod
+        residual=residual[residual<10]
+        residual=residual[residual>.01]
         tempData=tempData[~np.isnan(residual)]
         residual=residual[~np.isnan(residual)]
         tempTime=tempTime[~np.isnan(residual)]
