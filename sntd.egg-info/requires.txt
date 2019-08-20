@@ -1,8 +1,0 @@
-numpy
-scipy
-sncosmo
-astropy
-matplotlib
-nestle
-pyParz
-sklearn
