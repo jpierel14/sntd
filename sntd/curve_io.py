@@ -76,7 +76,7 @@ class curveDict(dict):
         """
         self.images=dict([])
 
-        self.combined=curve()
+        self.series=curve()
         self.color=curve()
 
 
@@ -197,19 +197,19 @@ class curveDict(dict):
             time_delays=_guess_time_delays(self,referenceImage) #TODO fix these guessing functions
         if not magnifications:
             magnifications=_guess_magnifications(self,referenceImage)
-        self.combined.table=Table(names=self.table.colnames,dtype=[self.table.dtype[x] for x in self.table.colnames])
+        self.series.table=Table(names=self.table.colnames,dtype=[self.table.dtype[x] for x in self.table.colnames])
         for k in np.sort(list(self.images.keys())):
             temp=deepcopy(self.images[k].table)
             temp['time']-=time_delays[k]
             temp['flux']/=magnifications[k]
             temp.meta=dict([])
 
-            self.combined.table=vstack([self.combined.table,temp])
+            self.series.table=vstack([self.series.table,temp])
 
-        self.combined.table.sort('time')
-        self.combined.bands=self.bands
-        self.combined.meta['td']={k:float(time_delays[k]) for k in time_delays.keys()}
-        self.combined.meta['mu']={k:float(magnifications[k]) for k in magnifications.keys()}
+        self.series.table.sort('time')
+        self.series.bands=self.bands
+        self.series.meta['td']={k:float(time_delays[k]) for k in time_delays.keys()}
+        self.series.meta['mu']={k:float(magnifications[k]) for k in magnifications.keys()}
         return(self)
 
 
@@ -304,7 +304,7 @@ class curveDict(dict):
             'horizontal' = all subplots are in a single row
             'vertical' = all subplots are in a single column
         method : str
-            Plots the result of separate, combined, or color curve method
+            Plots the result of separate, series, or color curve method
         showModel : bool
             If true, the underlying model before microlensing is plotted
             as well
@@ -328,9 +328,9 @@ class curveDict(dict):
         i=0
         leg=[]
 
-        if method=='combined':
+        if method=='series':
             if bands == 'all':
-                bands = set(self.combined.table['band'])
+                bands = set(self.series.table['band'])
 
             nbands = len(bands)
             if orientation.startswith('v'):
@@ -344,7 +344,7 @@ class curveDict(dict):
             if nbands==1:
                 axlist = [axlist]
             for lc in np.sort([x for x in self.images.keys()]):
-                temp=self.combined.table[self.combined.table['image']==lc]
+                temp=self.series.table[self.series.table['image']==lc]
                 for b, ax in zip(bands, axlist):
                     if b==list(bands)[0]:
                         leg.append(
@@ -365,7 +365,7 @@ class curveDict(dict):
                                     markersize=4, fmt=colors[i]+'.')
                     if showFit:
                         ax.plot(np.arange(np.min(temp['time'][temp['band']==b]),np.max(temp['time'][temp['band']==b]),1),
-                                self.combined.fits.model.bandflux(b,np.arange(np.min(temp['time'][temp['band']==b]),np.max(temp['time'][temp['band']==b]),1),
+                                self.series.fits.model.bandflux(b,np.arange(np.min(temp['time'][temp['band']==b]),np.max(temp['time'][temp['band']==b]),1),
                                                                   zp=temp['zp'][temp['band']==b][0],
                                                                   zpsys=temp['zpsys'][temp['band']==b][0]),color='y')
 

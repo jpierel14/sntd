@@ -57,9 +57,9 @@ class newDict(dict):
 
 
 def fit_data(curves, snType='Ia',bands=None, models=None, params=None, bounds={}, ignore=None, constants=None,
-             method='separate',t0_guess=None,refModel=None,effect_names=[],effect_frames=[],fitting_method='nest',
-             dust=None,flip=False,guess_amplitude=True,combinedError=None,showPlots=False,microlensing=None,
-             kernel='RBF',combinedGrids=None,refImage='image_1',nMicroSamples=100,color_curve=None,**kwargs):
+             method='parallel',t0_guess=None,refModel=None,effect_names=[],effect_frames=[],fitting_method='nest',
+             dust=None,flip=False,guess_amplitude=True,seriesError=None,showPlots=False,microlensing=None,
+             kernel='RBF',seriesGrids=None,refImage='image_1',nMicroSamples=100,color_curve=None,**kwargs):
 
     """
     The main high-level fitting function.
@@ -83,11 +83,11 @@ def fit_data(curves, snType='Ia',bands=None, models=None, params=None, bounds={}
     constants: :class:`dict`
         Dictionary with parameters as keys and the constant value you want to set them to as values
     method: str
-        Needs to be 'separate', 'combined', or 'color'
+        Needs to be 'parallel', 'series', or 'color'
     t0_guess: :class:`dict`
         Dictionary with image names (i.e. 'image_1','image_2') as keys and a guess for time of peak as values
     refModel: :class:`scipy.interpolate.interp1d` or :class:`sncosmo.Model`
-        If doing a combined or color fit, a reference model that will be used to fit all the data at once is required.
+        If doing a series or color fit, a reference model that will be used to fit all the data at once is required.
     effect_names: list of str
         List of effect names if model contains a :class:`sncosmo.PropagationEffect`.
     effect_frames: list of str
@@ -100,15 +100,15 @@ def fit_data(curves, snType='Ia',bands=None, models=None, params=None, bounds={}
         If True, the time axis of the model is flipped
     guess_amplitude: Boolean
         If True, the amplitude parameter for the model is estimated, as well as its bounds
-    combinedError: :class:`scipy.interpolate.interp1d`
-        If doing a combined or color fit, this is the uncertainty on the reference model.
+    seriesError: :class:`scipy.interpolate.interp1d`
+        If doing a series or color fit, this is the uncertainty on the reference model.
     showPlots: Boolean
         If true, :func:`sncosmo.plot_lc` function is called during the fitting
     microlensing: str
         If None microlensing is ignored, otherwise should be str (e.g. achromatic, chromatic)
     kernel: str
         The kernel to use for microlensing GPR
-    combinedGrids: :class:`dict`
+    seriesGrids: :class:`dict`
         A dictionary with 'td' or 'mu' as keys and tuples with additive bounds as values
     refImage: str
         The name of the image you want to be the reference image (i.e. image_1,image_2, etc.)
@@ -124,14 +124,15 @@ def fit_data(curves, snType='Ia',bands=None, models=None, params=None, bounds={}
     --------
     >>> fitCurves=sntd.fit_data(myMISN2,snType='Ia', models='salt2-extended',bands=['F110W','F125W'],
         params=['x0','x1','t0','c'],constants={'z':1.33},bounds={'t0':(-15,15),'x1':(-2,2),'c':(0,1)},
-        method='separate',microlensing=None)
+        method='parallel',microlensing=None)
 
     """
 
-
+    #get together user arguments
     args = locals()
     for k in kwargs.keys():
         args[k]=kwargs[k]
+
     args['curves']=_sntd_deepcopy(curves)
     args['bands'] = [bands] if bands and not isinstance(bands,(tuple,list)) else bands
     #sets the bands to user's if defined (set, so that they're unique), otherwise to all the bands that exist in curves
@@ -148,91 +149,95 @@ def fit_data(curves, snType='Ia',bands=None, models=None, params=None, bounds={}
     else:
         mods=models
     mods=set(mods)
-
+    args['mods']=mods
+    #sncosmo fitting function for model determination
     args['sn_func'] = {'minuit': sncosmo.fit_lc, 'mcmc': sncosmo.mcmc_lc, 'nest': nest_lc}
+
     #get any properties set in kwargs that exist for the defined fitting function
     args['props'] = {x: kwargs[x] for x in kwargs.keys() if
-                     x in [y for y in inspect.getargspec(args['sn_func'][fitting_method])[0]] and x != 'verbose'}
+                     x in [y for y in inspect.signature(args['sn_func'][fitting_method]).parameters] and x != 'verbose'}
 
-    if method not in ['separate','combined','color']:
-        raise RuntimeError('Parameter "method" must be "separate","combined", or "color".')
-    if method=='separate':
-        curves=_fitSeparate(args['curves'],mods,args,bounds,**kwargs)
-    elif method=='combined':
+    if method not in ['parallel','series','color']:
+        raise RuntimeError('Parameter "method" must be "parallel","series", or "color".')
+    if method=='parallel':
+        curves=_fitparallel(args)
+    elif method=='series':
 
-        curves=_fitCombined(args['curves'],mods,args,bounds,combinedGrids,**kwargs)
+        curves=_fitseries(args)
     else:
-        curves=_fitColor(args['curves'],args,bounds,combinedGrids,**kwargs)
+        curves=_fitColor(args)
     return curves
 
-def _fitColor(curves,args,bounds,grids,guess_amplitude_bound=False,
-              minsnr=5., priors=None, ppfs=None, npoints=100, method='single',
-              maxiter=None, maxcall=None, modelcov=False, rstate=None,
-              verbose=False, warn=True, **kwargs):
+def _fitColor(args):
+
     args['bands']=list(args['bands'])
     if len(args['bands'])!=2:
-        print("If you want to analyze color curves, you need two bands!")
-        sys.exit(1)
-
-    if not curves.combined.table:
-        curves.combine_curves(referenceImage=args['refImage'])
-
-    args['curve']=_sntd_deepcopy(curves)
+        raise RuntimeError("If you want to analyze color curves, you need two bands!")
 
 
-    if not grids:
-        print('Need bounds on time delay and magnification (i.e. combinedGrids undefined)')
-        sys.exit(1)
+    if not args['curves'].series.table:
+        args['curves'].combine_curves(referenceImage=args['refImage'])
 
 
-    for b in [x for x in np.unique(args['curve'].combined.table['band']) if x not in args['bands']]:
-        args['curve'].combined.table=args['curve'].combined.table[args['curve'].combined.table['band']!=b]
+    if not args['seriesGrids']:
+        raise RuntimeError('Need bounds on time delay and magnification (i.e. seriesGrids undefined)')
 
 
+
+    #remove bands not defined by user, if necessary
+    for b in [x for x in np.unique(args['curves'].series.table['band']) if x not in args['bands']]:
+        args['curve'].series.table=args['curves'].series.table[args['curves'].series.table['band']!=b]
+
+
+    #set up reference model if not defined
     if not args['refModel']:
-        if curves.images['image_1'].fits is not None:
+        if args['curves'].images['image_1'].fits is not None:
             try:
-                args['refModel'],bounds=create_composite_model(curves,args['refImage'],weight='logz',bound_vars=bounds.keys())
+                args['refModel'],bounds=create_composite_model(args['curves'],args['refImage'],weight='logz',bound_vars=args['bounds'].keys())
             except RuntimeError:
-                args['refModel'],bounds=create_composite_model(curves,args['refImage'],bound_vars=bounds.keys())
+                args['refModel'],bounds=create_composite_model(args['curves'],args['refImage'],bound_vars=args['bounds'].keys())
 
         else:
-            raise RuntimeError("Combined fit had no reference model or model name.")
+            raise RuntimeError("series fit had no reference model or model name.")
     elif not isinstance(args['refModel'],sncosmo.Model):
         raise RuntimeError("Your reference model needs to be an SNCosmo model object.")
 
-
+    #set up bounds for fitting function
     gridBounds=dict([])
-    for k in curves.images.keys():
-        for par in grids.keys():
+    for k in args['curves'].images.keys():
+        for par in args['seriesGrids'].keys():
             if par=='td' and k==args['refImage']:
                 continue
             if par=='mu' and k==args['refImage']:
                 continue
 
-            gridBounds[k+'_'+par]=np.array(grids[par])+args['curve'].combined.meta[par][k]
-    args['curve'].color.time_delays,args['curve'].color.magnifications,args['curve'].color.time_delay_errors,args['curve'].color.magnification_errors,bestRes,bestMod= \
-        nest_color_lc(args['curve'],
+            gridBounds[k+'_'+par]=np.array(args['seriesGrids'][par])+args['curves'].series.meta[par][k]
+
+
+    args['curves'].color.time_delays,args['curves'].color.magnifications,args['curves'].color.time_delay_errors,args['curves'].color.magnification_errors,bestRes,bestMod= \
+        nest_color_lc(args['curves'],
                       vparam_names=gridBounds.keys(),bands=args['bands'],
-                      refModel=args['refModel'],bounds=gridBounds,snBounds=bounds,
-                      snVparam_names=bounds.keys(),ref=args['refImage'],guess_amplitude_bound=False,maxiter=150,npoints=50)
+                      refModel=args['refModel'],bounds=gridBounds,snBounds=args['bounds'],
+                      snVparam_names=args['bounds'].keys(),ref=args['refImage'],guess_amplitude_bound=False,maxiter=args.get('outer_maxiter',150),npoints=args.get('outer_npoints',50),
+                      minsnr=args.get('minsnr',5.),priors=args.get('priors',None),ppfs=args.get('ppfs',None),method=args.get('nest_method','single'),maxcall=args.get('outer_maxcall',None),
+                      modelcov=args.get('modelcov',None),rstate=args.get('rstate',None),inner_npoints=args.get('inner_npoints',10),inner_maxiter=args.get('inner_maxiter',10))
 
     #fix this whole color curve thing, the problem is that right now I'm just dividing one column by the other, but
-    #I need to separate it out by image first or else it'll get all mixed up...
-    temp=_sntd_deepcopy(args['curve'])
-    temp.color_table(args['bands'][0],args['bands'][1],time_delays=args['curve'].color.time_delays,magnifications=args['curve'].color.magnifications)
+    #I need to parallel it out by image first or else it'll get all mixed up...
+    temp=_sntd_deepcopy(args['curves'])
+    temp.color_table(args['bands'][0],args['bands'][1],time_delays=args['curves'].color.time_delays,magnifications=args['curves'].color.magnifications)
 
 
-    args['curve'].color.fits=newDict()
-    args['curve'].color.fits['model']=bestMod
-    args['curve'].color.fits['res']=bestRes
+    args['curves'].color.fits=newDict()
+    args['curves'].color.fits['model']=bestMod
+    args['curves'].color.fits['res']=bestRes
 
-    return args['curve']
+    return args['curves']
 
 def nest_color_lc(curves,vparam_names,bounds,snBounds,snVparam_names,ref,guess_amplitude_bound=False,bands=[],
                   minsnr=5.,refModel=None, priors=None, ppfs=None, npoints=100, method='single',
                   maxiter=None, maxcall=None, modelcov=False, rstate=None,
-                  verbose=False, warn=True, **kwargs):
+                  verbose=False, warn=True,inner_maxiter=10,inner_npoints=10, **kwargs):
 
     # experimental parameters
     tied = kwargs.get("tied", None)
@@ -333,10 +338,10 @@ def nest_color_lc(curves,vparam_names,bounds,snBounds,snVparam_names,ref,guess_a
         tempMus[ref]=all_mus[ref]
         tempCurve.color_table(bands[0],bands[1],time_delays=tempTds,magnifications=tempMus)
         tempCurve.combine_curves(time_delays=tempTds,magnifications=tempMus,referenceImage=ref)
-        zpDict={b:tempCurve.combined.table['zp'][tempCurve.combined.table['band']==b][0] for b in bands}
-        zpsys=tempCurve.combined.table['zpsys'][0]
+        zpDict={b:tempCurve.series.table['zp'][tempCurve.series.table['band']==b][0] for b in bands}
+        zpsys=tempCurve.series.table['zpsys'][0]
         tempRes,tempMod=_inner_color_nest_lc(tempCurve.color.table,refModel,bands,vparam_names=snVparam_names,bounds=snBounds,
-                                             zp=zpDict,zpsys=zpsys,guess_amplitude_bound=False,maxiter=10,npoints=5)
+                                             zp=zpDict,zpsys=zpsys,guess_amplitude_bound=False,maxiter=inner_maxiter,npoints=inner_npoints)
 
         global best_comb_Res
         global best_comb_Mod
@@ -542,51 +547,54 @@ def _inner_color_nest_lc(data, model, bands,vparam_names, bounds,zp, zpsys,guess
 
     return res, model
 
-def _fitCombined(curves,mods,args,bounds,grids,guess_amplitude_bound=False,
-                 minsnr=5., priors=None, ppfs=None, npoints=100, method='single',
-                 maxiter=None, maxcall=None, modelcov=False, rstate=None,
-                 verbose=False, warn=True, **kwargs):
+def _fitseries(args):
 
     args['bands']=list(args['bands'])
-    if not curves.combined.table:
-        curves.combine_curves(referenceImage=args['refImage'])
-    args['curve']=_sntd_deepcopy(curves)
-    if not grids:
-        print('Need bounds on time delay and magnification (i.e. combinedGrids undefined)')
+    if not args['curves'].series.table:
+        args['curves'].combine_curves(referenceImage=args['refImage'])
+
+
+    if not args['seriesGrids']:
+        print('Need bounds on time delay and magnification (i.e. seriesGrids undefined)')
         sys.exit(1)
 
 
-    for b in [x for x in np.unique(args['curve'].combined.table['band']) if x not in args['bands']]:
-        args['curve'].combined.table=args['curve'].combined.table[args['curve'].combined.table['band']!=b]
+    for b in [x for x in np.unique(args['curves'].series.table['band']) if x not in args['bands']]:
+        args['curve'].series.table=args['curves'].series.table[args['curves'].series.table['band']!=b]
 
 
     if not args['refModel']:
-        if curves.images['image_1'].fits is not None:
+        if args['curves'].images['image_1'].fits is not None:
             try:
-                args['refModel'],bounds=create_composite_model(curves,args['refImage'],weight='logz',bound_vars=bounds.keys())
+                args['refModel'],bounds=create_composite_model(args['curves'],args['refImage'],weight='logz',bound_vars=bounds.keys())
             except RuntimeError:
-                args['refModel'],bounds=create_composite_model(curves,args['refImage'],bound_vars=bounds.keys())
+                args['refModel'],bounds=create_composite_model(args['curves'],args['refImage'],bound_vars=bounds.keys())
 
         else:
-            raise RuntimeError("Combined fit had no reference model or model name.")
+            raise RuntimeError("series fit had no reference model or model name.")
     elif not isinstance(args['refModel'],sncosmo.Model):
         raise RuntimeError("Your reference model needs to be an SNCosmo model object.")
 
     gridBounds=dict([])
-    for k in curves.images.keys():
-        for par in grids.keys():
+    for k in args['curves'].images.keys():
+        for par in args['seriesGrids'].keys():
             if par=='td' and k==args['refImage']:
                 continue
             if par=='mu' and k==args['refImage']:
                 continue
-            gridBounds[k+'_'+par]=np.array(grids[par])+args['curve'].combined.meta[par][k]
+            gridBounds[k+'_'+par]=np.array(args['seriesGrids'][par])+args['curves'].series.meta[par][k]
 
     myRes=dict([])
     for b in args['bands']:
-        myRes[b]=nest_combined_lc(args['curve'],
+        myRes[b]=nest_series_lc(args['curves'],
                                   vparam_names=gridBounds.keys(),
-                                  band=b,refModel=args['refModel'],bounds=gridBounds,snBounds=bounds,
-                                  snVparam_names=bounds.keys(),ref=args['refImage'],guess_amplitude_bound=True,maxiter=150,npoints=50)
+                                  band=b,refModel=args['refModel'],bounds=gridBounds,snBounds=args['bounds'],
+                                  snVparam_names=args['bounds'].keys(),ref=args['refImage'],guess_amplitude_bound=True,
+                                  minsnr=args.get('minsnr',5.),priors=args.get('priors',None),ppfs=args.get('ppfs',None),
+                                  method=args.get('nest_method','single'),maxcall=args.get('outer_maxcall',None),
+                                  modelcov=args.get('modelcov',None),rstate=args.get('rstate',None),
+                                  maxiter=args.get('outer_maxiter',100),npoints=args.get('outer_npoints',50),
+                                  inner_maxiter=args.get('inner_maxiter',10),inner_npoints=args.get('inner_npoints',10))
 
     weights=np.array([myRes[b][-2].logz for b in args['bands']])
     final_params=dict([])
@@ -594,31 +602,31 @@ def _fitCombined(curves,mods,args,bounds,grids,guess_amplitude_bound=False,
     for param in myRes[args['bands'][0]][-1].param_names:
         final_params[param]=np.average([myRes[b][-1].get(param) for b in args['bands']],weights=weights)
 
-    args['curve'].combined.time_delays=dict([])
-    args['curve'].combined.magnifications=dict([])
-    args['curve'].combined.magnification_errors=dict([])
-    args['curve'].combined.time_delay_errors=dict([])
+    args['curves'].series.time_delays=dict([])
+    args['curves'].series.magnifications=dict([])
+    args['curves'].series.magnification_errors=dict([])
+    args['curves'].series.time_delay_errors=dict([])
 
-    for k in curves.images.keys():
-        args['curve'].combined.time_delays[k]=np.average([myRes[b][0][k] for b in args['bands']],weights=weights)
-        args['curve'].combined.magnifications[k]=np.average([myRes[b][1][k] for b in args['bands']],weights=weights)
-    args['curve'].combined.time_delay_errors[k]=myRes[args['bands'][np.where(weights==np.max(weights))[0][0]]][2]
-    args['curve'].combined.magnification_errors[k]=myRes[args['bands'][np.where(weights==np.max(weights))[0][0]]][3]
+    for k in args['curves'].images.keys():
+        args['curves'].series.time_delays[k]=np.average([myRes[b][0][k] for b in args['bands']],weights=weights)
+        args['curves'].series.magnifications[k]=np.average([myRes[b][1][k] for b in args['bands']],weights=weights)
+    args['curves'].series.time_delay_errors[k]=myRes[args['bands'][np.where(weights==np.max(weights))[0][0]]][2]
+    args['curves'].series.magnification_errors[k]=myRes[args['bands'][np.where(weights==np.max(weights))[0][0]]][3]
     bestRes=myRes[args['bands'][np.where(weights==np.max(weights))[0][0]]][4]
     bestMod=myRes[args['bands'][np.where(weights==np.max(weights))[0][0]]][5]
 
     bestMod.set(**final_params)
 
-    args['curve'].combine_curves(time_delays=args['curve'].combined.time_delays,magnifications=args['curve'].combined.magnifications,referenceImage=args['refImage'])
+    args['curves'].combine_curves(time_delays=args['curves'].series.time_delays,magnifications=args['curves'].series.magnifications,referenceImage=args['refImage'])
 
-    for b in [x for x in set(args['curve'].combined.table['band']) if x not in args['bands']]:
-        args['curve'].combined.table=args['curve'].combined.table[args['curve'].combined.table['band']!=b]
+    for b in [x for x in set(args['curves'].series.table['band']) if x not in args['bands']]:
+        args['curves'].series.table=args['curves'].series.table[args['curve'].series.table['band']!=b]
 
-    args['curve'].combined.fits=newDict()
-    args['curve'].combined.fits['model']=bestMod
-    args['curve'].combined.fits['res']=bestRes
+    args['curves'].series.fits=newDict()
+    args['curves'].series.fits['model']=bestMod
+    args['curves'].series.fits['res']=bestRes
 
-    return args['curve']
+    return args['curves']
 
 
 def create_composite_model(curves,ref,weight='chisq',bound_vars=[]):
@@ -644,10 +652,10 @@ def create_composite_model(curves,ref,weight='chisq',bound_vars=[]):
 
 
 
-def nest_combined_lc(curves,vparam_names,bounds,snBounds,snVparam_names,ref,guess_amplitude_bound=False,
+def nest_series_lc(curves,vparam_names,bounds,snBounds,snVparam_names,ref,guess_amplitude_bound=False,
                      minsnr=5.,refModel=False,band=None, priors=None, ppfs=None, npoints=100, method='single',
                      maxiter=None, maxcall=None, modelcov=False, rstate=None,
-                     verbose=False, warn=True, **kwargs):
+                     verbose=False, warn=True,inner_maxiter=10,inner_npoints=10,**kwargs):
 
     # experimental parameters
     tied = kwargs.get("tied", None)
@@ -742,9 +750,10 @@ def nest_combined_lc(curves,vparam_names,bounds,snBounds,snVparam_names,ref,gues
 
         tempCurve.combine_curves(time_delays=tempTds,magnifications=tempMus,referenceImage=ref)
 
-        tempCurve.combined.table=tempCurve.combined.table[tempCurve.combined.table['band']==band]
-        tempRes,tempMod=nest_lc(tempCurve.combined.table,refModel,
-                                        vparam_names=snVparam_names,bounds=snBounds,guess_amplitude_bound=False,maxiter=10,npoints=5)
+        tempCurve.series.table=tempCurve.series.table[tempCurve.series.table['band']==band]
+        tempRes,tempMod=nest_lc(tempCurve.series.table,refModel,
+                                vparam_names=snVparam_names,bounds=snBounds,guess_amplitude_bound=False,
+                                maxiter=inner_maxiter,npoints=inner_npoints)
         global best_comb_Res
         global best_comb_Mod
         global best_comb_Z
@@ -785,16 +794,17 @@ def nest_combined_lc(curves,vparam_names,bounds,snBounds,snVparam_names,ref,gues
 
 
 
-def _fitSeparate(curves,mods,args,bounds,npoints=100,maxiter=None,**kwargs):
+
+def _fitparallel(args):
     resList=dict([])
     fitDict=dict([])
     if 't0' in args['bounds']:
         t0Bounds=copy(args['bounds']['t0'])
     if 'amplitude' in args['bounds']:
         ampBounds=copy(args['bounds']['amplitude'])
-    for d in curves.images.keys():
+    for d in args['curves'].images.keys():
         #print(curves.images[d].simMeta)
-        args['curve']=copy(curves.images[d])
+        args['curve']=copy(args['curves'].images[d])
         for b in [x for x in np.unique(args['curve'].table['band']) if x not in args['bands']]:
             args['curve'].table=args['curve'].table[args['curve'].table['band']!=b]
 
@@ -811,16 +821,16 @@ def _fitSeparate(curves,mods,args,bounds,npoints=100,maxiter=None,**kwargs):
 
 
 
-        curves.images[d].fits=newDict()
-        if True or len(args['curve'].table)>63 or len(mods)==1 or args['snType']=='Ia':
+        args['curves'].images[d].fits=newDict()
+        if True or len(args['curve'].table)>63 or len(args['mods'])==1 or args['snType']=='Ia':
             fits=[]
-            for mod in mods:
+            for mod in args['mods']:
                 if mod =='BazinSource' or isinstance(mod,BazinSource):
                     fits.append(param_fit(args,mod))
 
 
                 else:
-                    if len(mods)==1:
+                    if len(args['mods'])==1:
                         doFit=False
                     else:
                         doFit=True
@@ -828,7 +838,7 @@ def _fitSeparate(curves,mods,args,bounds,npoints=100,maxiter=None,**kwargs):
                     fits.append(_fit_data_wrap((mod,args)))
         else:
             args['doFit']=True
-            fits=pyParz.foreach(mods,_fit_data,args)
+            fits=pyParz.foreach(args['mods'],_fit_data,args)
 
         if len(fits)>1:
             bestChisq=np.inf
@@ -869,7 +879,7 @@ def _fitSeparate(curves,mods,args,bounds,npoints=100,maxiter=None,**kwargs):
         args['priors']={}
     for d in fitDict.keys():
         _,bestFit,bestMod=fitDict[d]
-        tempTable=deepcopy(curves.images[d].table)
+        tempTable=deepcopy(args['curves'].images[d].table)
         for b in [x for x in np.unique(tempTable['band']) if x not in args['bands']]:
             tempTable=tempTable[tempTable['band']!=b]
         if args['flip']:
@@ -894,9 +904,9 @@ def _fitSeparate(curves,mods,args,bounds,npoints=100,maxiter=None,**kwargs):
 
 
 
-        nest_res,nest_fit=_nested_wrapper(curves,tempTable,bestFit,vparams=bestRes.vparam_names,bounds=args['bounds'],priors=args['priors'],
+        nest_res,nest_fit=_nested_wrapper(args['curves'],tempTable,bestFit,vparams=bestRes.vparam_names,bounds=args['bounds'],priors=args['priors'],
                                           guess_amplitude_bound=guess_amp_bounds,microlensing=args['microlensing'],
-                                          zpsys=curves.images[d].zpsys,kernel=args['kernel'],maxiter=maxiter,npoints=npoints,nsamples=args['nMicroSamples'])
+                                          zpsys=args['curves'].images[d].zpsys,kernel=args['kernel'],maxiter=args.get('maxiter',None),npoints=args.get('npoints',100),nsamples=args['nMicroSamples'])
 
 
 
@@ -908,20 +918,20 @@ def _fitSeparate(curves,mods,args,bounds,npoints=100,maxiter=None,**kwargs):
 
 
         resList[d]=nest_res
-        curves.images[d].fits=newDict()
-        curves.images[d].fits['model']=nest_fit
-        curves.images[d].fits['res']=nest_res
+        args['curves'].images[d].fits=newDict()
+        args['curves'].images[d].fits['model']=nest_fit
+        args['curves'].images[d].fits['res']=nest_res
 
 
     joint=_joint_likelihood(resList,verbose=False)
 
-    for d in np.sort(list(curves.images.keys())):
+    for d in np.sort(list(args['curves'].images.keys())):
         errs=dict([])
-        if 'micro' in curves.images[d].fits.res.errors.keys():
-            errs['micro']=curves.images[d].fits.res.errors['micro']
+        if 'micro' in args['curves'].images[d].fits.res.errors.keys():
+            errs['micro']=args['curves'].images[d].fits.res.errors['micro']
         else:
             errs['micro']=0.
-        tempTable=copy(curves.images[d].table)
+        tempTable=copy(args['curves'].images[d].table)
 
         for b in [x for x in np.unique(tempTable['band']) if x not in args['bands']]:
             tempTable=tempTable[tempTable['band']!=b]
@@ -930,7 +940,7 @@ def _fitSeparate(curves,mods,args,bounds,npoints=100,maxiter=None,**kwargs):
 
             final_vparams=[]
             for p in joint.keys():
-                if p in curves.images[d].fits.res.vparam_names:
+                if p in args['curves'].images[d].fits.res.vparam_names:
                     if isinstance(joint[p],dict):
                         if p=='t0':
                             bds[p]=(-3+joint[p][d][0],3+joint[p][d][0])
@@ -946,41 +956,41 @@ def _fitSeparate(curves,mods,args,bounds,npoints=100,maxiter=None,**kwargs):
 
 
                     else:
-                        curves.images[d].fits.model.set(**{p:joint[p][0]})
+                        args['curves'].images[d].fits.model.set(**{p:joint[p][0]})
                         errs[p]=joint[p][1]
 
-            finalRes,finalFit=nest_lc(tempTable,curves.images[d].fits.model,final_vparams,bounds=bds,guess_amplitude_bound=True,maxiter=None,priors=args['priors'])
+            finalRes,finalFit=nest_lc(tempTable,args['curves'].images[d].fits.model,final_vparams,bounds=bds,guess_amplitude_bound=True,maxiter=None,priors=args['priors'])
 
             finalRes.ndof=dofs[d]
 
-            curves.images[d].fits['final_model']=finalFit
-            curves.images[d].fits['final_res']=finalRes
+            args['curves'].images[d].fits['final_model']=finalFit
+            args['curves'].images[d].fits['final_res']=finalRes
 
         else:
             for p in joint.keys():
-                if p in curves.images[d].fits.res.vparam_names:
+                if p in args['curves'].images[d].fits.res.vparam_names:
                     if isinstance(joint[p],dict):
-                        curves.images[d].fits.model.set(**{p:joint[p][d][0]})
+                        args['curves'].images[d].fits.model.set(**{p:joint[p][d][0]})
                         errs[p]=joint[p][d][1]
 
                     else:
-                        curves.images[d].fits.model.set(**{p:joint[p][0]})
+                        args['curves'].images[d].fits.model.set(**{p:joint[p][0]})
                         errs[p]=joint[p][1]
-        curves.images[d].fits['final_errs']=errs
+        args['curves'].images[d].fits['final_errs']=errs
 
-    tds,td_errs,mags,mag_errs,times,fluxes,time_errors,flux_errors=timeDelaysAndMagnifications(curves)
-    curves.time_delays=tds
-    curves.time_delay_errors=td_errs
-    curves.magnifications=mags
-    curves.magnification_errors=mag_errs
-    curves.measurements={'t0':times,'A':fluxes,'t0_err':time_errors,'A_err':flux_errors}
+    tds,td_errs,mags,mag_errs,times,fluxes,time_errors,flux_errors=timeDelaysAndMagnifications(args['curves'])
+    args['curves'].time_delays=tds
+    args['curves'].time_delay_errors=td_errs
+    args['curves'].magnifications=mags
+    args['curves'].magnification_errors=mag_errs
+    args['curves'].measurements={'t0':times,'A':fluxes,'t0_err':time_errors,'A_err':flux_errors}
 
     if args['showPlots']:
-        for d in curves.images.keys():
-            tempTable=copy(curves.images[d].table)
+        for d in args['curves'].images.keys():
+            tempTable=copy(args['curves'].images[d].table)
             for b in [x for x in np.unique(tempTable['band']) if x not in args['bands']]:
                 tempTable=tempTable[tempTable['band']!=b]
-            tempMod=copy(curves.images[d].fits.model)
+            tempMod=copy(args['curves'].images[d].fits.model)
 
 
             sncosmo.plot_lc(tempTable,model=tempMod)
@@ -991,7 +1001,7 @@ def _fitSeparate(curves,mods,args,bounds,npoints=100,maxiter=None,**kwargs):
             plt.clf()
             plt.close()
 
-    return curves
+    return args['curves']
 
 def _micro_uncertainty(args):
     sample,other=args
@@ -1111,29 +1121,29 @@ def fit_micro(curves,res,fit,dat,zpsys,nsamples,micro_type='achromatic',kernel='
         samples=gp.sample_y(X,nsamples)
 
 
+        if False:
+            plt.close()
+            fig=plt.figure()
+            ax=fig.gca()
+            for i in range(samples.shape[1]):
+                if i==0:
+                    ax.plot(X, samples[:,i],alpha=.1,label='Posterior Samples',color='b')
+                else:
+                    ax.plot(X, samples[:,i],alpha=.1,color='b')
+            ax.errorbar(allTime.ravel(), allResid, allErr, fmt='r.', markersize=10, label=u'Observations')
 
-        plt.close()
-        fig=plt.figure()
-        ax=fig.gca()
-        for i in range(samples.shape[1]):
-            if i==0:
-                ax.plot(X, samples[:,i],alpha=.1,label='Posterior Samples',color='b')
-            else:
-                ax.plot(X, samples[:,i],alpha=.1,color='b')
-        ax.errorbar(allTime.ravel(), allResid, allErr, fmt='r.', markersize=10, label=u'Observations')
+            ax.plot(X, y_pred - 3 * sigma, '--g')
+            ax.plot(X, y_pred + 3 * sigma, '--g',label='$3\sigma$ Bounds')
+            ax.plot(X,y_pred,'k-.',label="GPR Prediction")
 
-        ax.plot(X, y_pred - 3 * sigma, '--g')
-        ax.plot(X, y_pred + 3 * sigma, '--g',label='$3\sigma$ Bounds')
-        ax.plot(X,y_pred,'k-.',label="GPR Prediction")
-
-        ax.set_ylabel('Magnification ($\mu$)')
-        ax.set_xlabel('Observer Frame Time (Days)')
-        ax.plot(X,curves.images['image_2'].simMeta['microlensing_params'](X/(1+1.33))/np.median(curves.images['image_2'].simMeta['microlensing_params'](X/(1+1.33))),'k',label='True $\mu$-Lensing')
-        ax.legend(fontsize=10)
-        plt.show()
-        #plt.savefig('microlensing_gpr.pdf',format='pdf',overwrite=True)
-        plt.close()
-        #sys.exit()
+            ax.set_ylabel('Magnification ($\mu$)')
+            ax.set_xlabel('Observer Frame Time (Days)')
+            ax.plot(X,curves.images['image_2'].simMeta['microlensing_params'](X/(1+1.33))/np.median(curves.images['image_2'].simMeta['microlensing_params'](X/(1+1.33))),'k',label='True $\mu$-Lensing')
+            ax.legend(fontsize=10)
+            plt.show()
+            #plt.savefig('microlensing_gpr.pdf',format='pdf',overwrite=True)
+            plt.close()
+            #sys.exit()
 
 
         tempX=X[:,0]
@@ -1340,7 +1350,7 @@ def _fit_data(args):
         smod = sncosmo.Model(source=source,effects=effects,effect_names=effect_names,effect_frames=effect_frames)
     else:
         smod=mod
-    params=args['params'] if args['params'] else [x for x in smod.param_names]
+    params=args['params'] if args['params'] else [x for x in smod.vparam_names]
     fits=newDict()
     dcurve=args['curve']
     #if not np.any([smod.bandoverlap(band) for band in dcurve.bands]):

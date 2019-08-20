@@ -6,13 +6,14 @@
   <component name="ChangeListManager">
     <list default="true" id="468c7090-322e-4ee0-a25f-37e5b463bc82" name="Default" comment="">
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/main.py" beforeDir="false" afterPath="$PROJECT_DIR$/main.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/sntd/curve_io.py" beforeDir="false" afterPath="$PROJECT_DIR$/sntd/curve_io.py" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/sntd/fitting.py" beforeDir="false" afterPath="$PROJECT_DIR$/sntd/fitting.py" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/sntd/microlens/IRIS001" beforeDir="false" afterPath="$PROJECT_DIR$/sntd/microlens/IRIS001" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/sntd/microlens/IRIS001.fits" beforeDir="false" afterPath="$PROJECT_DIR$/sntd/microlens/IRIS001.fits" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/sntd/microlens/dat.001" beforeDir="false" afterPath="$PROJECT_DIR$/sntd/microlens/dat.001" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/sntd/microlens/fort.222" beforeDir="false" afterPath="$PROJECT_DIR$/sntd/microlens/fort.222" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/sntd/microlens/input" beforeDir="false" afterPath="$PROJECT_DIR$/sntd/microlens/input" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/sntd/util.py" beforeDir="false" afterPath="$PROJECT_DIR$/sntd/util.py" afterDir="false" />
     </list>
     <option name="EXCLUDED_CONVERTED_TO_IGNORED" value="true" />
     <option name="SHOW_DIALOG" value="false" />
@@ -30,15 +31,12 @@
     <option name="PATCH_PATH" value="" />
   </component>
   <component name="FileEditorManager">
-    <leaf SIDE_TABS_SIZE_LIMIT_KEY="375">
+    <leaf>
       <file pinned="false" current-in-tab="false">
         <entry file="file://$PROJECT_DIR$/main.py">
           <provider selected="true" editor-type-id="text-editor">
-            <state relative-caret-position="240">
+            <state relative-caret-position="225">
               <caret line="16" column="10" selection-end-line="16" selection-end-column="10" />
-              <folding>
-                <element signature="e#0#16#0" expanded="true" />
-              </folding>
             </state>
           </provider>
         </entry>
@@ -46,7 +44,7 @@
       <file pinned="false" current-in-tab="false">
         <entry file="file://$PROJECT_DIR$/sntd/ml.py">
           <provider selected="true" editor-type-id="text-editor">
-            <state relative-caret-position="344">
+            <state relative-caret-position="7530">
               <caret line="523" column="106" selection-start-line="523" selection-start-column="106" selection-end-line="523" selection-end-column="106" />
               <folding>
                 <element signature="e#0#41#0" expanded="true" />
@@ -67,7 +65,7 @@
       <file pinned="false" current-in-tab="false">
         <entry file="file://$PROJECT_DIR$/sntd/simulation.py">
           <provider selected="true" editor-type-id="text-editor">
-            <state relative-caret-position="471">
+            <state relative-caret-position="2145">
               <caret line="155" column="12" selection-start-line="155" selection-start-column="4" selection-end-line="155" selection-end-column="12" />
               <folding>
                 <element signature="e#0#17#0" expanded="true" />
@@ -79,7 +77,7 @@
       <file pinned="false" current-in-tab="false">
         <entry file="file://$PROJECT_DIR$/sntd/__init__.py">
           <provider selected="true" editor-type-id="text-editor">
-            <state relative-caret-position="195">
+            <state relative-caret-position="75">
               <caret line="13" column="24" selection-start-line="13" selection-start-column="24" selection-end-line="13" selection-end-column="24" />
               <folding>
                 <element signature="e#0#37#0" expanded="true" />
@@ -91,8 +89,8 @@
       <file pinned="false" current-in-tab="false">
         <entry file="file://$PROJECT_DIR$/sntd/util.py">
           <provider selected="true" editor-type-id="text-editor">
-            <state relative-caret-position="3780">
-              <caret line="252" selection-start-line="252" selection-end-line="252" />
+            <state relative-caret-position="-689">
+              <caret line="80" column="25" selection-start-line="80" selection-start-column="25" selection-end-line="80" selection-end-column="25" />
               <folding>
                 <element signature="e#52#74#0" expanded="true" />
               </folding>
@@ -101,10 +99,22 @@
         </entry>
       </file>
       <file pinned="false" current-in-tab="true">
+        <entry file="file://$PROJECT_DIR$/sntd/curve_io.py">
+          <provider selected="true" editor-type-id="text-editor">
+            <state relative-caret-position="241">
+              <caret line="184" column="40" lean-forward="true" selection-start-line="184" selection-start-column="40" selection-end-line="184" selection-end-column="40" />
+              <folding>
+                <element signature="e#0#44#0" expanded="true" />
+              </folding>
+            </state>
+          </provider>
+        </entry>
+      </file>
+      <file pinned="false" current-in-tab="false">
         <entry file="file://$PROJECT_DIR$/sntd/fitting.py">
           <provider selected="true" editor-type-id="text-editor">
-            <state relative-caret-position="134">
-              <caret line="1052" column="30" selection-start-line="1052" selection-start-column="30" selection-end-line="1052" selection-end-column="30" />
+            <state relative-caret-position="586">
+              <caret line="68" column="45" selection-start-line="68" selection-start-column="45" selection-end-line="68" selection-end-column="45" />
               <folding>
                 <element signature="e#0#50#0" expanded="true" />
               </folding>
@@ -123,19 +133,12 @@
   </component>
   <component name="FindInProjectRecents">
     <findStrings>
-      <find>:class</find>
-      <find>nested</find>
-      <find>refModel</find>
-      <find>mcmc</find>
-      <find>np.sort</find>
-      <find>yep</find>
       <find>guess_amp</find>
       <find>bazin</find>
       <find>npoints</find>
       <find>timeDelays</find>
       <find>interp1d</find>
       <find>param_fit</find>
-      <find>param_names</find>
       <find>.param_names</find>
       <find>nest_lc</find>
       <find>table_factory</find>
@@ -153,7 +156,18 @@
       <find>print('sn</find>
       <find>cov</find>
       <find>kwar</find>
+      <find>grids</find>
+      <find>param_names</find>
+      <find>if Fal</find>
+      <find>resList</find>
+      <find>outer_iter</find>
+      <find>separate</find>
+      <find>combined</find>
     </findStrings>
+    <replaceStrings>
+      <replace>outer_maxiter</replace>
+      <replace>series</replace>
+    </replaceStrings>
   </component>
   <component name="Git.Settings">
     <option name="PREVIOUS_COMMIT_AUTHORS">
@@ -183,13 +197,13 @@
         <option value="$PROJECT_DIR$/sntd/models.py" />
         <option value="$PROJECT_DIR$/sntd/__init__.py" />
         <option value="$PROJECT_DIR$/sntd/simulation.py" />
-        <option value="$PROJECT_DIR$/sntd/curve_io.py" />
-        <option value="$PROJECT_DIR$/sntd/util.py" />
         <option value="$PROJECT_DIR$/sntd/sncosmo_fitting.py" />
         <option value="$PROJECT_DIR$/sntd/cython_helpers.pyx" />
         <option value="$PROJECT_DIR$/sntd/ml.py" />
         <option value="$PROJECT_DIR$/main.py" />
+        <option value="$PROJECT_DIR$/sntd/util.py" />
         <option value="$PROJECT_DIR$/sntd/fitting.py" />
+        <option value="$PROJECT_DIR$/sntd/curve_io.py" />
       </list>
     </option>
   </component>
@@ -293,8 +307,11 @@
     <property name="js.eslint.eslintPackage" value="" />
     <property name="last_opened_file_path" value="$USER_HOME$/anaconda3/envs/sntd2/bin/python" />
     <property name="node.js.detected.package.eslint" value="true" />
+    <property name="node.js.detected.package.tslint" value="true" />
     <property name="node.js.path.for.package.eslint" value="project" />
+    <property name="node.js.path.for.package.tslint" value="project" />
     <property name="node.js.selected.package.eslint" value="(autodetect)" />
+    <property name="node.js.selected.package.tslint" value="(autodetect)" />
     <property name="settings.editor.selected.configurable" value="com.jetbrains.python.configuration.PyActiveSdkModuleConfigurable" />
   </component>
   <component name="PyConsoleOptionsProvider">
@@ -522,6 +539,7 @@
       <workItem from="1560354934165" duration="3135000" />
       <workItem from="1560442063044" duration="28601000" />
       <workItem from="1560786783741" duration="5925000" />
+      <workItem from="1566313034966" duration="4850000" />
     </task>
     <task id="LOCAL-00001" summary="&quot;Initializing SNTD project with modules&quot;">
       <created>1485887822745</created>
@@ -576,7 +594,7 @@
     <servers />
   </component>
   <component name="TimeTrackingManager">
-    <option name="totallyTimeSpent" value="52956000" />
+    <option name="totallyTimeSpent" value="57806000" />
   </component>
   <component name="TodoView" selected-index="1">
     <todo-panel id="selected-file">
@@ -588,7 +606,7 @@
     </todo-panel>
   </component>
   <component name="ToolWindowManager">
-    <frame x="0" y="23" width="1440" height="873" extended-state="1" />
+    <frame x="1441" y="-517" width="2559" height="1417" extended-state="6" />
     <editor active="true" />
     <layout>
       <window_info id="Favorites" order="0" side_tool="true" />
@@ -613,7 +631,7 @@
       <window_info anchor="right" id="Ant Build" order="2" weight="0.25" />
       <window_info anchor="right" content_ui="combo" id="Hierarchy" order="3" weight="0.25" />
       <window_info anchor="right" id="Data View" order="4" />
-      <window_info anchor="right" id="SciView" order="5" visible="true" weight="0.39913544" />
+      <window_info active="true" anchor="right" id="SciView" order="5" visible="true" weight="0.22536896" />
       <window_info anchor="right" id="Coverage" order="6" side_tool="true" />
     </layout>
     <layout-to-restore>
@@ -627,7 +645,7 @@
       <window_info anchor="bottom" id="Terminal" order="4" weight="0.32953367" />
       <window_info anchor="bottom" id="Message" order="5" />
       <window_info anchor="bottom" id="Find" order="6" weight="0.32929516" />
-      <window_info active="true" anchor="bottom" id="Run" order="7" visible="true" weight="0.46551725" />
+      <window_info active="true" anchor="bottom" id="Run" order="7" visible="true" weight="0.39370078" />
       <window_info anchor="bottom" id="Debug" order="8" weight="0.4" />
       <window_info anchor="bottom" id="Cvs" order="9" weight="0.25" />
       <window_info anchor="bottom" id="Inspection" order="10" weight="0.4" />
@@ -639,7 +657,7 @@
       <window_info anchor="right" id="Ant Build" order="2" weight="0.25" />
       <window_info anchor="right" content_ui="combo" id="Hierarchy" order="3" weight="0.25" />
       <window_info anchor="right" id="Data View" order="4" />
-      <window_info anchor="right" id="SciView" order="5" visible="true" weight="0.095415115" />
+      <window_info active="true" anchor="right" id="SciView" order="5" visible="true" weight="0.22098126" />
       <window_info anchor="right" id="Coverage" order="6" side_tool="true" />
     </layout-to-restore>
   </component>
@@ -779,44 +797,7 @@
         </state>
       </provider>
     </entry>
-    <entry file="file://$PROJECT_DIR$/sntd/curve_io.py">
-      <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="2355">
-          <caret line="166" column="48" selection-start-line="166" selection-start-column="48" selection-end-line="166" selection-end-column="48" />
-          <folding>
-            <element signature="e#0#44#0" expanded="true" />
-          </folding>
-        </state>
-      </provider>
-    </entry>
     <entry file="file://$PROJECT_DIR$/sntd/cython_helpers.pyx" />
-    <entry file="file://$PROJECT_DIR$/sntd/models.py">
-      <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="15">
-          <caret line="1" column="12" selection-start-line="1" selection-start-column="12" selection-end-line="1" selection-end-column="12" />
-        </state>
-      </provider>
-    </entry>
-    <entry file="file://$PROJECT_DIR$/sntd/__init__.py">
-      <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="195">
-          <caret line="13" column="24" selection-start-line="13" selection-start-column="24" selection-end-line="13" selection-end-column="24" />
-          <folding>
-            <element signature="e#0#37#0" expanded="true" />
-          </folding>
-        </state>
-      </provider>
-    </entry>
-    <entry file="file://$PROJECT_DIR$/sntd/util.py">
-      <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="3780">
-          <caret line="252" selection-start-line="252" selection-end-line="252" />
-          <folding>
-            <element signature="e#52#74#0" expanded="true" />
-          </folding>
-        </state>
-      </provider>
-    </entry>
     <entry file="file://$PROJECT_DIR$/sntd/sncosmo_fitting.py">
       <provider selected="true" editor-type-id="text-editor">
         <state relative-caret-position="10215">
@@ -827,9 +808,36 @@
         </state>
       </provider>
     </entry>
+    <entry file="file://$PROJECT_DIR$/sntd/__init__.py">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="75">
+          <caret line="13" column="24" selection-start-line="13" selection-start-column="24" selection-end-line="13" selection-end-column="24" />
+          <folding>
+            <element signature="e#0#37#0" expanded="true" />
+          </folding>
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/sntd/simulation.py">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="2145">
+          <caret line="155" column="12" selection-start-line="155" selection-start-column="4" selection-end-line="155" selection-end-column="12" />
+          <folding>
+            <element signature="e#0#17#0" expanded="true" />
+          </folding>
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/sntd/models.py">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="15">
+          <caret line="1" column="12" selection-start-line="1" selection-start-column="12" selection-end-line="1" selection-end-column="12" />
+        </state>
+      </provider>
+    </entry>
     <entry file="file://$PROJECT_DIR$/sntd/ml.py">
       <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="344">
+        <state relative-caret-position="7530">
           <caret line="523" column="106" selection-start-line="523" selection-start-column="106" selection-end-line="523" selection-end-column="106" />
           <folding>
             <element signature="e#0#41#0" expanded="true" />
@@ -839,30 +847,37 @@
     </entry>
     <entry file="file://$PROJECT_DIR$/main.py">
       <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="240">
+        <state relative-caret-position="225">
           <caret line="16" column="10" selection-end-line="16" selection-end-column="10" />
-          <folding>
-            <element signature="e#0#16#0" expanded="true" />
-          </folding>
-        </state>
-      </provider>
-    </entry>
-    <entry file="file://$PROJECT_DIR$/sntd/simulation.py">
-      <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="471">
-          <caret line="155" column="12" selection-start-line="155" selection-start-column="4" selection-end-line="155" selection-end-column="12" />
-          <folding>
-            <element signature="e#0#17#0" expanded="true" />
-          </folding>
         </state>
       </provider>
     </entry>
     <entry file="file://$PROJECT_DIR$/sntd/fitting.py">
       <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="134">
-          <caret line="1052" column="30" selection-start-line="1052" selection-start-column="30" selection-end-line="1052" selection-end-column="30" />
+        <state relative-caret-position="586">
+          <caret line="68" column="45" selection-start-line="68" selection-start-column="45" selection-end-line="68" selection-end-column="45" />
           <folding>
             <element signature="e#0#50#0" expanded="true" />
+          </folding>
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/sntd/util.py">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="-689">
+          <caret line="80" column="25" selection-start-line="80" selection-start-column="25" selection-end-line="80" selection-end-column="25" />
+          <folding>
+            <element signature="e#52#74#0" expanded="true" />
+          </folding>
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/sntd/curve_io.py">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="241">
+          <caret line="184" column="40" lean-forward="true" selection-start-line="184" selection-start-column="40" selection-end-line="184" selection-end-column="40" />
+          <folding>
+            <element signature="e#0#44#0" expanded="true" />
           </folding>
         </state>
       </provider>

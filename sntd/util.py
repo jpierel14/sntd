@@ -59,7 +59,7 @@ def _guess_magnifications(curves,referenceImage):
             mags[k]=maxValue/ref
 
         else:
-            if 'x0' in curves.images[k].fits.res.param_names:
+            if 'x0' in curves.images[k].fits.res.vparam_names:
                 amplitude='x0'
             else:
                 amplitude='amplitude'
