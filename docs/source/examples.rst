@@ -124,14 +124,16 @@ Measuring Time Delays with SNTD
 
 Fitting a Multiply-Imaged Supernova
 ===================================
-There are 3 methods built into SNTD to measure time delays (separate, combined, color). They are accessed by the same function:
+There are 3 methods built into SNTD to measure time delays (parallel, series, color). They are accessed by the same function:
+
+**Parallel:**
 
 .. code-block:: python
 
    	fitCurves=sntd.fit_data(myMISN2,snType='Ia', models='salt2-extended',bands=['F110W','F125W'],
                  params=['x0','x1','t0','c'],constants={'z':1.33},bounds={'t0':(-15,15),'x1':(-2,2),'c':(0,1)},
-		 method='separate',microlensing=None)
-	fitCurves.plot_object(showFit=True,method='separate')
+		             method='parallel',microlensing=None)
+	fitCurves.plot_object(showFit=True,method='parallel')
 	plt.show()
 
 Out:
@@ -144,6 +146,27 @@ Out:
 
 **Note that the bounds for the 't0' parameter are not absolute, the actual peak time will be estimated (unless t0_guess is defined)
 and the defined bounds will be added to this value. Similarly for amplitude, where bounds are multiplicative**
+
+Other methods are called in a similar fashion, with a couple of extra arguments:
+
+**Series:**
+
+.. code-block:: python
+    
+    fitCurves=sntd.fit_data(myMISN2,snType='Ia', models='salt2-extended',bands=['F110W','F125W'],
+              params=['x0','x1','t0','c'],constants={'z':1.33},bounds={'t0':(-15,15),'x1':(-2,2),'c':(0,1)},
+              seriesGrids={'td':(-5,5),'mu':(.8,1.2)},refModel=fitCurves.images['image_1'].fits.model,
+              method='series',microlensing=None)
+
+**Color:**
+
+.. code-block:: python
+    
+    fitCurves=sntd.fit_data(myMISN2,snType='Ia', models='salt2-extended',bands=['F110W','F125W'],
+              params=['x0','x1','t0','c'],constants={'z':1.33},bounds={'t0':(-15,15),'x1':(-2,2),'c':(0,1)},
+              seriesGrids={'td':(-5,5),'mu':(.8,1.2)},refModel=fitCurves.images['image_1'].fits.model,
+              method='color',microlensing=None)
+
 
 Fitting Using Extra Propagation Effects
 =======================================
@@ -243,7 +266,7 @@ is just the measured microlensing uncertainty, there is an additional uncertaint
 
    	fitCurves=sntd.fit_data(myMISN2,snType='Ia', models='salt2-extended',bands=['F110W','F125W'],
                 params=['x0','x1','t0','c'],constants={'z':1.33},bounds={'t0':(-15,15),'x1':(-2,2),'c':(0,1)},
-		method='separate',microlensing='achromatic',nMicroSamples=10)
+		method='parallel',microlensing='achromatic',nMicroSamples=10)
 	print(fitCurves.images['image_1'].fits.final_errs['micro'])
 
 Out::
@@ -342,4 +365,37 @@ Out::
     :align: center
     :height: 600px
     :alt: alternate text
+
+
+****************************************
+Batch Processing Time Delay Measurements
+****************************************
+
+Parallel processing is built into SNTD in order to fit a large number of MISN. To access this feature,
+simply provide a list of MISN instead of a single sntd curveDict object:
+
+.. code-block:: python
+
+  myMISN1 = sntd.createMultiplyImagedSN(sourcename='salt2-extended', snType='Ia', redshift=1.33,z_lens=.53, bands=['F110W','F125W'],
+                   zp=[26.8,26.2], cadence=5., epochs=35.,time_delays=[10., 70.], magnifications=[7,3.5],
+       objectName='My Type Ia SN',telescopename='HST')
+  myMISN2 = sntd.createMultiplyImagedSN(sourcename='salt2-extended', snType='Ia', redshift=1.33,z_lens=.53, bands=['F110W','F125W'],
+                   zp=[26.8,26.2], cadence=5., epochs=35.,time_delays=[10., 50.], magnifications=[7,3.5],
+       objectName='My Type Ia SN',telescopename='HST')
+  curve_list=[myMISN1,myMISN2]
+  fitCurves=sntd.fit_data(curve_list,snType='Ia', models='salt2-extended',bands=['F125W','F160W'],
+      params=['x0','x1','t0','c'],constants={'z':1.33},bounds={'t0':(-15,15),'x1':(-2,2),'c':(0,1)},
+      method='parallel',microlensing=None)
+  for curve in fitCurves:
+    print(curve.time_delays)
+
+Out::
+
+  Fitting MISN number 1...
+  Fitting MISN number 2...
+  {'image_1': 0, 'image_2': 60.32583528844834}
+  {'image_1': 0, 'image_2': 40.22834982372733}
+
+
+
 

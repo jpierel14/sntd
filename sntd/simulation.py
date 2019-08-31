@@ -136,7 +136,7 @@ def createMultiplyImagedSN(
     if timeArr is not None:
         times=timeArr
     else:
-        times=np.linspace(0,cadence*epochs,epochs)
+        times=np.linspace(0,int(cadence*epochs),int(epochs))
 
     bandList=np.array([np.tile(b,len(times)) for b in bands]).flatten()
     ms=sncosmo.get_magsystem(zpsys)
@@ -303,14 +303,13 @@ def createMultiplyImagedSN(
             return None
         table_i=table_i[0]
         if timeArr is None:
-            table_i=table_i[table_i['time']<td+50]
+            table_i=table_i[table_i['time']<td+60]
             table_i=table_i[table_i['time']>td-30]
         #create is curve with all parameters and add it to the overall curveDict object from above
         curve_i=curve()
         curve_i.object=None
         curve_i.zpsys=zpsys
-        curve_i.table=table_i
-
+        curve_i.table=deepcopy(table_i)
         curve_i.bands=list(set(table_i['band']))
         curve_i.simMeta=deepcopy(table_i.meta)
         curve_i.simMeta['sourcez']=redshift
@@ -329,7 +328,6 @@ def createMultiplyImagedSN(
             curve_i.simMeta['microlensing_params'] = interp1d(time+model_i._source._phase[0],dmag)
 
         curve_obj.add_curve(curve_i)
-
 
 
     # Store the un-lensed model as a component of the lensed SN object.

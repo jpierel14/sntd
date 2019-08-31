@@ -54,7 +54,8 @@ version using ``git``::
 
 then::
 
-    ./setup.py install
+    python setup.py test
+    python setup.py install
 
 
 Optional dependencies

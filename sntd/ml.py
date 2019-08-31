@@ -82,7 +82,10 @@ def realizeMicro(arand=.25,debug=0,kappas=.75,kappac=.15,gamma=.76,eps=.6,nray=3
     num=np.loadtxt(os.path.join(__dir__,'microlens','jobnum'),dtype='str')
     #lensPlane=np.array(fits.open(os.path.join(__dir__,'microlens','IRIS'+str(num)+'.fits'))[0].data,dtype=np.float64)
     try:
-        lensPlane=fits.open(os.path.join(__dir__,'microlens','IRIS'+str(num)+'.fits'))[0].data
+        fitsFile=fits.open(os.path.join(__dir__,'microlens','IRIS'+str(num)+'.fits'))
+        lensPlane=fitsFile[0].data
+        fitsFile.close()
+
     except:
         print('There was an error with the inputs of your microcaustic.')
         sys.exit()

@@ -59,7 +59,7 @@ class newDict(dict):
 def fit_data(curves, snType='Ia',bands=None, models=None, params=None, bounds={}, ignore=None, constants=None,
              method='parallel',t0_guess=None,refModel=None,effect_names=[],effect_frames=[],fitting_method='nest',
              dust=None,flip=False,guess_amplitude=True,seriesError=None,showPlots=False,microlensing=None,
-             kernel='RBF',seriesGrids=None,refImage='image_1',nMicroSamples=100,color_curve=None,**kwargs):
+             kernel='RBF',seriesGrids=None,refImage='image_1',nMicroSamples=100,color_curve=None,verbose=True,**kwargs):
 
     """
     The main high-level fitting function.
@@ -116,6 +116,8 @@ def fit_data(curves, snType='Ia',bands=None, models=None, params=None, bounds={}
         The number of pulls from the GPR posterior you want to use for microlensing uncertainty estimation
     color_curve: :class:`astropy.Table`
         A color curve to define the relationship between bands for parameterized light curve model.
+    verbose: Boolean
+        Turns on/off the verbosity flag
     Returns
     -------
     fitted_curveDict: :class:`~sntd.curve_io.curveDict`
@@ -134,7 +136,11 @@ def fit_data(curves, snType='Ia',bands=None, models=None, params=None, bounds={}
         args[k]=kwargs[k]
 
     if isinstance(curves,(list,tuple)):
-        args['curves']=[_sntd_deepcopy(curve) for curve in curves]
+        args['curves']=[]
+        for i in range(len(curves)):
+            temp=_sntd_deepcopy(curves[i])
+            temp.nsn=i+1
+            args['curves'].append(temp)
         args['parlist']=True
     else:
         args['curves']=_sntd_deepcopy(curves)
@@ -172,17 +178,18 @@ def fit_data(curves, snType='Ia',bands=None, models=None, params=None, bounds={}
     if method=='parallel':
         if args['parlist']:
             curves=pyParz.foreach(args['curves'],_fitparallel,[args])
+
         else:
             curves=_fitparallel(args)
     elif method=='series':
         if args['parlist']:
-            curves=pyParz.foreach(args['curves'],_fitseries,[args for i in range(len(args['curves']))])
+            curves=pyParz.foreach(args['curves'],_fitseries,[args])
         else:
             curves=_fitseries(args)
 
     else:
         if args['parlist']:
-            curves=pyParz.foreach(args['curves'],_fitColor,[args for i in range(len(args['curves']))])
+            curves=pyParz.foreach(args['curves'],_fitColor,[args])
         else:
             curves=_fitColor(args)
 
@@ -192,6 +199,9 @@ def _fitColor(all_args):
     if isinstance(all_args,np.ndarray):
         curves,args=all_args
         args['curves']=curves
+        if args['verbose']:
+            print('Fitting MISN number %i...'%curves.nsn)
+
     else:
         args=all_args
     args['bands']=list(args['bands'])
@@ -575,6 +585,9 @@ def _fitseries(all_args):
     if isinstance(all_args,np.ndarray):
         curves,args=all_args
         args['curves']=curves
+        if args['verbose']:
+            print('Fitting MISN number %i...'%curves.nsn)
+
     else:
         args=all_args
     args['bands']=list(args['bands'])
@@ -822,25 +835,23 @@ def nest_series_lc(curves,vparam_names,bounds,snBounds,snVparam_names,ref,guess_
 
 def par_fit_parallel(all_args):
     d,fitDict,args,bestFit,bestRes=all_args
-    _,bestFit,bestMod=fitDict[d]
+    _,bestFit,bestMod,bounds=fitDict[d]
     tempTable=deepcopy(args['curves'].images[d].table)
+
     for b in [x for x in np.unique(tempTable['band']) if x not in args['bands']]:
         tempTable=tempTable[tempTable['band']!=b]
     if args['flip']:
         tempTable['flux']=np.flip(tempTable['flux'],axis=0)
 
 
-
-
-    if 'amplitude' not in args['bounds']:
+    if 'amplitude' not in bounds.keys():
         guess_amp_bounds=True
     else:
         guess_amp_bounds=False
 
 
 
-
-    nest_res,nest_fit=_nested_wrapper(args['curves'],tempTable,bestFit,vparams=bestRes.vparam_names,bounds=args['bounds'],
+    nest_res,nest_fit=_nested_wrapper(args['curves'],tempTable,bestFit,vparams=bestRes.vparam_names,bounds=bounds,
                                       priors=args.get('priors',None), ppfs=args.get('None'), method=args.get('nest_method','single'),
                                       maxcall=args.get('maxcall',None), modelcov=args.get('modelcov',False),
                                       rstate=args.get('rstate',None),
@@ -862,6 +873,8 @@ def _fitparallel(all_args):
     if isinstance(all_args,np.ndarray):
         curves,args=all_args
         args['curves']=curves
+        if args['verbose']:
+            print('Fitting MISN number %i...'%curves.nsn)
     else:
         args=all_args
 
@@ -923,7 +936,7 @@ def _fitparallel(all_args):
             bestRes=fits[0]['res']
 
 
-        fitDict[d]=[fits,bestFit,bestRes]
+        fitDict[d]=[fits,bestFit,bestRes,copy(args['bounds'])]
 
     if not all([fitDict[d][1]._source.name==fitDict[list(fitDict.keys())[0]][1]._source.name for d in fitDict.keys()]):
         print('All models did not match, finding best...')
@@ -951,7 +964,7 @@ def _fitparallel(all_args):
     else:
         res=[]
         for d in args['curves'].images.keys():
-            res.append(par_fit_parallel(np.append([d],[fitDict,args,bestFit,bestRes])))
+            res.append(par_fit_parallel([d,fitDict,args,bestFit,bestRes]))
 
     dofs={}
     resList={}
@@ -998,7 +1011,6 @@ def _fitparallel(all_args):
                     else:
                         args['curves'].images[d].fits.model.set(**{p:joint[p][0]})
                         errs[p]=joint[p][1]
-
             finalRes,finalFit=nest_lc(tempTable,args['curves'].images[d].fits.model,final_vparams,bounds=bds,guess_amplitude_bound=True,maxiter=None,priors=args.get('priors',None))
 
             finalRes.ndof=dofs[d]
@@ -1130,8 +1142,6 @@ def fit_micro(curves,res,fit,dat,zpsys,nsamples,micro_type='achromatic',kernel='
         #plt.show()
         #tempData=tempData[mod>.1]
         residual=tempData['flux']/mod
-        residual=residual[residual<10]
-        residual=residual[residual>.01]
         tempData=tempData[~np.isnan(residual)]
         residual=residual[~np.isnan(residual)]
         tempTime=tempTime[~np.isnan(residual)]
