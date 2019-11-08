@@ -146,9 +146,12 @@ def fit_data(curves, snType='Ia',bands=None, models=None, params=None, bounds={}
 		args['curves']=_sntd_deepcopy(curves)
 		args['parlist']=False
 
-	args['bands'] = [bands] if bands and not isinstance(bands,(tuple,list)) else bands
+	args['bands'] = [bands] if bands is not None and not isinstance(bands,(tuple,list,np.ndarray)) else bands
 	#sets the bands to user's if defined (set, so that they're unique), otherwise to all the bands that exist in curves
-	args['bands'] = list(set(bands)) if bands else list(curves.bands)
+
+	args['bands'] = list(set(bands)) if bands is not None 
+
+	args['bands'] = list(curves.bands) if not isinstance(curves,(list,tuple,np.ndarray)) else list(curves[0].bands)
 
 	models=[models] if models and not isinstance(models,(tuple,list)) else models
 	if not models:
