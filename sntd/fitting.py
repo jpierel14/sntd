@@ -149,7 +149,7 @@ def fit_data(curves, snType='Ia',bands=None, models=None, params=None, bounds={}
 	args['bands'] = [bands] if bands is not None and not isinstance(bands,(tuple,list,np.ndarray)) else bands
 	#sets the bands to user's if defined (set, so that they're unique), otherwise to all the bands that exist in curves
 
-	args['bands'] = list(set(bands)) if bands is not None 
+	args['bands'] = list(set(bands)) if bands is not None else None
 
 	args['bands'] = list(curves.bands) if not isinstance(curves,(list,tuple,np.ndarray)) else list(curves[0].bands)
 
