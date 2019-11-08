@@ -488,7 +488,7 @@ class curveDict(dict):
                 i+=1
 
 
-        plt.figlegend(leg,np.sort([x for x in self.images.keys()]), frameon=False,
+        plt.figlegend(leg,np.sort(['$'+x+'$' for x in self.images.keys()]), frameon=False,
                       loc='center right', fontsize='medium', numpoints=1)
 
 
