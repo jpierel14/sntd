@@ -621,6 +621,7 @@ def _inner_color_nest_lc(data, model, bands,vparam_names, bounds,zp, zpsys,guess
 
 	return res, model
 
+
 def _fitseries(all_args):
 	if isinstance(all_args,(list,tuple,np.ndarray)):
 		curves,args=all_args
@@ -637,57 +638,77 @@ def _fitseries(all_args):
 	else:
 		args=all_args
 	args['bands']=list(args['bands'])
-	if not args['curves'].series.table:
-		args['curves'].combine_curves(referenceImage=args['refImage'])
 
 
-	if not args['seriesGrids']:
-		print('Need bounds on time delay and magnification (i.e. seriesGrids undefined)')
-		sys.exit(1)
+	#TODO remove amplitude and t0 parameters if in params
+
+	imnums=[x[-1] for x in args['curves'].images.keys()]
+	nimage=len(imnums)
+	snParams=[['t_%s'%i,'a_%s'%i] for i in imnums]
+	all_vparam_names=np.append(args['params'],
+							   snParams).flatten()
+
+	ims=list(args['curves'].images.keys())
 
 
-	for b in [x for x in np.unique(args['curves'].series.table['band']) if x not in args['bands']]:
-		args['curve'].series.table=args['curves'].series.table[args['curves'].series.table['band']!=b]
-
-
-	if not args['refModel']:
-		if args['curves'].images['image_1'].fits is not None:
-			try:
-				args['refModel'],bounds=create_composite_model(args['curves'],args['refImage'],weight='logz',bound_vars=bounds.keys())
-			except RuntimeError:
-				args['refModel'],bounds=create_composite_model(args['curves'],args['refImage'],bound_vars=bounds.keys())
-
+	for param in all_vparam_names:
+		if param not in args['bounds'].keys():
+			if param[:2]=='t_':
+				im=[x for x in ims if x[-1]==param[-1]][0]
+				args['bounds'][param]=np.array(args['bounds']['td'])#+time_delays[im]
+			elif param[:2]=='a_':
+				im=[x for x in ims if x[-1]==param[-1]][0]
+				args['bounds'][param]=np.array(args['bounds']['mu'])#*magnifications[im]
+	finallogz=-np.inf
+	if args['dust'] is not None:
+		if isinstance(args['dust'],str):
+			dust_dict={'CCM89Dust':sncosmo.CCM89Dust,'OD94Dust':sncosmo.OD94Dust,'F99Dust':sncosmo.F99Dust}
+			dust=dust_dict[args['dust']]()
 		else:
-			raise RuntimeError("series fit had no reference model or model name.")
-	elif not isinstance(args['refModel'],sncosmo.Model):
-		raise RuntimeError("Your reference model needs to be an SNCosmo model object.")
+			dust=args['dust']
+	else:
+		dust=[]
+	effect_names=args['effect_names']
+	effect_frames=args['effect_frames']
+	effects=[dust for i in range(len(effect_names))] if effect_names else []
+	effect_names=effect_names if effect_names else []
+	effect_frames=effect_frames if effect_frames else []
+	if not isinstance(effect_names,(list,tuple)):
+		effects=[effect_names]
+	if not isinstance(effect_frames,(list,tuple)):
+		effects=[effect_frames]
 
-	gridBounds=dict([])
-	for k in args['curves'].images.keys():
-		for par in args['seriesGrids'].keys():
-			if par=='td' and k==args['refImage']:
-				continue
-			if par=='mu' and k==args['refImage']:
-				continue
-			gridBounds[k+'_'+par]=np.array(args['seriesGrids'][par])+args['curves'].series.meta[par][k]
 
-	myRes=dict([])
-	for b in args['bands']:
-		myRes[b]=nest_series_lc(args['curves'],
-								  vparam_names=gridBounds.keys(),
-								  band=b,refModel=args['refModel'],bounds=gridBounds,snBounds=args['bounds'],
-								  snVparam_names=args['bounds'].keys(),ref=args['refImage'],guess_amplitude_bound=True,
-								  minsnr=args.get('minsnr',5.),priors=args.get('priors',None),ppfs=args.get('ppfs',None),
-								  method=args.get('nest_method','single'),maxcall=args.get('outer_maxcall',None),
-								  modelcov=args.get('modelcov',None),rstate=args.get('rstate',None),
-								  maxiter=args.get('outer_maxiter',100),npoints=args.get('outer_npoints',50),
-								  inner_maxiter=args.get('inner_maxiter',10),inner_npoints=args.get('inner_npoints',10))
+	for mod in np.array(args['models']).flatten():
 
-	weights=np.array([myRes[b][-2].logz for b in args['bands']])
-	final_params=dict([])
 
-	for param in myRes[args['bands'][0]][-1].param_names:
-		final_params[param]=np.average([myRes[b][-1].get(param) for b in args['bands']],weights=weights)
+
+		source=sncosmo.get_source(mod)
+		tempMod = sncosmo.Model(source=source,effects=effects,effect_names=effect_names,effect_frames=effect_frames)
+		tempMod.set(**args['constants'])
+		if not args['curves'].series.table:
+			args['curves'].combine_curves(referenceImage=args['refImage'],static=False,model=tempMod)
+			guess_amplitude=False
+		else:
+			guess_amplitude=True
+		tempMod.set(t0=args['curves'].series.meta['reft0'])
+		tempMod.parameters[2]=args['curves'].series.meta['refamp']
+		sncosmo.plot_lc(args['curves'].series.table,model=tempMod)
+		plt.show()
+		args['bounds'][tempMod.param_names[2]]=(.1*tempMod.parameters[2],10*tempMod.parameters[2])
+		res,td_res,mu_res,td_err,mu_err,model=nest_series_lc(args['curves'].series.table,tempMod,nimage,bounds=args['bounds'],
+									  vparam_names=all_vparam_names,ref=args['refImage'],
+									  refModel=args['refModel'],
+									  guess_amplitude_bound=guess_amplitude,
+									  minsnr=args.get('minsnr',5.),priors=args.get('priors',None),ppfs=args.get('ppfs',None),
+									  method=args.get('nest_method','single'),maxcall=args.get('maxcall',None),
+									  modelcov=args.get('modelcov',None),rstate=args.get('rstate',None),
+									  maxiter=args.get('maxiter',None),npoints=args.get('npoints',100))
+		if finallogz<res.logz:
+			finalres,finaltd_res,finalmu_res,finaltd_err,finalmu_err,finalmodel=res,td_res,mu_res,td_err,mu_err,model
+			time_delays=args['curves'].series.meta['td']
+			magnifications=args['curves'].series.meta['mu']
+
 
 	args['curves'].series.time_delays=dict([])
 	args['curves'].series.magnifications=dict([])
@@ -695,54 +716,37 @@ def _fitseries(all_args):
 	args['curves'].series.time_delay_errors=dict([])
 
 	for k in args['curves'].images.keys():
-		args['curves'].series.time_delays[k]=np.average([myRes[b][0][k] for b in args['bands']],weights=weights)
-		args['curves'].series.magnifications[k]=np.average([myRes[b][1][k] for b in args['bands']],weights=weights)
-	args['curves'].series.time_delay_errors[k]=myRes[args['bands'][np.where(weights==np.max(weights))[0][0]]][2]
-	args['curves'].series.magnification_errors[k]=myRes[args['bands'][np.where(weights==np.max(weights))[0][0]]][3]
-	bestRes=myRes[args['bands'][np.where(weights==np.max(weights))[0][0]]][4]
-	bestMod=myRes[args['bands'][np.where(weights==np.max(weights))[0][0]]][5]
+		if k==args['refImage']:
+			args['curves'].series.time_delays[k]=0
+			args['curves'].series.magnifications[k]=1
+			args['curves'].series.time_delay_errors[k]=0
+			args['curves'].series.magnification_errors[k]=0
+		else:
+			args['curves'].series.time_delays[k]=time_delays[k]+(finaltd_res['t_'+k[-1]]-finaltd_res['t_'+args['refImage'][-1]])
+			args['curves'].series.magnifications[k]=magnifications[k]*(finalmu_res['a_'+k[-1]]/finalmu_res['a_'+args['refImage'][-1]])
+			args['curves'].series.time_delay_errors[k]=np.sqrt(finaltd_err['t_'+k[-1]]**2+finaltd_err['t_'+args['refImage'][-1]]**2)
+			args['curves'].series.magnification_errors[k]=args['curves'].series.magnifications[k]*\
+				np.sqrt((finalmu_err['a_'+k[-1]]/finalmu_res['a_'+k[-1]])**2+(finalmu_err['a_'+args['refImage'][-1]]/\
+																			  finalmu_res['a_'+args['refImage'][-1]])**2)
 
-	bestMod.set(**final_params)
+
 
 	args['curves'].combine_curves(time_delays=args['curves'].series.time_delays,magnifications=args['curves'].series.magnifications,referenceImage=args['refImage'])
 
-	for b in [x for x in set(args['curves'].series.table['band']) if x not in args['bands']]:
-		args['curves'].series.table=args['curves'].series.table[args['curve'].series.table['band']!=b]
 
 	args['curves'].series.fits=newDict()
-	args['curves'].series.fits['model']=bestMod
-	args['curves'].series.fits['res']=bestRes
+	args['curves'].series.fits['model']=finalmodel
+	args['curves'].series.fits['res']=finalres
 
 	return args['curves']
 
 
-def create_composite_model(curves,ref,weight='chisq',bound_vars=[]):
-	weights=np.array([curves.images[im].fits.res[weight] for im in np.sort(list(curves.images.keys()))])
-	if weight=='chisq':
-		weights=1./weights
-	final_vars=dict([])
-	bounds=dict([])
-	for param in curves.images[ref].fits.model.param_names:
-		if param not in bound_vars:
-			final_vars[param]=curves.images[ref].fits.model.get(param)
-		else:
-			final_vars[param]=np.average([curves.images[k].fits.model.get(param) for k in np.sort(list(curves.images.keys()))],
-										 weights=weights)
-		if param in bound_vars:
-			bounds[param]=np.average([curves.images[k].fits.final_errs[param] for k in np.sort(list(curves.images.keys()))],
-									 weights=weights)/np.sqrt(len(weights))
-			bounds[param]=(final_vars[param]-bounds[param],final_vars[param]+bounds[param])
-
-			final_mod=copy(curves.images[list(curves.images.keys())[np.where(weights==np.max(weights))[0][0]]].fits.model)
-	final_mod.set(**final_vars)
-	return(final_mod,bounds)
 
 
-
-def nest_series_lc(curves,vparam_names,bounds,snBounds,snVparam_names,ref,guess_amplitude_bound=False,
+def nest_series_lc(data,model,nimage,vparam_names,bounds,guess_amplitude_bound=False,ref='image_1',
 					 minsnr=5.,refModel=False,band=None, priors=None, ppfs=None, npoints=100, method='single',
 					 maxiter=None, maxcall=None, modelcov=False, rstate=None,
-					 verbose=False, warn=True,inner_maxiter=10,inner_npoints=10,**kwargs):
+					 verbose=False, warn=True,**kwargs):
 
 	# experimental parameters
 	tied = kwargs.get("tied", None)
@@ -752,6 +756,15 @@ def nest_series_lc(curves,vparam_names,bounds,snBounds,snVparam_names,ref,guess_
 		ppfs = {}
 	if tied is None:
 		tied = {}
+
+	if guess_amplitude_bound:
+		guess_t0,guess_amp=sncosmo.fitting.guess_t0_and_amplitude(sncosmo.photdata.photometric_data(data[data['image']==ref]),
+															  model,minsnr)
+
+	#print(guess_t0,guess_amp)
+		model.set(t0=guess_t0)
+		model.parameters[2]=guess_amp
+	#bounds['x0']=(.1*guess_amp,10*guess_amp)
 
 	# Convert bounds/priors combinations into ppfs
 	if bounds is not None:
@@ -775,16 +788,10 @@ def nest_series_lc(curves,vparam_names,bounds,snBounds,snVparam_names,ref,guess_
 	# matched to u[i] below and u will be in a reproducible order,
 	# so iparam_names must also be.
 
-	all_delays=dict([])
-	all_mus=dict([])
-	all_mu_err=dict([])
-	all_delay_err=dict([])
-	all_mu_err[ref]=0
-	all_delay_err[ref]=0
-	all_delays[ref]=0
-	all_mus[ref]=1
 
 	iparam_names = [key for key in vparam_names if key in ppfs]
+
+
 
 	ppflist = [ppfs[key] for key in iparam_names]
 	npdim = len(iparam_names)  # length of u
@@ -813,42 +820,56 @@ def nest_series_lc(curves,vparam_names,bounds,snBounds,snVparam_names,ref,guess_
 		return v
 
 
-	global best_comb_Z
-	global best_comb_Mod
-	global best_comb_Res
+	model_param_names=[x for x in vparam_names[:len(vparam_names)-nimage*2]]
+	model_idx = np.array([vparam_names.index(name) for name in model_param_names])
+	td_params=[x for x in vparam_names[len(vparam_names)-nimage*2:] if x[0]=='t']
+	td_idx=np.array([vparam_names.index(name) for name in td_params])
+	amp_params=[x for x in vparam_names[len(vparam_names)-nimage*2:] if x[0]=='a']
+	amp_idx=np.array([vparam_names.index(name) for name in amp_params])
 
-	best_comb_Res = None
-	best_comb_Mod = None
-	best_comb_Z = -np.inf
+	im_indices=[np.where(data['image']==i)[0] for i in np.unique(data['image'])]
 
+	def chisq_likelihood(parameters):
+		model.set(**{model_param_names[k]:parameters[model_idx[k]] for k in range(len(model_idx))})
+		all_data=deepcopy(data)
+
+		for i in range(len(im_indices)):
+			all_data['time'][im_indices[i]]-=parameters[td_idx[i]]
+			all_data['flux'][im_indices[i]]/=parameters[amp_idx[i]]
+			#all_data['fluxerr'][im_indices[i]]/=parameters[amp_idx[i]]
+		model_observations = model.bandflux(all_data['band'],all_data['time'],
+											zp=all_data['zp'],zpsys=all_data['zpsys'])
+		# bind=np.where(all_data['band']=='F160W')
+		# plt.scatter(all_data['time'][bind],all_data['flux'][bind])
+		# plt.scatter(data['time'][bind],data['flux'][bind])
+		# plt.plot(all_data['time'][bind],model_observations[bind])
+		#print(parameters)
+		#sncosmo.plot_lc(all_data,model=model)
+		#plt.show()
+		#sys.exit()
+		if modelcov:
+			cov = np.diag(all_data['fluxerr']**2)
+			_, mcov = model.bandfluxcov(all_data['band'], all_data['time'],
+										zp=all_data['zp'], zpsys=all_data['zpsys'])
+
+			cov = cov + mcov
+			invcov = np.linalg.pinv(cov)
+
+			diff = all_data['flux']-model_observations
+			chisq=np.dot(np.dot(diff, invcov), diff)
+
+		else:
+			chisq=np.sum((all_data['flux']-model_observations)**2/(all_data['fluxerr']**2))
+		return chisq
 
 	def loglike(parameters):
-		tempCurve=_sntd_deepcopy(curves)
+		chisq=chisq_likelihood(parameters)
+		if not np.isfinite(chisq):
+			return -np.inf
 
-		tempTds=dict([])
-		tempMus=dict([])
-		for i in range(len(parameters)):
-			if iparam_names[i][-2:]=='td':
-				tempTds[iparam_names[i][0:iparam_names[i].rfind('_')]]=parameters[i]
-			elif iparam_names[i][-2:]=='mu':
-				tempMus[iparam_names[i][0:iparam_names[i].rfind('_')]]=parameters[i]
-		tempTds[ref]=all_delays[ref]
-		tempMus[ref]=all_mus[ref]
+		return(-.5*chisq)
 
-		tempCurve.combine_curves(time_delays=tempTds,magnifications=tempMus,referenceImage=ref)
 
-		tempCurve.series.table=tempCurve.series.table[tempCurve.series.table['band']==band]
-		tempRes,tempMod=nest_lc(tempCurve.series.table,refModel,
-								vparam_names=snVparam_names,bounds=snBounds,guess_amplitude_bound=False,
-								maxiter=inner_maxiter,npoints=inner_npoints)
-		global best_comb_Res
-		global best_comb_Mod
-		global best_comb_Z
-		if tempRes.logz>best_comb_Z:
-			best_comb_Res=copy(tempRes)
-			best_comb_Z=copy(tempRes.logz)
-			best_comb_Mod=copy(tempMod)
-		return(tempRes.logz)
 
 
 
@@ -869,15 +890,63 @@ def nest_series_lc(curves,vparam_names,bounds,snBounds,snVparam_names,ref,guess_
 							   logl=res.logl,
 							   vparam_names=copy(vparam_names),
 							   bounds=bounds)
-	pdf=_get_marginal_pdfs(res,nbins=npoints,verbose=False)
-	for im in [x for x in curves.images.keys() if x!=ref]:
-		all_delays[im]=pdf[im+'_td'][2]
-		all_delay_err[im]=pdf[im+'_td'][3]
-		all_mus[im]=pdf[im+'_mu'][2]
-		all_mu_err[im]=pdf[im+'_mu'][3]
 
-	return all_delays,all_mus,all_delay_err,all_mu_err,best_comb_Res,best_comb_Mod
 
+
+	params=[weighted_quantile(res.samples[:,i],[.16,.5,.84],res.weights) for i in range(len(vparam_names))]
+
+	model.set(c=params[1][1])
+	model.set(x1=params[0][1])
+	model.set(t0=model.get('t0')+params[td_idx[td_params.index('t_'+ref[-1])]][1])
+	model.parameters[2]=model.parameters[2]*params[amp_idx[amp_params.index('a_'+ref[-1])]][1]
+
+	td_res={}
+	mu_res={}
+	td_err={}
+	mu_err={}
+	for i in range(len(td_params)):
+		td_res[td_params[i]]=params[td_idx[i]][1]
+		td_err[td_params[i]]=np.array([params[td_idx[i]][1]-params[td_idx[i]][0],params[td_idx[i]][2]]-params[td_idx[i]][1])
+		mu_res[amp_params[i]]=params[amp_idx[i]][1]
+		mu_err[amp_params[i]]=np.array([params[amp_idx[i]][1]-params[amp_idx[i]][0],params[amp_idx[i]][2]-params[amp_idx[i]][1]])
+
+
+	return res,td_res,mu_res,td_err,mu_err,model
+
+def weighted_quantile(values, quantiles, sample_weight=None,
+					  values_sorted=False, old_style=False):
+	""" Very close to numpy.percentile, but supports weights.
+    NOTE: quantiles should be in [0, 1]!
+    :param values: numpy.array with data
+    :param quantiles: array-like with many quantiles needed
+    :param sample_weight: array-like of the same length as `array`
+    :param values_sorted: bool, if True, then will avoid sorting of
+        initial array
+    :param old_style: if True, will correct output to be consistent
+        with numpy.percentile.
+    :return: numpy.array with computed quantiles.
+    """
+	values = np.array(values)
+	quantiles = np.array(quantiles)
+	if sample_weight is None:
+		sample_weight = np.ones(len(values))
+	sample_weight = np.array(sample_weight)
+	assert np.all(quantiles >= 0) and np.all(quantiles <= 1), \
+		'quantiles should be in [0, 1]'
+
+	if not values_sorted:
+		sorter = np.argsort(values)
+		values = values[sorter]
+		sample_weight = sample_weight[sorter]
+
+	weighted_quantiles = np.cumsum(sample_weight) - 0.5 * sample_weight
+	if old_style:
+		# To be convenient with numpy.percentile
+		weighted_quantiles -= weighted_quantiles[0]
+		weighted_quantiles /= weighted_quantiles[-1]
+	else:
+		weighted_quantiles /= np.sum(sample_weight)
+	return np.interp(quantiles, weighted_quantiles, values)
 
 def par_fit_parallel(all_args):
 	d,fitDict,args,bestFit,bestRes=all_args

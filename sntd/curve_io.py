@@ -1,7 +1,7 @@
 from collections import OrderedDict as odict
 
 import numpy as np
-import os,string,sncosmo,sys
+import os,string,sncosmo,sys,corner
 from astropy.io import ascii
 from astropy.table import Table,vstack,Column
 from scipy.stats import mode
@@ -169,7 +169,8 @@ class curveDict(dict):
             self.table=copy(tempCurve.table)
         return(self)
 
-    def combine_curves(self,time_delays=None,magnifications=None,referenceImage='image_1'):
+    def combine_curves(self,time_delays=None,magnifications=None,referenceImage='image_1',static=False,
+                       model=None,minsnr=5.):
         """Takes the multiple images in self.images and combines
             the data into a single light curve using defined
             time delays and magnifications or best (quick) guesses.
@@ -193,10 +194,33 @@ class curveDict(dict):
         if len(self.images) <2:
             print("Not enough curves to combine!")
             return(self)
-        if not time_delays:
-            time_delays=_guess_time_delays(self,referenceImage) #TODO fix these guessing functions
-        if not magnifications:
-            magnifications=_guess_magnifications(self,referenceImage)
+        if not static:
+
+            if time_delays is None:
+                if model is not None:
+                    time_delays={}
+                    magnifications={}
+                    model=sncosmo.Model(model) if isinstance(model,str) else model
+                    ref_t0,ref_amp=sncosmo.fitting.guess_t0_and_amplitude(sncosmo.photdata.photometric_data( \
+                        self.images[referenceImage].table),model,minsnr)
+                    self.series.meta['reft0']=ref_t0
+                    self.series.meta['refamp']=ref_amp
+                    time_delays[referenceImage]=0
+                    magnifications[referenceImage]=1
+                    for k in self.images.keys():
+                        if k==referenceImage:
+                            continue
+                        guess_t0,guess_amp=sncosmo.fitting.guess_t0_and_amplitude(sncosmo.photdata.photometric_data(\
+                            self.images[k].table),model,minsnr)
+                        time_delays[k]=guess_t0-ref_t0
+                        magnifications[k]=guess_amp/ref_amp
+                else:
+                    time_delays=_guess_time_delays(self,referenceImage) #TODO fix these guessing functions
+            if magnifications is None:
+                magnifications=_guess_magnifications(self,referenceImage)
+        else:
+            time_delays={k:0 for k in self.images.keys()}
+            magnifications={k:1 for k in self.images.keys()}
         self.series.table=Table(names=self.table.colnames,dtype=[self.table.dtype[x] for x in self.table.colnames])
         for k in np.sort(list(self.images.keys())):
             temp=deepcopy(self.images[k].table)
@@ -210,6 +234,8 @@ class curveDict(dict):
         self.series.bands=self.bands
         self.series.meta['td']={k:float(time_delays[k]) for k in time_delays.keys()}
         self.series.meta['mu']={k:float(magnifications[k]) for k in magnifications.keys()}
+
+
         return(self)
 
 
@@ -284,6 +310,37 @@ class curveDict(dict):
             self.color.table=vstack([self.color.table,copy(temp1)])
         self.color.table.sort('time')
         return(self)
+
+
+    def plot_fit(self,method='parallel',par_image='image_1'):
+        if method=='parallel':
+            res=self.images[par_image].fits.res
+
+        elif method=='series':
+            res=self.series.fits.res
+
+        else:
+            res=self.color.fits.res
+        fig = corner.corner(
+            res.samples,
+            weights=res.weights,
+            labels=res.vparam_names,
+            quantiles=(0.16,.5, 0.84),
+            bins = 30, \
+            color='k', \
+            show_titles=True, \
+            title_fmt = '.2f', \
+            smooth1d=False, \
+            smooth=True, \
+            fill_contours=True, \
+            plot_contours =True, \
+            plot_density=True, \
+            use_mathtext=True,
+            title_kwargs={"fontsize": 11},
+            label_kwargs={'fontsize':16})
+        for ax in fig.get_axes():
+            ax.tick_params(axis='both',labelsize=14)
+        return(fig)
 
 
     def plot_object(self, bands='all', savefig=False,

@@ -97,12 +97,12 @@ def _findMax(time,curve):
     t0=np.where(curve==np.max(curve))[0][0]
     if t0==0:
         #return(time[0])
-        return (None,None)
+        return (time[0],curve[0])
 
     elif t0==len(time)-1:
 
-        #return(time[-1])
-        return (None,None)
+        return(time[-1],curve[-1])
+    #   return (None,None)
 
     else:
         fit=splrep(time[t0-1:t0+2],curve[t0-1:t0+2],k=2)
