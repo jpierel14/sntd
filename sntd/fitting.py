@@ -4,7 +4,6 @@ import matplotlib.pyplot as plt
 from copy import deepcopy,copy
 from scipy import stats
 from astropy.table import Table
-from astropy.extern import six
 import nestle
 from collections import OrderedDict
 from sklearn.gaussian_process import GaussianProcessRegressor
