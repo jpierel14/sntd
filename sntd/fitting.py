@@ -323,7 +323,7 @@ def nest_color_lc(curves,vparam_names,bounds,snBounds,snVparam_names,ref,guess_a
 
 	# Convert bounds/priors combinations into ppfs
 	if bounds is not None:
-		for key, val in six.iteritems(bounds):
+		for key, val in bounds.items():
 			if key in ppfs:
 				continue  # ppfs take priority over bounds/priors
 			a, b = val
@@ -519,7 +519,7 @@ def _inner_color_nest_lc(data, model, bands,vparam_names, bounds,zp, zpsys,guess
 
 	# Convert bounds/priors combinations into ppfs
 	if bounds is not None:
-		for key, val in six.iteritems(bounds):
+		for key, val in bounds.items():
 			if key in ppfs:
 				continue  # ppfs take priority over bounds/priors
 			a, b = val
@@ -767,7 +767,7 @@ def nest_series_lc(data,model,nimage,vparam_names,bounds,guess_amplitude_bound=F
 
 	# Convert bounds/priors combinations into ppfs
 	if bounds is not None:
-		for key, val in six.iteritems(bounds):
+		for key, val in bounds.items():
 			if key in ppfs:
 				continue  # ppfs take priority over bounds/priors
 			a, b = val
