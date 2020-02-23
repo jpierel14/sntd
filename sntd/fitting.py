@@ -10,6 +10,7 @@ from sklearn.gaussian_process import GaussianProcessRegressor
 from sklearn.gaussian_process.kernels import RBF
 import scipy
 from sncosmo import nest_lc
+from scipy.stats import rv_continuous
 
 from .util import *
 from .curve_io import _sntd_deepcopy
@@ -57,7 +58,7 @@ class newDict(dict):
 
 def fit_data(curves, snType='Ia',bands=None, models=None, params=None, bounds={}, ignore=None, constants=None,
 			 method='parallel',t0_guess=None,refModel=None,effect_names=[],effect_frames=[],fitting_method='nest',
-			 dust=None,flip=False,guess_amplitude=True,seriesError=None,showPlots=False,microlensing=None,
+			 dust=None,flip=False,guess_amplitude=True,seriesError=None,showPlots=False,microlensing=None,fitOrder=None,
 			 kernel='RBF',seriesGrids=None,refImage='image_1',nMicroSamples=100,color_curve=None,verbose=True,**kwargs):
 
 	"""
@@ -692,8 +693,7 @@ def _fitseries(all_args):
 			guess_amplitude=True
 		tempMod.set(t0=args['curves'].series.meta['reft0'])
 		tempMod.parameters[2]=args['curves'].series.meta['refamp']
-		sncosmo.plot_lc(args['curves'].series.table,model=tempMod)
-		plt.show()
+
 		args['bounds'][tempMod.param_names[2]]=(.1*tempMod.parameters[2],10*tempMod.parameters[2])
 		res,td_res,mu_res,td_err,mu_err,model=nest_series_lc(args['curves'].series.table,tempMod,nimage,bounds=args['bounds'],
 									  vparam_names=all_vparam_names,ref=args['refImage'],
@@ -714,6 +714,7 @@ def _fitseries(all_args):
 	args['curves'].series.magnification_errors=dict([])
 	args['curves'].series.time_delay_errors=dict([])
 
+	#sys.exit()
 	for k in args['curves'].images.keys():
 		if k==args['refImage']:
 			args['curves'].series.time_delays[k]=0
@@ -835,17 +836,9 @@ def nest_series_lc(data,model,nimage,vparam_names,bounds,guess_amplitude_bound=F
 		for i in range(len(im_indices)):
 			all_data['time'][im_indices[i]]-=parameters[td_idx[i]]
 			all_data['flux'][im_indices[i]]/=parameters[amp_idx[i]]
-			#all_data['fluxerr'][im_indices[i]]/=parameters[amp_idx[i]]
 		model_observations = model.bandflux(all_data['band'],all_data['time'],
 											zp=all_data['zp'],zpsys=all_data['zpsys'])
-		# bind=np.where(all_data['band']=='F160W')
-		# plt.scatter(all_data['time'][bind],all_data['flux'][bind])
-		# plt.scatter(data['time'][bind],data['flux'][bind])
-		# plt.plot(all_data['time'][bind],model_observations[bind])
-		#print(parameters)
-		#sncosmo.plot_lc(all_data,model=model)
-		#plt.show()
-		#sys.exit()
+
 		if modelcov:
 			cov = np.diag(all_data['fluxerr']**2)
 			_, mcov = model.bandfluxcov(all_data['band'], all_data['time'],
@@ -898,14 +891,13 @@ def nest_series_lc(data,model,nimage,vparam_names,bounds,guess_amplitude_bound=F
 	model.set(x1=params[0][1])
 	model.set(t0=model.get('t0')+params[td_idx[td_params.index('t_'+ref[-1])]][1])
 	model.parameters[2]=model.parameters[2]*params[amp_idx[amp_params.index('a_'+ref[-1])]][1]
-
 	td_res={}
 	mu_res={}
 	td_err={}
 	mu_err={}
 	for i in range(len(td_params)):
 		td_res[td_params[i]]=params[td_idx[i]][1]
-		td_err[td_params[i]]=np.array([params[td_idx[i]][1]-params[td_idx[i]][0],params[td_idx[i]][2]]-params[td_idx[i]][1])
+		td_err[td_params[i]]=np.array([params[td_idx[i]][1]-params[td_idx[i]][0],params[td_idx[i]][2]-params[td_idx[i]][1]])
 		mu_res[amp_params[i]]=params[amp_idx[i]][1]
 		mu_err[amp_params[i]]=np.array([params[amp_idx[i]][1]-params[amp_idx[i]][0],params[amp_idx[i]][2]-params[amp_idx[i]][1]])
 
@@ -1078,14 +1070,54 @@ def _fitparallel(all_args):
 					break
 
 
+	if args['fitOrder'] is None:
+		all_SNR=[np.sum(args['curves'].images[d].table['flux']/args['curves'].images[d].table['fluxerr']) \
+					for d in np.sort(list(args['curves'].images.keys()))]
+		sorted=np.flip(np.argsort(all_SNR))
+		args['fitOrder']=np.sort(list(args['curves'].images.keys()))[sorted]
 
-	if args['microlensing'] is None and not args['parlist']:
-		res=pyParz.foreach(list(args['curves'].images.keys()),par_fit_parallel,[fitDict,args,bestFit,bestRes],
-					   min(multiprocessing.cpu_count(),len(list(args['curves'].images.keys()))))
-	else:
-		res=[]
-		for d in args['curves'].images.keys():
-			res.append(par_fit_parallel([d,fitDict,args,bestFit,bestRes]))
+
+	initial_bounds=deepcopy(args['bounds'])
+	first_res=par_fit_parallel([args['fitOrder'][0],fitDict,args,bestFit,bestRes])
+	first_params=[weighted_quantile(first_res[2].samples[:,i],[.16,.5,.84],first_res[2].weights)\
+				  for i in range(len(first_res[2].vparam_names))]
+	args['curves'].images[args['fitOrder'][0]].fits=newDict()
+	args['curves'].images[args['fitOrder'][0]].fits['model']=first_res[1]
+	args['curves'].images[args['fitOrder'][0]].fits['res']=first_res[2]
+
+	args['curves'].time_delays={args['fitOrder'][0]:0}
+	args['curves'].magnifications={args['fitOrder'][0]:1}
+	args['curves'].time_delay_errors={args['fitOrder'][0]:0}
+	args['curves'].magnification_errors={args['fitOrder'][0]:0}
+
+	t0ind=first_res[2].vparam_names.index('t0')
+	ampind=first_res[2].vparam_names.index(first_res[1].param_names[2])
+
+	for d in args['fitOrder'][1:]:
+		args['curves'].images[d].fits=newDict()
+		initial_bounds['t0']=t0Bounds
+		params,args['curves'].images[d].fits['model'],args['curves'].images[d].fits['res']\
+			=nest_parallel_lc(args['curves'].images[d].table,first_res[1],first_res[2],initial_bounds,
+						 	guess_amplitude_bound=True,priors=args.get('priors',None), ppfs=args.get('None'),
+						 method=args.get('nest_method','single'),
+						 maxcall=args.get('maxcall',None), modelcov=args.get('modelcov',False),
+						 rstate=args.get('rstate',None),
+						 maxiter=args.get('maxiter',None),npoints=args.get('npoints',1000))
+
+		args['curves'].time_delays[d]=params[t0ind][1]-first_params[t0ind][1]
+		args['curves'].magnifications[d]=params[ampind][1]/first_params[ampind][1]
+		args['curves'].time_delay_errors[d]=np.sqrt([(params[t0ind][1]-params[t0ind][0])**2+\
+													 (first_params[t0ind][1]-first_params[t0ind][0])**2,
+										(params[t0ind][2]-params[t0ind][1])**2+ \
+										(first_params[t0ind][2]-first_params[t0ind][1])**2])
+		args['curves'].magnification_errors[d]=args['curves'].magnifications[d]*\
+			np.sqrt([((params[ampind][1]-params[ampind][0])/params[ampind][1])**2+\
+					((first_params[ampind][1]-first_params[ampind][0])/first_params[ampind][1])**2,
+									 ((params[ampind][2]-params[ampind][1])/params[ampind][1])**2+ \
+								   ((first_params[ampind][2]-first_params[ampind][1])/first_params[ampind][1])**2])
+
+
+	return(args['curves'])
 
 	dofs={}
 	resList={}
@@ -1096,6 +1128,7 @@ def _fitparallel(all_args):
 		args['curves'].images[res[i][0]].fits['model']=res[i][1]
 		args['curves'].images[res[i][0]].fits['res']=res[i][2]
 
+	return(args['curves'])
 
 	joint=_joint_likelihood(resList,verbose=False)
 
@@ -1175,6 +1208,182 @@ def _fitparallel(all_args):
 			plt.close()
 
 	return args['curves']
+
+def nest_parallel_lc(data,model,prev_res,bounds,guess_amplitude_bound=False,
+				   minsnr=5., priors=None, ppfs=None, npoints=100, method='single',
+				   maxiter=None, maxcall=None, modelcov=False, rstate=None,
+				   verbose=False, warn=True,**kwargs):
+
+	# experimental parameters
+	tied = kwargs.get("tied", None)
+
+	vparam_names=list(prev_res.vparam_names)
+	if ppfs is None:
+		ppfs = {}
+	if tied is None:
+		tied = {}
+
+	model=copy(model)
+	if guess_amplitude_bound:
+		guess_t0,guess_amp=sncosmo.fitting.guess_t0_and_amplitude(sncosmo.photdata.photometric_data(data),
+																  model,minsnr)
+
+		#print(guess_t0,guess_amp)
+		model.set(t0=guess_t0)
+		model.parameters[2]=guess_amp
+
+		bounds[model.param_names[2]]=(0,10*guess_amp)
+		bounds['t0']=np.array(bounds['t0'])+guess_t0
+
+
+	# Convert bounds/priors combinations into ppfs
+	if bounds is not None:
+		for key, val in bounds.items():
+			if key in ppfs:
+				continue  # ppfs take priority over bounds/priors
+			a, b = val
+			if priors is not None and key in priors:
+				# solve ppf at discrete points and return interpolating
+				# function
+				x_samples = np.linspace(0., 1., 101)
+				ppf_samples = sncosmo.utils.ppf(priors[key], x_samples, a, b)
+				f = sncosmo.utils.Interp1D(0., 1., ppf_samples)
+			else:
+				f = sncosmo.utils.Interp1D(0., 1., np.array([a, b]))
+			ppfs[key] = f
+
+	# NOTE: It is important that iparam_names is in the same order
+	# every time, otherwise results will not be reproducible, even
+	# with same random seed.  This is because iparam_names[i] is
+	# matched to u[i] below and u will be in a reproducible order,
+	# so iparam_names must also be.
+
+	final_priors=[]
+	for p in vparam_names:
+		if p==model.param_names[2] or p=='t0':
+			final_priors.append(lambda x:0)
+			continue
+
+		ind=prev_res.vparam_names.index(p)
+		temp=posterior('temp',np.min(prev_res.samples[:,ind]),np.max(prev_res.samples[:,ind]))
+		samples=np.linspace(np.min(prev_res.samples[:,ind]),
+							np.max(prev_res.samples[:,ind]),1000)
+		final_priors.append(scipy.interpolate.interp1d(samples,
+													   np.log(temp._pdf(samples,prev_res.samples[:,ind],
+																		prev_res.weights)),fill_value=-np.inf,
+													   bounds_error=False))
+
+	iparam_names = [key for key in vparam_names if key in ppfs]
+
+
+
+	ppflist = [ppfs[key] for key in iparam_names]
+	npdim = len(iparam_names)  # length of u
+	ndim = len(vparam_names)  # length of v
+	# Check that all param_names either have a direct prior or are tied.
+	for name in vparam_names:
+		if name in iparam_names:
+			continue
+		if name in tied:
+			continue
+		raise ValueError("Must supply ppf or bounds or tied for parameter '{}'"
+						 .format(name))
+
+	def prior_transform(u):
+		d = {}
+		for i in range(npdim):
+			d[iparam_names[i]] = ppflist[i](u[i])
+		v = np.empty(ndim, dtype=np.float)
+		for i in range(ndim):
+			key = vparam_names[i]
+			if key in d:
+				v[i] = d[key]
+			else:
+				v[i] = tied[key](d)
+		return v
+
+
+
+	def chisq_likelihood(parameters):
+
+
+
+		model.set(**{vparam_names[k]:parameters[k] for k in range(len(vparam_names))})
+		model_observations = model.bandflux(data['band'],data['time'],
+											zp=data['zp'],zpsys=data['zpsys'])
+
+		if modelcov:
+			cov = np.diag(data['fluxerr']**2)
+			_, mcov = model.bandfluxcov(data['band'], data['time'],
+										zp=data['zp'], zpsys=data['zpsys'])
+
+			cov = cov + mcov
+			invcov = np.linalg.pinv(cov)
+
+			diff = data['flux']-model_observations
+			chisq=np.dot(np.dot(diff, invcov), diff)
+
+		else:
+			chisq=np.sum((data['flux']-model_observations)**2/(data['fluxerr']**2))
+		return chisq
+
+	def loglike(parameters):
+		prior_val=0
+		for i in range(len(parameters)):
+			temp_prior=final_priors[i](parameters[i])
+			if not np.isfinite(temp_prior):
+				return -np.inf
+			prior_val+=temp_prior
+
+		chisq=chisq_likelihood(parameters)
+		if not np.isfinite(chisq):
+			return -np.inf
+
+		return(prior_val-.5*chisq)
+
+
+
+
+
+
+	res = nestle.sample(loglike, prior_transform, ndim, npdim=npdim,
+						npoints=npoints, method=method, maxiter=maxiter,
+						maxcall=maxcall, rstate=rstate,
+						callback=(nestle.print_progress if verbose else None))
+
+	res = sncosmo.utils.Result(niter=res.niter,
+							   ncall=res.ncall,
+							   logz=res.logz,
+							   logzerr=res.logzerr,
+							   h=res.h,
+							   samples=res.samples,
+							   weights=res.weights,
+							   logvol=res.logvol,
+							   logl=res.logl,
+							   vparam_names=copy(vparam_names),
+							   bounds=bounds)
+
+
+
+	params=[weighted_quantile(res.samples[:,i],[.16,.5,.84],res.weights) for i in range(len(vparam_names))]
+
+	print(params)
+	model.set(**{vparam_names[k]:params[k][1] for k in range(len(vparam_names))})
+
+
+	return params,model,res
+
+class posterior(rv_continuous):
+	"Skewed Normal Distribution"
+	def _pdf(self,x,samples,weights):
+		pdf,edges=np.histogram(samples,weights=weights,
+							   bins=20,density=True)
+		func=scipy.interpolate.interp1d([(edges[i]+edges[i+1])/2 for i in range(len(edges)-1)],
+										pdf,fill_value=0,bounds_error=False)
+		return(func(x))
+
+	def _argcheck(self,*args):
+		return True
 
 def _micro_uncertainty(args):
 	sample,other=args
