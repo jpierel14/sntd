@@ -239,7 +239,8 @@ class curveDict(dict):
         return(self)
 
 
-    def color_table(self,band1,band2,time_delays=None,magnifications=None,referenceImage='image_1',ignore_images=[]):
+    def color_table(self,band1,band2,time_delays=None,referenceImage='image_1',ignore_images=[],
+                    static=False,model=None,minsnr=5.0):
         """Takes the multiple images in self.images and combines
             the data into a single color curve using defined
             time delays and magnifications or best (quick) guesses.
@@ -270,20 +271,39 @@ class curveDict(dict):
         ignore_images=list(ignore_images) if not isinstance(ignore_images,(list,tuple)) else ignore_images
         names=['time','image','zpsys']
         dtype=[self.table.dtype[x] for x in names]
-        names=np.append(names,[band1+'-'+band2,band1+'-'+band2+'_err'])
-        dtype=np.append(dtype,[dtype[0],dtype[0]])
+        names=np.append(names,[band1+'-'+band2,band1+'-'+band2+'_err','flux_%s'%band1,'fluxerr_%s'%band1,
+                               'flux_%s'%band2,'fluxerr_%s'%band2,'zp_%s'%band1,'zp_%s'%band2])
+        dtype=np.append(dtype,[dtype[0],dtype[0],dtype[0],
+                               dtype[0],dtype[0],dtype[0],dtype[0],dtype[0]])
         self.color.table=Table(names=names,dtype=dtype)
-        if not time_delays:
-            time_delays=_guess_time_delays(self,referenceImage) #TODO fix these guessing functions
-        if not magnifications:
-            magnifications=_guess_magnifications(self,referenceImage)
+        if not static:
+
+            if time_delays is None:
+                if model is not None:
+                    time_delays={}
+                    model=sncosmo.Model(model) if isinstance(model,str) else model
+                    ref_t0,ref_amp=sncosmo.fitting.guess_t0_and_amplitude(sncosmo.photdata.photometric_data( \
+                        self.images[referenceImage].table),model,minsnr)
+                    self.color.meta['reft0']=ref_t0
+                    time_delays[referenceImage]=0
+                    for k in self.images.keys():
+                        if k==referenceImage:
+                            continue
+                        guess_t0,guess_amp=sncosmo.fitting.guess_t0_and_amplitude(sncosmo.photdata.photometric_data( \
+                            self.images[k].table),model,minsnr)
+                        time_delays[k]=guess_t0-ref_t0
+                else:
+                    time_delays=_guess_time_delays(self,referenceImage) #TODO fix these guessing functions
+
+        else:
+            time_delays={k:0 for k in self.images.keys()}
+        self.color.meta['td']=time_delays
         for im in [x for x in self.images.keys() if x not in ignore_images]:
             temp2=copy(self.images[im].table[self.images[im].table['band']==band2])
             temp1=copy(self.images[im].table[self.images[im].table['band']==band1])
             temp1=temp1[temp1['flux']>0]
             temp2=temp2[temp2['flux']>0]
-            temp1['flux']/=magnifications[im]
-            temp2['flux']/=magnifications[im]
+
             temp1['time']-=time_delays[im]
             temp2['time']-=time_delays[im]
 
@@ -301,14 +321,24 @@ class curveDict(dict):
 
 
             temp1['mag']-=temp2['mag']
+
             temp1.rename_column('mag',band1+'-'+band2)
             temp1.rename_column('magerr',band1+'-'+band2+'_err')
+            temp1['flux_%s'%band1]=temp1['flux']
+            temp1['fluxerr_%s'%band1]=temp1['fluxerr']
+            temp1['flux_%s'%band2]=temp2['flux']
+            temp1['fluxerr_%s'%band2]=temp2['flux']
+            temp1['zp_%s'%band1]=temp1['zp']
+            temp1['zp_%s'%band2]=temp2['zp']
             to_remove=[x for x in temp1.colnames if x not in names]
             temp1.remove_columns(to_remove)
 
 
             self.color.table=vstack([self.color.table,copy(temp1)])
+            self.color.table.meta={}
+
         self.color.table.sort('time')
+
         return(self)
 
 
