@@ -59,7 +59,8 @@ class newDict(dict):
 def fit_data(curves, snType='Ia',bands=None, models=None, params=None, bounds={}, ignore=None, constants=None,
 			 method='parallel',t0_guess=None,refModel=None,effect_names=[],effect_frames=[],fitting_method='nest',
 			 dust=None,flip=False,guess_amplitude=True,seriesError=None,showPlots=False,microlensing=None,fitOrder=None,
-			 kernel='RBF',seriesGrids=None,refImage='image_1',nMicroSamples=100,color_curve=None,verbose=True,**kwargs):
+			 fit_prior=None,
+			 kernel='RBF',refImage='image_1',nMicroSamples=100,color_curve=None,verbose=True,**kwargs):
 
 	"""
 	The main high-level fitting function.
@@ -543,11 +544,24 @@ def _fitseries(all_args):
 	for param in all_vparam_names:
 		if param not in args['bounds'].keys():
 			if param[:2]=='t_':
-				im=[x for x in ims if x[-1]==param[-1]][0]
-				args['bounds'][param]=np.array(args['bounds']['td'])#+time_delays[im]
+				if args['fit_prior'] is not None:
+					im=[x for x in ims if x[-1]==param[-1]][0]
+					args['bounds'][param]=2*np.array([args['fit_prior'].images[im].param_quantiles['t0'][0]- \
+													  args['fit_prior'].images[im].param_quantiles['t0'][1],
+													  args['fit_prior'].images[im].param_quantiles['t0'][2]- \
+													  args['fit_prior'].images[im].param_quantiles['t0'][1]])
+				else:
+					args['bounds'][param]=np.array(args['bounds']['td'])#+time_delays[im]
 			elif param[:2]=='a_':
-				im=[x for x in ims if x[-1]==param[-1]][0]
-				args['bounds'][param]=np.array(args['bounds']['mu'])#*magnifications[im]
+				if args['fit_prior'] is not None:
+
+					im=[x for x in ims if x[-1]==param[-1]][0]
+					amp=args['fit_prior'].images[im].fits.model.param_names[2]
+					args['bounds'][param]=2*np.array([args['fit_prior'].images[im].param_quantiles[amp][0],
+													  args['fit_prior'].images[im].param_quantiles[amp][2]])/\
+						args['fit_prior'].images[im].param_quantiles[amp][1]
+				else:
+					args['bounds'][param]=np.array(args['bounds']['mu'])#*magnifications[im]
 	finallogz=-np.inf
 	if args['dust'] is not None:
 		if isinstance(args['dust'],str):
@@ -567,7 +581,8 @@ def _fitseries(all_args):
 	if not isinstance(effect_frames,(list,tuple)):
 		effects=[effect_frames]
 
-
+	print(args['bounds'])
+	sys.exit()
 	for mod in np.array(args['models']).flatten():
 
 
@@ -576,7 +591,14 @@ def _fitseries(all_args):
 		tempMod = sncosmo.Model(source=source,effects=effects,effect_names=effect_names,effect_frames=effect_frames)
 		tempMod.set(**args['constants'])
 		if not args['curves'].series.table:
-			args['curves'].combine_curves(referenceImage=args['refImage'],static=False,model=tempMod)
+			if args['fit_prior'] is not None:
+				args['curves'].combine_curves(time_delays=args['fit_prior'].time_delays,
+					magnifications=args['fit_prior'].magnifications,referenceImage=args['refImage'])
+				args['curves'].series.meta['reft0']=args['fit_prior'].images[args['refImage']].fits.model.get('t0')
+				args['curves'].series.meta['refamp']=\
+					args['fit_prior'].images[args['refImage']].fits.model.get(tempMod.param_names[2])
+			else:
+				args['curves'].combine_curves(referenceImage=args['refImage'],static=False,model=tempMod)
 			guess_amplitude=False
 		else:
 			guess_amplitude=True
@@ -977,13 +999,16 @@ def _fitparallel(all_args):
 	args['curves'].time_delay_errors={args['fitOrder'][0]:0}
 	args['curves'].magnification_errors={args['fitOrder'][0]:0}
 
+
 	t0ind=first_res[2].vparam_names.index('t0')
 	ampind=first_res[2].vparam_names.index(first_res[1].param_names[2])
 
-
+	args['curves'].images[args['fitOrder'][0]].param_quantiles={k:first_params[first_res[2].vparam_names.index(k)] for\
+																 k in first_res[2].vparam_names}
 	for d in args['fitOrder'][1:]:
 		args['curves'].images[d].fits=newDict()
 		initial_bounds['t0']=t0Bounds
+
 		params,args['curves'].images[d].fits['model'],args['curves'].images[d].fits['res']\
 			=nest_parallel_lc(args['curves'].images[d].table,first_res[1],first_res[2],initial_bounds,
 						 	guess_amplitude_bound=True,priors=args.get('priors',None), ppfs=args.get('None'),
@@ -1004,7 +1029,8 @@ def _fitparallel(all_args):
 									 ((params[ampind][2]-params[ampind][1])/params[ampind][1])**2+ \
 								   ((first_params[ampind][2]-first_params[ampind][1])/first_params[ampind][1])**2])
 
-
+		args['curves'].images[d].param_quantiles={k:params[args['curves'].images[d].fits['res'].vparam_names.index(k)]\
+												  for k in args['curves'].images[d].fits['res'].vparam_names}
 	if args['showPlots']:
 		for d in args['curves'].images.keys():
 			tempTable=copy(args['curves'].images[d].table)
@@ -1048,7 +1074,6 @@ def nest_parallel_lc(data,model,prev_res,bounds,guess_amplitude_bound=False,
 
 		bounds[model.param_names[2]]=(0,10*guess_amp)
 		bounds['t0']=np.array(bounds['t0'])+guess_t0
-
 
 	# Convert bounds/priors combinations into ppfs
 	if bounds is not None:
@@ -1181,7 +1206,6 @@ def nest_parallel_lc(data,model,prev_res,bounds,guess_amplitude_bound=False,
 
 	params=[weighted_quantile(res.samples[:,i],[.16,.5,.84],res.weights) for i in range(len(vparam_names))]
 
-	print(params)
 	model.set(**{vparam_names[k]:params[k][1] for k in range(len(vparam_names))})
 
 
