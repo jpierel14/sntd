@@ -557,11 +557,19 @@ def _fitseries(all_args):
 
 					im=[x for x in ims if x[-1]==param[-1]][0]
 					amp=args['fit_prior'].images[im].fits.model.param_names[2]
-					args['bounds'][param]=2*np.array([args['fit_prior'].images[im].param_quantiles[amp][0],
-													  args['fit_prior'].images[im].param_quantiles[amp][2]])/\
-						args['fit_prior'].images[im].param_quantiles[amp][1]
+					args['bounds'][param]=2*np.array([args['fit_prior'].images[im].param_quantiles[amp][0]/\
+													  args['fit_prior'].images[im].param_quantiles[amp][1],
+													  args['fit_prior'].images[im].param_quantiles[amp][2]/ \
+													  args['fit_prior'].images[im].param_quantiles[amp][1]])-1
+
 				else:
 					args['bounds'][param]=np.array(args['bounds']['mu'])#*magnifications[im]
+		elif args['fit_prior'] is not None:
+			args['bounds'][param]=np.array([args['fit_prior'].images[args['refImage']].param_quantiles[param][0]- \
+											  args['fit_prior'].images[args['refImage']].param_quantiles[param][1],
+											  args['fit_prior'].images[args['refImage']].param_quantiles[param][2]- \
+											  args['fit_prior'].images[args['refImage']].param_quantiles[param][1]])+ \
+								  args['fit_prior'].images[args['refImage']].param_quantiles[param][1]
 	finallogz=-np.inf
 	if args['dust'] is not None:
 		if isinstance(args['dust'],str):
@@ -581,8 +589,7 @@ def _fitseries(all_args):
 	if not isinstance(effect_frames,(list,tuple)):
 		effects=[effect_frames]
 
-	print(args['bounds'])
-	sys.exit()
+
 	for mod in np.array(args['models']).flatten():
 
 
@@ -605,7 +612,7 @@ def _fitseries(all_args):
 		tempMod.set(t0=args['curves'].series.meta['reft0'])
 		tempMod.parameters[2]=args['curves'].series.meta['refamp']
 
-		args['bounds'][tempMod.param_names[2]]=(.1*tempMod.parameters[2],10*tempMod.parameters[2])
+		#args['bounds'][tempMod.param_names[2]]=(.1*tempMod.parameters[2],10*tempMod.parameters[2])
 		res,td_res,mu_res,td_err,mu_err,model=nest_series_lc(args['curves'].series.table,tempMod,nimage,bounds=args['bounds'],
 									  vparam_names=all_vparam_names,ref=args['refImage'],
 									  refModel=args['refModel'],
