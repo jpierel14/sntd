@@ -953,7 +953,8 @@ def _fitparallel(all_args):
 		source=sncosmo.get_source(mod)
 		tempMod = sncosmo.Model(source=source,effects=effects,effect_names=effect_names,effect_frames=effect_frames)
 		tempMod.set(**args['constants'])
-		res,fit=sncosmo.nest_lc(args['curves'].images[args['fitOrder'][0]].table,args['params'],bounds=args['bounds'],
+		res,fit=sncosmo.nest_lc(args['curves'].images[args['fitOrder'][0]].table,tempMod,args['params'],
+								bounds=args['bounds'],
 							  priors=args.get('priors',None), ppfs=args.get('None'), method=args.get('nest_method','single'),
 							  maxcall=args.get('maxcall',None), modelcov=args.get('modelcov',False),
 							  rstate=args.get('rstate',None),guess_amplitude_bound=args['guess_amplitude'],
