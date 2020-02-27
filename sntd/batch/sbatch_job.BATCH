@@ -1,0 +1,13 @@
+#!/bin/bash
+#SBATCH -o pyjob%j.out
+#SBATCH -p partition
+#SBATCH --job-name=SNTD1
+#SBATCH --array=njobs
+
+
+echo -e '\n submitted Python job'
+echo 'hostname'
+hostname
+
+# creates a python virtual environment
+myPython run_sntd.py  $SLURM_ARRAY_TASK_ID

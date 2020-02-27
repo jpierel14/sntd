@@ -1,11 +1,15 @@
 #!/Users/jpierel/anaconda3/envs/astro2/bin python2
 
-import os,sncosmo,glob
+import os,sncosmo,glob,sys,subprocess
 from astropy.io import ascii
 import numpy as np
 from collections import OrderedDict as odict
+import scipy
+
 from scipy.interpolate import splrep,splev
 from copy import copy
+
+from scipy.stats import rv_continuous
 
 
 __current_dir__=os.path.abspath(os.getcwd())
@@ -16,7 +20,8 @@ PROCESS = 1   # use (zcat, gzip) or (bzcat, bzip2)
 PARALLEL = 2  # (pigz -dc, pigz) or (pbzip2 -dc, pbzip2)
 
 __all__=['flux_to_mag','_cast_str','_get_default_prop_name','_isfloat','anyOpen','_props','_findMax','_findMin',
-         '_guess_time_delays','_guess_magnifications','__dir__','load_example_data']
+         '_guess_time_delays','_guess_magnifications','__dir__','load_example_data','posterior','weighted_quantile',
+         'run_sbatch']
 _props=odict([
     ('time',{'mjd', 'mjdobs', 'jd', 'time', 'date', 'mjd_obs','mhjd','jds'}),
     ('band',{'filter', 'band', 'flt', 'bandpass'}),
@@ -32,6 +37,91 @@ _props=odict([
 def load_example_data():
     example_files=glob.glob(os.path.join(__dir__,'data','examples','*.dat'))
     return(ascii.read(example_files[0]),ascii.read(example_files[1]))
+
+def run_sbatch(partition=None,sbatch_script=None,njobs=None,python_path=None):
+    if (partition is None and sbatch_script is None) or njobs is None:
+        print("Batch mode requires a partition or sbatch script and a number of jobs!")
+        sys.exit(1)
+    n=0
+    add=''
+    done=False
+    while not done:
+        try:
+            folder_name='batch_output%s'%add
+            os.mkdir(folder_name)
+            done=True
+        except:
+            add=str(n)
+            n+=1
+        if n>10:
+            print('Having trouble making batch output folder.')
+            sys.exit(1)
+
+    if sbatch_script is not None:
+
+        return sbatch_script,folder_name
+    if python_path is None:
+        python_path=subprocess.check_output("which python", shell=True).decode('utf-8').strip('\n')
+    with open(os.path.join(__dir__,'batch','sbatch_job.BATCH')) as f:
+        sbatch=f.read()
+
+
+    sbatch=sbatch.replace('pyjob%j.out',os.path.join(folder_name,'pyjob%j.out'))
+    sbatch=sbatch.replace('partition',partition)
+    sbatch=sbatch.replace('njobs','0-%i'%(njobs-1))
+    sbatch=sbatch.replace('myPython',python_path)
+    sbatch=sbatch.replace('run_sntd.py',os.path.join(folder_name,'run_sntd.py'))
+
+    with open(os.path.join(folder_name,'sbatch_job.BATCH'),'w') as f:
+        f.write(sbatch)
+    return('sbatch_job.BATCH',folder_name)
+
+def weighted_quantile(values, quantiles, sample_weight=None,
+                      values_sorted=False, old_style=False):
+    """ Very close to numpy.percentile, but supports weights.
+    NOTE: quantiles should be in [0, 1]!
+    :param values: numpy.array with data
+    :param quantiles: array-like with many quantiles needed
+    :param sample_weight: array-like of the same length as `array`
+    :param values_sorted: bool, if True, then will avoid sorting of
+        initial array
+    :param old_style: if True, will correct output to be consistent
+        with numpy.percentile.
+    :return: numpy.array with computed quantiles.
+    """
+    values = np.array(values)
+    quantiles = np.array(quantiles)
+    if sample_weight is None:
+        sample_weight = np.ones(len(values))
+    sample_weight = np.array(sample_weight)
+    assert np.all(quantiles >= 0) and np.all(quantiles <= 1), \
+        'quantiles should be in [0, 1]'
+
+    if not values_sorted:
+        sorter = np.argsort(values)
+        values = values[sorter]
+        sample_weight = sample_weight[sorter]
+
+    weighted_quantiles = np.cumsum(sample_weight) - 0.5 * sample_weight
+    if old_style:
+        # To be convenient with numpy.percentile
+        weighted_quantiles -= weighted_quantiles[0]
+        weighted_quantiles /= weighted_quantiles[-1]
+    else:
+        weighted_quantiles /= np.sum(sample_weight)
+    return np.interp(quantiles, weighted_quantiles, values)
+
+class posterior(rv_continuous):
+    "Skewed Normal Distribution"
+    def _pdf(self,x,samples,weights):
+        pdf,edges=np.histogram(samples,weights=weights,
+                               bins=20,density=True)
+        func=scipy.interpolate.interp1d([(edges[i]+edges[i+1])/2 for i in range(len(edges)-1)],
+                                        pdf,fill_value=0,bounds_error=False)
+        return(func(x))
+
+    def _argcheck(self,*args):
+        return True
 
 def _guess_magnifications(curves,referenceImage):
     """Guess t0 and amplitude of the model based on the data.

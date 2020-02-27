@@ -1,4 +1,4 @@
-import inspect,sncosmo,os,sys,warnings,pyParz,math,multiprocessing
+import inspect,sncosmo,os,sys,warnings,pyParz,math,multiprocessing,pickle
 import numpy as np
 import matplotlib.pyplot as plt
 from copy import deepcopy,copy
@@ -10,7 +10,6 @@ from sklearn.gaussian_process import GaussianProcessRegressor
 from sklearn.gaussian_process.kernels import RBF
 import scipy
 from sncosmo import nest_lc
-from scipy.stats import rv_continuous
 
 from .util import *
 from .curve_io import _sntd_deepcopy
@@ -56,10 +55,11 @@ class newDict(dict):
 
 
 
-def fit_data(curves, snType='Ia',bands=None, models=None, params=None, bounds={}, ignore=None, constants=None,
+def fit_data(curves=None, snType='Ia',bands=None, models=None, params=None, bounds={}, ignore=None, constants=None,
 			 method='parallel',t0_guess=None,refModel=None,effect_names=[],effect_frames=[],fitting_method='nest',
 			 dust=None,flip=False,guess_amplitude=True,seriesError=None,showPlots=False,microlensing=None,fitOrder=None,
-			 fit_prior=None,
+			 fit_prior=None,par_or_batch='parallel',batch_partition=None,batch_script=None,nbatch_jobs=None,
+			 batch_python_path=None,
 			 kernel='RBF',refImage='image_1',nMicroSamples=100,color_curve=None,verbose=True,**kwargs):
 
 	"""
@@ -132,7 +132,8 @@ def fit_data(curves, snType='Ia',bands=None, models=None, params=None, bounds={}
 	"""
 
 	#get together user arguments
-	args = locals()
+	locs = locals()
+	args = copy(locs)
 	for k in kwargs.keys():
 		args[k]=kwargs[k]
 
@@ -179,23 +180,52 @@ def fit_data(curves, snType='Ia',bands=None, models=None, params=None, bounds={}
 
 	if method not in ['parallel','series','color']:
 		raise RuntimeError('Parameter "method" must be "parallel","series", or "color".')
-	if microlensing is not None and method !='parallel':
-		print('Microlensing uncertainty only set up for parallel right now, switching to parallel method...')
-		method='parallel'
+
 	
 	if method=='parallel':
 		if args['parlist']:
-			par_arg_vals=[]
-			for i in range(len(args['curves'])):
-				temp_args={}
-				for par_key in ['snType','bounds','constants','t0_guess','refModel','color_curve','seriesGrids']:
-					if isinstance(args[par_key],(list,tuple,np.ndarray)):
-						temp_args[par_key]=args[par_key][i] 
-				for par_key in ['bands','models','ignore','params']:
-					if isinstance(args[par_key],(list,tuple,np.ndarray)) and np.any([isinstance(x,(list,tuple,np.ndarray)) for x in args[par_key]]):
-						temp_args[par_key]=args[par_key][i] 
-				par_arg_vals.append([args['curves'][i],temp_args])
-			curves=pyParz.foreach(par_arg_vals,_fitparallel,[args])
+			if par_or_batch=='parallel':
+				par_arg_vals=[]
+				for i in range(len(args['curves'])):
+					temp_args={}
+					for par_key in ['snType','bounds','constants','t0_guess','refModel','color_curve','seriesGrids']:
+						if isinstance(args[par_key],(list,tuple,np.ndarray)):
+							temp_args[par_key]=args[par_key][i]
+					for par_key in ['bands','models','ignore','params']:
+						if isinstance(args[par_key],(list,tuple,np.ndarray)) and np.any([isinstance(x,(list,tuple,np.ndarray)) for x in args[par_key]]):
+							temp_args[par_key]=args[par_key][i]
+					par_arg_vals.append([args['curves'][i],temp_args])
+				curves=pyParz.foreach(par_arg_vals,_fitparallel,[args])
+			else:
+				script_name,folder_name=run_sbatch(partition=batch_partition,sbatch_script=batch_script,
+												   njobs=nbatch_jobs,python_path=batch_python_path)
+				pickle.dump(args['curves'],open(os.path.join(folder_name,'sntd_data.pkl'),'wb'))
+
+				with open(os.path.join(__dir__,'batch','run_sntd.py')) as f:
+					batch_py=f.read()
+				batch_py=batch_py.replace('njobsreplace',str(nbatch_jobs))
+				batch_py=batch_py.replace('nlcsreplace',str(len(args['curves'])))
+
+				sntd_command='sntd.fit_data('
+				for par,val in locs.items():
+					if par =='curves':
+						sntd_command+='curves=all_dat[i],'
+					elif isinstance(val,str):
+						sntd_command+=str(par)+'="'+str(val)+'",'
+					else:
+						sntd_command+=str(par)+'='+str(val)+','
+
+				sntd_command=sntd_command[:-1]+')'
+
+				batch_py=batch_py.replace('sntdcommandreplace',sntd_command)
+
+				with open(os.path.join(folder_name,'run_sntd.py'),'w') as f:
+					f.write(batch_py)
+
+				os.system('sbatch %s'%(os.path.join(folder_name,script_name)))
+				return 'Batch submitted successfully'
+
+
 
 		else:
 			curves=_fitparallel(args)
@@ -261,12 +291,25 @@ def _fitColor(all_args):
 
 	ims=list(args['curves'].images.keys())
 
-
 	for param in all_vparam_names:
 		if param not in args['bounds'].keys():
-			args['bounds'][param]=np.array(args['bounds']['td'])#+time_delays[im]
+			if param[:2]=='t_':
+				if args['fit_prior'] is not None:
+					im=[x for x in ims if x[-1]==param[-1]][0]
+					args['bounds'][param]=2*np.array([args['fit_prior'].images[im].param_quantiles['t0'][0]- \
+													  args['fit_prior'].images[im].param_quantiles['t0'][1],
+													  args['fit_prior'].images[im].param_quantiles['t0'][2]- \
+													  args['fit_prior'].images[im].param_quantiles['t0'][1]])
+				else:
+					args['bounds'][param]=np.array(args['bounds']['td'])#+time_delays[im]
 
-	finallogz=-np.inf
+		elif args['fit_prior'] is not None:
+			args['bounds'][param]=np.array([args['fit_prior'].images[args['refImage']].param_quantiles[param][0]- \
+											args['fit_prior'].images[args['refImage']].param_quantiles[param][1],
+											args['fit_prior'].images[args['refImage']].param_quantiles[param][2]- \
+											args['fit_prior'].images[args['refImage']].param_quantiles[param][1]])+ \
+								  args['fit_prior'].images[args['refImage']].param_quantiles[param][1]
+
 	if args['dust'] is not None:
 		if isinstance(args['dust'],str):
 			dust_dict={'CCM89Dust':sncosmo.CCM89Dust,'OD94Dust':sncosmo.OD94Dust,'F99Dust':sncosmo.F99Dust}
@@ -285,7 +328,7 @@ def _fitColor(all_args):
 	if not isinstance(effect_frames,(list,tuple)):
 		effects=[effect_frames]
 
-
+	finallogz=-np.inf
 	for mod in np.array(args['models']).flatten():
 
 
@@ -293,25 +336,29 @@ def _fitColor(all_args):
 		source=sncosmo.get_source(mod)
 		tempMod = sncosmo.Model(source=source,effects=effects,effect_names=effect_names,effect_frames=effect_frames)
 		tempMod.set(**args['constants'])
-		if not args['curves'].color.table:
-			args['curves'].color_table(args['bands'][0],args['bands'][1],referenceImage=args['refImage'],static=False,model=tempMod)
 
-			guess_amplitude=False
-		else:
-			guess_amplitude=True
-		tempMod.set(t0=args['curves'].color.meta['reft0'])
+		if not args['curves'].color.table or args['fit_prior'] is not None:
+			if args['fit_prior'] is not None:
+				args['curves'].color_table(args['bands'][0],args['bands'][1],time_delays=args['fit_prior'].time_delays,
+										   referenceImage=args['refImage'])
+				args['curves'].series.meta['reft0']=args['fit_prior'].images[args['refImage']].fits.model.get('t0')
+				args['curves'].series.meta['refamp']= \
+					args['fit_prior'].images[args['refImage']].fits.model.get(tempMod.param_names[2])
+			else:
+				args['curves'].color_table(args['bands'][0],args['bands'][1],referenceImage=args['refImage'],static=False,model=tempMod)
 
-		args['bounds'][tempMod.param_names[2]]=(.1*tempMod.parameters[2],10*tempMod.parameters[2])
 
+		tempMod.set(t0=args['curves'].series.meta['reft0'])
+		if tempMod.param_names[2] in all_vparam_names:
+			all_vparam_names.remove(tempMod.param_names[2])
 		res,td_res,td_err,model=nest_color_lc(args['curves'].color.table,tempMod,nimage,color=args['bands'],
-											  				bounds=args['bounds'],
-															 vparam_names=all_vparam_names,ref=args['refImage'],
-															 refModel=args['refModel'],
-															 guess_amplitude_bound=guess_amplitude,
-															 minsnr=args.get('minsnr',5.),priors=args.get('priors',None),ppfs=args.get('ppfs',None),
-															 method=args.get('nest_method','single'),maxcall=args.get('maxcall',None),
-															 modelcov=args.get('modelcov',None),rstate=args.get('rstate',None),
-															 maxiter=args.get('maxiter',None),npoints=args.get('npoints',100))
+											bounds=args['bounds'],
+											 vparam_names=all_vparam_names,ref=args['refImage'],
+											 refModel=args['refModel'],
+											 minsnr=args.get('minsnr',5.),priors=args.get('priors',None),ppfs=args.get('ppfs',None),
+											 method=args.get('nest_method','single'),maxcall=args.get('maxcall',None),
+											 modelcov=args.get('modelcov',None),rstate=args.get('rstate',None),
+											 maxiter=args.get('maxiter',None),npoints=args.get('npoints',100))
 
 		if finallogz<res.logz:
 			finalres,finaltd_res,finaltd_err,finalmodel=res,td_res,td_err,model
@@ -319,18 +366,20 @@ def _fitColor(all_args):
 
 
 	args['curves'].color.time_delays=dict([])
-	args['curves'].color.magnifications=dict([])
-	args['curves'].color.magnification_errors=dict([])
 	args['curves'].color.time_delay_errors=dict([])
 
-	#sys.exit()
+	trefSamples=finalres.samples[:,finalres.vparam_names.index('t_'+args['refImage'][-1])]
 	for k in args['curves'].images.keys():
 		if k==args['refImage']:
 			args['curves'].color.time_delays[k]=0
 			args['curves'].color.time_delay_errors[k]=0
 		else:
-			args['curves'].color.time_delays[k]=time_delays[k]+(finaltd_res['t_'+k[-1]]-finaltd_res['t_'+args['refImage'][-1]])
-			args['curves'].color.time_delay_errors[k]=np.sqrt(finaltd_err['t_'+k[-1]]**2+finaltd_err['t_'+args['refImage'][-1]]**2)
+			ttempSamples=finalres.samples[:,finalres.vparam_names.index('t_'+k[-1])]
+			t_quant=weighted_quantile(ttempSamples-trefSamples,[.16,.5,.84],finalres.weights)
+			args['curves'].color.time_delays[k]=time_delays[k]+t_quant[1]
+			args['curves'].color.time_delay_errors[k]=np.array([t_quant[0]-t_quant[1],t_quant[2]-t_quant[1]])
+
+
 
 
 	args['curves'].color_table(args['bands'][0],args['bands'][1],time_delays=args['curves'].color.time_delays)
@@ -343,7 +392,7 @@ def _fitColor(all_args):
 	return args['curves']
 
 def nest_color_lc(data,model,nimage,color, vparam_names,bounds,guess_amplitude_bound=False,ref='image_1',
-				   minsnr=5.,refModel=False,band=None, priors=None, ppfs=None, npoints=100, method='single',
+				   minsnr=5., priors=None, ppfs=None, npoints=100, method='single',
 				   maxiter=None, maxcall=None, modelcov=False, rstate=None,
 				   verbose=False, warn=True,**kwargs):
 
@@ -356,13 +405,6 @@ def nest_color_lc(data,model,nimage,color, vparam_names,bounds,guess_amplitude_b
 	if tied is None:
 		tied = {}
 
-	if guess_amplitude_bound:
-		guess_t0,guess_amp=sncosmo.fitting.guess_t0_and_amplitude(sncosmo.photdata.photometric_data(data[data['image']==ref]),
-																  model,minsnr)
-
-		#print(guess_t0,guess_amp)
-		model.set(t0=guess_t0)
-	#bounds['x0']=(.1*guess_amp,10*guess_amp)
 
 	# Convert bounds/priors combinations into ppfs
 	if bounds is not None:
@@ -422,11 +464,7 @@ def nest_color_lc(data,model,nimage,color, vparam_names,bounds,guess_amplitude_b
 	model_idx = np.array([vparam_names.index(name) for name in model_param_names])
 	td_params=[x for x in vparam_names[len(vparam_names)-nimage:] if x[0]=='t']
 	td_idx=np.array([vparam_names.index(name) for name in td_params])
-
-
 	im_indices=[np.where(data['image']==i)[0] for i in np.unique(data['image'])]
-
-
 
 	def chisq_likelihood(parameters):
 		model.set(**{model_param_names[k]:parameters[model_idx[k]] for k in range(len(model_idx))})
@@ -529,8 +567,10 @@ def _fitseries(all_args):
 		args=all_args
 	args['bands']=list(args['bands'])
 
+	if 't0' in args['params']:
+		args['params'].remove('t0')
 
-	#TODO remove amplitude and t0 parameters if in params
+
 
 	imnums=[x[-1] for x in args['curves'].images.keys()]
 	nimage=len(imnums)
@@ -597,6 +637,8 @@ def _fitseries(all_args):
 		source=sncosmo.get_source(mod)
 		tempMod = sncosmo.Model(source=source,effects=effects,effect_names=effect_names,effect_frames=effect_frames)
 		tempMod.set(**args['constants'])
+		if tempMod.param_names[2] in all_vparam_names:
+			all_vparam_names.remove(tempMod.param_names[2])
 		if not args['curves'].series.table:
 			if args['fit_prior'] is not None:
 				args['curves'].combine_curves(time_delays=args['fit_prior'].time_delays,
@@ -612,7 +654,6 @@ def _fitseries(all_args):
 		tempMod.set(t0=args['curves'].series.meta['reft0'])
 		tempMod.parameters[2]=args['curves'].series.meta['refamp']
 
-		#args['bounds'][tempMod.param_names[2]]=(.1*tempMod.parameters[2],10*tempMod.parameters[2])
 		res,td_res,mu_res,td_err,mu_err,model=nest_series_lc(args['curves'].series.table,tempMod,nimage,bounds=args['bounds'],
 									  vparam_names=all_vparam_names,ref=args['refImage'],
 									  refModel=args['refModel'],
@@ -633,6 +674,8 @@ def _fitseries(all_args):
 	args['curves'].series.time_delay_errors=dict([])
 
 	#sys.exit()
+	trefSamples=finalres.samples[:,finalres.vparam_names.index('t_'+args['refImage'][-1])]
+	arefSamples=finalres.samples[:,finalres.vparam_names.index('a_'+args['refImage'][-1])]
 	for k in args['curves'].images.keys():
 		if k==args['refImage']:
 			args['curves'].series.time_delays[k]=0
@@ -640,12 +683,15 @@ def _fitseries(all_args):
 			args['curves'].series.time_delay_errors[k]=0
 			args['curves'].series.magnification_errors[k]=0
 		else:
-			args['curves'].series.time_delays[k]=time_delays[k]+(finaltd_res['t_'+k[-1]]-finaltd_res['t_'+args['refImage'][-1]])
-			args['curves'].series.magnifications[k]=magnifications[k]*(finalmu_res['a_'+k[-1]]/finalmu_res['a_'+args['refImage'][-1]])
-			args['curves'].series.time_delay_errors[k]=np.sqrt(finaltd_err['t_'+k[-1]]**2+finaltd_err['t_'+args['refImage'][-1]]**2)
-			args['curves'].series.magnification_errors[k]=args['curves'].series.magnifications[k]*\
-				np.sqrt((finalmu_err['a_'+k[-1]]/finalmu_res['a_'+k[-1]])**2+(finalmu_err['a_'+args['refImage'][-1]]/\
-																			  finalmu_res['a_'+args['refImage'][-1]])**2)
+			ttempSamples=finalres.samples[:,finalres.vparam_names.index('t_'+k[-1])]
+			atempSamples=finalres.samples[:,finalres.vparam_names.index('a_'+k[-1])]
+			t_quant=weighted_quantile(ttempSamples-trefSamples,[.16,.5,.84],finalres.weights)
+			a_quant=weighted_quantile(atempSamples/arefSamples,[.16,.5,.84],finalres.weights)
+			args['curves'].series.time_delays[k]=time_delays[k]+t_quant[1]
+			args['curves'].series.magnifications[k]=magnifications[k]*a_quant[1]
+			args['curves'].series.time_delay_errors[k]=np.array([t_quant[0]-t_quant[1],t_quant[2]-t_quant[1]])
+			args['curves'].series.magnification_errors[k]=\
+				magnifications[k]*np.array([a_quant[0]-a_quant[1],a_quant[2]-a_quant[1]])
 
 
 
@@ -655,6 +701,25 @@ def _fitseries(all_args):
 	args['curves'].series.fits=newDict()
 	args['curves'].series.fits['model']=finalmodel
 	args['curves'].series.fits['res']=finalres
+	if args['microlensing'] is not None:
+		tempTable=deepcopy(args['curves'].series.table)
+		micro,sigma,x_pred,y_pred,samples=fit_micro(args['curves'].series.fits.model,tempTable,
+													tempTable['zpsys'][0],args['nMicroSamples'],
+													micro_type=args['microlensing'],kernel=args['kernel'])
+
+
+		if args['par_or_batch']=='parallel':
+			t0s=pyParz.foreach(samples.T,_micro_uncertainty,
+						   [args['curves'].series.fits.model,np.array(tempTable),tempTable.colnames,
+							x_pred,args['curves'].series.fits.res.vparam_names,
+							{p:args['curves'].series.param_quantiles[p][[0,2]] \
+							 for p in args['curves'].series.fits.res.vparam_names},None])
+		else:
+			return args['curves']
+		mu,sigma=scipy.stats.norm.fit(t0s)
+
+		args['curves'].series.fits.res.errors['micro']=np.sqrt((args['curves'].series.fits.model.get('t0')-mu)**2 \
+																  +9*sigma**2)
 
 	return args['curves']
 
@@ -820,75 +885,6 @@ def nest_series_lc(data,model,nimage,vparam_names,bounds,guess_amplitude_bound=F
 
 	return res,td_res,mu_res,td_err,mu_err,model
 
-def weighted_quantile(values, quantiles, sample_weight=None,
-					  values_sorted=False, old_style=False):
-	""" Very close to numpy.percentile, but supports weights.
-    NOTE: quantiles should be in [0, 1]!
-    :param values: numpy.array with data
-    :param quantiles: array-like with many quantiles needed
-    :param sample_weight: array-like of the same length as `array`
-    :param values_sorted: bool, if True, then will avoid sorting of
-        initial array
-    :param old_style: if True, will correct output to be consistent
-        with numpy.percentile.
-    :return: numpy.array with computed quantiles.
-    """
-	values = np.array(values)
-	quantiles = np.array(quantiles)
-	if sample_weight is None:
-		sample_weight = np.ones(len(values))
-	sample_weight = np.array(sample_weight)
-	assert np.all(quantiles >= 0) and np.all(quantiles <= 1), \
-		'quantiles should be in [0, 1]'
-
-	if not values_sorted:
-		sorter = np.argsort(values)
-		values = values[sorter]
-		sample_weight = sample_weight[sorter]
-
-	weighted_quantiles = np.cumsum(sample_weight) - 0.5 * sample_weight
-	if old_style:
-		# To be convenient with numpy.percentile
-		weighted_quantiles -= weighted_quantiles[0]
-		weighted_quantiles /= weighted_quantiles[-1]
-	else:
-		weighted_quantiles /= np.sum(sample_weight)
-	return np.interp(quantiles, weighted_quantiles, values)
-
-def par_fit_parallel(all_args):
-	d,fitDict,args,bestFit,bestRes=all_args
-	_,bestFit,bestMod,bounds=fitDict[d]
-	tempTable=deepcopy(args['curves'].images[d].table)
-
-	for b in [x for x in np.unique(tempTable['band']) if x not in args['bands']]:
-		tempTable=tempTable[tempTable['band']!=b]
-	if args['flip']:
-		tempTable['flux']=np.flip(tempTable['flux'],axis=0)
-
-
-	if 'amplitude' not in bounds.keys():
-		guess_amp_bounds=True
-	else:
-		guess_amp_bounds=False
-
-
-
-	nest_res,nest_fit=_nested_wrapper(args['curves'],tempTable,bestFit,vparams=bestRes.vparam_names,bounds=bounds,
-									  priors=args.get('priors',None), ppfs=args.get('None'), method=args.get('nest_method','single'),
-									  maxcall=args.get('maxcall',None), modelcov=args.get('modelcov',False),
-									  rstate=args.get('rstate',None),
-									  guess_amplitude_bound=guess_amp_bounds,microlensing=args['microlensing'],
-									  zpsys=args['curves'].images[d].zpsys,kernel=args['kernel'],
-									  maxiter=args.get('maxiter',None),npoints=args.get('npoints',100),nsamples=args['nMicroSamples'])
-
-
-
-
-
-
-
-
-	return([d,nest_fit,nest_res,len(tempTable)- len(nest_res.vparam_names)])
 
 
 def _fitparallel(all_args):
@@ -907,83 +903,16 @@ def _fitparallel(all_args):
 	else:
 		args=all_args
 
-	fitDict=dict([])
 	if 't0' in args['bounds']:
 		t0Bounds=copy(args['bounds']['t0'])
-	if 'amplitude' in args['bounds']:
-		ampBounds=copy(args['bounds']['amplitude'])
+
 	for d in args['curves'].images.keys():
-		#print(curves.images[d].simMeta)
-		args['curve']=copy(args['curves'].images[d])
-		for b in [x for x in np.unique(args['curve'].table['band']) if x not in args['bands']]:
-			args['curve'].table=args['curve'].table[args['curve'].table['band']!=b]
-
-		if 't0' in args['bounds']:
-			if args['t0_guess'] is not None:
-				args['bounds']['t0']=(t0Bounds[0]+args['t0_guess'][d],t0Bounds[1]+args['t0_guess'][d])
-			else:
-				maxFlux=np.max(args['curve'].table['flux'])
-				maxTime=args['curve'].table['time'][args['curve'].table['flux']==maxFlux]
-				args['bounds']['t0']=(t0Bounds[0]+maxTime,t0Bounds[1]+maxTime)
-
-		if 'amplitude' in args['bounds'] and args['guess_amplitude']:
-			args['bounds']['amplitude']=(ampBounds[0]*np.max(args['curve'].table['flux']),ampBounds[1]*np.max(args['curve'].table['flux']))
+		for b in [x for x in np.unique(args['curves'].images[d].table['band']) if x not in args['bands']]:
+			args['curves'].images[d].table=args['curves'].images[d].table[args['curves'].images[d].table['band']!=b]
 
 
-
-		args['curves'].images[d].fits=newDict()
-		if True or len(args['curve'].table)>63 or len(args['mods'])==1 or args['snType']=='Ia':
-			fits=[]
-			for mod in args['mods']:
-				if mod =='BazinSource' or isinstance(mod,BazinSource):
-					fits.append(param_fit(args,mod))
-
-
-				else:
-					if len(args['mods'])==1:
-						doFit=False
-					else:
-						doFit=True
-					args['doFit']=doFit
-					fits.append(_fit_data_wrap((mod,args)))
-		else:
-			args['doFit']=True
-			fits=pyParz.foreach(args['mods'],_fit_data,args)
-
-		if len(fits)>1:
-			bestChisq=np.inf
-			for f in fits:
-				if f:
-					res=f['res']
-					mod=f['model']
-					if res.chisq <bestChisq:
-						bestChisq=res.chisq
-						bestFit=mod
-						bestRes=res
-		else:
-			bestFit=fits[0]['model']
-			bestRes=fits[0]['res']
-
-
-		fitDict[d]=[fits,bestFit,bestRes,copy(args['bounds'])]
-
-	if not all([fitDict[d][1]._source.name==fitDict[list(fitDict.keys())[0]][1]._source.name for d in fitDict.keys()]):
-		print('All models did not match, finding best...')
-		bestChisq=np.inf
-		bestMod=None
-		for d in fitDict.keys():
-			chisq=fitDict[d][2].chisq
-			if chisq<bestChisq:
-				bestChisq=chisq
-				bestMod=fitDict[d][1]._source.name
-
-		for d in fitDict.keys():
-			for f in fitDict[d][0]:
-
-				if f and f['model']._source.name==bestMod:
-					fitDict[d][1]=f['model']
-					fitDict[d][2]=f['res']
-					break
+	if 'amplitude' in args['bounds']:
+		args['guess_amplitude']
 
 
 	if args['fitOrder'] is None:
@@ -992,9 +921,48 @@ def _fitparallel(all_args):
 		sorted=np.flip(np.argsort(all_SNR))
 		args['fitOrder']=np.sort(list(args['curves'].images.keys()))[sorted]
 
+	if args['t0_guess'] is not None:
+		if 't0' in args['bounds']:
+			args['bounds']['t0']=(t0Bounds[0]+args['t0_guess'][d],t0Bounds[1]+args['t0_guess'][d])
+		else:
+			print('If you supply a t0 guess, you must also supply bounds.')
+			sys.exit(1)
 
 	initial_bounds=deepcopy(args['bounds'])
-	first_res=par_fit_parallel([args['fitOrder'][0],fitDict,args,bestFit,bestRes])
+	finallogz=-np.inf
+	if args['dust'] is not None:
+		if isinstance(args['dust'],str):
+			dust_dict={'CCM89Dust':sncosmo.CCM89Dust,'OD94Dust':sncosmo.OD94Dust,'F99Dust':sncosmo.F99Dust}
+			dust=dust_dict[args['dust']]()
+		else:
+			dust=args['dust']
+	else:
+		dust=[]
+	effect_names=args['effect_names']
+	effect_frames=args['effect_frames']
+	effects=[dust for i in range(len(effect_names))] if effect_names else []
+	effect_names=effect_names if effect_names else []
+	effect_frames=effect_frames if effect_frames else []
+	if not isinstance(effect_names,(list,tuple)):
+		effects=[effect_names]
+	if not isinstance(effect_frames,(list,tuple)):
+		effects=[effect_frames]
+
+
+	for mod in np.array(args['models']).flatten():
+		source=sncosmo.get_source(mod)
+		tempMod = sncosmo.Model(source=source,effects=effects,effect_names=effect_names,effect_frames=effect_frames)
+		tempMod.set(**args['constants'])
+		res,fit=sncosmo.nest_lc(args['curves'].images[args['fitOrder'][0]].table,args['params'],bounds=args['bounds'],
+							  priors=args.get('priors',None), ppfs=args.get('None'), method=args.get('nest_method','single'),
+							  maxcall=args.get('maxcall',None), modelcov=args.get('modelcov',False),
+							  rstate=args.get('rstate',None),guess_amplitude_bound=args['guess_amplitude'],
+							  zpsys=args['curves'].images[args['fitOrder'][0]].zpsys,
+							  maxiter=args.get('maxiter',None),npoints=args.get('npoints',100))
+		if finallogz<res.logz:
+			first_res=[args['fitOrder'][0],copy(res),copy(fit)]
+
+
 	first_params=[weighted_quantile(first_res[2].samples[:,i],[.16,.5,.84],first_res[2].weights)\
 				  for i in range(len(first_res[2].vparam_names))]
 	args['curves'].images[args['fitOrder'][0]].fits=newDict()
@@ -1024,35 +992,53 @@ def _fitparallel(all_args):
 						 rstate=args.get('rstate',None),
 						 maxiter=args.get('maxiter',None),npoints=args.get('npoints',1000))
 
-		args['curves'].time_delays[d]=params[t0ind][1]-first_params[t0ind][1]
-		args['curves'].magnifications[d]=params[ampind][1]/first_params[ampind][1]
-		args['curves'].time_delay_errors[d]=np.sqrt([(params[t0ind][1]-params[t0ind][0])**2+\
-													 (first_params[t0ind][1]-first_params[t0ind][0])**2,
-										(params[t0ind][2]-params[t0ind][1])**2+ \
-										(first_params[t0ind][2]-first_params[t0ind][1])**2])
-		args['curves'].magnification_errors[d]=args['curves'].magnifications[d]*\
-			np.sqrt([((params[ampind][1]-params[ampind][0])/params[ampind][1])**2+\
-					((first_params[ampind][1]-first_params[ampind][0])/first_params[ampind][1])**2,
-									 ((params[ampind][2]-params[ampind][1])/params[ampind][1])**2+ \
-								   ((first_params[ampind][2]-first_params[ampind][1])/first_params[ampind][1])**2])
 
-		args['curves'].images[d].param_quantiles={k:params[args['curves'].images[d].fits['res'].vparam_names.index(k)]\
-												  for k in args['curves'].images[d].fits['res'].vparam_names}
-	if args['showPlots']:
-		for d in args['curves'].images.keys():
-			tempTable=copy(args['curves'].images[d].table)
-			for b in [x for x in np.unique(tempTable['band']) if x not in args['bands']]:
-				tempTable=tempTable[tempTable['band']!=b]
-			tempMod=copy(args['curves'].images[d].fits.model)
+	trefSamples=first_res[2].samples[:,t0ind]
+	arefSamples=first_res[2].samples[:,ampind]
+	for k in args['fitOrder'][1:]:
+
+		ttempSamples=args['curves'].images[k].fits['res'].samples[:,t0ind]
+		atempSamples=args['curves'].images[k].fits['res'].samples[:,ampind]
+		if len(ttempSamples)>len(trefSamples):
+			inds=np.flip(np.argsort(args['curves'].images[k].fits['res'].weights)[len(ttempSamples)-len(trefSamples):])
+			inds_ref=np.flip(np.argsort(first_res[2].weights))
+		else:
+			inds_ref=np.flip(np.argsort(first_res[2].weights)[len(trefSamples)-len(ttempSamples):])
+			inds=np.flip(np.argsort(args['curves'].images[k].fits['res'].weights))
+
+		t_quant=weighted_quantile(ttempSamples[inds]-trefSamples[inds_ref],[.16,.5,.84],first_res[2].weights[inds_ref]* \
+								  args['curves'].images[k].fits['res'].weights[inds])
+		a_quant=weighted_quantile(atempSamples[inds]/arefSamples[inds_ref],[.16,.5,.84],first_res[2].weights[inds_ref]* \
+								  args['curves'].images[k].fits['res'].weights[inds])
+		args['curves'].time_delays[k]=t_quant[1]
+		args['curves'].magnifications[k]=a_quant[1]
+		args['curves'].time_delay_errors[k]=np.array([t_quant[0]-t_quant[1],t_quant[2]-t_quant[1]])
+		args['curves'].magnification_errors[k]= \
+			np.array([a_quant[0]-a_quant[1],a_quant[2]-a_quant[1]])
+
+		args['curves'].images[k].param_quantiles={d:params[args['curves'].images[k].fits['res'].vparam_names.index(d)] \
+												  for d in args['curves'].images[k].fits['res'].vparam_names}
+
+	if args['microlensing'] is not None:
+		for k in args['curves'].images.keys():
+			tempTable=deepcopy(args['curves'].images[k].table)
+			micro,sigma,x_pred,y_pred,samples=fit_micro(args['curves'].images[k].fits.model,tempTable,
+														args['curves'].images[k].zpsys,args['nMicroSamples'],
+														micro_type=args['microlensing'],kernel=args['kernel'])
 
 
-			sncosmo.plot_lc(tempTable,model=tempMod)
+			if args['par_or_batch']=='parallel':
+				t0s=pyParz.foreach(samples.T,_micro_uncertainty,
+							   [args['curves'].images[k].fits.model,np.array(tempTable),tempTable.colnames,
+								x_pred,args['curves'].images[k].fits.res.vparam_names,
+								{p:args['curves'].images[k].param_quantiles[p][[0,2]]\
+								 for p in args['curves'].images[k].fits.res.vparam_names},None])
+			else:
+				return args['curves']
+			mu,sigma=scipy.stats.norm.fit(t0s)
 
-			#plt.savefig(nest_fit._source.name+'_'+tempTable['band'][0]+'_refs_'+d+'.pdf',format='pdf',overwrik4ite=True)
-			#plt.savefig('example_plot_dust_image_'+str(d[-1])+'.png',format='png',overwrite=True)
-			plt.show()
-			plt.clf()
-			plt.close()
+			args['curves'].images[k].fits.res.errors['micro']=np.sqrt((args['curves'].images[k].fits.model.get('t0')-mu)**2\
+																	  +9*sigma**2)
 
 	return args['curves']
 
@@ -1218,17 +1204,7 @@ def nest_parallel_lc(data,model,prev_res,bounds,guess_amplitude_bound=False,
 
 	return params,model,res
 
-class posterior(rv_continuous):
-	"Skewed Normal Distribution"
-	def _pdf(self,x,samples,weights):
-		pdf,edges=np.histogram(samples,weights=weights,
-							   bins=20,density=True)
-		func=scipy.interpolate.interp1d([(edges[i]+edges[i+1])/2 for i in range(len(edges)-1)],
-										pdf,fill_value=0,bounds_error=False)
-		return(func(x))
 
-	def _argcheck(self,*args):
-		return True
 
 def _micro_uncertainty(args):
 	sample,other=args
@@ -1243,52 +1219,7 @@ def _micro_uncertainty(args):
 
 	return float(tempMod.get('t0'))
 
-
-def _nested_wrapper(curves,data,model,vparams,bounds,priors,guess_amplitude_bound,
-					microlensing,zpsys,kernel,maxiter,npoints,nsamples,ppfs, method,
-					maxcall, modelcov,
-					rstate):
-
-	temp=deepcopy(data)
-	vparam_names=deepcopy(vparams)
-
-
-	if microlensing is not None:
-		nest_res,nest_fit=nest_lc(temp,model,vparam_names=vparam_names,bounds=bounds,ppfs=ppfs,
-								  guess_amplitude_bound=guess_amplitude_bound,maxiter=maxiter,npoints=npoints,
-								  priors=priors,method=method,maxcall=maxcall,modelcov=modelcov,rstate=rstate)
-
-
-
-
-		micro,sigma,x_pred,y_pred,samples=fit_micro(curves,nest_res,nest_fit,temp,zpsys,nsamples,
-													micro_type=microlensing,kernel=kernel)
-
-
-		#temp=deepcopy(data)
-		#print(samples.shape)
-		#return(nest_res,nest_fit)
-		t0s=pyParz.foreach(samples.T,_micro_uncertainty,[nest_fit,np.array(temp),temp.colnames,x_pred,vparam_names,bounds,priors])
-		mu,sigma=scipy.stats.norm.fit(t0s)
-
-		nest_res.errors['micro']=np.sqrt(np.abs(nest_fit.get('t0')-mu)**2+(3*sigma)**2)
-		bestRes=nest_res
-		bestMod=nest_fit
-
-
-	else:
-		bestRes,bestMod=nest_lc(data,model,vparam_names=vparam_names,bounds=bounds,ppfs=ppfs,
-								guess_amplitude_bound=guess_amplitude_bound,maxiter=maxiter,npoints=npoints,
-								priors=priors,method=method,maxcall=maxcall,modelcov=modelcov,rstate=rstate)
-
-	return(bestRes,bestMod)
-
-def _maxFromModel(mod,band,zp,zpsys):
-	time=np.arange(mod.mintime(),mod.maxtime(),.1)
-	flux=mod.bandflux(band,time,zp,zpsys)
-	return (time[flux==np.max(flux)],np.max(flux))
-
-def fit_micro(curves,res,fit,dat,zpsys,nsamples,micro_type='achromatic',kernel='RBF'):
+def fit_micro(fit,dat,zpsys,nsamples,micro_type='achromatic',kernel='RBF'):
 	t0=fit.get('t0')
 	fit.set(t0=t0)
 	data=deepcopy(dat)
@@ -1310,12 +1241,7 @@ def fit_micro(curves,res,fit,dat,zpsys,nsamples,micro_type='achromatic',kernel='
 		tempData=tempData[tempData['flux']>.1]
 		tempTime=tempData['time']
 		mod=fit.bandflux(b,tempTime+t0,zpsys=zpsys,zp=tempData['zp'])
-		#fig=plt.figure()
-		#ax=fig.gca()
-		#ax.plot(tempTime,mod)
-		#ax.scatter(tempData['time'],tempData['flux'])
-		#plt.show()
-		#tempData=tempData[mod>.1]
+
 		residual=tempData['flux']/mod
 		tempData=tempData[~np.isnan(residual)]
 		residual=residual[~np.isnan(residual)]
@@ -1424,319 +1350,6 @@ def fit_micro(curves,res,fit,dat,zpsys,nsamples,micro_type='achromatic',kernel='
 
 	return result,sigma,X[:,0],y_pred[1:-1],samples
 
-def timeDelaysAndMagnifications(curves):
-	times=dict([])
-	fluxes=dict([])
-	time_errors=dict([])
-	flux_errors=dict([])
-
-	for d in curves.images.keys():
-
-		b=[x for x in curves.bands if curves.images[d].fits.model.bandoverlap(x)]
-		if len(b)==0:
-			print('None of your bands overlap your fit?')
-			sys.exit()
-		b=b[0]
-		try:
-			timeOfPeak=curves.images[d].fits.model.get('t0')
-			band_time_errors=curves.images[d].fits.final_errs['t0']
-
-		except:
-			timeOfPeak,peakFlux=_maxFromModel(curves.images[d].fits.model,b,
-											  curves.images[d].table['zp'][curves.images[d]['band']==b],
-											  curves.images[d].zpsys)
-			band_time_errors=0
-			band_flux_errors=0
-
-		for amp in ['x0','amplitude','A']:
-			try:
-				peakFlux=curves.images[d].fits.model.get(amp)
-				band_flux_errors=curves.images[d].fits.final_errs[amp]
-				success=True
-				break
-			except:
-				success=False
-
-		if not success:
-			peakFlux=curves.images[d].fits.model.bandflux(b,timeOfPeak,
-														  zp=curves.images[d].table['zp'][curves.images[d]['band']==b],
-														  zpsys=curves.images[d].zpsys)
-			band_flux_errors=0
-
-
-		band_times=timeOfPeak
-		band_fluxes=peakFlux
-		times[d]=band_times
-		fluxes[d]=band_fluxes
-		time_errors[d]=band_time_errors
-		flux_errors[d]=band_flux_errors
-	ims=np.sort(list(curves.images.keys()))
-	delays=dict([])
-	mags=dict([])
-	delay_errs=dict([])
-	mag_errs=dict([])
-	ref1=None
-	ref2=None
-	ref1_err=None
-	ref2_err=None
-	for im in ims:
-		if not ref1:
-			ref1=times[im]
-			delays[im]=0
-			ref2=fluxes[im]
-			mags[im]=1
-			ref1_err=time_errors[im]
-			ref2_err=flux_errors[im]
-			delay_errs[im]=0
-			mag_errs[im]=0
-
-		else:
-			delays[im]=times[im]-ref1
-			mags[im]=fluxes[im]/ref2
-			delay_errs[im]=math.sqrt(time_errors[im]**2+ref1_err**2)
-
-			mag_errs[im]=mags[im]*math.sqrt((flux_errors[im]/fluxes[im])**2+(ref2_err/ref2)**2)
-
-	return (delays,delay_errs,mags,mag_errs,times,fluxes,time_errors,flux_errors)
-
-
-
-def _plot_marginal_pdfs( res, nbins=101, **kwargs):
-	""" plot the results of a classification run
-	:return:
-	"""
-	from matplotlib import pyplot as pl
-	import numpy as np
-
-	nparam = len(res.vparam_names)
-	# nrow = np.sqrt( nparam )
-	# ncol = nparam / nrow + 1
-	nrow, ncol = 1, nparam
-
-	pdfdict = _get_marginal_pdfs( res, nbins )
-
-	fig = plt.gcf()
-	for parname in res.vparam_names :
-		iax = res.vparam_names.index( parname )+1
-		ax = fig.add_subplot( nrow, ncol, iax )
-
-		parval, pdf, mean, std = pdfdict[parname]
-		ax.plot(  parval, pdf, **kwargs )
-		if np.abs(std)>=0.1:
-			ax.text( 0.95, 0.95, '%s  %.1f +- %.1f'%( parname, np.round(mean,1), np.round(std,1)),
-					 ha='right',va='top',transform=ax.transAxes )
-		elif np.abs(std)>=0.01:
-			ax.text( 0.95, 0.95, '%s  %.2f +- %.2f'%( parname, np.round(mean,2), np.round(std,2)),
-					 ha='right',va='top',transform=ax.transAxes )
-		elif np.abs(std)>=0.001:
-			ax.text( 0.95, 0.95, '%s  %.3f +- %.3f'%( parname, np.round(mean,3), np.round(std,3)),
-					 ha='right',va='top',transform=ax.transAxes )
-		else :
-			ax.text( 0.95, 0.95, '%s  %.3e +- %.3e'%( parname, mean, std),
-					 ha='right',va='top',transform=ax.transAxes )
-
-	plt.draw()
-
-def _fit_data_wrap(args):
-	try:
-		return _fit_data(args)
-	except RuntimeError:
-		print('There was an issue running model {0}, skipping...'.format(args[0]))
-		return None#args[0]
-
-#todo decide about multiple versions of model
-def _fit_data(args):
-	"""
-	Helper function that allows parallel processing to occur.
-	:param args: All the arguments given from fit_data
-	:return: modResults: tuple (Name of current model (including version if exists),name of the sncosmo model,version
-					of sncosmo model,list of tuples containing index and dcurve.fit[modname] for each dcurve in curves)
-	"""
-	warnings.simplefilter("ignore")
-	mod=args[0]
-
-	args=args[1]
-	if isinstance(mod, tuple):
-		version = mod[1]
-		mod = mod[0]
-	else:
-		version = None
-	dust_dict={'CCM89Dust':sncosmo.CCM89Dust,'OD94Dust':sncosmo.OD94Dust,'F99Dust':sncosmo.F99Dust}
-	if args['dust']:
-		dust=dust_dict[args['dust']]()
-	else:
-		dust=[]
-	effect_names=args['effect_names']
-	effect_frames=args['effect_frames']
-	effects=[dust for i in range(len(effect_names))] if effect_names else []
-	effect_names=effect_names if effect_names else []
-	effect_frames=effect_frames if effect_frames else []
-	if not isinstance(effect_names,(list,tuple)):
-		effects=[effect_names]
-	if not isinstance(effect_frames,(list,tuple)):
-		effects=[effect_frames]
-	if isinstance(mod,str):
-		modName=mod+'_'+version if version else deepcopy(mod)
-	else:
-		modName=mod.name+'_'+version if version else deepcopy(mod)
-
-	if isinstance(mod,str) or isinstance(mod,sncosmo.Source):
-		source=sncosmo.get_source(mod)
-		smod = sncosmo.Model(source=source,effects=effects,effect_names=effect_names,effect_frames=effect_frames)
-	else:
-		smod=mod
-	params=args['params'] if args['params'] else [x for x in smod.vparam_names]
-	fits=newDict()
-	dcurve=args['curve']
-	#if not np.any([smod.bandoverlap(band) for band in dcurve.bands]):
-	#    raise RuntimeError("No band overlap for model %s"%modName)
-	fits.method=args['fitting_method']
-	fits.bounds=args['bounds'] if args['bounds'] else {}
-	fits.ignore=args['ignore'] if args['ignore'] else []
-	fits.constants = args['constants'] if args['constants'] else {x: y for x, y in zip(dcurve.meta.keys(),dcurve.meta.values()) if x != 'info'}
-
-
-	no_bound = {x for x in params if x in _needs_bounds and x not in fits.bounds.keys() and x not in fits.constants.keys()}
-	if no_bound:
-		params=list(set(params)-no_bound)
-	params= [x for x in params if x not in fits.ignore and x not in fits.constants.keys()]
-	fits.params = params
-	if fits.constants is not None:
-		try:
-			smod.set(**fits.constants)
-		except:
-			raise RuntimeError('You may have some parameters in "constants" that are not in your model.')
-
-	if args['doFit']:
-		if args['fitting_method']=='mcmc':
-			fits.res, fits.model = args['sn_func'][args['fitting_method']](dcurve.table, smod, fits.params, fits.bounds, **args['props'])
-		elif args['fitting_method']=='nest':
-			fits.res, fits.model = args['sn_func'][args['fitting_method']](dcurve.table, smod, fits.params, fits.bounds,guess_amplitude_bound=True, verbose=False, **args['props'])
-		else:
-			fits.res, fits.model = args['sn_func'][args['fitting_method']](dcurve.table, smod, fits.params, fits.bounds,verbose=False, **args['props'])
-		return(pyParz.parReturn(fits))
-	else:
-		fits.model=smod
-		fits.res=newDict()
-		fits.res['vparam_names']=fits.params
-		return (fits)
-
-
-def _joint_likelihood(resList,verbose=False):
-
-
-	params=[]
-	for res in resList.values():
-		params=list(set(np.append(params,res.vparam_names)))
-	otherParams=[x for x in params if x in __thetaL__ ]
-	snparams=[x for x in params if x in __thetaSN__ or x[-1] =='z' or 'ebv' in x or 'r_v' in x]
-
-	outDict={p:dict([]) for p in otherParams}
-	for param in params:
-		if verbose:
-			print(param)
-		probsList=[]
-		weightsList=[]
-		zweights=[]
-		testList=[]
-		for k in resList.keys():
-			if param not in resList[k].vparam_names:
-				continue
-			res=resList[k]
-			pdf=_get_marginal_pdfs(res,nbins=100,verbose=False)
-			if param in snparams:
-				weightsList=np.append(weightsList,pdf[param][1]*(1/np.abs(pdf[param][4])))
-				testList=np.append(testList,pdf[param][1])
-				zweights=np.append(zweights,1/np.abs(pdf[param][4]))
-				probsList=np.append(probsList,pdf[param][0])
-			elif param in otherParams:
-				if verbose:
-					print( 'Image %s:  <%s> = %.6e +- %.2e'%(k, param, pdf[param][2], pdf[param][3]) )
-				outDict[param][k]=(pdf[param][2],pdf[param][3])
-		if param in otherParams:
-			continue
-
-		expectedValue=((weightsList*probsList).sum())/(zweights.sum())
-		std = np.sqrt( ((weightsList * (probsList-expectedValue)**2 ).sum())/(zweights.sum()) )
-		if verbose:
-			print( '  <%s> = %.3e +- %.3e'%( param, expectedValue, std) )
-
-		outDict[param]=(expectedValue,std)
-	return(outDict)
-
-def _get_marginal_pdfs( res, nbins=51, verbose=True ):
-	""" Given the results <res> from a nested sampling chain, determine the
-	marginalized posterior probability density functions for each of the
-	parameters in the model.
-	:param res:  the results of a nestlc run
-	:param nbins: number of bins (steps along the x axis) for sampling
-	   each parameter's marginalized posterior probability
-	:return: a dict with an entry for each parameter, giving a 2-tuple containing
-	   NDarrays of length nbins.  The first array in each pair gives the parameter
-	   value that defines the left edge of each bin along the parameter axis.
-	   The second array gives the posterior probability density integrated
-	   across that bin.
-	"""
-	vparam_names = res.vparam_names
-	weights = res.weights
-	samples = res.samples
-
-	pdfdict = {}
-
-	for param in vparam_names :
-		ipar = vparam_names.index( param )
-		paramvals = samples[:,ipar]
-
-		if nbins>1:
-			if param in res.bounds :
-				parvalmin, parvalmax = res.bounds[param]
-			else :
-				parvalmin, parvalmax = 0.99*paramvals.min(), 1.01*paramvals.max()
-			parambins = np.linspace( parvalmin, parvalmax, nbins, endpoint=True ).flatten()
-			binindices = np.digitize( paramvals, parambins )
-
-			# we estimate the marginalized pdf by summing the weights of all points in the bin,
-			# where the weight of each point is the prior volume at that point times the
-			# likelihood, divided by the total evidence
-			pdf = np.array( [ weights[np.where( binindices==ibin )].sum() for ibin in range(len(parambins)) ] )
-		else :
-			parambins = None
-			pdf = None
-
-
-		mean = (weights  * samples[:,ipar]).sum()
-		#print(samples[:,ipar]-mean)
-		#print(weights)
-		std = np.sqrt( (weights * (samples[:,ipar]-mean)**2 ).sum() )
-
-
-		pdfdict[param] = (parambins,pdf,mean,std,res.logz)
-
-		if verbose :
-			if np.abs(std)>=0.1:
-				print( '  <%s> =  %.2f +- %.2f'%( param, np.round(mean,2), np.round(std,2))  )
-			elif np.abs(std)>=0.01:
-				print( '  <%s> =  %.3f +- %.3f'%( param, np.round(mean,3), np.round(std,3)) )
-			elif np.abs(std)>=0.001:
-				print( '  <%s> =  %.4f +- %.4f'%( param, np.round(mean,4), np.round(std,4)) )
-			else :
-				print( '  <%s> = %.3e +- %.3e'%( param, mean, std) )
-
-
-		if param == 'x0' :
-			salt2 = sncosmo.Model( source='salt2')
-			salt2.source.set_peakmag( 0., 'bessellb', 'ab' )
-			x0_AB0 = salt2.get('x0')
-			mBmean = -2.5*np.log10(  mean / x0_AB0 )
-			mBstd = 2.5*np.log10( np.e ) *  std / mean
-			mBbins = -2.5*np.log10(  parambins / x0_AB0 )
-
-			pdfdict['mB'] = ( mBbins, pdf, mBmean, mBstd )
-			if verbose:
-				print( '  <%s> =  %.3f +- %.3f'%( 'mB', np.round(mBmean,3), np.round(mBstd,3)) )
-
-	return( pdfdict )
-
 
 def param_fit(args,modName,fit=False):
 	sources={'BazinSource':BazinSource}
@@ -1759,6 +1372,7 @@ def param_fit(args,modName,fit=False):
 
 
 
-		res,mod=nest_lc(args['curve'].table,mod,vparam_names=args['params'],bounds=args['bounds'],guess_amplitude_bound=guess_amp_bound,maxiter=1000,npoints=200)
+		res,mod=nest_lc(args['curve'].table,mod,vparam_names=args['params'],bounds=args['bounds'],
+						guess_amplitude_bound=guess_amp_bound,maxiter=1000,npoints=200)
 	return({'res':res,'model':mod})
 
