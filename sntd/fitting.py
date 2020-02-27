@@ -56,11 +56,11 @@ class newDict(dict):
 
 
 def fit_data(curves=None, snType='Ia',bands=None, models=None, params=None, bounds={}, ignore=None, constants=None,
-			 method='parallel',t0_guess=None,refModel=None,effect_names=[],effect_frames=[],fitting_method='nest',
-			 dust=None,flip=False,guess_amplitude=True,seriesError=None,showPlots=False,microlensing=None,fitOrder=None,
+			 method='parallel',t0_guess=None,effect_names=[],effect_frames=[],fitting_method='nest',
+			 dust=None,flip=False,showPlots=False,microlensing=None,fitOrder=None,
 			 fit_prior=None,par_or_batch='parallel',batch_partition=None,batch_script=None,nbatch_jobs=None,
-			 batch_python_path=None,wait_for_batch=False,
-			 kernel='RBF',refImage='image_1',nMicroSamples=100,color_curve=None,verbose=True,**kwargs):
+			 batch_python_path=None,wait_for_batch=False,guess_amplitude=True,
+			 kernel='RBF',refImage='image_1',nMicroSamples=100,verbose=True,**kwargs):
 
 	"""
 	The main high-level fitting function.
@@ -178,17 +178,92 @@ def fit_data(curves=None, snType='Ia',bands=None, models=None, params=None, boun
 	args['props'] = {x: kwargs[x] for x in kwargs.keys() if
 					 x in [y for y in inspect.signature(args['sn_func'][fitting_method]).parameters] and x != 'verbose'}
 
-	if method not in ['parallel','series','color']:
-		raise RuntimeError('Parameter "method" must be "parallel","series", or "color".')
 
-	
-	if method=='parallel':
+	if isinstance(method,(list,np.ndarray,tuple)):
+		if len(method)==1:
+			method=method[0]
+		elif 'parallel' in method and fit_prior==True:
+			method=np.append(['parallel'],[x for x in method if x!='parallel'])
+		if args['parlist']:
+			if par_or_batch=='parallel':
+				print('Have not yet set up parallelized multi-fit processing')
+				sys.exit(1)
+			else:
+				script_name,folder_name=run_sbatch(partition=batch_partition,sbatch_script=batch_script,
+												   njobs=nbatch_jobs,python_path=batch_python_path)
+				pickle.dump(args['curves'],open(os.path.join(folder_name,'sntd_data.pkl'),'wb'))
+
+				with open(os.path.join(__dir__,'batch','run_sntd.py')) as f:
+					batch_py=f.read()
+				batch_py=batch_py.replace('njobsreplace',str(nbatch_jobs))
+				batch_py=batch_py.replace('nlcsreplace',str(len(args['curves'])))
+				sntd_command=''
+				for i in range(len(method)):
+					fit_method=method[i]
+					sntd_command+='sntd.fit_data('
+					for par,val in locs.items():
+						if par =='curves':
+							if fit_method=='parallel' or 'parallel' not in method:
+								sntd_command+='curves=all_dat[i],'
+							else:
+								sntd_command+='curves=fitCurves,'
+						elif par=='method':
+							sntd_command+='method="'+fit_method+'",'
+						elif par=='fit_prior' and fit_method!='parallel':
+							sntd_command+='fit_prior=fitCurves,'
+						elif isinstance(val,str):
+							sntd_command+=str(par)+'="'+str(val)+'",'
+						else:
+							sntd_command+=str(par)+'='+str(val)+','
+
+					sntd_command=sntd_command[:-1]+')\n'
+					if i<len(method)-1:
+						sntd_command+='\tfitCurves='
+
+				batch_py=batch_py.replace('sntdcommandreplace',sntd_command)
+
+				with open(os.path.join(folder_name,'run_sntd.py'),'w') as f:
+					f.write(batch_py)
+				#os.system('sbatch %s'%(os.path.join(folder_name,script_name)))
+				if wait_for_batch:
+					result=subprocess.call(['sbatch', '--wait',os.path.join(os.path.abspath(folder_name),
+																			script_name)])
+					outfiles=glob.glob(os.path.join(os.path.abspath(folder_name),'*fit*.pkl'))
+					all_result=[]
+					for f in outfiles:
+						all_result.append(pickle.load(open(f,'rb')))
+
+					curves= list(np.reshape(all_result,(-1,1)).flatten())
+
+				else:
+					result=subprocess.call(['sbatch', os.path.join(os.path.abspath(folder_name),
+																   script_name)])
+
+					print('Batch submitted successfully')
+					return
+
+
+
+		else:
+			if 'parallel' in method:
+				curves=_fitparallel(args)
+				if args['fit_prior']==True:
+					args['fit_prior']=curves
+				args['curves']=curves
+			if 'series' in method:
+				curves=_fitseries(args)
+			if 'color' in method:
+				curves=_fitColor(args)
+	elif method not in ['parallel','series','color']:
+			raise RuntimeError('Parameter "method" must be "parallel","series", or "color".')
+
+	elif method=='parallel':
 		if args['parlist']:
 			if par_or_batch=='parallel':
 				par_arg_vals=[]
 				for i in range(len(args['curves'])):
 					temp_args={}
-					for par_key in ['snType','bounds','constants','t0_guess','refModel','color_curve','seriesGrids']:
+					for par_key in ['snType','bounds','constants','t0_guess']:
 						if isinstance(args[par_key],(list,tuple,np.ndarray)):
 							temp_args[par_key]=args[par_key][i]
 					for par_key in ['bands','models','ignore','params']:
@@ -210,6 +285,8 @@ def fit_data(curves=None, snType='Ia',bands=None, models=None, params=None, boun
 				for par,val in locs.items():
 					if par =='curves':
 						sntd_command+='curves=all_dat[i],'
+					elif par=='method':
+						sntd_command+='method=parallel,'
 					elif isinstance(val,str):
 						sntd_command+=str(par)+'="'+str(val)+'",'
 					else:
@@ -231,13 +308,14 @@ def fit_data(curves=None, snType='Ia',bands=None, models=None, params=None, boun
 					for f in outfiles:
 						all_result.append(pickle.load(open(f,'rb')))
 
-					return list(np.reshape(all_result,(-1,1)).flatten())
+					curves= list(np.reshape(all_result,(-1,1)).flatten())
 
 				else:
 					result=subprocess.call(['sbatch', os.path.join(os.path.abspath(folder_name),
 																 script_name)])
-					print(result)
-					return 'Batch submitted successfully'
+
+					print('Batch submitted successfully')
+					return
 
 
 
@@ -245,36 +323,128 @@ def fit_data(curves=None, snType='Ia',bands=None, models=None, params=None, boun
 			curves=_fitparallel(args)
 	elif method=='series':
 		if args['parlist']:
+			if par_or_batch=='parallel':
+				par_arg_vals=[]
+				for i in range(len(args['curves'])):
+					temp_args={}
+					for par_key in ['snType','bounds','constants','t0_guess']:
+						if isinstance(args[par_key],(list,tuple,np.ndarray)):
+							temp_args[par_key]=args[par_key][i]
+					for par_key in ['bands','models','ignore','params']:
+						if isinstance(args[par_key],(list,tuple,np.ndarray)) and np.any([isinstance(x,(list,tuple,np.ndarray)) for x in args[par_key]]):
+							temp_args[par_key]=args[par_key][i]
+					par_arg_vals.append([args['curves'][i],temp_args])
+				curves=pyParz.foreach(par_arg_vals,_fitseries,[args])
+			else:
+				script_name,folder_name=run_sbatch(partition=batch_partition,sbatch_script=batch_script,
+												   njobs=nbatch_jobs,python_path=batch_python_path)
+				pickle.dump(args['curves'],open(os.path.join(folder_name,'sntd_data.pkl'),'wb'))
 
-			par_arg_vals=[]
-			for i in range(len(args['curves'])):
-				temp_args={}
-				for par_key in ['snType','bounds','constants','t0_guess','refModel','color_curve','seriesGrids']:
-					if isinstance(args[par_key],(list,tuple,np.ndarray)):
-						temp_args[par_key]=args[par_key][i] 
-				for par_key in ['bands','models','ignore','params']:
-					if isinstance(args[par_key],(list,tuple,np.ndarray)) and np.any([isinstance(x,(list,tuple,np.ndarray)) for x in args[par_key]]):
-						temp_args[par_key]=args[par_key][i] 
-				par_arg_vals.append([args['curves'][i],temp_args])
-			curves=pyParz.foreach(par_arg_vals,_fitseries,[args])
+				with open(os.path.join(__dir__,'batch','run_sntd.py')) as f:
+					batch_py=f.read()
+				batch_py=batch_py.replace('njobsreplace',str(nbatch_jobs))
+				batch_py=batch_py.replace('nlcsreplace',str(len(args['curves'])))
+
+				sntd_command='sntd.fit_data('
+				for par,val in locs.items():
+					if par =='curves':
+						sntd_command+='curves=all_dat[i],'
+					elif par=='method':
+						sntd_command+='method=series,'
+					elif isinstance(val,str):
+						sntd_command+=str(par)+'="'+str(val)+'",'
+					else:
+						sntd_command+=str(par)+'='+str(val)+','
+
+				sntd_command=sntd_command[:-1]+')'
+
+				batch_py=batch_py.replace('sntdcommandreplace',sntd_command)
+
+				with open(os.path.join(folder_name,'run_sntd.py'),'w') as f:
+					f.write(batch_py)
+
+				#os.system('sbatch %s'%(os.path.join(folder_name,script_name)))
+				if wait_for_batch:
+					result=subprocess.call(['sbatch', '--wait',os.path.join(os.path.abspath(folder_name),
+																			script_name)])
+					outfiles=glob.glob(os.path.join(os.path.abspath(folder_name),'*fit*.pkl'))
+					all_result=[]
+					for f in outfiles:
+						all_result.append(pickle.load(open(f,'rb')))
+
+					curves= list(np.reshape(all_result,(-1,1)).flatten())
+
+				else:
+					result=subprocess.call(['sbatch', os.path.join(os.path.abspath(folder_name),
+																   script_name)])
+
+					print('Batch submitted successfully')
+					return
 		else:
 			curves=_fitseries(args)
 
-	else:
+	elif method=='color':
 		if args['parlist']:
-			par_arg_vals=[]
-			for i in range(len(args['curves'])):
-				temp_args={}
-				for par_key in ['snType','bounds','constants','t0_guess','refModel','color_curve','seriesGrids']:
-					if isinstance(args[par_key],(list,tuple,np.ndarray)):
-						temp_args[par_key]=args[par_key][i] 
-				for par_key in ['bands','models','ignore','params']:
-					if isinstance(args[par_key],(list,tuple,np.ndarray)) and np.any([isinstance(x,(list,tuple,np.ndarray)) for x in args[par_key]]):
-						temp_args[par_key]=args[par_key][i] 
-				par_arg_vals.append([args['curves'][i],temp_args])
-			curves=pyParz.foreach(par_arg_vals,_fitColor,[args])
+			if par_or_batch=='parallel':
+				par_arg_vals=[]
+				for i in range(len(args['curves'])):
+					temp_args={}
+					for par_key in ['snType','bounds','constants','t0_guess']:
+						if isinstance(args[par_key],(list,tuple,np.ndarray)):
+							temp_args[par_key]=args[par_key][i]
+					for par_key in ['bands','models','ignore','params']:
+						if isinstance(args[par_key],(list,tuple,np.ndarray)) and np.any([isinstance(x,(list,tuple,np.ndarray)) for x in args[par_key]]):
+							temp_args[par_key]=args[par_key][i]
+					par_arg_vals.append([args['curves'][i],temp_args])
+				curves=pyParz.foreach(par_arg_vals,_fitColor,[args])
+			else:
+				script_name,folder_name=run_sbatch(partition=batch_partition,sbatch_script=batch_script,
+												   njobs=nbatch_jobs,python_path=batch_python_path)
+				pickle.dump(args['curves'],open(os.path.join(folder_name,'sntd_data.pkl'),'wb'))
+
+				with open(os.path.join(__dir__,'batch','run_sntd.py')) as f:
+					batch_py=f.read()
+				batch_py=batch_py.replace('njobsreplace',str(nbatch_jobs))
+				batch_py=batch_py.replace('nlcsreplace',str(len(args['curves'])))
+
+				sntd_command='sntd.fit_data('
+				for par,val in locs.items():
+					if par =='curves':
+						sntd_command+='curves=all_dat[i],'
+					elif par=='method':
+						sntd_command+='method=color,'
+					elif isinstance(val,str):
+						sntd_command+=str(par)+'="'+str(val)+'",'
+					else:
+						sntd_command+=str(par)+'='+str(val)+','
+
+				sntd_command=sntd_command[:-1]+')'
+
+				batch_py=batch_py.replace('sntdcommandreplace',sntd_command)
+
+				with open(os.path.join(folder_name,'run_sntd.py'),'w') as f:
+					f.write(batch_py)
+
+				#os.system('sbatch %s'%(os.path.join(folder_name,script_name)))
+				if wait_for_batch:
+					result=subprocess.call(['sbatch', '--wait',os.path.join(os.path.abspath(folder_name),
+																			script_name)])
+					outfiles=glob.glob(os.path.join(os.path.abspath(folder_name),'*fit*.pkl'))
+					all_result=[]
+					for f in outfiles:
+						all_result.append(pickle.load(open(f,'rb')))
+
+					curves= list(np.reshape(all_result,(-1,1)).flatten())
+
+				else:
+					result=subprocess.call(['sbatch', os.path.join(os.path.abspath(folder_name),
+																   script_name)])
+
+					print('Batch submitted successfully')
+					return
 		else:
 			curves=_fitColor(args)
+
 
 	return curves
 
@@ -363,12 +533,10 @@ def _fitColor(all_args):
 
 
 		tempMod.set(t0=args['curves'].series.meta['reft0'])
-		if tempMod.param_names[2] in all_vparam_names:
-			all_vparam_names.remove(tempMod.param_names[2])
+		all_vparam_names=np.array([x for x in all_vparam_names if x!=tempMod.param_names[2]])
 		res,td_res,td_err,model=nest_color_lc(args['curves'].color.table,tempMod,nimage,color=args['bands'],
 											bounds=args['bounds'],
 											 vparam_names=all_vparam_names,ref=args['refImage'],
-											 refModel=args['refModel'],
 											 minsnr=args.get('minsnr',5.),priors=args.get('priors',None),ppfs=args.get('ppfs',None),
 											 method=args.get('nest_method','single'),maxcall=args.get('maxcall',None),
 											 modelcov=args.get('modelcov',None),rstate=args.get('rstate',None),
@@ -405,7 +573,7 @@ def _fitColor(all_args):
 
 	return args['curves']
 
-def nest_color_lc(data,model,nimage,color, vparam_names,bounds,guess_amplitude_bound=False,ref='image_1',
+def nest_color_lc(data,model,nimage,color, vparam_names,bounds,ref='image_1',
 				   minsnr=5., priors=None, ppfs=None, npoints=100, method='single',
 				   maxiter=None, maxcall=None, modelcov=False, rstate=None,
 				   verbose=False, warn=True,**kwargs):
@@ -651,8 +819,7 @@ def _fitseries(all_args):
 		source=sncosmo.get_source(mod)
 		tempMod = sncosmo.Model(source=source,effects=effects,effect_names=effect_names,effect_frames=effect_frames)
 		tempMod.set(**args['constants'])
-		if tempMod.param_names[2] in all_vparam_names:
-			all_vparam_names.remove(tempMod.param_names[2])
+		all_vparam_names=np.array([x for x in all_vparam_names if x!=tempMod.param_names[2]])
 		if not args['curves'].series.table:
 			if args['fit_prior'] is not None:
 				args['curves'].combine_curves(time_delays=args['fit_prior'].time_delays,
@@ -670,7 +837,6 @@ def _fitseries(all_args):
 
 		res,td_res,mu_res,td_err,mu_err,model=nest_series_lc(args['curves'].series.table,tempMod,nimage,bounds=args['bounds'],
 									  vparam_names=all_vparam_names,ref=args['refImage'],
-									  refModel=args['refModel'],
 									  guess_amplitude_bound=guess_amplitude,
 									  minsnr=args.get('minsnr',5.),priors=args.get('priors',None),ppfs=args.get('ppfs',None),
 									  method=args.get('nest_method','single'),maxcall=args.get('maxcall',None),
@@ -741,7 +907,7 @@ def _fitseries(all_args):
 
 
 def nest_series_lc(data,model,nimage,vparam_names,bounds,guess_amplitude_bound=False,ref='image_1',
-					 minsnr=5.,refModel=False,band=None, priors=None, ppfs=None, npoints=100, method='single',
+					 minsnr=5., priors=None, ppfs=None, npoints=100, method='single',
 					 maxiter=None, maxcall=None, modelcov=False, rstate=None,
 					 verbose=False, warn=True,**kwargs):
 
