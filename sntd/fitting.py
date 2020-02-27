@@ -1,4 +1,4 @@
-import inspect,sncosmo,os,sys,warnings,pyParz,math,multiprocessing,pickle
+import inspect,sncosmo,os,sys,warnings,pyParz,math,multiprocessing,pickle,subprocess
 import numpy as np
 import matplotlib.pyplot as plt
 from copy import deepcopy,copy
@@ -222,7 +222,9 @@ def fit_data(curves=None, snType='Ia',bands=None, models=None, params=None, boun
 				with open(os.path.join(folder_name,'run_sntd.py'),'w') as f:
 					f.write(batch_py)
 
-				os.system('sbatch %s'%(os.path.join(folder_name,script_name)))
+				#os.system('sbatch %s'%(os.path.join(folder_name,script_name)))
+				result=subprocess.call('sbatch %s'%(os.path.join(folder_name,script_name)))
+				print(result)
 				return 'Batch submitted successfully'
 
 
