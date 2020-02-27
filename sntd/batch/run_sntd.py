@@ -17,4 +17,4 @@ all_res=[]
 for i in range(inds[0],inds[1]):
     fitCurves=sntdcommandreplace
     all_res.append(copy(fitCurves))
-pickle.dump(all_res,open('sntd_fit%s.pkl'%sys.argv[1],'wb'))
+pickle.dump(all_res,open(os.path.join(os.path.abspath(os.path.dirname(__file__)),'sntd_fit%s.pkl'%sys.argv[1]),'wb'))
