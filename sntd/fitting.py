@@ -229,7 +229,7 @@ def fit_data(curves=None, snType='Ia',bands=None, models=None, params=None, boun
 					outfiles=glob.glob(os.path.join(os.path.abspath(folder_name),'*fit*.pkl'))
 					all_result=[]
 					for f in outfiles:
-						all_result.append(all_result,pickle.load(open(f,'rb')))
+						all_result.append(pickle.load(open(f,'rb')))
 
 					return list(np.reshape(all_result,(-1,1)).flatten())
 
