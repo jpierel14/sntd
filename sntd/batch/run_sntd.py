@@ -1,4 +1,4 @@
-import pickle,sys,sntd
+import pickle,sys,sntd,os
 from optparse import OptionParser
 from copy import copy
 
