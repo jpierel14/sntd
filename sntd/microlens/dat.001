@@ -1,6 +1,6 @@
                    1 jobnu:   number of job
-                    date and time of start:  26. 2.2020    19:59:38
-                    date and time of stop:   26. 2.2020    19:59:38
+                    date and time of start:  27. 2.2020    11:29:05
+                    date and time of stop:   27. 2.2020    11:29:05
 CPU-time:         0.07 sec =       0.00 min =     0.00 h
 
  important parameters:
@@ -9,7 +9,7 @@ CPU-time:         0.07 sec =       0.00 min =     0.00 h
                72.44% ncell/nlens: ratio in percent
               49.250 avlens:     average number of lenses used per ray
               70.188 avcell:     average number of cells  used per ray
-         0.000000257 CPU-time/ray: shooting time (CPU-sec) per ray
+         0.000000252 CPU-time/ray: shooting time (CPU-sec) per ray
                0.018 rayperpi:   average number of rays per pixel
                    3 pixhigh:    highest number of rays per pixel
                    0 pixlow:     lowest number of rays per pixel
@@ -78,11 +78,11 @@ CPU-time:         0.07 sec =       0.00 min =     0.00 h
                          0.000 times(13): CPU-sec for     setup    
                          0.000 times(14): CPU-sec for sorting lenses
                          0.000 times(15): CPU-sec for sorting cells
-               0.041 times(7):   time in CPU-sec for    shooting
-                         0.000 times(4): CPU-sec for shootcl  ( 1.00%)
-                         0.006 times(5): CPU-sec for shootfix (13.85%)
-                         0.031 times(6): CPU-sec for shotayco (76.49%)
-               0.070 times(8):   time in CPU-sec whole run
+               0.040 times(7):   time in CPU-sec for    shooting
+                         0.000 times(4): CPU-sec for shootcl  ( 0.97%)
+                         0.006 times(5): CPU-sec for shootfix (14.07%)
+                         0.031 times(6): CPU-sec for shotayco (76.63%)
+               0.069 times(8):   time in CPU-sec whole run
 
 
       2217 lenses   after sorting: 

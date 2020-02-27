@@ -961,7 +961,7 @@ def _fitparallel(all_args):
 							  zpsys=args['curves'].images[args['fitOrder'][0]].zpsys,
 							  maxiter=args.get('maxiter',None),npoints=args.get('npoints',100))
 		if finallogz<res.logz:
-			first_res=[args['fitOrder'][0],copy(res),copy(fit)]
+			first_res=[args['fitOrder'][0],copy(fit),copy(res)]
 
 
 	first_params=[weighted_quantile(first_res[2].samples[:,i],[.16,.5,.84],first_res[2].weights)\
