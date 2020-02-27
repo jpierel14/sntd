@@ -231,7 +231,7 @@ def fit_data(curves=None, snType='Ia',bands=None, models=None, params=None, boun
 					for f in outfiles:
 						all_result.append(all_result,pickle.load(open(f,'rb')))
 
-					return(all_result.reshape(len(args['curves']),1))
+					return list(np.reshape(all_result,(-1,1)).flatten())
 
 				else:
 					result=subprocess.call(['sbatch', os.path.join(os.path.abspath(folder_name),
