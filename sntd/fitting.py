@@ -223,8 +223,8 @@ def fit_data(curves=None, snType='Ia',bands=None, models=None, params=None, boun
 					f.write(batch_py)
 
 				#os.system('sbatch %s'%(os.path.join(folder_name,script_name)))
-				result=subprocess.call('sbatch %s'%(os.path.join(os.path.abspath(folder_name),
-																 script_name)))
+				result=subprocess.call('sbatch', os.path.join(os.path.abspath(folder_name),
+																 script_name))
 				print(result)
 				return 'Batch submitted successfully'
 
