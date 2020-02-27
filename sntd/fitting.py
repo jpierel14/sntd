@@ -197,6 +197,10 @@ def fit_data(curves=None, snType='Ia',bands=None, models=None, params=None, boun
 					batch_py=f.read()
 				batch_py=batch_py.replace('njobsreplace',str(nbatch_jobs))
 				batch_py=batch_py.replace('nlcsreplace',str(len(args['curves'])))
+				indent1=batch_py.find('fitCurves=')
+				indent=batch_py.find('inds[1]):')+len('inds[1]):')+1
+
+
 				sntd_command=''
 				for i in range(len(method)):
 					fit_method=method[i]
@@ -218,12 +222,13 @@ def fit_data(curves=None, snType='Ia',bands=None, models=None, params=None, boun
 
 					sntd_command=sntd_command[:-1]+')\n'
 					if i<len(method)-1:
-						sntd_command+='\tfitCurves='
+						sntd_command+=' '*(indent1-indent)+'fitCurves='
 
 				batch_py=batch_py.replace('sntdcommandreplace',sntd_command)
 
 				with open(os.path.join(folder_name,'run_sntd.py'),'w') as f:
 					f.write(batch_py)
+
 				#os.system('sbatch %s'%(os.path.join(folder_name,script_name)))
 				if wait_for_batch:
 					result=subprocess.call(['sbatch', '--wait',os.path.join(os.path.abspath(folder_name),
