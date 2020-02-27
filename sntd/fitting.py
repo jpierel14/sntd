@@ -1,4 +1,4 @@
-import inspect,sncosmo,os,sys,warnings,pyParz,math,multiprocessing,pickle,subprocess
+import inspect,sncosmo,os,sys,warnings,pyParz,math,multiprocessing,pickle,subprocess,glob
 import numpy as np
 import matplotlib.pyplot as plt
 from copy import deepcopy,copy
@@ -59,7 +59,7 @@ def fit_data(curves=None, snType='Ia',bands=None, models=None, params=None, boun
 			 method='parallel',t0_guess=None,refModel=None,effect_names=[],effect_frames=[],fitting_method='nest',
 			 dust=None,flip=False,guess_amplitude=True,seriesError=None,showPlots=False,microlensing=None,fitOrder=None,
 			 fit_prior=None,par_or_batch='parallel',batch_partition=None,batch_script=None,nbatch_jobs=None,
-			 batch_python_path=None,
+			 batch_python_path=None,wait_for_batch=False,
 			 kernel='RBF',refImage='image_1',nMicroSamples=100,color_curve=None,verbose=True,**kwargs):
 
 	"""
@@ -223,10 +223,21 @@ def fit_data(curves=None, snType='Ia',bands=None, models=None, params=None, boun
 					f.write(batch_py)
 
 				#os.system('sbatch %s'%(os.path.join(folder_name,script_name)))
-				result=subprocess.call(['sbatch', os.path.join(os.path.abspath(folder_name),
+				if wait_for_batch:
+					result=subprocess.call(['sbatch', '--wait',os.path.join(os.path.abspath(folder_name),
+																   script_name)])
+					outfiles=glob.glob(os.path.join(os.path.abspath(folder_name),'*fit*.pkl'))
+					all_result=[]
+					for f in outfiles:
+						all_result.append(all_result,pickle.load(open(f,'rb')))
+
+					return(all_result.reshape(len(args['curves']),1))
+
+				else:
+					result=subprocess.call(['sbatch', os.path.join(os.path.abspath(folder_name),
 																 script_name)])
-				print(result)
-				return 'Batch submitted successfully'
+					print(result)
+					return 'Batch submitted successfully'
 
 
 
