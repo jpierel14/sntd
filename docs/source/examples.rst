@@ -86,7 +86,7 @@ the simulated supernova.
    	import numpy as np
 		       
 	myML=sntd.realizeMicro(nray=50,kappas=1,kappac=.3,gamma=.4)
-	time,dmag=sntd.microcaustic_field_to_curve(field=myML,time=np.arange(0,100,1),zl=.5,zs=1,plot=True)
+	time,dmag=sntd.microcaustic_field_to_curve(field=myML,time=np.arange(0,100,1),zl=.5,zs=1.33,plot=True)
 	plt.show()
 
 Out:
@@ -131,14 +131,40 @@ There are 3 methods built into SNTD to measure time delays (parallel, series, co
 .. code-block:: python
 
    	fitCurves=sntd.fit_data(myMISN2,snType='Ia', models='salt2-extended',bands=['F110W','F125W'],
-                 params=['x0','x1','t0','c'],constants={'z':1.33},bounds={'t0':(-15,15),'x1':(-2,2),'c':(0,1)},
-		             method='parallel',microlensing=None)
+                 params=['x0','x1','t0','c'],constants={'z':1.33},bounds={'t0':(-20,20),'x1':(-3,3),'c':(-1,1)},
+		             method='parallel',microlensing=None,npoints=1000)
+	print(fitCurves.time_delays)
+	print(fitCurves.time_delay_errors)
+	print(fitCurves.magnifications)
+	print(fitCurves.magnification_errors)
 	fitCurves.plot_object(showFit=True,method='parallel')
 	plt.show()
+	fitCurves.plot_fit(method='parallel',par_image='image_1')
+	plt.show()
+	fitCurves.plot_fit(method='parallel',par_image='image_2')
+	plt.show()
 
-Out:
 
-.. image:: examples/separateFit_fig.png
+Out:: 
+
+	{'image_1': 0, 'image_2': 60.28730952398754}
+	{'image_1': 0, 'image_2': array([-0.33462375,  0.30011858])}
+	{'image_1': 1, 'image_2': 0.5017688069514342}
+	{'image_1': 0, 'image_2': array([-0.01254022,  0.01109703])}
+
+.. image:: examples/sntd_par_fit.png
+    :width: 600px
+    :align: center
+    :height: 600px
+    :alt: alternate text
+
+.. image:: examples/sntd_par_corner1.png
+    :width: 600px
+    :align: center
+    :height: 600px
+    :alt: alternate text
+
+.. image:: examples/sntd_par_corner2.png
     :width: 600px
     :align: center
     :height: 600px
@@ -153,10 +179,38 @@ Other methods are called in a similar fashion, with a couple of extra arguments:
 
 .. code-block:: python
     
-    fitCurves=sntd.fit_data(myMISN2,snType='Ia', models='salt2-extended',bands=['F110W','F125W'],
-              params=['x0','x1','t0','c'],constants={'z':1.33},bounds={'t0':(-15,15),'x1':(-2,2),'c':(0,1)},
-              seriesGrids={'td':(-5,5),'mu':(.8,1.2)},refModel=fitCurves.images['image_1'].fits.model,
-              method='series',microlensing=None)
+    fitCurves=sntd.fit_data(myMISN2,snType='Ia', models='salt2-extended',bands=['F110W','F160W'],
+        params=['x1','c'],constants={'z':1.33},refImage='image_2',
+        bounds={'td':(-20,20),'mu':(.5,2),'x1':(-3,3),'c':(-1,1)},fit_prior=fitCurves,
+                    method='series',npoints=1000)
+
+    print(fitCurves.series.time_delays)
+	print(fitCurves.series.time_delay_errors)
+	print(fitCurves.series.magnifications)
+	print(fitCurves.series.magnification_errors)
+	fitCurves.plot_object(showFit=True,method='series')
+	plt.show()
+	fitCurves.plot_fit(method='series')
+	plt.show()
+
+Out:: 
+
+	{'image_1': 0, 'image_2': 60.28730952398754}
+	{'image_1': 0, 'image_2': array([-0.33462375,  0.30011858])}
+	{'image_1': 1, 'image_2': 0.5017688069514342}
+	{'image_1': 0, 'image_2': array([-0.01254022,  0.01109703])}
+
+.. image:: examples/sntd_ser_fit.png
+    :width: 600px
+    :align: center
+    :height: 600px
+    :alt: alternate text
+
+.. image:: examples/sntd_ser_corner.png
+    :width: 600px
+    :align: center
+    :height: 600px
+    :alt: alternate text
 
 **Color:**
 
@@ -167,6 +221,29 @@ Other methods are called in a similar fashion, with a couple of extra arguments:
               seriesGrids={'td':(-5,5),'mu':(.8,1.2)},refModel=fitCurves.images['image_1'].fits.model,
               method='color',microlensing=None)
 
+    print(fitCurves.color.time_delays)
+	print(fitCurves.color.time_delay_errors)
+	fitCurves.plot_object(showFit=True,method='color')
+	plt.show()
+	fitCurves.plot_fit(method='color')
+	plt.show()
+
+Out:: 
+
+	{'image_1': 0, 'image_2': 60.54660182772138}
+	{'image_1': 0, 'image_2': array([-1.15062702,  1.2630195 ])}
+
+.. image:: examples/sntd_col_fit.png
+    :width: 600px
+    :align: center
+    :height: 600px
+    :alt: alternate text
+
+.. image:: examples/sntd_col_corner.png
+    :width: 600px
+    :align: center
+    :height: 600px
+    :alt: alternate text
 
 Fitting Using Extra Propagation Effects
 =======================================

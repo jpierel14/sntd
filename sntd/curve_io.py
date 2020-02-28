@@ -345,14 +345,25 @@ class curveDict(dict):
     def plot_fit(self,method='parallel',par_image='image_1'):
         if method=='parallel':
             res=self.images[par_image].fits.res
-
+            samples=res.samples
         elif method=='series':
             res=self.series.fits.res
+            samples=res.samples
+            for im in self.images.keys():
+                ind=res.vparam_names.index('t_'+im[-1])
+                ind2=res.vparam_names.index('a_'+im[-1])
+                samples[:,ind]+=self.series.meta['td']
+                samples[:,ind2]*=self.series.meta['mu']
 
         else:
             res=self.color.fits.res
+            samples=res.samples
+            for im in self.images.keys():
+                ind=res.vparam_names.index('t_'+im[-1])
+                samples[:,ind]+=self.color.meta['td']
+
         fig = corner.corner(
-            res.samples,
+            samples,
             weights=res.weights,
             labels=res.vparam_names,
             quantiles=(0.16,.5, 0.84),
