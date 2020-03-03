@@ -433,7 +433,13 @@ def realize_lcs(observations, model, params, thresh=None,
                               zp=snobs[colname['zp']],
                               zpsys=snobs[colname['zpsys']])
         if snrFunc is not None:
-            fluxerr=flux/snrFunc(-2.5*np.log10(flux)+snobs[colname['zp']])
+            if isinstance(snrFunc,dict):
+                fluxerr=np.ones(len(flux))
+                for b in snobs[colname['band']]:
+                    inds=np.where(snobs[colname['band']]==b)[0]
+                    fluxerr[inds]=flux[inds]/snrFunc[b](-2.5*np.log10(flux[inds])+snobs[colname['zp']][inds])
+            else:
+                fluxerr=flux/snrFunc(-2.5*np.log10(flux)+snobs[colname['zp']])
         else:
             fluxerr = np.sqrt(snobs[colname['skynoise']]**2 +
                               np.abs(flux) / snobs[colname['gain']])
