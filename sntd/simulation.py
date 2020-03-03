@@ -205,7 +205,7 @@ def createMultiplyImagedSN(
     else:
         absBand='bessellr'
     if fix_luminosity:
-        model.set_source_peakabsmag(absolutes[snType]['dist'][0]
+        model.set_source_peakabsmag(absolutes[snType]['dist'][0],
                                     absBand, zpsys)
     else:
         model.set_source_peakabsmag(_getAbsFromDist(absolutes[snType]['dist']),
