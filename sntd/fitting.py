@@ -218,12 +218,13 @@ def fit_data(curves=None, snType='Ia',bands=None, models=None, params=None, boun
 						elif isinstance(val,str):
 							sntd_command+=str(par)+'="'+str(val)+'",'
 						elif par=='kwargs':
+
 							for par2,val2 in val.items():
 								if isinstance(val,str):
-									sntd_command+=str(par2)+'="'+str(val)+'",'
+									sntd_command+=str(par2)+'="'+str(val2)+'",'
 								else:
-									sntd_command+=str(par2)+'='+str(val)+','
-						else:
+									sntd_command+=str(par2)+'='+str(val2)+','
+							else:
 							sntd_command+=str(par)+'='+str(val)+','
 
 					sntd_command=sntd_command[:-1]+')\n'
@@ -327,11 +328,13 @@ def fit_data(curves=None, snType='Ia',bands=None, models=None, params=None, boun
 					elif isinstance(val,str):
 						sntd_command+=str(par)+'="'+str(val)+'",'
 					elif par=='kwargs':
+
 						for par2,val2 in val.items():
 							if isinstance(val,str):
-								sntd_command+=str(par2)+'="'+str(val)+'",'
+								sntd_command+=str(par2)+'="'+str(val2)+'",'
 							else:
-								sntd_command+=str(par2)+'='+str(val)+','
+								sntd_command+=str(par2)+'='+str(val2)+','
+
 					else:
 						sntd_command+=str(par)+'='+str(val)+','
 
@@ -396,6 +399,13 @@ def fit_data(curves=None, snType='Ia',bands=None, models=None, params=None, boun
 						sntd_command+='method="series",'
 					elif isinstance(val,str):
 						sntd_command+=str(par)+'="'+str(val)+'",'
+					elif par=='kwargs':
+
+						for par2,val2 in val.items():
+							if isinstance(val,str):
+								sntd_command+=str(par2)+'="'+str(val2)+'",'
+							else:
+								sntd_command+=str(par2)+'='+str(val2)+','
 					else:
 						sntd_command+=str(par)+'='+str(val)+','
 
@@ -459,11 +469,12 @@ def fit_data(curves=None, snType='Ia',bands=None, models=None, params=None, boun
 					elif isinstance(val,str):
 						sntd_command+=str(par)+'="'+str(val)+'",'
 					elif par=='kwargs':
+
 						for par2,val2 in val.items():
 							if isinstance(val,str):
-								sntd_command+=str(par2)+'="'+str(val)+'",'
+								sntd_command+=str(par2)+'="'+str(val2)+'",'
 							else:
-								sntd_command+=str(par2)+'='+str(val)+','
+								sntd_command+=str(par2)+'='+str(val2)+','
 					else:
 						sntd_command+=str(par)+'='+str(val)+','
 
