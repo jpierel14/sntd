@@ -1271,7 +1271,7 @@ def _fitparallel(all_args):
 		if finallogz<res.logz:
 			first_res=[args['fitOrder'][0],copy(fit),copy(res)]
 
-	print('yes here2',args.get('npoints'),args['bounds'])
+
 	first_params=[weighted_quantile(first_res[2].samples[:,i],[.16,.5,.84],first_res[2].weights)\
 				  for i in range(len(first_res[2].vparam_names))]
 
@@ -1290,7 +1290,7 @@ def _fitparallel(all_args):
 	for d in args['fitOrder'][1:]:
 		args['curves'].images[d].fits=newDict()
 		initial_bounds['t0']=t0Bounds
-
+		print('yes here2',args.get('npoints'),initial_bounds)
 		params,args['curves'].images[d].fits['model'],args['curves'].images[d].fits['res']\
 			=nest_parallel_lc(args['curves'].images[d].table,first_res[1],first_res[2],initial_bounds,
 						 	guess_amplitude_bound=True,priors=args.get('priors',None), ppfs=args.get('None'),
