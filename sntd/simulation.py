@@ -49,7 +49,7 @@ def createMultiplyImagedSN(
         numImages=2, cadence=5, epochs=30, bands=['F105W', 'F160W'],
         gain=200., skynoiseRange=(1, 1.1), timeArr=None,zpsys='ab', zp=None,
         microlensing_type=None, microlensing_params=[],ml_loc=[None,None],
-        dust_model='CCM89Dust', av_host=.3, av_lens=None,
+        dust_model='CCM89Dust', av_host=.3, av_lens=None,fix_luminosity=False,
         z_lens=None, minsnr=0.0, scatter=True,snrFunc=None):
     """Generate a multiply-imaged SN light curve set, with user-specified time
     delays and magnifications.
@@ -204,7 +204,11 @@ def createMultiplyImagedSN(
         absBand='bessellb'
     else:
         absBand='bessellr'
-    model.set_source_peakabsmag(_getAbsFromDist(absolutes[snType]['dist']),
+    if fix_luminosity:
+        model.set_source_peakabsmag(absolutes[snType]['dist'][0]
+                                    absBand, zpsys)
+    else:
+        model.set_source_peakabsmag(_getAbsFromDist(absolutes[snType]['dist']),
                                 absBand, zpsys)
     # TODO: allow user to specify parameters like x1, c, t0 if desired.
 
