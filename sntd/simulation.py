@@ -46,7 +46,7 @@ def _getAbsFromDist(dist):
 def createMultiplyImagedSN(
         sourcename, snType, redshift, telescopename='telescope',
         objectName='object', time_delays=[10., 50.], magnifications=[2., 1.],
-        numImages=2, cadence=5, epochs=30, bands=['F105W', 'F125W', 'F160W'],
+        numImages=2, cadence=5, epochs=30, bands=['F105W', 'F160W'],
         gain=200., skynoiseRange=(1, 1.1), timeArr=None,zpsys='ab', zp=None,
         microlensing_type=None, microlensing_params=[],ml_loc=[None,None],
         dust_model='CCM89Dust', av_host=.3, av_lens=None,
@@ -442,11 +442,14 @@ def realize_lcs(observations, model, params, thresh=None,
             flux = np.atleast_1d(np.random.normal(flux, fluxerr))
 
         # Check if any of the fluxes are significant
-        if thresh is not None and not np.any(flux/fluxerr > thresh):
-            continue
+        if thresh is not None:
+            if not np.any(flux/fluxerr > thresh):
+                continue
+            else:
+                inds=np.where(flux/fluxerr>thresh)[0]
 
-        data = [snobs[colname['time']], snobs[colname['band']], flux, fluxerr,
-                snobs[colname['zp']], snobs[colname['zpsys']]]
+        data = [snobs[colname['time']][inds], snobs[colname['band']][inds], flux[inds], fluxerr[inds],
+                snobs[colname['zp']][inds], snobs[colname['zpsys']][inds]]
 
         lcs.append(Table(data, names=RESULT_COLNAMES, meta=p))
 
