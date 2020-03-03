@@ -217,6 +217,12 @@ def fit_data(curves=None, snType='Ia',bands=None, models=None, params=None, boun
 							sntd_command+='fit_prior=fitCurves,'
 						elif isinstance(val,str):
 							sntd_command+=str(par)+'="'+str(val)+'",'
+						elif par=='kwargs':
+							for par2,val2 in val.items():
+								if isinstance(val,str):
+									sntd_command+=str(par2)+'="'+str(val)+'",'
+								else:
+									sntd_command+=str(par2)+'='+str(val)+','
 						else:
 							sntd_command+=str(par)+'='+str(val)+','
 
@@ -313,12 +319,19 @@ def fit_data(curves=None, snType='Ia',bands=None, models=None, params=None, boun
 
 				sntd_command='sntd.fit_data('
 				for par,val in locs.items():
+
 					if par =='curves':
 						sntd_command+='curves=all_dat[i],'
 					elif par=='method':
 						sntd_command+='method="parallel",'
 					elif isinstance(val,str):
 						sntd_command+=str(par)+'="'+str(val)+'",'
+					elif par=='kwargs':
+						for par2,val2 in val.items():
+							if isinstance(val,str):
+								sntd_command+=str(par2)+'="'+str(val)+'",'
+							else:
+								sntd_command+=str(par2)+'='+str(val)+','
 					else:
 						sntd_command+=str(par)+'='+str(val)+','
 
@@ -445,6 +458,12 @@ def fit_data(curves=None, snType='Ia',bands=None, models=None, params=None, boun
 						sntd_command+='method="color",'
 					elif isinstance(val,str):
 						sntd_command+=str(par)+'="'+str(val)+'",'
+					elif par=='kwargs':
+						for par2,val2 in val.items():
+							if isinstance(val,str):
+								sntd_command+=str(par2)+'="'+str(val)+'",'
+							else:
+								sntd_command+=str(par2)+'='+str(val)+','
 					else:
 						sntd_command+=str(par)+'='+str(val)+','
 
@@ -1260,7 +1279,6 @@ def _fitparallel(all_args):
 						guess_amp
 				else:
 					args['bounds'][tempMod.param_names[2]]=[.1*guess_amp,10*guess_amp]
-		print('yes here',args.get('npoints'),args['bounds'])
 		res,fit=sncosmo.nest_lc(args['curves'].images[args['fitOrder'][0]].table,tempMod,args['params'],
 								bounds=args['bounds'],
 							  priors=args.get('priors',None), ppfs=args.get('None'), method=args.get('nest_method','single'),
@@ -1290,7 +1308,6 @@ def _fitparallel(all_args):
 	for d in args['fitOrder'][1:]:
 		args['curves'].images[d].fits=newDict()
 		initial_bounds['t0']=t0Bounds
-		print('yes here2',args.get('npoints'),initial_bounds)
 		params,args['curves'].images[d].fits['model'],args['curves'].images[d].fits['res']\
 			=nest_parallel_lc(args['curves'].images[d].table,first_res[1],first_res[2],initial_bounds,
 						 	guess_amplitude_bound=True,priors=args.get('priors',None), ppfs=args.get('None'),
@@ -1300,7 +1317,6 @@ def _fitparallel(all_args):
 						 maxiter=args.get('maxiter',None),npoints=args.get('npoints',1000))
 
 
-	print('what')
 	sample_dict={args['fitOrder'][0]:[first_res[2].samples[:,t0ind],first_res[2].samples[:,ampind]]}
 	for k in args['fitOrder'][1:]:
 		sample_dict[k]=[args['curves'].images[k].fits['res'].samples[:,t0ind],
