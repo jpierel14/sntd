@@ -1260,7 +1260,7 @@ def _fitparallel(all_args):
 						guess_amp
 				else:
 					args['bounds'][tempMod.param_names[2]]=[.1*guess_amp,10*guess_amp]
-
+		print('yes here',args.get('npoints'),args['bounds'])
 		res,fit=sncosmo.nest_lc(args['curves'].images[args['fitOrder'][0]].table,tempMod,args['params'],
 								bounds=args['bounds'],
 							  priors=args.get('priors',None), ppfs=args.get('None'), method=args.get('nest_method','single'),
@@ -1271,7 +1271,7 @@ def _fitparallel(all_args):
 		if finallogz<res.logz:
 			first_res=[args['fitOrder'][0],copy(fit),copy(res)]
 
-
+	print('yes here2',args.get('npoints'),args['bounds'])
 	first_params=[weighted_quantile(first_res[2].samples[:,i],[.16,.5,.84],first_res[2].weights)\
 				  for i in range(len(first_res[2].vparam_names))]
 
@@ -1300,7 +1300,7 @@ def _fitparallel(all_args):
 						 maxiter=args.get('maxiter',None),npoints=args.get('npoints',1000))
 
 
-
+	print('what')
 	sample_dict={args['fitOrder'][0]:[first_res[2].samples[:,t0ind],first_res[2].samples[:,ampind]]}
 	for k in args['fitOrder'][1:]:
 		sample_dict[k]=[args['curves'].images[k].fits['res'].samples[:,t0ind],
