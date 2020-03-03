@@ -23,6 +23,7 @@ from .mldata import MicrolensingData
 
 __all__=['_mlProp','_mlFlux','realizeMicro','microcaustic_field_to_curve',
          'AchromaticMicrolensing','AchromaticSplineMicrolensing','ChromaticSplineMicrolensing','PeakAchromaticMicrolensing',
+         'ChromaticFilterMicrolensing',
          '_CCM89Dust','_OD94Dust','_F99Dust']
 #def identifyML(lc):
 def realizeMicro(arand=.25,debug=0,kappas=.75,kappac=.15,gamma=.76,eps=.6,nray=300,minmass=10,maxmass=10,power=-2.35,pixmax=5,pixminx=0,pixminy=0,pixdif=10,fracpixd=.3,iwrite=0,verbose=False):
@@ -353,7 +354,74 @@ class AchromaticMicrolensing(sncosmo.PropagationEffect):
         mu = np.expand_dims(self.mu(phase), 1)
         return flux * mu
 
+def getBandNorm(band):
+    band=sncosmo.get_bandpass(band)
+    wave, dwave = sncosmo.utils.integration_grid(band.minwave(), band.maxwave(),
+                                   sncosmo.constants.MODEL_BANDFLUX_SPACING)
+    trans = band(wave)
+    f = np.ones((1,len(wave)))
 
+    return np.sum(wave * trans * f, axis=1) * dwave / sncosmo.constants.HC_ERG_AA
+
+class ChromaticFilterMicrolensing(sncosmo.PropagationEffect):
+    """ Simulated microlensing magnification, read in from an external
+    data file.  The input data file must provide a column for SN phase
+    and magnification (no wavelength dependence).
+    """
+    _param_names = []
+    param_names_latex = []
+    _minwave = 0.
+    _maxwave = 10.**6
+
+    #def __init__(self, mlfilename, magformat='multiply', **kwargs):
+    def __init__(self, times,dmags,bands, magformat='multiply', **kwargs):
+        """Read in the achromatic microlensing data file.
+
+        magformat : str
+        Format of the magnification column.  May be ``multiply`` or ``add,``
+        where ``multiply`` means the magnification column provides a
+        multiplicative magnification factor, mu, so the effect is applied to
+        the source as flux * mu, and ``add`` means the magnification column
+        provides an additive magnitude, DeltaM=-2.5*log10(mu).
+
+        Keyword arguments are passed on to astropy.table.Table.read().
+        """
+        if not isinstance(bands,(list,tuple,np.ndarray)):
+            bands=[bands]
+        if len(bands)!=len(times):
+            times=[times]*len(bands)
+        if len(bands)!=len(dmags):
+            dmags=[dmags]*len(bands)
+        self.bandNorms=[getBandNorm(b) for b in bands]
+        self._magformat=magformat
+        self._parameters = np.array([])
+        #mldata = read_mldatafile(mlfilename, magformat=magformat, **kwargs)
+        ml_list=[MicrolensingData(data={'phase':times[i],'magnification':dmags[i]},magformat=magformat).magnification_interpolator() for i in\
+                 range(len(bands))]
+        #self.mu = [mldata.magnification_interpolator() for mldata in ml_list]#Now always a multiplicative mu
+        self.bandwaves=[[sncosmo.get_bandpass(band).wave[0],
+                         sncosmo.get_bandpass(band).wave[-1]] for band in bands]
+        self.bandtimes=[[t[0],t[-1]] for t in times]
+        self.wave=np.arange(np.max([self._minwave,np.min(self.bandwaves)]),np.min([self._maxwave,np.max(self.bandwaves)])+.01,
+                            sncosmo.constants.MODEL_BANDFLUX_SPACING)
+        self.phase=np.arange(np.min(times),np.max(times)+.01,.1)
+
+
+        all_mu=np.ones((len(self.phase),len(self.wave)))
+        for i in range(len(bands)):
+            indsp=np.where(np.logical_and(self.phase>=self.bandtimes[i][0],self.phase<=self.bandtimes[i][1]))[0]
+            indsw=np.where(np.logical_and(self.wave>=self.bandwaves[i][0],self.wave<=self.bandwaves[i][1]))[0]
+            for ind in indsp:
+                all_mu[ind,indsw]=ml_list[i](self.phase[ind])*np.ones(len(indsw))#/self.bandNorms[i]
+
+
+
+        self.mu=interp2d(self.phase,self.wave,np.array(all_mu).T,fill_value=1,bounds_error=True)
+
+    def propagate(self,phase, wave, flux):
+        """Propagate the magnification onto the model's flux output."""
+
+        return flux * self.mu(phase,wave).T
 
 class PeakAchromaticMicrolensing(sncosmo.PropagationEffect):
     """ Simulated microlensing magnification, read in from an external

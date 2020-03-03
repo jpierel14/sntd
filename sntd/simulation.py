@@ -48,7 +48,7 @@ def createMultiplyImagedSN(
         objectName='object', time_delays=[10., 50.], magnifications=[2., 1.],
         numImages=2, cadence=5, epochs=30, bands=['F105W', 'F125W', 'F160W'],
         gain=200., skynoiseRange=(1, 1.1), timeArr=None,zpsys='ab', zp=None,
-        microlensing_type=None, microlensing_params=[],
+        microlensing_type=None, microlensing_params=[],ml_loc=[None,None],
         dust_model='CCM89Dust', av_host=.3, av_lens=None,
         z_lens=None, minsnr=0.0, scatter=True,snrFunc=None):
     """Generate a multiply-imaged SN light curve set, with user-specified time
@@ -262,7 +262,7 @@ def createMultiplyImagedSN(
                 #get magnification curve from the defined microcaustic
                 mlTime=np.arange(0,times[-1]/(1+redshift)-model_i._source._phase[0]+5,1)
 
-                time,dmag=microcaustic_field_to_curve(microlensing_params,mlTime,z_lens,redshift)
+                time,dmag=microcaustic_field_to_curve(microlensing_params,mlTime,z_lens,redshift,loc=ml_loc[imnum])
                 dmag/=np.mean(dmag) #to remove overall magnification
 
                 ml_effect = AchromaticMicrolensing(
@@ -313,7 +313,7 @@ def createMultiplyImagedSN(
         curve_i.bands=list(set(table_i['band']))
         curve_i.simMeta=deepcopy(table_i.meta)
         curve_i.simMeta['sourcez']=redshift
-        curve_i.simMeta['model']=model_i
+        curve_i.simMeta['model']=copy(model_i)
         curve_i.simMeta['hostebv']=ebv_host
         curve_i.simMeta['lensebv']=ebv_lens
         curve_i.simMeta['lensz']=z_lens
@@ -410,7 +410,6 @@ def realize_lcs(observations, model, params, thresh=None,
 
     for p in params:
         model.set(**p)
-
         # Select times for output that fall within tmin amd tmax of the model
         if trim_observations:
             mask = ((observations[colname['time']] > model.mintime()) &

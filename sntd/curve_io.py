@@ -76,6 +76,7 @@ class curveDict(dict):
         """
         self.images=dict([])
 
+        self.parallel=curve()
         self.series=curve()
         self.color=curve()
 
@@ -303,7 +304,8 @@ class curveDict(dict):
             temp1=copy(self.images[im].table[self.images[im].table['band']==band1])
             temp1=temp1[temp1['flux']>0]
             temp2=temp2[temp2['flux']>0]
-
+            temp1=temp1[temp1['flux']/temp1['fluxerr']>minsnr]
+            temp2=temp2[temp2['flux']/temp2['fluxerr']>minsnr]
             temp1['time']-=time_delays[im]
             temp2['time']-=time_delays[im]
 
@@ -342,30 +344,65 @@ class curveDict(dict):
         return(self)
 
 
-    def plot_fit(self,method='parallel',par_image='image_1'):
+    def plot_fit(self,method='parallel',par_image='image_1',ref_image='image_1'):
         if method=='parallel':
             res=self.images[par_image].fits.res
             samples=res.samples
+            try:
+                truths=[self.images[par_image].simMeta['model'].get(x) for x in res.vparam_names]
+            except:
+                truths=None
         elif method=='series':
             res=self.series.fits.res
             samples=res.samples
+            refa=weighted_quantile(samples[:,res.vparam_names.index('a_'+self.series.refImage[-1])],.5,res.weights)
             for im in self.images.keys():
                 ind=res.vparam_names.index('t_'+im[-1])
                 ind2=res.vparam_names.index('a_'+im[-1])
-                samples[:,ind]+=self.series.meta['td']
-                samples[:,ind2]*=self.series.meta['mu']
+                samples[:,ind]+=self.series.meta['td'][im]+self.series.meta['reft0']
+                samples[:,ind2]*=self.series.meta['mu'][im]/self.series.meta['mu'][self.series.refImage]/refa
+
+            try:
+                truths=[]
+                for p in res.vparam_names:
+                    if p[0:2]=='a_':
+                        im=[x for x in self.images.keys() if x[-1]==p[-1]][0]
+                        truths.append(self.images[im].simMeta['model'].parameters[2]/ \
+                                      self.images[ref_image].simMeta['model'].parameters[2])
+
+                    elif p[0:2]=='t_':
+                        im=[x for x in self.images.keys() if x[-1]==p[-1]][0]
+                        truths.append(self.images[im].simMeta['model'].get('t0'))
+                    else:
+                        im=list(self.images.keys())[0]
+                        truths.append(self.images[im].simMeta['model'].get(p))
+            except:
+                truths=None
 
         else:
             res=self.color.fits.res
             samples=res.samples
+            #reft=self.color.param_quantiles['t_'+ref_image[-1]][1]
             for im in self.images.keys():
                 ind=res.vparam_names.index('t_'+im[-1])
-                samples[:,ind]+=self.color.meta['td']
+                samples[:,ind]+=self.color.meta['reft0']+self.color.meta['td'][im]
 
+            try:
+                truths=[]
+                for p in res.vparam_names:
+                    if p[0:2]=='t_':
+                        im=[x for x in self.images.keys() if x[-1]==p[-1]][0]
+                        truths.append(self.images[im].simMeta['model'].get('t0'))
+                    else:
+                        im=list(self.images.keys())[0]
+                        truths.append(self.images[im].simMeta['model'].get(p))
+            except:
+                truths=None
         fig = corner.corner(
             samples,
             weights=res.weights,
             labels=res.vparam_names,
+            truths=truths,
             quantiles=(0.16,.5, 0.84),
             bins = 30, \
             color='k', \
