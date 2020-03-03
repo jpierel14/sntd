@@ -224,7 +224,7 @@ def fit_data(curves=None, snType='Ia',bands=None, models=None, params=None, boun
 									sntd_command+=str(par2)+'="'+str(val2)+'",'
 								else:
 									sntd_command+=str(par2)+'='+str(val2)+','
-							else:
+						else:
 							sntd_command+=str(par)+'='+str(val)+','
 
 					sntd_command=sntd_command[:-1]+')\n'
