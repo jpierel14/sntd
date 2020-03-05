@@ -103,7 +103,7 @@ Now we can take the simulated microcaustic and use it to include microlensing in
 
 .. code-block:: python
 
-   	myMISN2 = sntd.createMultiplyImagedSN(sourcename='salt2-extended', snType='Ia', redshift=1.33,z_lens=.53, bands=['F110W','F125W'],
+   	myMISN2 = sntd.createMultiplyImagedSN(sourcename='salt2-extended', snType='Ia', redshift=1.2,z_lens=.5, bands=['F110W','F160W'],
                        zp=[26.8,26.2], cadence=5., epochs=35.,time_delays=[10., 70.], magnifications=[7,3.5],
 		       objectName='My Type Ia SN',telescopename='HST', microlensing_type='AchromaticMicrolensing',microlensing_params=myML)
 	myMISN2.plot_object(showMicro=True)
@@ -130,9 +130,10 @@ There are 3 methods built into SNTD to measure time delays (parallel, series, co
 
 .. code-block:: python
 
-   	fitCurves=sntd.fit_data(myMISN2,snType='Ia', models='salt2-extended',bands=['F110W','F125W'],
-                 params=['x0','x1','t0','c'],constants={'z':1.33},bounds={'t0':(-20,20),'x1':(-3,3),'c':(-1,1)},
-		             method='parallel',microlensing=None,npoints=1000)
+   	fitCurves=sntd.fit_data(myMISN2,snType='Ia', models='salt2-extended',bands=['F110W','F160W'],
+                    params=['x0','t0','x1','c'],constants={'z':1.2},refImage='image_1',
+                    bounds={'t0':(-20,20),'x1':(-3,3),'c':(-1,1),'mu':(.5,2)},fitOrder=['image_2','image_1'],
+                    method='parallel',microlensing=None,modelcov=False,npoints=500,maxiter=None)
 	print(fitCurves.time_delays)
 	print(fitCurves.time_delay_errors)
 	print(fitCurves.magnifications)
@@ -147,10 +148,10 @@ There are 3 methods built into SNTD to measure time delays (parallel, series, co
 
 Out:: 
 
-	{'image_1': 0, 'image_2': 60.28730952398754}
-	{'image_1': 0, 'image_2': array([-0.33462375,  0.30011858])}
-	{'image_1': 1, 'image_2': 0.5017688069514342}
-	{'image_1': 0, 'image_2': array([-0.01254022,  0.01109703])}
+	{'image_1': 0, 'image_2': 59.88134395078388}
+	{'image_1': 0, 'image_2': array([-0.53122517,  0.50466877])}
+	{'image_1': 1, 'image_2': 2.0506822640563884}
+	{'image_1': 0, 'image_2': array([-0.05147178,  0.05488189])}
 
 .. image:: examples/sntd_par_fit.png
     :width: 600px
@@ -180,9 +181,10 @@ Other methods are called in a similar fashion, with a couple of extra arguments:
 .. code-block:: python
     
     fitCurves=sntd.fit_data(myMISN2,snType='Ia', models='salt2-extended',bands=['F110W','F160W'],
-        params=['x1','c'],constants={'z':1.33},refImage='image_2',
-        bounds={'td':(-20,20),'mu':(.5,2),'x1':(-3,3),'c':(-1,1)},fit_prior=fitCurves,
-                    method='series',npoints=1000)
+        params=['x1','c'],constants={'z':zs},refImage='image_1',
+        bounds={'td':(-20,20),'mu':(.5,2),'x1':(-3,3),'c':(-1,1)},
+        method='series',npoints=500)
+
 
     print(fitCurves.series.time_delays)
 	print(fitCurves.series.time_delay_errors)
@@ -195,10 +197,10 @@ Other methods are called in a similar fashion, with a couple of extra arguments:
 
 Out:: 
 
-	{'image_1': 0, 'image_2': 60.28730952398754}
-	{'image_1': 0, 'image_2': array([-0.33462375,  0.30011858])}
-	{'image_1': 1, 'image_2': 0.5017688069514342}
-	{'image_1': 0, 'image_2': array([-0.01254022,  0.01109703])}
+	{'image_1': 0, 'image_2': 59.84335825050073}
+	{'image_1': 0, 'image_2': array([-0.62034403,  0.64549489])}
+	{'image_1': 1, 'image_2': 2.0152378512727216}
+	{'image_1': 0, 'image_2': array([-0.02654348,  0.02765742])}
 
 .. image:: examples/sntd_ser_fit.png
     :width: 600px
@@ -216,10 +218,10 @@ Out::
 
 .. code-block:: python
     
-    fitCurves=sntd.fit_data(myMISN2,snType='Ia', models='salt2-extended',bands=['F110W','F125W'],
-              params=['x0','x1','t0','c'],constants={'z':1.33},bounds={'t0':(-15,15),'x1':(-2,2),'c':(0,1)},
-              seriesGrids={'td':(-5,5),'mu':(.8,1.2)},refModel=fitCurves.images['image_1'].fits.model,
-              method='color',microlensing=None)
+    fitCurves=sntd.fit_data(myMISN2,snType='Ia', models='salt2-extended',bands=['F110W','F160W'],
+                    params=['c'],constants={'z':zs,'x1':fitCurves.images['image_1'].fits.model.get('x1')},refImage='image_1',
+                    bounds={'td':(-20,20),'mu':(.5,2),'x1':(-3,3),'c':(-1,1)},
+                    method='color',microlensing=None,modelcov=False,npoints=500,maxiter=None)
 
     print(fitCurves.color.time_delays)
 	print(fitCurves.color.time_delay_errors)
@@ -230,8 +232,8 @@ Out::
 
 Out:: 
 
-	{'image_1': 0, 'image_2': 60.54660182772138}
-	{'image_1': 0, 'image_2': array([-1.15062702,  1.2630195 ])}
+	{'image_1': 0, 'image_2': 59.92384957860125}
+	{'image_1': 0, 'image_2': array([-1.93145127,  1.96506599])}
 
 .. image:: examples/sntd_col_fit.png
     :width: 600px
@@ -428,7 +430,7 @@ be slightly different after fitting the example data). For reference, the true d
 	fitCurves=sntd.fit_data(new_MISN,snType='Ia', models='salt2',bands=['F125W','F160W'],
                         params=['x0','x1','t0','c'],constants={'z':1.33},
                         bounds={'t0':(-15,15),'x1':(-2,2),'c':(0,1)})
-	print(fitCurves.time_delays)
+	print(fitCurves.parallel.time_delays)
 	fitCurves.plot_object(showFit=True)
 	plt.show()
 
@@ -448,8 +450,10 @@ Out::
 Batch Processing Time Delay Measurements
 ****************************************
 
-Parallel processing is built into SNTD in order to fit a large number of MISN. To access this feature,
-simply provide a list of MISN instead of a single sntd curveDict object:
+Parallel processing and batch processing is built into SNTD in order to fit a large number of (likely simulated) MISN. To access this feature,
+simply provide a list of MISN instead of a single sntd curveDict object, specifying whether you want to use multiprocessing (split the list across multiple cores)
+or batch processing (splitting the list into multiple jobs with sbatch). If you specify batch mode, you need to provide either a batch script (`batch_script`) or
+the partition and number of jobs you want to implement. 
 
 .. code-block:: python
 
@@ -460,14 +464,26 @@ simply provide a list of MISN instead of a single sntd curveDict object:
                    zp=[26.8,26.2], cadence=5., epochs=35.,time_delays=[10., 50.], magnifications=[7,3.5],
        objectName='My Type Ia SN',telescopename='HST')
   curve_list=[myMISN1,myMISN2]
-  fitCurves=sntd.fit_data(curve_list,snType='Ia', models='salt2-extended',bands=['F125W','F160W'],
-      params=['x0','x1','t0','c'],constants={'z':1.33},bounds={'t0':(-15,15),'x1':(-2,2),'c':(0,1)},
-      method='parallel',microlensing=None)
+  fitCurves=sntd.fit_data(curve_list,snType='Ia', models='salt2-extended',bands=['F110W','F125W'],
+                    params=['x0','t0','x1','c'],constants={'z':1.3},refImage='image_1',
+                    bounds={'t0':(-20,20),'x1':(-3,3),'c':(-1,1)},fitOrder=['image_2','image_1'],
+                    method='parallel',npoints=1000,par_or_batch='batch', batch_partition='myPartition',nbatch_jobs=2)
+
   for curve in fitCurves:
-    print(curve.time_delays)
+    print(curve.parallel.time_delays)
+  
+  fitCurves=sntd.fit_data(curve_list,snType='Ia', models='salt2-extended',bands=['F110W','F125W'],
+                    params=['x0','t0','x1','c'],constants={'z':1.3},refImage='image_1',
+                    bounds={'t0':(-20,20),'x1':(-3,3),'c':(-1,1)},fitOrder=['image_2','image_1'],
+                    method='parallel',npoints=1000,par_or_batch='parallel')
+  for curve in fitCurves:
+    print(curve.parallel.time_delays)
 
 Out::
 
+  Submitted batch job 5784720
+  {'image_1': 0, 'image_2': 60.3528844834}
+  {'image_1': 0, 'image_2': 40.34982372733}
   Fitting MISN number 1...
   Fitting MISN number 2...
   {'image_1': 0, 'image_2': 60.32583528844834}

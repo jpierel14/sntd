@@ -44,21 +44,22 @@ def _getAbsFromDist(dist):
 
 
 def createMultiplyImagedSN(
-        sourcename, snType, redshift, telescopename='telescope',
+        sourcename, snType, redshift,z_lens=None, telescopename='telescope',
         objectName='object', time_delays=[10., 50.], magnifications=[2., 1.],
         numImages=2, cadence=5, epochs=30, bands=['F105W', 'F160W'],
         gain=200., skynoiseRange=(1, 1.1), timeArr=None,zpsys='ab', zp=None,
         microlensing_type=None, microlensing_params=[],ml_loc=[None,None],
         dust_model='CCM89Dust', av_host=.3, av_lens=None,fix_luminosity=False,
-        z_lens=None, minsnr=0.0, scatter=True,snrFunc=None):
-    """Generate a multiply-imaged SN light curve set, with user-specified time
+        minsnr=0.0, scatter=True,snrFunc=None):
+    """
+    Generate a multiply-imaged SN light curve set, with user-specified time
     delays and magnifications.
 
     Parameters
     ----------
-    sourcename : `~sncosmo.Source` or str
+    sourcename: :class:`~sncosmo.Source` or str
         The model for the spectral evolution of the source. If a string
-        is given, it is used to retrieve a `~sncosmo.Source` from
+        is given, it is used to retrieve a :class:`~sncosmo.Source` from
         the registry.
     snType : str
         The classification of the supernova
@@ -70,60 +71,65 @@ def createMultiplyImagedSN(
         The name of the telescope used for observations
     objectName : str
         The name of the simulated supernova
-    numImages : int
-        The number of images to simulate
-    time_delays : list of float
+    time_delays : :class:`~list` of :class:`~float`
         The relative time delays for the multiple images of the supernova. Must
         be same length as numImages
-    magnifications : list of float
+    magnifications : :class:`~list` of :class:`~float`
         The relative magnifications for the multiple images of hte supernova. Must
         be same length as numImages
-    timeArr : list of float
-        A list of times that define the simulated observation epochs
+    numImages : int
+        The number of images to simulate
     cadence : float
         The cadence of the simulated observations (if timeArr is not defined)
     epochs : int
         The number of simulated observations (if timeArr is not defined)
-    bands : list of `~sncosmo.Bandpass` or str
+    bands : :class:`~list` of :class:`~sncosmo.Bandpass` or :class:`~str`
         The bandpass(es) used for simulated observations
-    snrFunc : `~scipy.interpolate.interp1d`
-        An interpolation function that defines the signal to noise ratio (SNR)
-        as a function of magnitude in the AB system. Used to define the
-        observations instead of telescope parameters like gain and skynoise
     gain : float
         Gain of the telescope "obtaining" the simulated observations (if snrFunc
         not defined)
-    skynoiseRange : list of float
+    skynoiseRange : :class:`~list` of :class:`~float`
         The left and right bounds of sky noise used to define observational noise
         (if snrFunc not defined)
-    minsnr : float
-        A minimum SNR threshold for observations when defining uncertainty
-    scatter : bool
-        Boolean that decides whether Gaussian scatter is applied to simulated
-        observations
-    zpsys : str or `~sncosmo.MagSystem`
+    timeArr : :class:`~list` of :class:`~float`
+        A list of times that define the simulated observation epochs
+    zpsys : str or :class:`~sncosmo.MagSystem`
         The zero-point system used to define the photometry
-    zp : float or list of float
+    zp : float or :class:`~list` of :class:`~float`
         The zero-point used to define the photometry, list if simulating multiple
         bandpasses. Then this list must be the same length as bands
     microlensing_type : str
         If microlensing is to be included, defines whether it is
         "AchromaticSplineMicrolensing" or "AchromaticMicrolensing"
-    microlensing_params : `~numpy.array` or list of int
+    microlensing_params: :class:`~numpy.array` or :class:`~list` of :class:`~int`
         If using AchromaticSplineMicrolensing, then this params list must give
         three values for [nanchor, sigmadm, nspl]. If using AchromaticMicrolensing,
         then this must be a microcaustic defined by a 2D numpy array
+    ml_loc: :class:`~list`
+        List containing tuple locations of SN on microlensing map (random if Nones)
     dust_model : str
         The dust model to be used for simulations, see sncosmo documentation for options
     av_host : float
         The A<sub>V</sub> parameter for the simulated dust effect in the source plane
     av_lens : float
         The A<sub>V</sub> parameter for the simulated dust effect in the lens plane
-
+    fix_luminosity: bool
+        Set the luminosity of every SN to be the peak of the distribution
+    minsnr : float
+        A minimum SNR threshold for observations when defining uncertainty
+    scatter : bool
+        Boolean that decides whether Gaussian scatter is applied to simulated
+        observations
+    snrFunc : :class:`~scipy.interpolate.interp1d` or :class:`~dict`
+        An interpolation function that defines the signal to noise ratio (SNR)
+        as a function of magnitude in the AB system. Used to define the
+        observations instead of telescope parameters like gain and skynoise.
+        This can be a dictionary, so that it's different for each filter with
+        filters as keys and interpolation functions as values.
 
     Returns
     -------
-    MISN : `~sntd.curveDict`
+    MISN: :class:`~sntd.curveDict`
         A curveDict object containing each of the multiply-imaged SN light curves
         and the simulation parameters.
     Examples
@@ -347,12 +353,12 @@ def realize_lcs(observations, model, params, thresh=None,
 
     Parameters
     ----------
-    observations : `~astropy.table.Table` or `~numpy.ndarray`
+    observations : :class:`~astropy.table.Table` or :class:`~numpy.ndarray`
         Table of observations. Must contain the following column names:
         ``band``, ``time``, ``zp``, ``zpsys``, ``gain``, ``skynoise``.
     model : `sncosmo.Model`
         The model to use in the simulation.
-    params : list (or generator) of dict
+    params : :class:`~list` (or generator) of dict
         List of parameters to feed to the model for realizing each light curve.
     thresh : float, optional
         If given, light curves are skipped (not returned) if none of the data
@@ -370,7 +376,7 @@ def realize_lcs(observations, model, params, thresh=None,
 
     Returns
     -------
-    sne : list of `~astropy.table.Table`
+    sne : list of :class:`~astropy.table.Table`
         Table of realized data for each item in ``params``.
 
     Notes
