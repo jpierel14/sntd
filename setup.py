@@ -26,11 +26,11 @@ URL = 'sntd.readthedocs.org'
 try:
     import numpy
 except:
-    subprocess.call('pip install numpy')
+    subprocess.call(['pip','install','numpy'])
 try:
     import cython
 except:
-    subprocess.call('pip install cython')
+    subprocess.call(['pip','install','cython'])
 
 def recursive_glob(basedir, pattern):
     matches = []
