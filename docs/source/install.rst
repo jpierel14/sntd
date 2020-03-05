@@ -42,6 +42,15 @@ Common Installation Issues
    was not installed as a framework. A fix for that issue is on
    `stack overflow <https://stackoverflow.com/questions/21784641/installation-issue-with-matplotlib-python>`_.
 
+4. Sometimes you can get an error when using the microlensing component of SNTD involving the 
+   `microlens` executable. This involves differences between the machine
+   the microlens executable was created on and yours. Just go to the 
+   `microlens github repo <https://github.com/psaha/microlens>`_ and follow the instructions for downloading
+   and installing the wambsganss `microlens code here <https://github.com/psaha/microlens/blob/master/wambsganss/README>`_,
+   for the `with FITS-file output` option. When you have the `microlens` executable, just replace the SNTD executable in
+   `sntd/sntd/microlens` with your new executable, and reinstall. 
+
+
 Install latest development version
 ==================================
 
