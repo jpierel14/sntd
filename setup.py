@@ -1,5 +1,5 @@
 from setuptools import setup
-import os,glob,warnings,sys,fnmatch
+import os,glob,warnings,sys,fnmatch,subprocess
 from setuptools.command.test import test as TestCommand
 from distutils.core import setup
 import numpy.distutils.misc_util
@@ -21,6 +21,16 @@ AUTHOR_EMAIL = 'jr23@email.sc.edu'
 VERSION = '1.0.9'
 LICENSE = 'BSD'
 URL = 'sntd.readthedocs.org'
+
+#bad way of doing this, but solves some install issues
+try:
+    import numpy
+except:
+    subprocess.call('pip install numpy')
+try:
+    import cython
+except:
+    subprocess.call('pip install cython')
 
 def recursive_glob(basedir, pattern):
     matches = []
