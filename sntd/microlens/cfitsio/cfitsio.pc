@@ -1,4 +1,4 @@
-prefix=/Users/jpierel/rodney/sntd/sntd/microlens/cfitsio
+prefix=/work/jr23/sntd/sntd/microlens/cfitsio
 exec_prefix=${prefix}
 libdir=${exec_prefix}/lib
 includedir=${prefix}/include

@@ -34,10 +34,12 @@ PACKAGENAME='sntd'
 pkgdatadir = os.path.join(PACKAGENAME, 'data')
 microdatadir = os.path.join(PACKAGENAME, 'microlens')
 simdatadir = os.path.join(PACKAGENAME, 'sim')
+batchdatadir = os.path.join(PACKAGENAME, 'batch')
 data_files = []
 data_files.extend(recursive_glob(pkgdatadir, '*'))
 data_files.extend(recursive_glob(microdatadir, '*'))
 data_files.extend(recursive_glob(simdatadir, '*'))
+data_files.extend(recursive_glob(batchdatadir, '*'))
 
 data_files = [f[len(PACKAGENAME)+1:] for f in data_files]
 

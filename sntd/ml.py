@@ -73,6 +73,7 @@ def realizeMicro(arand=.25,debug=0,kappas=.75,kappac=.15,gamma=.76,eps=.6,nray=3
     except:
         pass
     os.chdir(os.path.join(__dir__,'microlens'))
+    print(os.system('pwd'))
     if verbose:
         subprocess.call(r'./microlens')
     else:

@@ -81,8 +81,8 @@
 *	line below;
 *
 *
-      write(string2,'(i3.3)')jobnu
-c     write(string2,'(i3.3)')jobnu+ 1
+c     write(string2,'(i3.3)')jobnu
+      write(string2,'(i3.3)')jobnu+ 1
       rewind 55 
       write(55,'(a3)')string2
       close(55)
