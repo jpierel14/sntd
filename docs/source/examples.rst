@@ -247,6 +247,20 @@ Out::
     :height: 600px
     :alt: alternate text
 
+
+You can include your fit from the parallel method as a prior on light curve and time delay parameters in the series/color methods with the "fit_prior" command:
+
+.. code-block:: python
+
+   	fitCurves_parallel=sntd.fit_data(myMISN2,snType='Ia', models='salt2-extended',bands=['F110W','F160W'],
+                    	params=['x0','t0','x1','c'],constants={'z':1.2},refImage='image_1',
+                    	bounds={'t0':(-20,20),'x1':(-3,3),'c':(-1,1),'mu':(.5,2)},fitOrder=['image_2','image_1'],
+                   	    method='parallel',microlensing=None,modelcov=False,npoints=500,maxiter=None)
+    fitCurves_color=sntd.fit_data(myMISN2,snType='Ia', models='salt2-extended',bands=['F110W','F160W'],
+                    	params=['c'],constants={'z':zs,'x1':fitCurves.images['image_1'].fits.model.get('x1')},refImage='image_1',
+                    	bounds={'td':(-20,20),'mu':(.5,2),'x1':(-3,3),'c':(-1,1)},fit_prior=fitCurves_parallel,
+                    	method='color',microlensing=None,modelcov=False,npoints=500,maxiter=None)
+
 Fitting Using Extra Propagation Effects
 =======================================
 
@@ -490,5 +504,14 @@ Out::
   {'image_1': 0, 'image_2': 40.22834982372733}
 
 
+If you would like to run multiple methods in a row in batch mode, the recommended way is by providing a list of the methods to the fit_data function. You 
+can have it use the parallel fit as a prior on the subsequent fits by setting fit_prior to True instead of giving it a curveDict object.
 
 
+.. code-block:: python
+
+  
+  fitCurves_batch=sntd.fit_data(curve_list,snType='Ia', models='salt2-extended',bands=['F110W','F125W'],
+                    params=['x0','t0','x1','c'],constants={'z':1.3},refImage='image_1',fit_prior=True,
+                    bounds={'t0':(-20,20),'x1':(-3,3),'c':(-1,1)},fitOrder=['image_2','image_1'],
+                    method=['parallel','series','color'],npoints=1000,par_or_batch='batch', batch_partition='myPartition',nbatch_jobs=2)
