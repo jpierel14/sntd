@@ -46,7 +46,7 @@ class curveDict(dict):
             Name of object of interest
         Returns
         -------
-        MISN : `sntd.curveDict`
+        MISN : :class:`~sntd.curveDict`
         """
         super(curveDict, self).__init__() #init for the super class
         self.meta = {'info': ''}
@@ -172,21 +172,29 @@ class curveDict(dict):
 
     def combine_curves(self,time_delays=None,magnifications=None,referenceImage='image_1',static=False,
                        model=None,minsnr=5.):
-        """Takes the multiple images in self.images and combines
-            the data into a single light curve using defined
-            time delays and magnifications or best (quick) guesses.
+        """
+        Takes the multiple images in self.images and combines
+        the data into a single light curve using defined
+        time delays and magnifications or best (quick) guesses.
 
         Parameters
         ----------
-        time_delays : :class:`dict`
+        time_delays: :class:`dict`
             Dictionary with image names as keys and relative time
-            delays as values (e.g. {'image_1':0,'image_2':20})
-        magnifications : dict
-            Dictionary with image names as keys and relative
-            magnifications as values (e.g.
-            {'image_1':1,'image_2':1.1})
+            delays as values (e.g. {'image_1':0,'image_2':20}). Guessed if None.
+        magnifications: :class:`dict`
+            Dictionary with image names as keys and relative magnifications
+            as values (e.g. {'image_1':0,'image_2':20}). Guessed if None.
         referenceImage: str
-            The image you want to be the reference (e.g. iamge_1, image_2, etc.)
+            The image you want to be the reference (e.g. image_1, image_2, etc.)
+        ignore_images: :class:`~list`
+            List of images you do not want to include in the color curve.
+        static: bool
+            Make the color curve, don't shift the data
+        model: :class:`~sncosmo.Model`
+            If you want to use an sncosmo Model (and the guess_t0_amplitude method) to guess time delays
+        minsnr: float
+            Cut data that don't meet this threshold before making the color curve.
 
         Returns
         -------
@@ -241,10 +249,11 @@ class curveDict(dict):
 
 
     def color_table(self,band1,band2,time_delays=None,referenceImage='image_1',ignore_images=[],
-                    static=False,model=None,minsnr=5.0):
-        """Takes the multiple images in self.images and combines
-            the data into a single color curve using defined
-            time delays and magnifications or best (quick) guesses.
+                    static=False,model=None,minsnr=0.0):
+        """
+        Takes the multiple images in self.images and combines
+        the data into a single color curve using defined
+        time delays and magnifications or best (quick) guesses.
 
         Parameters
         ----------
@@ -252,17 +261,19 @@ class curveDict(dict):
             The first band for color curve
         band2: str
             The second band for color curve
-        time_delays : :class:`dict`
+        time_delays: :class:`dict`
             Dictionary with image names as keys and relative time
-            delays as values (e.g. {'image_1':0,'image_2':20})
-        magnifications : dict
-            Dictionary with image names as keys and relative
-            magnifications as values (e.g.
-            {'image_1':1,'image_2':1.1})
+            delays as values (e.g. {'image_1':0,'image_2':20}). Guessed if None.
         referenceImage: str
-            The image you want to be the reference (e.g. iamge_1, image_2, etc.)
-        ignore_images: list
+            The image you want to be the reference (e.g. image_1, image_2, etc.)
+        ignore_images: :class:`~list`
             List of images you do not want to include in the color curve.
+        static: bool
+            Make the color curve, don't shift the data
+        model: :class:`~sncosmo.Model`
+            If you want to use an sncosmo Model (and the guess_t0_amplitude method) to guess time delays
+        minsnr: float
+            Cut data that don't meet this threshold before making the color curve.
 
         Returns
         -------
@@ -344,12 +355,25 @@ class curveDict(dict):
         return(self)
 
 
-    def plot_fit(self,method='parallel',par_image='image_1',ref_image='image_1'):
+    def plot_fit(self,method='parallel'):
+        """
+        Makes a corner plot based on one of the fitting methods
+
+        Parameters
+        ----------
+        method: str
+            parallel, series, or color
+
+        Returns
+        -------
+        figure object: :class:`~matplotlib.pyplot.figure`
+        """
         if method=='parallel':
-            res=self.images[par_image].fits.res
+
+            res=self.images[self.parallel.fitOrder[0]].fits.res
             samples=res.samples
             try:
-                truths=[self.images[par_image].simMeta['model'].get(x) for x in res.vparam_names]
+                truths=[self.images[self.parallel.fitOrder[0]].simMeta['model'].get(x) for x in res.vparam_names]
             except:
                 truths=None
         elif method=='series':
@@ -368,7 +392,7 @@ class curveDict(dict):
                     if p[0:2]=='a_':
                         im=[x for x in self.images.keys() if x[-1]==p[-1]][0]
                         truths.append(self.images[im].simMeta['model'].parameters[2]/ \
-                                      self.images[ref_image].simMeta['model'].parameters[2])
+                                      self.images[self.series.refImage].simMeta['model'].parameters[2])
 
                     elif p[0:2]=='t_':
                         im=[x for x in self.images.keys() if x[-1]==p[-1]][0]
@@ -382,7 +406,6 @@ class curveDict(dict):
         else:
             res=self.color.fits.res
             samples=res.samples
-            #reft=self.color.param_quantiles['t_'+ref_image[-1]][1]
             for im in self.images.keys():
                 ind=res.vparam_names.index('t_'+im[-1])
                 samples[:,ind]+=self.color.meta['reft0']+self.color.meta['td'][im]
@@ -429,7 +452,7 @@ class curveDict(dict):
 
         Parameters
         ----------
-        bands : str or list of str
+        bands : str or :class:`~list` of :class:`~str`
             'all' = plot all bands; or provide a list of bands to plot
         savefig : bool
             boolean to save or not save plot
@@ -713,7 +736,7 @@ def table_factory(tables,telescopename="Unknown",object_name=None):
 
     Parameters
     ----------
-    tables : `~astropy.table.Table` or list
+    tables : `~astropy.table.Table` or :class:`~list`
         Astropy table with all of your data from your data file, or a list of such tables.
     telescopename : str
         Name of telescope for labeling purposes inside curve object

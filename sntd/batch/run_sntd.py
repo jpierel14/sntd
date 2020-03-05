@@ -12,6 +12,7 @@ parser = OptionParser()
 all_dat=pickle.load(open(os.path.join(os.path.abspath(os.path.dirname(__file__)),
                                       'sntd_data.pkl'),'rb'))
 inds=[int(nlcs/njobs)*int(sys.argv[1]),int(nlcs/njobs)*int(sys.argv[1])+int(nlcs/njobs)]
+inds[1]=min(inds[-1],len(all_dat))
 
 all_res=[]
 for i in range(inds[0],inds[1]):

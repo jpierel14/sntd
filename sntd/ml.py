@@ -26,7 +26,8 @@ __all__=['_mlProp','_mlFlux','realizeMicro','microcaustic_field_to_curve',
          'ChromaticFilterMicrolensing',
          '_CCM89Dust','_OD94Dust','_F99Dust']
 #def identifyML(lc):
-def realizeMicro(arand=.25,debug=0,kappas=.75,kappac=.15,gamma=.76,eps=.6,nray=300,minmass=10,maxmass=10,power=-2.35,pixmax=5,pixminx=0,pixminy=0,pixdif=10,fracpixd=.3,iwrite=0,verbose=False):
+def realizeMicro(arand=.25,debug=0,kappas=.75,kappac=.15,gamma=.76,eps=.6,nray=300,minmass=10,maxmass=10,power=-2.35,
+                 pixmax=5,pixminx=0,pixminy=0,pixdif=10,fracpixd=.3,iwrite=0,verbose=False):
     """
     Creates a microcaustic realization based on Wambsganss 1990 microlens code. All parameters are optional as they
      have defaults, see Wambsganss documentation for details on parameters.
@@ -35,30 +36,16 @@ def realizeMicro(arand=.25,debug=0,kappas=.75,kappac=.15,gamma=.76,eps=.6,nray=3
     inData=[arand,debug,kappas,kappac,gamma,eps,nray,minmass,maxmass,power,pixmax,pixminx,pixminy,pixdif,fracpixd,iwrite]
     inputFile=np.loadtxt(os.path.join(__dir__,'microlens','default_input'),dtype='str',delimiter='tab')
     outFile=[]
-    #dt=np.dtype([('a',np.float64),('b',np.unicode_),('c',np.unicode_)])
     for i in range(len(inputFile)-1):
-        #dat=inputFile[i].split()
-
-        #if len(dat)<3:
-        #    outFile.append(dat[0])
-        #    break
 
         dat=str(inData[i])
 
-        #print(np.array([dat[0],dat[1],' '.join(dat[2:])]))
-
-
-        #outFile.append([dat[0],dat[1],' '.join(dat[2:])])
         outFile.append(dat)
 
-    #outFile=np.array(outFile)
 
-    #print(outFile)
-    #np.savetxt(os.path.join(__dir__,'microlens','input'),outFile,fmt=['%3.3f','%s','%s'],delimiter='tab')
     thefile=open(os.path.join(__dir__,'microlens','input'),'w')
 
     for i in range(len(outFile)-1):
-        #thefile.write((types[i]+'\t\t%s\t\t%s\n')%(float(outFile[i][0]),outFile[i][1],outFile[i][2]))
         thefile.write((types[i]+'\n')%(float(outFile[i])))
     thefile.write(outFile[-1])
     thefile.close()
@@ -82,7 +69,6 @@ def realizeMicro(arand=.25,debug=0,kappas=.75,kappac=.15,gamma=.76,eps=.6,nray=3
 
 
     num=np.loadtxt(os.path.join(__dir__,'microlens','jobnum'),dtype='str')
-    #lensPlane=np.array(fits.open(os.path.join(__dir__,'microlens','IRIS'+str(num)+'.fits'))[0].data,dtype=np.float64)
     try:
         fitsFile=fits.open(os.path.join(__dir__,'microlens','IRIS'+str(num)+'.fits'))
         lensPlane=fitsFile[0].data
@@ -91,13 +77,13 @@ def realizeMicro(arand=.25,debug=0,kappas=.75,kappac=.15,gamma=.76,eps=.6,nray=3
     except:
         print('There was an error with the inputs of your microcaustic.')
         sys.exit()
-    #curve=ascii.read(os.path.join(__dir__,'microlens','out_line'),names=('t','xval','yval','pixvalue','maglin','xpix','ypix'))
     os.chdir(__current_dir__)
     return(lensPlane)
 
 
 
-def microcaustic_field_to_curve(field,time,zl,zs,velocity=(10**4)*(u.kilometer/u.s),M=(1*u.solMass).to(u.kg),loc='Random',plot=False):
+def microcaustic_field_to_curve(field,time,zl,zs,velocity=(10**4)*(u.kilometer/u.s),M=(1*u.solMass).to(u.kg),
+                                loc='Random',plot=False):
     """Convolves an expanding photosphere (achromatic disc) with a microcaustic to generate a magnification curve.
 
     Parameters
@@ -112,11 +98,11 @@ def microcaustic_field_to_curve(field,time,zl,zs,velocity=(10**4)*(u.kilometer/u
         redshift of the source
     velocity: float* :class:`astropy.units.Unit`
         The average velocity of the expanding photosphere
-    M: float* :class:`astropy.units.Unit`
+    M: float* :class:`~astropy.units.Unit`
         The mass of the deflector
     loc: str or tuple
         Random is defualt for location of the supernova, or pixel (x,y) coordiante can be specified
-    plot: Boolean
+    plot: bool
         If true, plots the expanding photosphere on the microcaustic
 
     Returns
@@ -141,13 +127,11 @@ def microcaustic_field_to_curve(field,time,zl,zs,velocity=(10**4)*(u.kilometer/u
         print('Assuming velocity is in km/s.')
         velocity*=(u.kilometer/u.s)
 
-    #mlimage=fits.getdata(field)
     h,w=field.shape
 
     height=10*einsteinRadius.value
     width=10*einsteinRadius.value
-    #print(10*einsteinRadius)
-    #center=(width/2,height/2)
+
     pixwidth=width/w
     pixheight=height/h
     if pixwidth!=pixheight:
@@ -236,17 +220,15 @@ def mu_from_image(image, center,sizes,brightness,plot,time):
         fig=plt.figure(figsize=(10,10))
 
         ax=fig.gca()
-        plt.imshow(-(image-1024)/256., aspect='equal', interpolation='nearest', cmap=cm.bwr,norm=MidpointNormalize(vmin=-2,vmax=2,midpoint=0),
+        plt.imshow(-(image-1024)/256., aspect='equal', interpolation='nearest', cmap=cm.bwr,
+                   norm=MidpointNormalize(vmin=-2,vmax=2,midpoint=0),
                   vmin=-2, vmax=2, origin='lower')
 
         ax.set_xticklabels([0,0,2,4,6,8,10],fontsize=14)
         ax.set_yticklabels([0,0,2,4,6,8,10],fontsize=14)
         ax.set_xlabel('$R_E$',fontsize=18,labelpad=0)
         ax.set_ylabel('$R_E$',fontsize=18)
-    #for r,a in zip([snSize[l),snSize[150],snSize[-1]],[.4,.5,.7]):
-    #
-    #print(np.mean(image),np.std(image))
-    #print(np.mean((image-1024)/256.))
+
     image=10**(.4*(image-1024)/256.)
     i=0
     alphas=[1,.5,.7]
@@ -328,27 +310,29 @@ class AchromaticMicrolensing(sncosmo.PropagationEffect):
     _maxwave = 10.**6
 
     #def __init__(self, mlfilename, magformat='multiply', **kwargs):
-    def __init__(self, time,dmag, sigma=None,magformat='multiply', **kwargs):
-        """Read in the achromatic microlensing data file.
+    def __init__(self, time,dmag,magformat='multiply', **kwargs):
+        """
+        An achromatic microlensing object, defined filter to filter.
 
+        Parameters
+	    ----------
+	    time: :class:`~list` or :class:`~numpy.array`
+	        A time array for your microlensing
+	    dmag: :class:`~list` or :class:`~numpy.array`
+	        microlensing magnification
         magformat : str
-        Format of the magnification column.  May be ``multiply`` or ``add,``
-        where ``multiply`` means the magnification column provides a
-        multiplicative magnification factor, mu, so the effect is applied to
-        the source as flux * mu, and ``add`` means the magnification column
-        provides an additive magnitude, DeltaM=-2.5*log10(mu).
+            Format of the magnification column.  May be ``multiply`` or ``add,``
+            where ``multiply`` means the magnification column provides a
+            multiplicative magnification factor, mu, so the effect is applied to
+            the source as flux * mu, and ``add`` means the magnification column
+            provides an additive magnitude, DeltaM=-2.5*log10(mu).
 
-        Keyword arguments are passed on to astropy.table.Table.read().
         """
         self._magformat=magformat
         self._parameters = np.array([])
-        #mldata = read_mldatafile(mlfilename, magformat=magformat, **kwargs)
         mldata=MicrolensingData(data={'phase':time,'magnification':dmag},magformat=magformat)
         self.mu = mldata.magnification_interpolator() #Now always a multiplicative mu
-        if sigma is not None:
-            self.sigma=interp1d(time,sigma,fill_value=0.,kind='cubic',bounds_error=False)
-        else:
-            self.sigma=interp1d(time,np.zeros(len(time)),fill_value=0.,kind='cubic',bounds_error=False)
+
 
     def propagate(self,phase, wave, flux):
         """Propagate the magnification onto the model's flux output."""
@@ -374,18 +358,25 @@ class ChromaticFilterMicrolensing(sncosmo.PropagationEffect):
     _minwave = 0.
     _maxwave = 10.**6
 
-    #def __init__(self, mlfilename, magformat='multiply', **kwargs):
     def __init__(self, times,dmags,bands, magformat='multiply', **kwargs):
-        """Read in the achromatic microlensing data file.
+        """
+        A chromatic microlensing object, defined filter to filter.
 
+        Parameters
+	    ----------
+	    times: 1D or 2D :class:`~list` or :class:`~numpy.array`
+	        A list of the time arrays for your microlensing, with nrows=len(bands), ncols=len(dmags)
+	    dmags: 1D or 2D :class:`~list` or :class:`~numpy.array`
+	        same as times, but for microlensing magnification
+	    bands: :class:`~list` or :class:`~numpy.array`
+	        list of bands defining microlensing
         magformat : str
-        Format of the magnification column.  May be ``multiply`` or ``add,``
-        where ``multiply`` means the magnification column provides a
-        multiplicative magnification factor, mu, so the effect is applied to
-        the source as flux * mu, and ``add`` means the magnification column
-        provides an additive magnitude, DeltaM=-2.5*log10(mu).
+            Format of the magnification column.  May be ``multiply`` or ``add,``
+            where ``multiply`` means the magnification column provides a
+            multiplicative magnification factor, mu, so the effect is applied to
+            the source as flux * mu, and ``add`` means the magnification column
+            provides an additive magnitude, DeltaM=-2.5*log10(mu).
 
-        Keyword arguments are passed on to astropy.table.Table.read().
         """
         if not isinstance(bands,(list,tuple,np.ndarray)):
             bands=[bands]
@@ -396,10 +387,10 @@ class ChromaticFilterMicrolensing(sncosmo.PropagationEffect):
         self.bandNorms=[getBandNorm(b) for b in bands]
         self._magformat=magformat
         self._parameters = np.array([])
-        #mldata = read_mldatafile(mlfilename, magformat=magformat, **kwargs)
+
         ml_list=[MicrolensingData(data={'phase':times[i],'magnification':dmags[i]},magformat=magformat).magnification_interpolator() for i in\
                  range(len(bands))]
-        #self.mu = [mldata.magnification_interpolator() for mldata in ml_list]#Now always a multiplicative mu
+
         self.bandwaves=[[sncosmo.get_bandpass(band).wave[0],
                          sncosmo.get_bandpass(band).wave[-1]] for band in bands]
         self.bandtimes=[[t[0],t[-1]] for t in times]

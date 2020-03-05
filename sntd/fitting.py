@@ -1,11 +1,10 @@
-import inspect,sncosmo,os,sys,warnings,pyParz,math,multiprocessing,pickle,subprocess,glob
+import warnings,sncosmo,os,sys,pyParz,pickle,subprocess,glob
 import numpy as np
 import matplotlib.pyplot as plt
 from copy import deepcopy,copy
 from scipy import stats
 from astropy.table import Table
 import nestle
-from collections import OrderedDict
 from sklearn.gaussian_process import GaussianProcessRegressor
 from sklearn.gaussian_process.kernels import RBF
 import scipy
@@ -15,7 +14,6 @@ from .util import *
 from .curve_io import _sntd_deepcopy
 from .models import *
 from .ml import *
-#from .sncosmo_fitting import nest_lc
 
 __all__=['fit_data']
 
@@ -56,11 +54,12 @@ class newDict(dict):
 
 
 def fit_data(curves=None, snType='Ia',bands=None, models=None, params=None, bounds={}, ignore=None, constants=None,
-			 method='parallel',t0_guess=None,effect_names=[],effect_frames=[],fitting_method='nest',
-			 dust=None,flip=False,showPlots=False,microlensing=None,fitOrder=None,
+			 method='parallel',t0_guess=None,effect_names=[],effect_frames=[],
+			 dust=None,flip=False,microlensing=None,fitOrder=None,color_bands=None,
 			 fit_prior=None,par_or_batch='parallel',batch_partition=None,batch_script=None,nbatch_jobs=None,
 			 batch_python_path=None,wait_for_batch=False,guess_amplitude=True,
-			 kernel='RBF',refImage='image_1',nMicroSamples=100,verbose=True,**kwargs):
+			 kernel='RBF',refImage='image_1',nMicroSamples=100,color_curve=None,warning_supress=True,
+			 verbose=True,**kwargs):
 
 	"""
 	The main high-level fitting function.
@@ -71,61 +70,75 @@ def fit_data(curves=None, snType='Ia',bands=None, models=None, params=None, boun
 		The curveDict object containing the multiple images to fit.
 	snType: str
 		The supernova classification
-	bands: list of :class:`sncosmo.Bandpass` or str, or :class:`sncosmo.Bandpass` or str
+	bands: :class:`~list` of :class:`~sncosmo.Bandpass` or :class:`~str`, or :class:`~sncosmo.Bandpass` or :class:`~str`
 		The band(s) to be fit
-	models: list of :class:`sncosmo.Model` or str, or :class:`sncosmo.Model` or str
+	models: :class:`~list` of :class:`~sncosmo.Model` or str, or :class:`~sncosmo.Model` or :class:`~str`
 		The model(s) to be used for fitting to the data
-	params: list of str
+	params: :class:`~list` of :class:`~str`
 		The parameters to be fit for the models inside of the parameter models
 	bounds: :class:`dict`
 		A dictionary with parameters in params as keys and a tuple of bounds as values
-	ignore: list of str
+	ignore: :class:`~list` of :class:`~str`
 		List of parameters to ignore
 	constants: :class:`dict`
 		Dictionary with parameters as keys and the constant value you want to set them to as values
-	method: str
-		Needs to be 'parallel', 'series', or 'color'
+	method: :class:`~str` or :class:`~list`
+		Needs to be 'parallel', 'series', or 'color', or a list containting one or more of these
 	t0_guess: :class:`dict`
 		Dictionary with image names (i.e. 'image_1','image_2') as keys and a guess for time of peak as values
-	refModel: :class:`scipy.interpolate.interp1d` or :class:`sncosmo.Model`
-		If doing a series or color fit, a reference model that will be used to fit all the data at once is required.
-	effect_names: list of str
-		List of effect names if model contains a :class:`sncosmo.PropagationEffect`.
-	effect_frames: list of str
+	effect_names: :class:`~list` of :class:`~str`
+		List of effect names if model contains a :class:`~sncosmo.PropagationEffect`.
+	effect_frames: :class:`~list` of :class:`~str`
 		List of the frames (e.g. obs or rest) that correspond to the effects in effect_names
-	fitting_method: str
-		Must be 'nest', 'mcmc', or 'minuit'. This is only used when you are trying to find the best of a list of models.
 	dust: :class:`sncosmo.PropagationEffect`
 		An sncosmo dust propagation effect to include in the model
-	flip: Boolean
+	flip: bool
 		If True, the time axis of the model is flipped
-	guess_amplitude: Boolean
-		If True, the amplitude parameter for the model is estimated, as well as its bounds
-	seriesError: :class:`scipy.interpolate.interp1d`
-		If doing a series or color fit, this is the uncertainty on the reference model.
-	showPlots: Boolean
-		If true, :func:`sncosmo.plot_lc` function is called during the fitting
+
 	microlensing: str
 		If None microlensing is ignored, otherwise should be str (e.g. achromatic, chromatic)
+	fitOrder: :class:`~list`
+		The order you want to fit the images if using parallel method (default chooses by npoints/SNR)
+	color_bands: :class:`~list`
+		If using multiple methods (in batch mode), the subset of bands to use for color fitting.
+	fit_prior: :class:`~sntd.curve_io.curveDict` or bool
+		if implementing parallel method alongside others and fit_prior is True, will use output of parallel as prior
+		for series/color. If SNTD curveDict object, used as prior for series or color.
+	par_or_batch: str
+		if providing a list of SNe, par means multiprocessing and batch means sbatch. Must supply other batch
+		parameters if batch is chosen, so parallel is default.
+	batch_partition: str
+		The name of the partition for sbatch command
+	batch_script: str
+		filename for your own batch_script
+	nbatch_jobs: int
+		number of jobs (10 jobs for 100 light curves is 10 light curves per job)
+	batch_python_path: str
+		path to python you want to use for batch mode (if different from current)
+	wait_for_batch: bool
+		if false, submits job in the background. If true, waits for job to finish and returns output.
+	guess_amplitude: bool
+		If True, the amplitude parameter for the model is estimated, as well as its bounds
 	kernel: str
 		The kernel to use for microlensing GPR
-	seriesGrids: :class:`dict`
-		A dictionary with 'td' or 'mu' as keys and tuples with additive bounds as values
 	refImage: str
 		The name of the image you want to be the reference image (i.e. image_1,image_2, etc.)
 	nMicroSamples: int
 		The number of pulls from the GPR posterior you want to use for microlensing uncertainty estimation
 	color_curve: :class:`astropy.Table`
 		A color curve to define the relationship between bands for parameterized light curve model.
-	verbose: Boolean
+	warning_supress: bool
+		Turns on or off warnings
+	verbose: bool
 		Turns on/off the verbosity flag
 	Returns
 	-------
-	fitted_curveDict: :class:`~sntd.curve_io.curveDict`
-		The same curveDict that was passed to fit_data, but with new fits and time delay measurements included
+	fitted_curveDict: :class:`~sntd.curve_io.curveDict` or :class:`~list`
+		The same curveDict that was passed to fit_data, but with new fits and time delay measurements included. List
+		if list was provided.
 	Examples
 	--------
-	>>> fitCurves=sntd.fit_data(myMISN2,snType='Ia', models='salt2-extended',bands=['F110W','F125W'],
+	>>> fitCurves=sntd.fit_data(myMISN,snType='Ia', models='salt2-extended',bands=['F110W','F125W'],
 		params=['x0','x1','t0','c'],constants={'z':1.33},bounds={'t0':(-15,15),'x1':(-2,2),'c':(0,1)},
 		method='parallel',microlensing=None)
 
@@ -171,13 +184,8 @@ def fit_data(curves=None, snType='Ia',bands=None, models=None, params=None, boun
 		mods=models
 	mods=set(mods)
 	args['mods']=mods
-	#sncosmo fitting function for model determination
-	args['sn_func'] = {'minuit': sncosmo.fit_lc, 'mcmc': sncosmo.mcmc_lc, 'nest': nest_lc}
-
-	#get any properties set in kwargs that exist for the defined fitting function
-	args['props'] = {x: kwargs[x] for x in kwargs.keys() if
-					 x in [y for y in inspect.signature(args['sn_func'][fitting_method]).parameters] and x != 'verbose'}
-
+	if warning_supress:
+		warnings.simplefilter('ignore')
 
 	if isinstance(method,(list,np.ndarray,tuple)):
 		if len(method)==1:
@@ -211,6 +219,15 @@ def fit_data(curves=None, snType='Ia',bands=None, models=None, params=None, boun
 								sntd_command+='curves=all_dat[i],'
 							else:
 								sntd_command+='curves=fitCurves,'
+						elif fit_method=='color' and par=='bands':
+							if color_bands is not None:
+								sntd_command+='bands='+str(color_bands)+','
+							elif len(args['bands'])!=2:
+								print('Setting up color batch mode but more than 2 bands and color_bands not set.')
+								sys.exit(1)
+							else:
+								sntd_command+='bands='+str(val)+','
+
 						elif par=='method':
 							sntd_command+='method="'+fit_method+'",'
 						elif par=='fit_prior' and fit_method!='parallel':
@@ -937,7 +954,7 @@ def _fitseries(all_args):
 		tempMod.set(t0=args['curves'].series.meta['reft0'])
 		tempMod.parameters[2]=args['curves'].series.meta['refamp']
 
-		res,td_res,mu_res,td_err,mu_err,model=nest_series_lc(args['curves'].series.table,tempMod,nimage,bounds=args['bounds'],
+		params,res,model=nest_series_lc(args['curves'].series.table,tempMod,nimage,bounds=args['bounds'],
 									  vparam_names=all_vparam_names,ref=par_ref,
 									  guess_amplitude_bound=guess_amplitude,
 									  minsnr=args.get('minsnr',5.),priors=args.get('priors',None),ppfs=args.get('ppfs',None),
@@ -945,11 +962,12 @@ def _fitseries(all_args):
 									  modelcov=args.get('modelcov',None),rstate=args.get('rstate',None),
 									  maxiter=args.get('maxiter',None),npoints=args.get('npoints',100))
 		if finallogz<res.logz:
-			finalres,finaltd_res,finalmu_res,finaltd_err,finalmu_err,finalmodel=res,td_res,mu_res,td_err,mu_err,model
+			final_param_quantiles,finalres,finalmodel=params,res,model
 			time_delays=args['curves'].series.meta['td']
 			magnifications=args['curves'].series.meta['mu']
 
-
+	args['curves'].series.param_quantiles={d:final_param_quantiles[finalres.vparam_names.index(d)] \
+											  for d in finalres.vparam_names}
 	args['curves'].series.time_delays=dict([])
 	args['curves'].series.magnifications=dict([])
 	args['curves'].series.magnification_errors=dict([])
@@ -1031,18 +1049,27 @@ def _fitseries(all_args):
 													tempTable['zpsys'][0],args['nMicroSamples'],
 													micro_type=args['microlensing'],kernel=args['kernel'])
 
+		temp_vparam_names=args['curves'].series.fits.res.vparam_names+[finalmodel.param_names[2]]+['t0']
+		for im in args['curves'].images.keys():
+			try:
+				temp_vparam_names.remove('t_'+str(im[-1]))
+				temp_vparam_names.remove('a_'+str(im[-1]))
+			except:
+				pass
+		temp_bounds={p:args['curves'].series.param_quantiles[p][[0,2]] \
+					 for p in args['curves'].series.fits.res.vparam_names}
 
+		temp_bounds['t0']=args['bounds']['td']+args['curves'].series.t_peaks[args['refImage']]
 		if args['par_or_batch']=='parallel':
 			t0s=pyParz.foreach(samples.T,_micro_uncertainty,
 						   [args['curves'].series.fits.model,np.array(tempTable),tempTable.colnames,
-							x_pred,args['curves'].series.fits.res.vparam_names,
-							{p:args['curves'].series.param_quantiles[p][[0,2]] \
-							 for p in args['curves'].series.fits.res.vparam_names},None])
+							x_pred,temp_vparam_names,
+							temp_bounds,None,args.get('minsnr',0),args.get('maxcall',None)])
 		else:
 			return args['curves']
 		mu,sigma=scipy.stats.norm.fit(t0s)
 
-		args['curves'].series.fits.res.errors['micro']=np.sqrt((args['curves'].series.fits.model.get('t0')-mu)**2 \
+		args['curves'].series.param_quantiles['micro']=np.sqrt((args['curves'].series.fits.model.get('t0')-mu)**2 \
 																  +9*sigma**2)
 
 	return args['curves']
@@ -1194,20 +1221,10 @@ def nest_series_lc(data,model,nimage,vparam_names,bounds,guess_amplitude_bound=F
 
 	params=[weighted_quantile(res.samples[:,i],[.16,.5,.84],res.weights) for i in range(len(vparam_names))]
 	model.set(**{model_param_names[k]:params[model_idx[k]][1] for k in range(len(model_idx))})
-	#model.set(t0=model.get('t0')+params[td_idx[td_params.index('t_'+ref[-1])]][1])
-	#model.parameters[2]=model.parameters[2]*params[amp_idx[amp_params.index('a_'+ref[-1])]][1]
-	td_res={}
-	mu_res={}
-	td_err={}
-	mu_err={}
-	for i in range(len(td_params)):
-		td_res[td_params[i]]=params[td_idx[i]][1]
-		td_err[td_params[i]]=np.array([params[td_idx[i]][1]-params[td_idx[i]][0],params[td_idx[i]][2]-params[td_idx[i]][1]])
-		mu_res[amp_params[i]]=params[amp_idx[i]][1]
-		mu_err[amp_params[i]]=np.array([params[amp_idx[i]][1]-params[amp_idx[i]][0],params[amp_idx[i]][2]-params[amp_idx[i]][1]])
 
 
-	return res,td_res,mu_res,td_err,mu_err,model
+
+	return params,res,model
 
 
 
@@ -1279,17 +1296,19 @@ def _fitparallel(all_args):
 		source=sncosmo.get_source(mod)
 		tempMod = sncosmo.Model(source=source,effects=effects,effect_names=effect_names,effect_frames=effect_frames)
 		tempMod.set(**args['constants'])
+		guess_t0,guess_amp=sncosmo.fitting.guess_t0_and_amplitude( \
+			sncosmo.photdata.photometric_data(args['curves'].images[args['fitOrder'][0]].table),
+			tempMod,args.get('minsnr',5.))
 		if 't0' in args['bounds'] and args['t0_guess'] is None:
-			guess_t0,guess_amp=sncosmo.fitting.guess_t0_and_amplitude(\
-				sncosmo.photdata.photometric_data(args['curves'].images[args['fitOrder'][0]].table),
-																	  tempMod,args.get('minsnr',5.))
+
 			args['bounds']['t0']=np.array(args['bounds']['t0'])+guess_t0
-			if args['guess_amplitude']:
-				if tempMod.param_names[2] in args['bounds']:
-					args['bounds'][tempMod.param_names[2]]=np.array(args['bounds'][tempMod.param_names[2]])*\
-						guess_amp
-				else:
-					args['bounds'][tempMod.param_names[2]]=[.1*guess_amp,10*guess_amp]
+		if args['guess_amplitude']:
+			if tempMod.param_names[2] in args['bounds']:
+				args['bounds'][tempMod.param_names[2]]=np.array(args['bounds'][tempMod.param_names[2]])*\
+					guess_amp
+			else:
+				args['bounds'][tempMod.param_names[2]]=[.1*guess_amp,10*guess_amp]
+
 		res,fit=sncosmo.nest_lc(args['curves'].images[args['fitOrder'][0]].table,tempMod,args['params'],
 								bounds=args['bounds'],
 							  priors=args.get('priors',None), ppfs=args.get('None'), method=args.get('nest_method','single'),
@@ -1372,17 +1391,21 @@ def _fitparallel(all_args):
 
 
 			if args['par_or_batch']=='parallel':
+
+
 				t0s=pyParz.foreach(samples.T,_micro_uncertainty,
 							   [args['curves'].images[k].fits.model,np.array(tempTable),tempTable.colnames,
 								x_pred,args['curves'].images[k].fits.res.vparam_names,
 								{p:args['curves'].images[k].param_quantiles[p][[0,2]]\
-								 for p in args['curves'].images[k].fits.res.vparam_names},None])
+								 for p in args['curves'].images[k].fits.res.vparam_names if p != \
+								 args['curves'].images[k].fits.model.param_names[2]},None,
+								args.get('minsnr',0),args.get('maxcall',None)])
 			else:
 				return args['curves']
 			mu,sigma=scipy.stats.norm.fit(t0s)
-
-			args['curves'].images[k].fits.res.errors['micro']=np.sqrt((args['curves'].images[k].fits.model.get('t0')-mu)**2\
+			args['curves'].images[k].param_quantiles['micro']=np.sqrt((args['curves'].images[k].fits.model.get('t0')-mu)**2\
 																	  +9*sigma**2)
+
 
 	return args['curves']
 
@@ -1552,13 +1575,13 @@ def nest_parallel_lc(data,model,prev_res,bounds,guess_amplitude_bound=False,
 
 def _micro_uncertainty(args):
 	sample,other=args
-	nest_fit,data,colnames,x_pred,vparam_names,bounds,priors=other
+	nest_fit,data,colnames,x_pred,vparam_names,bounds,priors,minsnr,maxcall=other
 	data=Table(data,names=colnames)
 
 	temp_nest_mod=deepcopy(nest_fit)
 	tempMicro=AchromaticMicrolensing(x_pred/(1+nest_fit.get('z')),sample,magformat='multiply')
 	temp_nest_mod.add_effect(tempMicro,'microlensing','rest')
-	tempRes,tempMod=nest_lc(data,temp_nest_mod,vparam_names=vparam_names,bounds=bounds,
+	tempRes,tempMod=nest_lc(data,temp_nest_mod,vparam_names=vparam_names,bounds=bounds,minsnr=minsnr,maxcall=maxcall,
 							guess_amplitude_bound=True,maxiter=None,npoints=200,priors=priors)
 
 	return float(tempMod.get('t0'))
@@ -1569,8 +1592,12 @@ def fit_micro(fit,dat,zpsys,nsamples,micro_type='achromatic',kernel='RBF'):
 	data=deepcopy(dat)
 
 	data['time']-=t0
+
 	data=data[data['time']<=40.]
 	data=data[data['time']>=-15.]
+	if len(data)==0:
+		data=deepcopy(dat)
+
 	achromatic=micro_type.lower()=='achromatic'
 	if achromatic:
 		allResid=[]
@@ -1590,7 +1617,6 @@ def fit_micro(fit,dat,zpsys,nsamples,micro_type='achromatic',kernel='RBF'):
 		tempData=tempData[~np.isnan(residual)]
 		residual=residual[~np.isnan(residual)]
 		tempTime=tempTime[~np.isnan(residual)]
-
 		if achromatic:
 			allResid=np.append(allResid,residual)
 			allErr=np.append(allErr,residual*tempData['fluxerr']/tempData['flux'])
@@ -1599,13 +1625,10 @@ def fit_micro(fit,dat,zpsys,nsamples,micro_type='achromatic',kernel='RBF'):
 			allResid[b]=residual
 			allErr[b]=residual*tempData['fluxerr']/tempData['flux']
 			allTime[b]=tempTime
-
 	if kernel=='RBF':
 		kernel = RBF(10., (20., 50.))
 
-
 	if achromatic:
-
 		gp = GaussianProcessRegressor(kernel=kernel, alpha=allErr ** 2,
 									  n_restarts_optimizer=100)
 
