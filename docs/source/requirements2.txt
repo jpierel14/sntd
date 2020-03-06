@@ -6,3 +6,4 @@ nestle
 pyParz
 sklearn
 pytest-astropy
+corner
