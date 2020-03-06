@@ -15,6 +15,9 @@ Welcome to SNTD's documentation!
    examples
    api
 
+:doc:`api`
+================
+
 Indices and tables
 ==================
 
