@@ -22,15 +22,7 @@ VERSION = '1.0.9'
 LICENSE = 'BSD'
 URL = 'sntd.readthedocs.org'
 
-#bad way of doing this, but solves some install issues
-try:
-    import numpy
-except:
-    subprocess.call(['pip','install','numpy'])
-try:
-    import cython
-except:
-    subprocess.call(['pip','install','cython'])
+
 
 def recursive_glob(basedir, pattern):
     matches = []
@@ -57,7 +49,7 @@ data_files = [f[len(PACKAGENAME)+1:] for f in data_files]
 setup(
     name='sntd',
     cmdclass={'test': SNTDTest},
-    setup_requires=['numpy'],
+    setup_requires=['numpy','cython'],
     install_requires=['numpy','scipy','cython','sncosmo',
     	'astropy','matplotlib','nestle','pyParz','sklearn',
         'pytest-astropy'],
