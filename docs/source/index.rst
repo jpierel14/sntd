@@ -7,6 +7,10 @@
 Welcome to SNTD's documentation!
 ================================
 
+.. raw:: html
+
+	<iframe width="900" height="800" frameborder="0" scrolling="no" src="//plot.ly/~jpierel/18.embed"></iframe>
+
 .. toctree::
    :maxdepth: 2
    :caption: Contents:
