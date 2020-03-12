@@ -61,8 +61,7 @@ def fit_data(curves=None, snType='Ia',bands=None, models=None, params=None, boun
 			 kernel='RBF',refImage='image_1',nMicroSamples=100,color_curve=None,warning_supress=True,
 			 verbose=True,**kwargs):
 
-	"""
-	The main high-level fitting function.
+	"""The main high-level fitting function.
 
 	Parameters
 	----------

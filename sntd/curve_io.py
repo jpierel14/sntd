@@ -26,53 +26,121 @@ def _sntd_deepcopy(obj):
         setattr(newCurve,k,obj[k])
     return(newCurve)
 
-class curveDict(dict):
-    """The main object for SNTD. This organizes a MISN, containing
-        the multiple light curves in self.images, all the fits, etc.
-        See documentation for a flowchart of this object.
+class curve(dict):
+    """
+    SNTD class that describes each image of a MISN
+    """
+    def __deepcopy__(self, memo):
+        return deepcopy(dict(self))
 
+    def __init__(self,zpsys='AB'):
+        """
+        Constructor for curve class
+
+
+        """
+        #todo populate param documentation
+        super(curve,self).__init__()
+        self.meta = {'info': ''}
+        """@type: :class:`dict`
+            The metadata for the curveDict object, intialized with an empty "info" key value pair. It's
+            populated by added _metachar__ characters into the header of your data file.
+        """
+        self.table=None
+        """@type: :class:`astropy.table.Table`
+            A table containing the data, used for SNCosmo functions, etc.
+        """
+        self.bands=[]
+        """@type: str
+            band names used
+        """
+        self.zpsys=zpsys
+        """@type: str
+            The zero-point system for this curve object
+        """
+
+        self.simMeta=dict([])
+        """@type: :class:`dict`
+            A dictionary containing simulation metadata if this is a simulated curve object"""
+
+        self.fits=None
+        """@type: :class:`~sntd.fitting.newDict`
+            Contains fit information from fit_data"""
+
+
+    #these three functions allow you to access the curveDict via "dot" notation
+    __setattr__ = dict.__setitem__
+    __delattr__ = dict.__delitem__
+    __getattr__ = dict.__getitem__
+
+
+
+    def __getstate__(self):
+        """
+        A function necessary for pickling
+        :return: self
+        """
+        return self
+
+    def __setstate__(self, d):
+        """
+        A function necessary for pickling
+        :param d: A value
+        :return: self.__dict__
+        """
+        self.__dict__ = d
+
+
+class curveDict(dict):
+    """
+    The main object for SNTD. This organizes a MISN, containing
+    the multiple light curves in self.images, all the fits, etc.
     """
     def __deepcopy__(self, memo):
         return deepcopy(dict(self))
 
 
     def __init__(self,telescopename="Unknown",object="Unknown"):
-        """Constructor for curveDict class. Inherits from the dictionary class, and is the main object of organization used by SNTD.
+        """
+        Constructor for curveDict class. Inherits from the dictionary class,
+        and is the main object of organization used by SNTD.
+
         Parameters
         ----------
         telescopename : str
             Name of the telescope that the data were gathered from
         object : str
             Name of object of interest
+
         Returns
         -------
         MISN : :class:`~sntd.curveDict`
         """
         super(curveDict, self).__init__() #init for the super class
         self.meta = {'info': ''}
-        """@type: dict
-            @ivar: The metadata for the curveDict object, intialized with an empty "info" key value pair. It's
+        """@type: :class:`dict`
+            The metadata for the curveDict object, intialized with an empty "info" key value pair. It's
             populated by added _metachar__ characters into the header of your data file.
         """
         self.bands=set()
         """
-        @type: list
-        @ivar: The list of bands contained inside this curveDict
+        @type: :class:`list`
+            The list of bands contained inside this curveDict
         """
         self.table=None
         """
-        @type:~astropy.table.Table
-        @ivar: The astropy table containing all of the data in your data file
+        @type: :class:`~astropy.table.Table`
+            The astropy table containing all of the data in your data file
         """
         self.telescopename=telescopename
         """
         @type: str
-        @ivar: Name of the telescope that the data were gathered from
+            Name of the telescope that the data were gathered from
         """
         self.object=object
         """
         @type: str
-        @ivar: Object of interest
+            Object of interest
         """
         self.images=dict([])
 
@@ -664,68 +732,6 @@ class curveDict(dict):
 
 
 
-class curve(dict):
-    """SNTD class that describes each image of a MISN
-    """
-    def __deepcopy__(self, memo):
-        return deepcopy(dict(self))
-
-    def __init__(self,zpsys='AB'):
-        #todo: implement more general read and write functions
-        """
-        Constructor for curve class,
-        :param band, zp, zpsys
-        """
-        #todo populate param documentation
-        super(curve,self).__init__()
-        self.meta = {'info': ''}
-        """@type: :class:`dict`
-            The metadata for the curveDict object, intialized with an empty "info" key value pair. It's
-            populated by added _metachar__ characters into the header of your data file.
-        """
-        self.table=None
-        """@type: :class:`astropy.table.Table`
-        @ivar: A table containing the data, used for SNCosmo functions, etc.
-        """
-        self.bands=[]
-        """@type: str
-        @ivar: band names used
-        """
-        self.zpsys=zpsys
-        """@type: str
-        @ivar: the zero-point system for this curve object
-        """
-
-        self.simMeta=dict([])
-        """@type: :class:`dict`
-        @ivar: A dictionary containing simulation metadata if this is a simulated curve object"""
-
-        self.fits=None
-        """@type: :class:`~sntd.fitting.newDict`
-        @ivar: Contains fit information from fit_data"""
-
-
-    #these three functions allow you to access the curveDict via "dot" notation
-    __setattr__ = dict.__setitem__
-    __delattr__ = dict.__delitem__
-    __getattr__ = dict.__getitem__
-
-
-
-    def __getstate__(self):
-        """
-        A function necessary for pickling
-        :return: self
-        """
-        return self
-
-    def __setstate__(self, d):
-        """
-        A function necessary for pickling
-        :param d: A value
-        :return: self.__dict__
-        """
-        self.__dict__ = d
 
 
 
