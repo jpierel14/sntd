@@ -524,6 +524,8 @@ class curveDict(dict):
             'all' = plot all bands; or provide a list of bands to plot
         savefig : bool
             boolean to save or not save plot
+        plot3D : bool
+            boolean to plot in 3D with plotly
         filename : str
             if savefig is True, this is the output filename
         orientation : str
