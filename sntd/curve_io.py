@@ -768,7 +768,7 @@ class curveDict(dict):
                     import plotly.graph_objects as go
                     from plotly.subplots import make_subplots
                     fig=go.FigureWidget(make_subplots(rows=nrows,cols=ncols,subplot_titles=list(bands),
-                                      specs=[[{'type':'scatter3d'}]*ncols]*nrows))
+                                      specs=[[{'is_3d': True}]*ncols]*nrows))
 
 
 
@@ -922,11 +922,12 @@ class curveDict(dict):
                 i+=1
 
         if plot3D:
+
             zname = 'Flux' if method !='color' else bands[0]+'-'+bands[1]+' Color'
-            tempscene=dict(camera=dict(projection=dict(type='orthographic'),eye=dict(
+            tempscene=dict(aspectmode='cube',camera=dict(projection=dict(type='orthographic'),eye=dict(
                 x=0,
-                y=2.5,
-                z=0.7100,
+                y=10,
+                z=0,
             )),
                            xaxis=dict(
                                gridcolor='rgb(255, 255, 255)',
@@ -963,18 +964,28 @@ class curveDict(dict):
                                #titlefont=dict(size=18,color='rgb(255,255,255)'),
 
                            ))
+            #def cam_change(layout, camera):
+            #    for s in fig.layout.keys():
+            #        if s.startswith('scene') and len(s)>len('scene'):
+            #            fig.layout[s]['camera']= camera
             scenes=dict([])
             for i in range(n3dPlots):
                 if i>0:
                     key='scene'+str(i+1)
+                    scenes[key]=tempscene
                 else:
                     key='scene'
+                    scenes[key]=tempscene
+                    #scenes[key].on_change(cam_change,'camera')
 
-                scenes[key]=tempscene
+
+
 
             fig.update_layout(
                 **scenes
                 )
+
+
         else:
             plt.figlegend(leg,np.sort(['$'+x+'$' for x in self.images.keys()]), frameon=False,
                           loc='center right', fontsize='medium', numpoints=1)
