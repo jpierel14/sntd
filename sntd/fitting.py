@@ -637,7 +637,7 @@ def _fitColor(all_args):
 
 		if k==args['refImage']:
 			args['curves'].color.time_delays[k]=0
-			args['curves'].color.time_delay_errors[k]=0
+			args['curves'].color.time_delay_errors[k]=[0,0]
 			if par_ref!=args['refImage']:
 				args['curves'].color.t_peaks[k]=finalmodel.get('t0')+time_delays[args['refImage']]-\
 											weighted_quantile(trefSamples,.5,finalres.weights)
@@ -981,9 +981,9 @@ def _fitseries(all_args):
 
 		if k==args['refImage']:
 			args['curves'].series.time_delays[k]=0
-			args['curves'].series.time_delay_errors[k]=0
+			args['curves'].series.time_delay_errors[k]=[0,0]
 			args['curves'].series.magnifications[k]=1
-			args['curves'].series.magnification_errors[k]=0
+			args['curves'].series.magnification_errors[k]=[0,0]
 			if par_ref!=args['refImage']:
 				args['curves'].series.t_peaks[k]=finalmodel.get('t0')+time_delays[args['refImage']]- \
 												weighted_quantile(trefSamples,.5,finalres.weights)
@@ -1358,8 +1358,8 @@ def _fitparallel(all_args):
 		if k==args['refImage']:
 			args['curves'].parallel.time_delays={k:0}
 			args['curves'].parallel.magnifications={k:1}
-			args['curves'].parallel.time_delay_errors={k:0}
-			args['curves'].parallel.magnification_errors={k:0}
+			args['curves'].parallel.time_delay_errors={k:[0,0]}
+			args['curves'].parallel.magnification_errors={k:[0,0]}
 		else:
 			ttempSamples,atempSamples=sample_dict[k]
 

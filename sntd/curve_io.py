@@ -512,9 +512,9 @@ class curveDict(dict):
         return(fig)
 
 
-    def plot_object(self, bands='all', savefig=False,
+    def plot_object(self, bands='all', savefig=False,plot3D=False,
                     filename='mySN', orientation='horizontal',method='separate',
-                    showModel=False,showFit=False,showMicro=False):
+                    showModel=False,showFit=False,showMicro=False,**kwargs):
         """Plot the multiply-imaged SN light curves and show/save to a file.
             Each subplot shows a single-band light curve, for all images of the SN.
 
@@ -551,6 +551,7 @@ class curveDict(dict):
 
 
         colors=['r','g','b','k','m']
+        colors3d=['red','green','blue','black','purple']
         i=0
         leg=[]
 
@@ -565,16 +566,72 @@ class curveDict(dict):
             else:
                 ncols = nbands
                 nrows = 1
-            fig,axlist=plt.subplots(nrows=nrows, ncols=ncols,
+            fig=None
+            axlist=None
+            if plot3D:
+                try:
+                    import plotly.graph_objects as go
+                    from plotly.subplots import make_subplots
+                    fig=go.FigureWidget(make_subplots(rows=nrows,cols=ncols,subplot_titles=list(bands),
+                                      specs=[[{'type':'scatter3d'}]*ncols]*nrows))
+
+                    n3dPlots=ncols*nrows
+
+
+                    axlist=[None]*len(bands)
+                except RuntimeError:
+                    print('Asked for 3D plot but do not have plotly installed, switching to 2D...')
+                    fig=None
+                    plot3D=False
+
+            if not plot3D or fig is None:
+                fig,axlist=plt.subplots(nrows=nrows, ncols=ncols,
                                     sharex=True, sharey=False,figsize=(10,10))
             if nbands==1:
                 axlist = [axlist]
             for lc in np.sort([x for x in self.images.keys()]):
                 temp=self.series.table[self.series.table['image']==lc]
+                if nrows==1:
+                    ccol=0
+                    crow=1
+                else:
+                    crow=0
+                    ccol=1
+
+                try:
+                    delay=self.series.time_delays[lc]
+                    delayerr=self.series.time_delay_errors[lc]
+                    mag=self.series.magnifications[lc]
+                    magerr=self.series.magnification_errors[lc]
+                except:
+                    delay=0
+                    delayerr=[0,0]
+                    mag=1
+                    magerr=[0,0]
                 for b, ax in zip(bands, axlist):
+                    if nrows==1:
+                        ccol+=1
+                    else:
+                        crow+=1
+
                     if b==list(bands)[0]:
-                        leg.append(
-                            ax.errorbar(temp['time'][
+
+                        if plot3D:
+
+                            fig.add_trace(go.Scatter3d(x=temp['time'][temp['band']==b]+delay,y=temp['time'][temp['band']==b],
+                                                   z=temp['flux'][temp['band']==b],
+                            error_y=dict(symmetric=False,width=4,array=[delayerr[0]]*len(temp['time'][temp['band']==b]),
+                                                       arrayminus=[delayerr[1]]*len(temp['time'][temp['band']==b])),
+                            error_z=dict(symmetric=False,width=4,array=temp['flux'][temp['band']==b]*\
+                                    np.sqrt((temp['fluxerr'][temp['band']==b]/temp['flux'][temp['band']==b])**2+\
+                                            (magerr[0]/mag)**2),
+                                 arrayminus=temp['flux'][temp['band']==b]* \
+                                       np.sqrt((temp['fluxerr'][temp['band']==b]/temp['flux'][temp['band']==b])**2+ \
+                                               (magerr[1]/mag)**2)),mode='markers',
+                            marker=dict(color=colors3d[i]),name='Image %s'%lc[-1],**kwargs),row=crow,col=ccol)
+                        else:
+                            leg.append(
+                                ax.errorbar(temp['time'][
                                             temp['band']==b],
                                         temp['flux'][
                                             temp['band']==b],
@@ -582,7 +639,22 @@ class curveDict(dict):
                                             temp['band']==b],
                                         markersize=4, fmt=colors[i]+'.'))
                     else:
-                        ax.errorbar(temp['time'][
+                        if plot3D:
+
+                            fig.add_trace(go.Scatter3d(x=temp['time'][temp['band']==b]+delay,y=temp['time'][temp['band']==b],
+                                                       z=temp['flux'][temp['band']==b],
+                                                       error_y=dict(symmetric=False,width=4,array=[delayerr[0]]*len(temp['time'][temp['band']==b]),
+                                                                    arrayminus=[delayerr[1]]*len(temp['time'][temp['band']==b])),
+                                                       error_z=dict(symmetric=False,width=4,array=temp['flux'][temp['band']==b]* \
+                                                                                                  np.sqrt((temp['fluxerr'][temp['band']==b]/temp['flux'][temp['band']==b])**2+ \
+                                                                                                          (magerr[0]/mag)**2),
+                                                                    arrayminus=temp['flux'][temp['band']==b]* \
+                                                                               np.sqrt((temp['fluxerr'][temp['band']==b]/temp['flux'][temp['band']==b])**2+ \
+                                                                                       (magerr[1]/mag)**2)),mode='markers',
+                                                       marker=dict(color=colors3d[i]),showlegend=False,**kwargs),row=crow,col=ccol)
+                        else:
+
+                            ax.errorbar(temp['time'][
                                         temp['band']==b],
                                     temp['flux'][
                                         temp['band']==b],
@@ -590,17 +662,27 @@ class curveDict(dict):
                                         temp['band']==b],
                                     markersize=4, fmt=colors[i]+'.')
                     if showFit:
-                        ax.plot(np.arange(np.min(temp['time'][temp['band']==b]),np.max(temp['time'][temp['band']==b]),1),
+                        if plot3D:
+                            fig.add_trace(go.Scatter3d(x=np.arange(np.min(temp['time'][temp['band']==b]),np.max(temp['time'][temp['band']==b]),1)+delay,
+                                            y=np.arange(np.min(temp['time'][temp['band']==b]),np.max(temp['time'][temp['band']==b]),1),
+                                           z=self.series.fits.model.bandflux(b,np.arange(np.min(temp['time'][temp['band']==b]),np.max(temp['time'][temp['band']==b]),1),
+                                                                             zp=temp['zp'][temp['band']==b][0],
+                                                                             zpsys=temp['zpsys'][temp['band']==b][0]),
+                                           mode='lines',line=dict(color='yellow',width=8),
+                                           showlegend=False,**kwargs),row=crow,col=ccol)
+                        else:
+                            ax.plot(np.arange(np.min(temp['time'][temp['band']==b]),np.max(temp['time'][temp['band']==b]),1),
                                 self.series.fits.model.bandflux(b,np.arange(np.min(temp['time'][temp['band']==b]),np.max(temp['time'][temp['band']==b]),1),
                                                                   zp=temp['zp'][temp['band']==b][0],
                                                                   zpsys=temp['zpsys'][temp['band']==b][0]),color='y')
-
-                    ax.text(0.95, 0.95, b.upper(), fontsize='large',
+                    if not plot3D:
+                        ax.text(0.95, 0.95, b.upper(), fontsize='large',
                             transform=ax.transAxes, ha='right', va='top')
 
 
                 i+=1
         elif method =='color':
+            n3dPlots=1
             if bands=='all':
                 if len([x for x in self.color.table.colnames if '-' in x and '_' not in x])!=1:
                     print("Want to plot color curves but need 2 bands specified.")
@@ -612,25 +694,59 @@ class curveDict(dict):
                 print("Want to plot color curves but need 2 bands specified.")
                 sys.exit(1)
 
+            if plot3D:
+                try:
+                    import plotly.graph_objects as go
+                    from plotly.subplots import make_subplots
+                    fig=go.FigureWidget()
+                    ax=None
 
-            fig=plt.figure(figsize=(10,10))
-            ax=fig.gca()
+                except RuntimeError:
+                    print('Asked for 3D plot but do not have plotly installed, switching to 2D...')
+                    fig=None
+                    plot3D=False
+
+            if not plot3D or fig is None:
+                fig=plt.figure(figsize=(10,10))
+                ax=fig.gca()
             for lc in np.sort([x for x in self.images.keys()]):
                 temp=self.color.table[self.color.table['image']==lc]
+                try:
+                    delay=self.color.time_delays[lc]
+                    delayerr=self.color.time_delay_errors[lc]
 
+                except:
+                    delay=0
+                    delayerr=[0,0]
 
-                ax.errorbar(temp['time'],temp[bands[0]+'-'+bands[1]],yerr=temp[bands[0]+'-'+bands[1]+'_err'],
+                if plot3D:
+
+                    fig.add_trace(go.Scatter3d(x=temp['time']+delay,y=temp['time'],
+                                               z=temp[bands[0]+'-'+bands[1]],
+                                               error_y=dict(symmetric=False,width=4,array=[delayerr[0]]*len(temp['time']),
+                                                            arrayminus=[delayerr[1]]*len(temp['time'])),
+                                               error_z=dict(symmetric=True,width=4,
+                                                            array=temp[bands[0]+'-'+bands[1]+'_err']),mode='markers',
+                                               marker=dict(color=colors3d[i]),name='Image %s'%lc[-1],**kwargs))
+                else:
+                    ax.errorbar(temp['time'],temp[bands[0]+'-'+bands[1]],yerr=temp[bands[0]+'-'+bands[1]+'_err'],
                             markersize=4, fmt=colors[i]+'.')
 
-                ax.text(0.95, 0.95, bands[0].upper()+'-'+bands[1].upper(), fontsize='large',
+                    ax.text(0.95, 0.95, bands[0].upper()+'-'+bands[1].upper(), fontsize='large',
                         transform=ax.transAxes, ha='right', va='top')
 
                 i+=1
-            if showFit:
-                mod_time=np.arange(np.min(self.color.table['time']),np.max(self.color.table['time']),1)
-                modCol=self.color.fits.model.color(bands[0],bands[1],self.color.table['zpsys'][0],mod_time)
-
-                ax.plot(mod_time,modCol,color='y')
+                if showFit:
+                    mod_time=np.arange(np.min(self.color.table['time']),np.max(self.color.table['time']),1)
+                    modCol=self.color.fits.model.color(bands[0],bands[1],self.color.table['zpsys'][0],mod_time)
+                    if plot3D:
+                        fig.add_trace(go.Scatter3d(x=mod_time+delay,
+                                                   y=mod_time,
+                                                   z=modCol,
+                                                   mode='lines',line=dict(color='yellow',width=8),
+                                                   showlegend=False,**kwargs))
+                    else:
+                        ax.plot(mod_time,modCol,color='y')
         else:
             if bands == 'all':
                 bands = self.bands
@@ -642,44 +758,129 @@ class curveDict(dict):
             else:
                 ncols = nbands
                 nrows = 1
-            fig,axlist=plt.subplots(nrows=nrows, ncols=ncols,
+
+            n3dPlots=nrows*ncols
+
+            fig=None
+            axlist=None
+            if plot3D:
+                try:
+                    import plotly.graph_objects as go
+                    from plotly.subplots import make_subplots
+                    fig=go.FigureWidget(make_subplots(rows=nrows,cols=ncols,subplot_titles=list(bands),
+                                      specs=[[{'type':'scatter3d'}]*ncols]*nrows))
+
+
+
+                    axlist=[None]*len(bands)
+                except RuntimeError:
+                    print('Asked for 3D plot but do not have plotly installed, switching to 2D...')
+                    fig=None
+                    plot3D=False
+
+            if not plot3D or fig is None:
+                fig,axlist=plt.subplots(nrows=nrows, ncols=ncols,
                                     sharex=True, sharey=True,figsize=(10,10))
             if nbands==1:
                 axlist = [axlist]
             microAx={b:False for b in bands}
             for lc in np.sort([x for x in self.images.keys()]):
+                if nrows==1:
+                    ccol=0
+                    crow=1
+                else:
+                    crow=0
+                    ccol=1
+
+                try:
+                    delay=self.parallel.time_delays[lc]
+                    delayerr=self.parallel.time_delay_errors[lc]
+                    if showFit:
+                        mag=self.parallel.magnifications[lc]
+                        magerr=self.parallel.magnification_errors[lc]
+                    else:
+                        mag=1
+                        magerr=[0,0]
+                except:
+                    delay=0
+                    delayerr=[0,0]
+                    mag=1
+                    magerr=[0,0]
+
+
                 for b, ax in zip(bands, axlist):
+                    if nrows==1:
+                        ccol+=1
+                    else:
+                        crow+=1
                     if b==list(bands)[0]:
-                        leg.append(
-                            ax.errorbar(self.images[lc].table['time'][
-                                            self.images[lc].table['band']==b],
+                        if plot3D:
+                            temp=self.images[lc].table
+                            fig.add_trace(go.Scatter3d(x=temp['time'][temp['band']==b],y=temp['time'][temp['band']==b]-delay,
+                                   z=temp['flux'][temp['band']==b]/mag,
+                                   error_y=dict(symmetric=False,width=4,array=[delayerr[0]]*len(temp['time'][temp['band']==b]),
+                                                arrayminus=[delayerr[1]]*len(temp['time'][temp['band']==b])),
+                                   error_z=dict(symmetric=False,width=4,array=temp['flux'][temp['band']==b]* \
+                                                                              np.sqrt((temp['fluxerr'][temp['band']==b]/temp['flux'][temp['band']==b])**2+ \
+                                                                                      (magerr[0]/mag)**2),
+                                                arrayminus=temp['flux'][temp['band']==b]* \
+                                                           np.sqrt((temp['fluxerr'][temp['band']==b]/temp['flux'][temp['band']==b])**2+ \
+                                                                   (magerr[1]/mag)**2)),mode='markers',
+                                   marker=dict(color=colors3d[i]),name='Image %s'%lc[-1],**kwargs),row=crow,col=ccol)
+                        else:
+                            leg.append(
+                                ax.errorbar(self.images[lc].table['time'][
+                                        self.images[lc].table['band']==b],
                                         self.images[lc].table['flux'][
                                             self.images[lc].table['band']==b],
                                         yerr=self.images[lc].table['fluxerr'][
                                             self.images[lc].table['band']==b],
                                         markersize=4, fmt=colors[i]+'.'))
-                        if showMicro:
-                            ax.set_ylabel('Flux',fontsize='large')
+                            if showMicro:
+                                ax.set_ylabel('Flux',fontsize='large')
                     else:
-                        ax.errorbar(self.images[lc].table['time'][
+                        if plot3D:
+                            fig.add_trace(go.Scatter3d(x=temp['time'][temp['band']==b],y=temp['time'][temp['band']==b]-delay,
+                               z=temp['flux'][temp['band']==b]/mag,
+                               error_y=dict(symmetric=False,width=4,array=[delayerr[0]]*len(temp['time'][temp['band']==b]),
+                                            arrayminus=[delayerr[1]]*len(temp['time'][temp['band']==b])),
+                               error_z=dict(symmetric=False,width=4,array=temp['flux'][temp['band']==b]* \
+                                                                          np.sqrt((temp['fluxerr'][temp['band']==b]/temp['flux'][temp['band']==b])**2+ \
+                                                                                  (magerr[0]/mag)**2),
+                                            arrayminus=temp['flux'][temp['band']==b]* \
+                                                       np.sqrt((temp['fluxerr'][temp['band']==b]/temp['flux'][temp['band']==b])**2+ \
+                                                               (magerr[1]/mag)**2)),mode='markers',
+                               marker=dict(color=colors3d[i]),name='Image %s'%lc[-1],
+                                          showlegend=False,**kwargs),row=crow,col=ccol)
+                        else:
+                            ax.errorbar(self.images[lc].table['time'][
                                         self.images[lc].table['band']==b],
                                     self.images[lc].table['flux'][
                                         self.images[lc].table['band']==b],
                                     yerr=self.images[lc].table['fluxerr'][
                                         self.images[lc].table['band']==b],
                                     markersize=4, fmt=colors[i]+'.')
-
-                    ax.text(0.95, 0.95, b.upper(), fontsize='large',
-                            transform=ax.transAxes, ha='right', va='top')
-
                     if showFit:
                         time_model = np.arange(self.images[lc].table['time'].min(),
                                                self.images[lc].table['time'].max(),
                                                0.1)
-                        ax.plot(time_model,self.images[lc].fits.model.bandflux(b,time_model,
-                                    np.mean(self.images[lc].table['zp'][self.images[lc].table['band']==b]),
-                                    self.images[lc].zpsys),'k-')
-                    if showMicro:
+                        flux_model=self.images[lc].fits.model.bandflux(b,time_model,
+                                                                       self.images[lc].table['zp'][self.images[lc].table['band']==b][0],
+                                                                       self.images[lc].table['zpsys'][self.images[lc].table['band']==b][0])
+                        if plot3D:
+                            fig.add_trace(go.Scatter3d(x=time_model,
+                                                       y=time_model-delay,
+                                                       z=flux_model/mag,
+                                                       mode='lines',line=dict(color='yellow',width=8),
+                                                       showlegend=False,**kwargs),row=crow,col=ccol)
+                        else:
+                            ax.plot(time_model,flux_model,'k-')
+                    if not plot3D:
+                        ax.text(0.95, 0.95, b.upper(), fontsize='large',
+                            transform=ax.transAxes, ha='right', va='top')
+
+
+                    if showMicro and not plot3D:
                         time_model=np.arange(self.images[lc].table['time'].min(),
                                              self.images[lc].table['time'].max(),
                                              0.1)
@@ -708,25 +909,86 @@ class curveDict(dict):
                             b, time_shifted, self.images[lc].table['zp'][self.images[lc].table['band']==b][0],
                             self.images[lc].zpsys) * \
                                          self.images[lc].simMeta['mu']
-                        ax.plot(time_model, flux_magnified, 'k-')
+                        if plot3D:
+                            fig.add_trace(go.Scatter3d(x=time_shifted,
+                                                       y=time_model,
+                                                       z=flux_magnified,
+                                                       mode='lines',line=dict(color='orange',width=8),
+                                                       showlegend=False,**kwargs))
+                        else:
+                            ax.plot(time_model, flux_magnified, 'r-')
 
 
                 i+=1
 
+        if plot3D:
+            zname = 'Flux' if method !='color' else bands[0]+'-'+bands[1]+' Color'
+            tempscene=dict(camera=dict(projection=dict(type='orthographic'),eye=dict(
+                x=0,
+                y=2.5,
+                z=0.7100,
+            )),
+                           xaxis=dict(
+                               gridcolor='rgb(255, 255, 255)',
+                               zerolinecolor='rgb(255, 255, 255)',
+                               showbackground=True,
+                               backgroundcolor='rgb(230, 230, 230)',
+                               title='Time (Observer Frame)',
+                               mirror=False,
+                               autorange='reversed'
 
-        plt.figlegend(leg,np.sort(['$'+x+'$' for x in self.images.keys()]), frameon=False,
-                      loc='center right', fontsize='medium', numpoints=1)
+
+                               #titlefont=dict(size=18,color='rgb(255,255,255)'),
+                           ),
+                           yaxis=dict(
+                               gridcolor='rgb(255, 255, 255)',
+                               zerolinecolor='rgb(255, 255, 255)',
+                               showbackground=True,
+                               backgroundcolor='rgb(230, 230, 230)',
+                               title='Corrected Time (Observer Frame)',
+                               #autorange='reversed',
+                               mirror=False
+
+                               #titlefont=dict(size=18,color='rgb(255,255,255)'),
+
+                           ),
+                           zaxis=dict(
+                               gridcolor='rgb(255, 255, 255)',
+                               zerolinecolor='rgb(255, 255, 255)',
+                               showbackground=True,
+                               backgroundcolor='rgb(230, 230, 230)',
+                               title=zname,
+                               mirror=False
+
+                               #titlefont=dict(size=18,color='rgb(255,255,255)'),
+
+                           ))
+            scenes=dict([])
+            for i in range(n3dPlots):
+                if i>0:
+                    key='scene'+str(i+1)
+                else:
+                    key='scene'
+
+                scenes[key]=tempscene
+
+            fig.update_layout(
+                **scenes
+                )
+        else:
+            plt.figlegend(leg,np.sort(['$'+x+'$' for x in self.images.keys()]), frameon=False,
+                          loc='center right', fontsize='medium', numpoints=1)
 
 
-        if not showMicro:
-            fig.text(0.02, .5, 'Flux', va='center',
-                rotation='vertical',fontsize='large')
-        fig.text(0.5, 0.02, r'Observer-frame time (days)', ha='center',
-                 fontsize='large')
+            if not showMicro:
+                fig.text(0.02, .5, 'Flux', va='center',
+                    rotation='vertical',fontsize='large')
+            fig.text(0.5, 0.02, r'Observer-frame time (days)', ha='center',
+                     fontsize='large')
 
-        plt.suptitle('Multiply-Imaged SN "'+self.object+'"--'+self.telescopename,fontsize=16)
-        if savefig:
-            plt.savefig(filename+'.pdf',format='pdf',overwrite=True)
+            plt.suptitle('Multiply-Imaged SN "'+self.object+'"--'+self.telescopename,fontsize=16)
+            if savefig:
+                plt.savefig(filename+'.pdf',format='pdf',overwrite=True)
         return fig
 
 
