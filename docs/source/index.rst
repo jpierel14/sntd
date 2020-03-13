@@ -9,7 +9,7 @@ Welcome to SNTD's documentation!
 
 .. raw:: html
 
-	<iframe width="1000" height="1000" frameborder="0" scrolling="yes" src="//plot.ly/~jpierel/18.embed"></iframe>
+	<iframe width="1000" height="800" frameborder="0" scrolling="yes" src="//plot.ly/~jpierel/18.embed"></iframe>
 
 .. toctree::
    :maxdepth: 2
