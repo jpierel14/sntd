@@ -8,6 +8,7 @@ import nestle
 from sklearn.gaussian_process import GaussianProcessRegressor
 from sklearn.gaussian_process.kernels import RBF
 import scipy
+import itertools
 from sncosmo import nest_lc
 
 from .util import *
@@ -57,7 +58,7 @@ def fit_data(curves=None, snType='Ia',bands=None, models=None, params=None, boun
 			 method='parallel',t0_guess=None,effect_names=[],effect_frames=[],
 			 dust=None,flip=False,microlensing=None,fitOrder=None,color_bands=None,
 			 fit_prior=None,par_or_batch='parallel',batch_partition=None,batch_script=None,nbatch_jobs=None,
-			 batch_python_path=None,wait_for_batch=False,guess_amplitude=True,
+			 batch_python_path=None,wait_for_batch=False,guess_amplitude=True,test_micro=False,
 			 kernel='RBF',refImage='image_1',nMicroSamples=100,color_curve=None,warning_supress=True,
 			 verbose=True,**kwargs):
 
@@ -167,7 +168,7 @@ def fit_data(curves=None, snType='Ia',bands=None, models=None, params=None, boun
 		args['bands'] = list(set(bands)) if bands is not None else None
 
 		args['bands'] = list(curves.bands) if not isinstance(curves,(list,tuple,np.ndarray)) else list(curves[0].bands)
-	elif len(args['bands'])!=2:
+	elif len(args['bands'])!=2 and not test_micro:
 		print('Must provide exactly 2 bands for color curve fitting.')
 		sys.exit(1)
 
@@ -185,6 +186,12 @@ def fit_data(curves=None, snType='Ia',bands=None, models=None, params=None, boun
 	args['mods']=mods
 	if warning_supress:
 		warnings.simplefilter('ignore')
+	if test_micro:
+		color_bands,all_bands=test_micro_func(args)
+		args['color_bands']=color_bands
+		args['bands']=all_bands
+
+
 
 	if isinstance(method,(list,np.ndarray,tuple)):
 		if len(method)==1:
@@ -599,23 +606,24 @@ def _fitColor(all_args):
 		tempMod = sncosmo.Model(source=source,effects=effects,effect_names=effect_names,effect_frames=effect_frames)
 		tempMod.set(**args['constants'])
 
-		if not args['curves'].color.table or args['fit_prior'] is not None:
-			if args['fit_prior'] is not None:
-				par_ref=args['fit_prior'].parallel.fitOrder[0]
-				temp_delays={k:args['fit_prior'].parallel.time_delays[k]-args['fit_prior'].parallel.time_delays[par_ref] \
-							 for k in args['fit_prior'].parallel.fitOrder}
-				args['curves'].color_table(args['bands'][0],args['bands'][1],time_delays=temp_delays)
-				args['curves'].color.meta['reft0']=args['fit_prior'].images[par_ref].fits.model.get('t0')
 
-			else:
-				args['curves'].color_table(args['bands'][0],args['bands'][1],referenceImage=args['refImage'],
-										   static=False,model=tempMod)
-				par_ref=args['refImage']
+		if args['fit_prior'] is not None:
+			par_ref=args['fit_prior'].parallel.fitOrder[0]
+			temp_delays={k:args['fit_prior'].parallel.time_delays[k]-args['fit_prior'].parallel.time_delays[par_ref] \
+						 for k in args['fit_prior'].parallel.fitOrder}
+			args['curves'].color_table(args['bands'][0],args['bands'][1],time_delays=temp_delays)
+			args['curves'].color.meta['reft0']=args['fit_prior'].images[par_ref].fits.model.get('t0')
+
+		else:
+			args['curves'].color_table(args['bands'][0],args['bands'][1],referenceImage=args['refImage'],
+									   static=False,model=tempMod)
+			par_ref=args['refImage']
+
 
 
 		tempMod.set(t0=args['curves'].color.meta['reft0'])
 		all_vparam_names=np.array([x for x in all_vparam_names if x!=tempMod.param_names[2]])
-		res,model=nest_color_lc(args['curves'].color.table,tempMod,nimage,color=args['bands'],
+		params,res,model=nest_color_lc(args['curves'].color.table,tempMod,nimage,color=args['bands'],
 											bounds=args['bounds'],
 											 vparam_names=all_vparam_names,ref=par_ref,
 											 minsnr=args.get('minsnr',5.),priors=args.get('priors',None),ppfs=args.get('ppfs',None),
@@ -626,12 +634,14 @@ def _fitColor(all_args):
 		if finallogz<res.logz:
 			finalres,finalmodel=res,model
 			time_delays=args['curves'].color.meta['td']
+			final_param_quantiles=params
 
 
 	args['curves'].color.time_delays=dict([])
 	args['curves'].color.time_delay_errors=dict([])
 	args['curves'].color.t_peaks=dict([])
-
+	args['curves'].color.param_quantiles={d:final_param_quantiles[finalres.vparam_names.index(d)] \
+										   for d in finalres.vparam_names}
 	trefSamples=finalres.samples[:,finalres.vparam_names.index('t_'+args['refImage'][-1])]
 	for k in args['curves'].images.keys():
 
@@ -795,7 +805,7 @@ def nest_color_lc(data,model,nimage,color, vparam_names,bounds,ref='image_1',
 	def loglike(parameters):
 		chisq=chisq_likelihood(parameters)
 		if not np.isfinite(chisq):
-			return -np.inf
+			return -1e6#np.inf
 
 		return(-.5*chisq)
 
@@ -827,7 +837,7 @@ def nest_color_lc(data,model,nimage,color, vparam_names,bounds,ref='image_1',
 
 	model.set(**{model_param_names[k]:params[model_idx[k]][1] for k in range(len(model_idx))})
 
-	return res,model
+	return params,res,model
 
 
 def _fitseries(all_args):
@@ -1339,7 +1349,7 @@ def _fitparallel(all_args):
 		initial_bounds['t0']=t0Bounds
 		params,args['curves'].images[d].fits['model'],args['curves'].images[d].fits['res']\
 			=nest_parallel_lc(args['curves'].images[d].table,first_res[1],first_res[2],initial_bounds,
-						 	guess_amplitude_bound=True,priors=args.get('priors',None), ppfs=args.get('None'),
+							guess_amplitude_bound=True,priors=args.get('priors',None), ppfs=args.get('None'),
 						 method=args.get('nest_method','single'),
 						 maxcall=args.get('maxcall',None), modelcov=args.get('modelcov',False),
 						 rstate=args.get('rstate',None),
@@ -1742,3 +1752,85 @@ def param_fit(args,modName,fit=False):
 						guess_amplitude_bound=guess_amp_bound,maxiter=1000,npoints=200)
 	return({'res':res,'model':mod})
 
+
+def test_micro_func(args):
+
+	res_dict={}
+	original_args=copy(args)
+	combos=[]
+	for r in range(len(args['bands'])-1):
+		temp=[x for x in itertools.combinations(original_args['bands'],r)]
+		for t in temp:
+			combos.append(t)
+	for bands in itertools.combinations(args['bands'],2):
+		temp_args=copy(original_args)
+
+		temp_args['bands']=[x for x in bands]
+
+		fitCurves=_fitColor(temp_args)
+
+		res_dict[bands[0]+'-'+bands[1]]=copy(fitCurves.color.fits.res)
+	# dev_dict={}
+	# ind=res_dict[list(res_dict.keys())[0]].vparam_names.index('c')
+	# for bs in combos:
+	# 	dev_dict[','.join(list(bs))]=(np.average([weighted_quantile(res_dict[x].samples[:,ind],.5,res_dict[x].weights) \
+	# 											  for x in res_dict.keys() if np.all([b not in x for b in bs])],weights= \
+	# 												 [res_dict[x].logz for x in res_dict.keys() if np.all([b not in x for b in bs])]),
+	# 				np.std([weighted_quantile(res_dict[x].samples[:,ind],.5,res_dict[x].weights) \
+	# 		  for x in res_dict.keys() if np.all([b not in x for b in bs])]))
+	# to_remove=None
+	#
+	# best_std=dev_dict[''][1]/np.sqrt(len(args['bands']))
+	#
+	# if len(args['bands'])>3:
+	# 	for bands in dev_dict.keys():
+	# 		if dev_dict[bands][1]!=0:#len(args['bands'])-len(bands.split(','))==2:
+	# 			print(bands,dev_dict[bands][1])
+	# 			if dev_dict[bands][1]/np.sqrt(len(args['bands'])-len(bands.split(',')))<best_std:
+	# 				to_remove=bands.split(',')
+	# 				best_std=dev_dict[bands][1]/np.sqrt(len(args['bands'])-len(to_remove))
+	final_color_bands=None
+	best_logz=-np.inf
+	best_logzerr=0
+
+	for bands in res_dict.keys():
+		logz,logzerr=calc_ev(res_dict[bands],args['npoints'])
+		if logz>best_logz:
+			final_color_bands=bands
+			best_logz=logz
+			best_logzerr=logzerr
+
+	final_all_bands=[]
+	for bands in res_dict.keys():
+		logz,logzerr=calc_ev(res_dict[bands],args['npoints'])
+		if logz+3*logzerr>=best_logz-3*best_logzerr:
+			final_all_bands=np.append(final_all_bands,bands.split('-'))
+
+
+
+	return(np.unique(final_all_bands),np.array(final_color_bands.split('-')))
+
+	#else:
+	#	print([[x for x in args['bands'] if x not in to_remove]]*2)
+	#	sys.exit()
+	#	return [[x for x in args['bands'] if x not in to_remove]]*2
+
+	# else:
+	# 	best_bands=None
+	# 	best_logz=-np.inf
+	# 	for bands in res_dict.keys():
+	#
+	# 		if res_dict[bands].logz>best_logz:
+	# 			best_bands=bands
+	# 			best_logz=res_dict[bands].logz
+	#
+	# 	return [best_bands.split('-')]*2
+
+
+
+def calc_ev(res,nlive):
+	logZnestle = res.logz                         # value of logZ
+	infogainnestle = res.h                        # value of the information gain in nats
+	logZerrnestle = np.sqrt(infogainnestle)#/nlive) # estimate of the statistcal uncertainty on logZ
+
+	return logZnestle, logZerrnestle
