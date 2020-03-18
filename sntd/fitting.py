@@ -186,7 +186,7 @@ def fit_data(curves=None, snType='Ia',bands=None, models=None, params=None, boun
 	args['mods']=mods
 	if warning_supress:
 		warnings.simplefilter('ignore')
-	if test_micro:
+	if test_micro and not args['parlist']:
 		color_bands,all_bands=test_micro_func(args)
 		args['color_bands']=color_bands
 		args['bands']=all_bands
