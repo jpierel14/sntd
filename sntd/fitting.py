@@ -281,7 +281,7 @@ def fit_data(curves=None, snType='Ia',bands=None, models=None, params=None, boun
 
                 with open(os.path.join(folder_name,'run_sntd.py'),'w') as f:
                     f.write(batch_py)
-                sys.exit()
+
                 #os.system('sbatch %s'%(os.path.join(folder_name,script_name)))
                 if wait_for_batch:
                     result=subprocess.call(['sbatch', '--wait',os.path.join(os.path.abspath(folder_name),

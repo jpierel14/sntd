@@ -70,7 +70,7 @@ def run_sbatch(partition=None,sbatch_script=None,njobs=None,python_path=None):
     sbatch=sbatch.replace('partition',partition)
     sbatch=sbatch.replace('njobs','0-%i'%(njobs-1))
     sbatch=sbatch.replace('myPython',python_path)
-    sbatch=sbatch.replace('run_sntd.py',os.path.join(folder_name,'run_sntd.py'))
+    sbatch=sbatch.replace('run_sntd.py',os.path.join(os.path.abspath(folder_name),'run_sntd.py'))
 
     with open(os.path.join(folder_name,'sbatch_job.BATCH'),'w') as f:
         f.write(sbatch)
