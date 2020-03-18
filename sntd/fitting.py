@@ -55,7 +55,7 @@ class newDict(dict):
 
 
 def fit_data(curves=None, snType='Ia',bands=None, models=None, params=None, bounds={}, ignore=None, constants=None,
-             method='parallel',t0_guess=None,effect_names=[],effect_frames=[],
+             method='parallel',t0_guess=None,effect_names=[],effect_frames=[],batch_init=None,
              dust=None,flip=False,microlensing=None,fitOrder=None,color_bands=None,
              fit_prior=None,par_or_batch='parallel',batch_partition=None,batch_script=None,nbatch_jobs=None,
              batch_python_path=None,wait_for_batch=False,guess_amplitude=True,test_micro=False,
@@ -213,6 +213,11 @@ def fit_data(curves=None, snType='Ia',bands=None, models=None, params=None, boun
                     batch_py=f.read()
                 batch_py=batch_py.replace('njobsreplace',str(nbatch_jobs))
                 batch_py=batch_py.replace('nlcsreplace',str(len(args['curves'])))
+                if batch_init is None:
+                    batch_py=batch_py.replace('batchinitreplace','print("Nothing to initialize...")')
+                else:
+                    batch_py=batch_py.replace('batchinitreplace',batch_init)
+
                 indent1=batch_py.find('fitCurves=')
                 indent=batch_py.find('inds[1]):')+len('inds[1]):')+1
 
@@ -227,6 +232,8 @@ def fit_data(curves=None, snType='Ia',bands=None, models=None, params=None, boun
                                 sntd_command+='curves=all_dat[i],'
                             else:
                                 sntd_command+='curves=fitCurves,'
+                        elif par=='batch_init':
+                            sntd_command+='batch_init=None,'
                         elif par=='test_micro' and test_micro:
                             if i>0:
                                 sntd_command+='test_micro=False,'
@@ -274,7 +281,7 @@ def fit_data(curves=None, snType='Ia',bands=None, models=None, params=None, boun
 
                 with open(os.path.join(folder_name,'run_sntd.py'),'w') as f:
                     f.write(batch_py)
-
+                sys.exit()
                 #os.system('sbatch %s'%(os.path.join(folder_name,script_name)))
                 if wait_for_batch:
                     result=subprocess.call(['sbatch', '--wait',os.path.join(os.path.abspath(folder_name),
@@ -356,12 +363,17 @@ def fit_data(curves=None, snType='Ia',bands=None, models=None, params=None, boun
                     batch_py=f.read()
                 batch_py=batch_py.replace('njobsreplace',str(nbatch_jobs))
                 batch_py=batch_py.replace('nlcsreplace',str(len(args['curves'])))
-
+                if batch_init is None:
+                    batch_py=batch_py.replace('batchinitreplace','print("Nothing to initialize...")')
+                else:
+                    batch_py=batch_py.replace('batchinitreplace',batch_init)
                 sntd_command='sntd.fit_data('
                 for par,val in locs.items():
 
                     if par =='curves':
                         sntd_command+='curves=all_dat[i],'
+                    elif par=='batch_init':
+                        sntd_command+='batch_init=None,'
                     elif par=='method':
                         sntd_command+='method="parallel",'
                     elif isinstance(val,str):
@@ -429,11 +441,16 @@ def fit_data(curves=None, snType='Ia',bands=None, models=None, params=None, boun
                     batch_py=f.read()
                 batch_py=batch_py.replace('njobsreplace',str(nbatch_jobs))
                 batch_py=batch_py.replace('nlcsreplace',str(len(args['curves'])))
-
+                if batch_init is None:
+                    batch_py=batch_py.replace('batchinitreplace','print("Nothing to initialize...")')
+                else:
+                    batch_py=batch_py.replace('batchinitreplace',batch_init)
                 sntd_command='sntd.fit_data('
                 for par,val in locs.items():
                     if par =='curves':
                         sntd_command+='curves=all_dat[i],'
+                    elif par=='batch_init':
+                        sntd_command+='batch_init=None,'
                     elif par=='method':
                         sntd_command+='method="series",'
                     elif isinstance(val,str):
@@ -498,11 +515,16 @@ def fit_data(curves=None, snType='Ia',bands=None, models=None, params=None, boun
                     batch_py=f.read()
                 batch_py=batch_py.replace('njobsreplace',str(nbatch_jobs))
                 batch_py=batch_py.replace('nlcsreplace',str(len(args['curves'])))
-
+                if batch_init is None:
+                    batch_py=batch_py.replace('batchinitreplace','print("Nothing to initialize...")')
+                else:
+                    batch_py=batch_py.replace('batchinitreplace',batch_init)
                 sntd_command='sntd.fit_data('
                 for par,val in locs.items():
                     if par =='curves':
                         sntd_command+='curves=all_dat[i],'
+                    elif par=='batch_init':
+                        sntd_command+='batch_init=None,'
                     elif par=='method':
                         sntd_command+='method="color",'
                     elif isinstance(val,str):

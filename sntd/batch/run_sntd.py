@@ -8,6 +8,7 @@ parser = OptionParser()
 
 (options,args)=parser.parse_args()
 
+batchinitreplace
 
 all_dat=pickle.load(open(os.path.join(os.path.abspath(os.path.dirname(__file__)),
                                       'sntd_data.pkl'),'rb'))
