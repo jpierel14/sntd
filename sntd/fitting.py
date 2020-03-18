@@ -228,7 +228,7 @@ def fit_data(curves=None, snType='Ia',bands=None, models=None, params=None, boun
 						elif fit_method=='color' and par=='bands':
 							if color_bands is not None:
 								sntd_command+='bands='+str(color_bands)+','
-							elif len(args['bands'])!=2:
+							elif len(args['bands'])!=2 and not test_micro:
 								print('Setting up color batch mode but more than 2 bands and color_bands not set.')
 								sys.exit(1)
 							else:
