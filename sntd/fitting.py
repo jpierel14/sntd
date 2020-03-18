@@ -221,14 +221,25 @@ def fit_data(curves=None, snType='Ia',bands=None, models=None, params=None, boun
 					sntd_command+='sntd.fit_data('
 					for par,val in locs.items():
 						if par =='curves':
-							if fit_method=='parallel' or 'parallel' not in method:
+							if i==0:
 								sntd_command+='curves=all_dat[i],'
 							else:
 								sntd_command+='curves=fitCurves,'
+						elif par=='test_micro' and test_micro:
+							if i>0:
+								sntd_command+='test_micro=False,'
+							else:
+								sntd_command+='test_micro=True,'
+						elif par=='bands' and test_micro:
+							if i>0:
+								sntd_command+='bands=fitCurves.micro_bands,'
+							else:
+								sntd_command+='bands=None,'
 						elif fit_method=='color' and par=='bands':
 							if color_bands is not None:
 								sntd_command+='bands='+str(color_bands)+','
-							elif len(args['bands'])!=2 and not test_micro:
+							
+							elif len(args['bands'])!=2:
 								print('Setting up color batch mode but more than 2 bands and color_bands not set.')
 								sys.exit(1)
 							else:
@@ -1766,7 +1777,8 @@ def test_micro_func(args):
 		temp_args=copy(original_args)
 
 		temp_args['bands']=[x for x in bands]
-
+		temp_args['npoints']=100
+		temp_args['fit_prior']=None
 		fitCurves=_fitColor(temp_args)
 
 		res_dict[bands[0]+'-'+bands[1]]=copy(fitCurves.color.fits.res)
