@@ -20,5 +20,4 @@ for i in range(inds[0],inds[1]):
     fitCurves=sntdcommandreplace
     all_res.append(copy(fitCurves))
 
-print([x.parallel.time_delays for x in all_res])    
 pickle.dump(all_res,open(os.path.join(os.path.abspath(os.path.dirname(__file__)),'sntd_fit%s.pkl'%sys.argv[1]),'wb'))
