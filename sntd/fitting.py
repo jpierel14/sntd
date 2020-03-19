@@ -1848,7 +1848,8 @@ def param_fit(args,modName,fit=False):
 
 
 def test_micro_func(args):
-
+    if len(args['bands'])==2:
+        return args['bands'],args['bands']
     res_dict={}
     original_args=copy(args)
     combos=[]
