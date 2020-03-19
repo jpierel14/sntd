@@ -161,7 +161,7 @@ def fit_data(curves=None, snType='Ia',bands=None, models=None, params=None, boun
         args['curves']=_sntd_deepcopy(curves)
         args['parlist']=False
 
-    if method !='color':
+    if method !='color' or test_micro:
         args['bands'] = [bands] if bands is not None and not isinstance(bands,(tuple,list,np.ndarray)) else bands
         #sets the bands to user's if defined (set, so that they're unique), otherwise to all the bands that exist in curves
 
