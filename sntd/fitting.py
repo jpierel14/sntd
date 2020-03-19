@@ -207,6 +207,20 @@ def fit_data(curves=None, snType='Ia',bands=None, models=None, params=None, boun
             else:
                 script_name,folder_name=run_sbatch(partition=batch_partition,sbatch_script=batch_script,
                                                    njobs=nbatch_jobs,python_path=batch_python_path)
+
+
+                for i in range(len(args['curves'])):
+                    args['curves'][i].constants={}
+                    if constants is not None:
+                        for c in constants:
+                            if isinstance(constants[c],(list,tuple,np.ndarray)):
+
+                                args['curves'][i].constants[c]=constants[c][i]
+                            else:
+                                args['curves'][i].constants[c]=constants[c]
+
+
+
                 pickle.dump(args['curves'],open(os.path.join(folder_name,'sntd_data.pkl'),'wb'))
 
                 with open(os.path.join(__dir__,'batch','run_sntd.py')) as f:
@@ -232,8 +246,11 @@ def fit_data(curves=None, snType='Ia',bands=None, models=None, params=None, boun
                                 sntd_command+='curves=all_dat[i],'
                             else:
                                 sntd_command+='curves=fitCurves,'
+                        elif par=='constants':
+                            sntd_command+='constants=all_dat[i].constants,'
                         elif par=='batch_init':
                             sntd_command+='batch_init=None,'
+
                         elif par=='test_micro' and test_micro:
                             if i>0:
                                 sntd_command+='test_micro=False,'
@@ -357,6 +374,15 @@ def fit_data(curves=None, snType='Ia',bands=None, models=None, params=None, boun
             else:
                 script_name,folder_name=run_sbatch(partition=batch_partition,sbatch_script=batch_script,
                                                    njobs=nbatch_jobs,python_path=batch_python_path)
+                for i in range(len(args['curves'])):
+                    args['curves'][i].constants={}
+                    if constants is not None:
+                        for c in constants:
+                            if isinstance(constants[c],(list,tuple,np.ndarray)):
+
+                                args['curves'][i].constants[c]=constants[c][i]
+                            else:
+                                args['curves'][i].constants[c]=constants[c]
                 pickle.dump(args['curves'],open(os.path.join(folder_name,'sntd_data.pkl'),'wb'))
 
                 with open(os.path.join(__dir__,'batch','run_sntd.py')) as f:
@@ -374,6 +400,8 @@ def fit_data(curves=None, snType='Ia',bands=None, models=None, params=None, boun
                         sntd_command+='curves=all_dat[i],'
                     elif par=='batch_init':
                         sntd_command+='batch_init=None,'
+                    elif par=='constants':
+                        sntd_command+='constants=all_dat[i].constants,'
                     elif par=='method':
                         sntd_command+='method="parallel",'
                     elif isinstance(val,str):
@@ -435,6 +463,16 @@ def fit_data(curves=None, snType='Ia',bands=None, models=None, params=None, boun
             else:
                 script_name,folder_name=run_sbatch(partition=batch_partition,sbatch_script=batch_script,
                                                    njobs=nbatch_jobs,python_path=batch_python_path)
+                for i in range(len(args['curves'])):
+                    args['curves'][i].constants={}
+                    if constants is not None:
+                        for c in constants:
+                            if isinstance(constants[c],(list,tuple,np.ndarray)):
+
+                                args['curves'][i].constants[c]=constants[c][i]
+                            else:
+                                args['curves'][i].constants[c]=constants[c]
+
                 pickle.dump(args['curves'],open(os.path.join(folder_name,'sntd_data.pkl'),'wb'))
 
                 with open(os.path.join(__dir__,'batch','run_sntd.py')) as f:
@@ -451,6 +489,8 @@ def fit_data(curves=None, snType='Ia',bands=None, models=None, params=None, boun
                         sntd_command+='curves=all_dat[i],'
                     elif par=='batch_init':
                         sntd_command+='batch_init=None,'
+                    elif par=='constants':
+                        sntd_command+='constants=all_dat[i].constants,'
                     elif par=='method':
                         sntd_command+='method="series",'
                     elif isinstance(val,str):
@@ -509,6 +549,16 @@ def fit_data(curves=None, snType='Ia',bands=None, models=None, params=None, boun
             else:
                 script_name,folder_name=run_sbatch(partition=batch_partition,sbatch_script=batch_script,
                                                    njobs=nbatch_jobs,python_path=batch_python_path)
+                for i in range(len(args['curves'])):
+                    args['curves'][i].constants={}
+                    if constants is not None:
+                        for c in constants:
+                            if isinstance(constants[c],(list,tuple,np.ndarray)):
+
+                                args['curves'][i].constants[c]=constants[c][i]
+                            else:
+                                args['curves'][i].constants[c]=constants[c]
+
                 pickle.dump(args['curves'],open(os.path.join(folder_name,'sntd_data.pkl'),'wb'))
 
                 with open(os.path.join(__dir__,'batch','run_sntd.py')) as f:
@@ -525,6 +575,8 @@ def fit_data(curves=None, snType='Ia',bands=None, models=None, params=None, boun
                         sntd_command+='curves=all_dat[i],'
                     elif par=='batch_init':
                         sntd_command+='batch_init=None,'
+                    elif par=='constants':
+                        sntd_command+='constants=all_dat[i].constants,'
                     elif par=='method':
                         sntd_command+='method="color",'
                     elif isinstance(val,str):
@@ -589,6 +641,8 @@ def _fitColor(all_args):
     args['bands']=list(args['bands'])
     if len(args['bands'])!=2:
         raise RuntimeError("If you want to analyze color curves, you need two bands!")
+    if 't0' in args['params']:
+        args['params'].remove('t0')
 
     imnums=[x[-1] for x in args['curves'].images.keys()]
     nimage=len(imnums)
