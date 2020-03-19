@@ -168,7 +168,7 @@ def fit_data(curves=None, snType='Ia',bands=None, models=None, params=None, boun
         args['bands'] = list(set(bands)) if bands is not None else None
 
         args['bands'] = list(curves.bands) if not isinstance(curves,(list,tuple,np.ndarray)) else list(curves[0].bands)
-    elif len(args['bands'])!=2 and not test_micro:
+    elif not test_micro and len(args['bands'])!=2:
         print('Must provide exactly 2 bands for color curve fitting.')
         sys.exit(1)
 
