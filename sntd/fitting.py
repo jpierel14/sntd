@@ -845,7 +845,7 @@ def nest_color_lc(data,model,nimage,color, vparam_names,bounds,ref='image_1',
     def loglike(parameters):
         chisq=chisq_likelihood(parameters)
         if not np.isfinite(chisq):
-            return -1e6#np.inf
+            return -np.inf
 
         return(-.5*chisq)
 
@@ -1872,6 +1872,8 @@ def test_micro_func(args):
 def calc_ev(res,nlive):
     logZnestle = res.logz                         # value of logZ
     infogainnestle = res.h                        # value of the information gain in nats
+    if not np.isfinite(infogainnestle):
+        infogainnestle=.1*logZnestle
     logZerrnestle = np.sqrt(infogainnestle)#/nlive) # estimate of the statistcal uncertainty on logZ
 
     return logZnestle, logZerrnestle
