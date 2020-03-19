@@ -1861,11 +1861,11 @@ def test_micro_func(args):
         temp_args=copy(original_args)
 
         temp_args['bands']=[x for x in bands]
-        temp_args['npoints']=100
+        temp_args['npoints']=200
         temp_args['fit_prior']=None
         fitCurves=_fitColor(temp_args)
-
-        res_dict[bands[0]+'-'+bands[1]]=copy(fitCurves.color.fits.res)
+        if np.all([np.isfinite(fitCurves.color.time_delays[x]) for x in fitCurves.images.keys()]):
+            res_dict[bands[0]+'-'+bands[1]]=copy(fitCurves.color.fits.res)
     # dev_dict={}
     # ind=res_dict[list(res_dict.keys())[0]].vparam_names.index('c')
     # for bs in combos:
