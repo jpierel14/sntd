@@ -1858,6 +1858,12 @@ def test_micro_func(args):
         for t in temp:
             combos.append(t)
     for bands in itertools.combinations(args['bands'],2):
+        good=True
+        for b in bands:
+            if not np.all([len(np.where(original_args['curves'].images[im].table['band']==b)[0])>=3 for im in original_args['curves'].images.keys()]):
+                good=False
+        if not good:
+            continue
         temp_args=copy(original_args)
 
         temp_args['bands']=[x for x in bands]
