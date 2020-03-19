@@ -1848,7 +1848,7 @@ def param_fit(args,modName,fit=False):
 
 
 def test_micro_func(args):
-    if len(args['bands'])==2:
+    if len(args['bands'])<=2:
         return args['bands'],args['bands']
     res_dict={}
     original_args=copy(args)
@@ -1872,6 +1872,11 @@ def test_micro_func(args):
         fitCurves=_fitColor(temp_args)
         if np.all([np.isfinite(fitCurves.color.time_delays[x]) for x in fitCurves.images.keys()]):
             res_dict[bands[0]+'-'+bands[1]]=copy(fitCurves.color.fits.res)
+
+    if len(list(res_dict.keys()))==0:
+        print('No good fitting.',args['bands'])
+        return(args['bands'],args['bands'])
+
     # dev_dict={}
     # ind=res_dict[list(res_dict.keys())[0]].vparam_names.index('c')
     # for bs in combos:
