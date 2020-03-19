@@ -564,6 +564,8 @@ def fit_data(curves=None, snType='Ia',bands=None, models=None, params=None, boun
                     print('Batch submitted successfully')
                     return
         else:
+            if args['color_bands'] is not None:
+                args['bands']=args['color_bands']
             curves=_fitColor(args)
 
 
