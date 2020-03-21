@@ -268,9 +268,10 @@ def fit_data(curves=None, snType='Ia',bands=None, models=None, params=None, boun
                             if color_bands is not None:
                                 sntd_command+='bands='+str(color_bands)+','
 
-                            elif len(args['bands'])!=2:
-                                print('Setting up color batch mode but more than 2 bands and color_bands not set.')
-                                sys.exit(1)
+                            #elif len(args['bands'])!=2:
+                            #    print('Setting up color batch mode but more than 2 bands and color_bands not set,'+\
+                            #          ')
+                            #    sys.exit(1)
                             else:
                                 sntd_command+='bands='+str(val)+','
 
@@ -639,8 +640,23 @@ def _fitColor(all_args):
     else:
         args=all_args
     args['bands']=list(args['bands'])
-    if len(args['bands'])!=2:
+    if len(args['bands'])<2:
         raise RuntimeError("If you want to analyze color curves, you need two bands!")
+    elif len(args['bands'])>2:
+
+        all_SNR=[]
+        for band in args['bands']:
+            for d in args['curves'].images.keys():
+                inds=np.where(args['curves'].images[d].table['band']==band)[0]
+                if len(inds)==0:
+                    all_SNR.append(0)
+                else:
+                    all_SNR.append(np.sum(args['curves'].images[d].table['flux'][inds]/args['curves'].images[d].table['fluxerr'][inds])*\
+                         np.sqrt(len(inds)))
+
+        sorted=np.flip(np.argsort(all_SNR))
+        args['fitOrder']=args['bands'][sorted][:2]
+        
     if 't0' in args['params']:
         args['params'].remove('t0')
 
