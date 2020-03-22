@@ -646,16 +646,17 @@ def _fitColor(all_args):
 
         all_SNR=[]
         for band in args['bands']:
+            ims=[]
             for d in args['curves'].images.keys():
                 inds=np.where(args['curves'].images[d].table['band']==band)[0]
                 if len(inds)==0:
-                    all_SNR.append(0)
+                    ims.append(0)
                 else:
-                    all_SNR.append(np.sum(args['curves'].images[d].table['flux'][inds]/args['curves'].images[d].table['fluxerr'][inds])*\
+                    ims.append(np.sum(args['curves'].images[d].table['flux'][inds]/args['curves'].images[d].table['fluxerr'][inds])*\
                          np.sqrt(len(inds)))
-
+            all_SNR.append(np.sum(ims))
         sorted=np.flip(np.argsort(all_SNR))
-        args['fitOrder']=args['bands'][sorted][:2]
+        args['bands']=args['bands'][sorted][:2]
 
     if 't0' in args['params']:
         args['params'].remove('t0')
