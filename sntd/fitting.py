@@ -656,7 +656,7 @@ def _fitColor(all_args):
                          np.sqrt(len(inds)))
             all_SNR.append(np.sum(ims))
         sorted=np.flip(np.argsort(all_SNR))
-        args['bands']=args['bands'][sorted]
+        args['bands']=np.array(args['bands'])[sorted]
         args['bands']=args['bands'][:2]
 
     if 't0' in args['params']:
