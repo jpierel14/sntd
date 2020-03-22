@@ -168,9 +168,9 @@ def fit_data(curves=None, snType='Ia',bands=None, models=None, params=None, boun
         args['bands'] = list(set(bands)) if bands is not None else None
 
         args['bands'] = list(curves.bands) if not isinstance(curves,(list,tuple,np.ndarray)) else list(curves[0].bands)
-    elif not test_micro and len(args['bands'])!=2:
-        print('Must provide exactly 2 bands for color curve fitting.')
-        sys.exit(1)
+    #elif not test_micro and len(args['bands'])!=2:
+    #    print('Must provide exactly 2 bands for color curve fitting.')
+    #    sys.exit(1)
 
     models=[models] if models and not isinstance(models,(tuple,list)) else models
     if not models:
@@ -347,12 +347,12 @@ def fit_data(curves=None, snType='Ia',bands=None, models=None, params=None, boun
                 if 'td' not in args['bounds']:
                     print('td not in bounds for color method, choosing based on parallel bounds...')
                     args['bounds']['td']=args['bounds']['t0']
-                if len (args['bands'])>2:
-                    print('Did not specify 2 bands for color method, choosing first 2...')
-                    args['bands']=args['bands'][0:2]
-                elif len(args['bands'])<2:
-                    print('Must provide 2 bands for color method, skipping...')
-                    return(curves)
+                #if len (args['bands'])>2:
+                #    print('Did not specify 2 bands for color method, choosing first 2...')
+                #    args['bands']=args['bands'][0:2]
+                #elif len(args['bands'])<2:
+                #    print('Must provide 2 bands for color method, skipping...')
+                #    return(curves)
 
                 curves=_fitColor(args)
     elif method not in ['parallel','series','color']:
@@ -656,7 +656,7 @@ def _fitColor(all_args):
 
         sorted=np.flip(np.argsort(all_SNR))
         args['fitOrder']=args['bands'][sorted][:2]
-        
+
     if 't0' in args['params']:
         args['params'].remove('t0')
 
