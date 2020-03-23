@@ -556,7 +556,7 @@ class curveDict(dict):
         leg=[]
 
         if method=='series':
-            if bands == 'all':
+            if isinstance(bands,str) and bands == 'all':
                 bands = set(self.series.table['band'])
 
             nbands = len(bands)
@@ -683,7 +683,7 @@ class curveDict(dict):
                 i+=1
         elif method =='color':
             n3dPlots=1
-            if bands=='all':
+            if isinstance(bands,str) and bands=='all':
                 if len([x for x in self.color.table.colnames if '-' in x and '_' not in x])!=1:
                     print("Want to plot color curves but need 2 bands specified.")
                     sys.exit(1)
