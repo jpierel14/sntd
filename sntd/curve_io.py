@@ -748,8 +748,12 @@ class curveDict(dict):
                     else:
                         ax.plot(mod_time,modCol,color='y')
         else:
-            if bands == 'all':
-                bands = self.bands
+            if isinstance(bands,str):
+                if bands == 'all':
+                    bands = self.bands
+                else:
+                    bands=[bands]
+
 
             nbands = len(bands)
             if orientation.startswith('v'):
