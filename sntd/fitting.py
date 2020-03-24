@@ -1285,6 +1285,9 @@ def nest_series_lc(data,model,nimage,vparam_names,bounds,guess_amplitude_bound=F
     amp_params=[x for x in vparam_names[len(vparam_names)-nimage*2:] if x[0]=='a']
     amp_idx=np.array([vparam_names.index(name) for name in amp_params])
 
+    mindat=model.mintime()
+    maxdat=model.maxtime()
+    data=data[np.where(np.logical_and(data['time']>=mindat,data['time']<=maxdat))]
     im_indices=[np.where(data['image']==i)[0] for i in np.unique(data['image'])]
 
     def chisq_likelihood(parameters):
