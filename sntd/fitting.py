@@ -56,7 +56,7 @@ class newDict(dict):
 
 def fit_data(curves=None, snType='Ia',bands=None, models=None, params=None, bounds={}, ignore=None, constants=None,
              method='parallel',t0_guess=None,effect_names=[],effect_frames=[],batch_init=None,
-             dust=None,flip=False,microlensing=None,fitOrder=None,color_bands=None,
+             dust=None,flip=False,microlensing=None,fitOrder=None,color_bands=None,min_points_per_band=3,
              fit_prior=None,par_or_batch='parallel',batch_partition=None,batch_script=None,nbatch_jobs=None,
              batch_python_path=None,wait_for_batch=False,guess_amplitude=True,test_micro=False,
              kernel='RBF',refImage='image_1',nMicroSamples=100,color_curve=None,warning_supress=True,
@@ -971,6 +971,15 @@ def _fitseries(all_args):
     else:
         args=all_args
     args['bands']=list(args['bands'])
+    final_bands=[]
+    for band in args['bands']:
+        to_add=True
+        for im in args['curves'].images.keys():
+            if len(np.where(args['curves'].images[im].table['band']==band))<args['min_points_per_band']:
+                to_add=False
+        if to_add:
+            final_bands.append(band)
+    args['bands']=np.array(final_bands)
 
     if 't0' in args['params']:
         args['params'].remove('t0')
@@ -1373,7 +1382,16 @@ def _fitparallel(all_args):
 
     if 't0' in args['bounds']:
         t0Bounds=copy(args['bounds']['t0'])
-
+    final_bands=[]
+    for band in list(args['bands']):
+        to_add=True
+        for im in args['curves'].images.keys():
+            if len(np.where(args['curves'].images[im].table['band']==band))<args['min_points_per_band']:
+                to_add=False
+        if to_add:
+            final_bands.append(band)
+    args['bands']=np.array(final_bands)
+    
     for d in args['curves'].images.keys():
         for b in [x for x in np.unique(args['curves'].images[d].table['band']) if x not in args['bands']]:
             args['curves'].images[d].table=args['curves'].images[d].table[args['curves'].images[d].table['band']!=b]
