@@ -233,7 +233,7 @@ def fit_data(curves=None, snType='Ia',bands=None, models=None, params=None, boun
                     batch_py=batch_py.replace('batchinitreplace',batch_init)
 
                 indent1=batch_py.find('fitCurves=')
-                indent=batch_py.find('inds[1]):')+len('inds[1]):')+1
+                indent=batch_py.find('try:')+len('try:')+1
 
 
                 sntd_command=''
