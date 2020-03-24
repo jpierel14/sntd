@@ -341,7 +341,6 @@ def fit_data(curves=None, snType='Ia',bands=None, models=None, params=None, boun
                 curves=_fitseries(args)
                 args['curves']=curves
                 args['bounds']=copy(initBounds)
-                print(initBounds)
             if 'color' in method:
                 print('Starting color method...')
                 if 'td' not in args['bounds']:
@@ -734,9 +733,9 @@ def _fitColor(all_args):
 
         if args['cut_time'] is not None:
             args['curves'].color.table=args['curves'].color.table[args['curves'].color.table['time']>=\
-                                                                  args['cut_time'][0]+args['curves'].color.meta['reft0']]
+                                                                  args['cut_time'][0]*(1+tempMod.get('z'))+args['curves'].color.meta['reft0']]
             args['curves'].color.table=args['curves'].color.table[args['curves'].color.table['time']<=\
-                                                                  args['cut_time'][1]+args['curves'].color.meta['reft0']]
+                                                                  args['cut_time'][1]*(1+tempMod.get('z'))+args['curves'].color.meta['reft0']]
         tempMod.set(t0=args['curves'].color.meta['reft0'])
         all_vparam_names=np.array([x for x in all_vparam_names if x!=tempMod.param_names[2]])
         params,res,model=nest_color_lc(args['curves'].color.table,tempMod,nimage,color=args['bands'],
@@ -1090,9 +1089,9 @@ def _fitseries(all_args):
             guess_amplitude=True
         if args['cut_time'] is not None:
             args['curves'].series.table=args['curves'].series.table[args['curves'].series.table['time']>= \
-                                                                  args['cut_time'][0]+args['curves'].series.meta['reft0']]
+                                                                  args['cut_time'][0]*(1+tempMod.get('z'))+args['curves'].series.meta['reft0']]
             args['curves'].series.table=args['curves'].series.table[args['curves'].series.table['time']<= \
-                                                                  args['cut_time'][1]+args['curves'].series.meta['reft0']]
+                                                                  args['cut_time'][1]*(1+tempMod.get('z'))+args['curves'].series.meta['reft0']]
         tempMod.set(t0=args['curves'].series.meta['reft0'])
         tempMod.parameters[2]=args['curves'].series.meta['refamp']
 
@@ -1465,9 +1464,9 @@ def _fitparallel(all_args):
                 args['bounds'][tempMod.param_names[2]]=[.1*guess_amp,10*guess_amp]
         if args['cut_time'] is not None:
             args['curves'].images[args['fitOrder'][0]].table=args['curves'].images[args['fitOrder'][0]].table[args['curves'].images[args['fitOrder'][0]].table['time']>= \
-                                                                    args['cut_time'][0]+guess_t0]
+                                                                    args['cut_time'][0]*(1+tempMod.get('z'))+guess_t0]
             args['curves'].images[args['fitOrder'][0]].table=args['curves'].images[args['fitOrder'][0]].table[args['curves'].images[args['fitOrder'][0]].table['time']<= \
-                                                                    args['cut_time'][1]+guess_t0]
+                                                                    args['cut_time'][1]*(1+tempMod.get('z'))+guess_t0]
         res,fit=sncosmo.nest_lc(args['curves'].images[args['fitOrder'][0]].table,tempMod,args['params'],
                                 bounds=args['bounds'],
                               priors=args.get('priors',None), ppfs=args.get('None'), method=args.get('nest_method','single'),
@@ -1594,8 +1593,8 @@ def nest_parallel_lc(data,model,prev_res,bounds,guess_amplitude_bound=False,cut_
         bounds[model.param_names[2]]=(0,10*guess_amp)
         bounds['t0']=np.array(bounds['t0'])+guess_t0
     if cut_time is not None and guess_amplitude_bound:
-        data=data[data['time']>=cut_time[0]+guess_t0]
-        data=data[data['time']<=cut_time[1]+guess_t0]
+        data=data[data['time']>=cut_time[0]*(1+model.get('z'))+guess_t0]
+        data=data[data['time']<=cut_time[1]*(1+model.get('z'))+guess_t0]
     # Convert bounds/priors combinations into ppfs
     if bounds is not None:
         for key, val in bounds.items():
