@@ -311,9 +311,6 @@ def fit_data(curves=None, snType='Ia',bands=None, models=None, params=None, boun
                         if result.poll() is not None:
                             break
 
-                    rc = result.poll()
-                    print(rc)
-
                     outfiles=glob.glob(os.path.join(os.path.abspath(folder_name),'*fit*.pkl'))
                     all_result=[]
                     for f in outfiles:
@@ -436,16 +433,15 @@ def fit_data(curves=None, snType='Ia',bands=None, models=None, params=None, boun
 
                 #os.system('sbatch %s'%(os.path.join(folder_name,script_name)))
                 if wait_for_batch:
-                    result=subprocess.Popen(['sbatch',os.path.join(os.path.abspath(folder_name),
-                                                                  script_name)], stdout=subprocess.PIPE)
+                    result=subprocess.call(['sbatch',os.path.join(os.path.abspath(folder_name),
+                                                                  script_name)])
                     while True:
                         output=glob.glob(os.path.join(os.path.abspath(folder_name),'*fit*.pkl'))
                         printProgressBar(len(output),nbatch_jobs)
-                        if result.poll() is not None:
+                        if len(output)==nbatch_jobs:
                             break
 
-                    rc = result.poll()
-                    print(rc)
+
                     outfiles=glob.glob(os.path.join(os.path.abspath(folder_name),'*fit*.pkl'))
                     all_result=[]
                     for f in outfiles:
@@ -532,16 +528,15 @@ def fit_data(curves=None, snType='Ia',bands=None, models=None, params=None, boun
 
                 #os.system('sbatch %s'%(os.path.join(folder_name,script_name)))
                 if wait_for_batch:
-                    result=subprocess.Popen(['sbatch',os.path.join(os.path.abspath(folder_name),
-                                                                  script_name)], stdout=subprocess.PIPE)
+                    result=subprocess.call(['sbatch',os.path.join(os.path.abspath(folder_name),
+                                                                  script_name)])
                     while True:
                         output=glob.glob(os.path.join(os.path.abspath(folder_name),'*fit*.pkl'))
                         printProgressBar(len(output),nbatch_jobs)
-                        if result.poll() is not None:
+                        if len(output)==nbatch_jobs:
                             break
 
-                    rc = result.poll()
-                    print(rc)
+
                     outfiles=glob.glob(os.path.join(os.path.abspath(folder_name),'*fit*.pkl'))
                     all_result=[]
                     for f in outfiles:
@@ -626,16 +621,13 @@ def fit_data(curves=None, snType='Ia',bands=None, models=None, params=None, boun
 
                 #os.system('sbatch %s'%(os.path.join(folder_name,script_name)))
                 if wait_for_batch:
-                    result=subprocess.Popen(['sbatch',os.path.join(os.path.abspath(folder_name),
-                                                                  script_name)], stdout=subprocess.PIPE)
+                    result=subprocess.call(['sbatch',os.path.join(os.path.abspath(folder_name),
+                                                                  script_name)])
                     while True:
                         output=glob.glob(os.path.join(os.path.abspath(folder_name),'*fit*.pkl'))
                         printProgressBar(len(output),nbatch_jobs)
-                        if result.poll() is not None:
+                        if len(output)==nbatch_jobs:
                             break
-
-                    rc = result.poll()
-                    print(rc)
                     outfiles=glob.glob(os.path.join(os.path.abspath(folder_name),'*fit*.pkl'))
                     all_result=[]
                     for f in outfiles:
