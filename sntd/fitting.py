@@ -979,7 +979,7 @@ def _fitseries(all_args):
     for band in args['bands']:
         to_add=True
         for im in args['curves'].images.keys():
-            if len(np.where(args['curves'].images[im].table['band']==band))<args['min_points_per_band']:
+            if len(np.where(args['curves'].images[im].table['band']==band)[0])<args['min_points_per_band']:
                 to_add=False
         if to_add:
             final_bands.append(band)
@@ -1395,7 +1395,7 @@ def _fitparallel(all_args):
     for band in list(args['bands']):
         to_add=True
         for im in args['curves'].images.keys():
-            if len(np.where(args['curves'].images[im].table['band']==band))<args['min_points_per_band']:
+            if len(np.where(args['curves'].images[im].table['band']==band)[0])<args['min_points_per_band']:
                 to_add=False
         if to_add:
             final_bands.append(band)
