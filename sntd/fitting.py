@@ -305,9 +305,13 @@ def fit_data(curves=None, snType='Ia',bands=None, models=None, params=None, boun
 
                     result=subprocess.call(['sbatch',os.path.join(os.path.abspath(folder_name),
                                                                   script_name)])
+                    ndone=0
+                    printProgressBar(0,nbatch_jobs)
                     while True:
                         output=glob.glob(os.path.join(os.path.abspath(folder_name),'*fit*.pkl'))
-                        printProgressBar(len(output),nbatch_jobs)
+                        if len(output)!=ndone:
+                            ndone=len(output)
+                            printProgressBar(len(output),nbatch_jobs)
                         if len(output)==nbatch_jobs:
                             break
 
@@ -435,9 +439,13 @@ def fit_data(curves=None, snType='Ia',bands=None, models=None, params=None, boun
                 if wait_for_batch:
                     result=subprocess.call(['sbatch',os.path.join(os.path.abspath(folder_name),
                                                                   script_name)])
+                    ndone=0
+                    printProgressBar(0,nbatch_jobs)
                     while True:
                         output=glob.glob(os.path.join(os.path.abspath(folder_name),'*fit*.pkl'))
-                        printProgressBar(len(output),nbatch_jobs)
+                        if len(output)!=ndone:
+                            ndone=len(output)
+                            printProgressBar(len(output),nbatch_jobs)
                         if len(output)==nbatch_jobs:
                             break
 
@@ -530,9 +538,13 @@ def fit_data(curves=None, snType='Ia',bands=None, models=None, params=None, boun
                 if wait_for_batch:
                     result=subprocess.call(['sbatch',os.path.join(os.path.abspath(folder_name),
                                                                   script_name)])
+                    ndone=0
+                    printProgressBar(0,nbatch_jobs)
                     while True:
                         output=glob.glob(os.path.join(os.path.abspath(folder_name),'*fit*.pkl'))
-                        printProgressBar(len(output),nbatch_jobs)
+                        if len(output)!=ndone:
+                            ndone=len(output)
+                            printProgressBar(len(output),nbatch_jobs)
                         if len(output)==nbatch_jobs:
                             break
 
@@ -623,9 +635,13 @@ def fit_data(curves=None, snType='Ia',bands=None, models=None, params=None, boun
                 if wait_for_batch:
                     result=subprocess.call(['sbatch',os.path.join(os.path.abspath(folder_name),
                                                                   script_name)])
+                    ndone=0
+                    printProgressBar(0,nbatch_jobs)
                     while True:
                         output=glob.glob(os.path.join(os.path.abspath(folder_name),'*fit*.pkl'))
-                        printProgressBar(len(output),nbatch_jobs)
+                        if len(output)!=ndone:
+                            ndone=len(output)
+                            printProgressBar(len(output),nbatch_jobs)
                         if len(output)==nbatch_jobs:
                             break
                     outfiles=glob.glob(os.path.join(os.path.abspath(folder_name),'*fit*.pkl'))
