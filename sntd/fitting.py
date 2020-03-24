@@ -58,7 +58,7 @@ def fit_data(curves=None, snType='Ia',bands=None, models=None, params=None, boun
              method='parallel',t0_guess=None,effect_names=[],effect_frames=[],batch_init=None,cut_time=None,
              dust=None,flip=False,microlensing=None,fitOrder=None,color_bands=None,min_points_per_band=3,
              fit_prior=None,par_or_batch='parallel',batch_partition=None,batch_script=None,nbatch_jobs=None,
-             batch_python_path=None,wait_for_batch=False,guess_amplitude=True,test_micro=False,
+             batch_python_path=None,wait_for_batch=False,guess_amplitude=True,test_micro=False,trial_fit=True,
              kernel='RBF',refImage='image_1',nMicroSamples=100,color_curve=None,warning_supress=True,
              verbose=True,**kwargs):
 
@@ -304,7 +304,7 @@ def fit_data(curves=None, snType='Ia',bands=None, models=None, params=None, boun
                 if wait_for_batch:
 
                     result=subprocess.call(['sbatch',os.path.join(os.path.abspath(folder_name),
-                                                                            script_name)])
+                                                                            script_name)], stdout=subprocess.PIPE)
                     while True:
                         output=glob.glob(os.path.join(os.path.abspath(folder_name),'*fit*.pkl'))
                         printProgressBar(len(output),nbatch_jobs)
@@ -437,7 +437,7 @@ def fit_data(curves=None, snType='Ia',bands=None, models=None, params=None, boun
                 #os.system('sbatch %s'%(os.path.join(folder_name,script_name)))
                 if wait_for_batch:
                     result=subprocess.call(['sbatch',os.path.join(os.path.abspath(folder_name),
-                                                                  script_name)])
+                                                                  script_name)], stdout=subprocess.PIPE)
                     while True:
                         output=glob.glob(os.path.join(os.path.abspath(folder_name),'*fit*.pkl'))
                         printProgressBar(len(output),nbatch_jobs)
@@ -533,7 +533,7 @@ def fit_data(curves=None, snType='Ia',bands=None, models=None, params=None, boun
                 #os.system('sbatch %s'%(os.path.join(folder_name,script_name)))
                 if wait_for_batch:
                     result=subprocess.call(['sbatch',os.path.join(os.path.abspath(folder_name),
-                                                                  script_name)])
+                                                                  script_name)], stdout=subprocess.PIPE)
                     while True:
                         output=glob.glob(os.path.join(os.path.abspath(folder_name),'*fit*.pkl'))
                         printProgressBar(len(output),nbatch_jobs)
@@ -627,7 +627,7 @@ def fit_data(curves=None, snType='Ia',bands=None, models=None, params=None, boun
                 #os.system('sbatch %s'%(os.path.join(folder_name,script_name)))
                 if wait_for_batch:
                     result=subprocess.call(['sbatch',os.path.join(os.path.abspath(folder_name),
-                                                                  script_name)])
+                                                                  script_name)], stdout=subprocess.PIPE)
                     while True:
                         output=glob.glob(os.path.join(os.path.abspath(folder_name),'*fit*.pkl'))
                         printProgressBar(len(output),nbatch_jobs)
@@ -1501,9 +1501,19 @@ def _fitparallel(all_args):
                                                                     args['cut_time'][0]*(1+tempMod.get('z'))+guess_t0]
             args['curves'].images[args['fitOrder'][0]].table=args['curves'].images[args['fitOrder'][0]].table[args['curves'].images[args['fitOrder'][0]].table['time']<= \
                                                                     args['cut_time'][1]*(1+tempMod.get('z'))+guess_t0]
+        if args['trial_fit']:
+            res,fit=sncosmo.fit_lc(args['curves'].images[args['fitOrder'][0]].table,tempMod,args['params'],
+                                    bounds=args['bounds'],minsnr=args.get('minsnr',5.0))
+
+            args['bounds']={res.param_names[i]:np.array([-res.errors[res.param_names[i]],res.errors[res.param_names[i]]])*3+\
+                                               res.parameters[i] for i in range(len(res.param_names)) if res.param_names[i] \
+                                                in list(res.errors.keys())}
+            args['bounds']['t0']=np.array(initial_bounds['t0'])+fit.get('t0')
+            
         res,fit=sncosmo.nest_lc(args['curves'].images[args['fitOrder'][0]].table,tempMod,args['params'],
                                 bounds=args['bounds'],
-                              priors=args.get('priors',None), ppfs=args.get('None'), method=args.get('nest_method','single'),
+                              priors=args.get('priors',None), ppfs=args.get('ppfs',None),
+                                minsnr=args.get('minsnr',5.0), method=args.get('nest_method','single'),
                               maxcall=args.get('maxcall',None), modelcov=args.get('modelcov',False),
                               rstate=args.get('rstate',None),guess_amplitude_bound=False,
                               zpsys=args['curves'].images[args['fitOrder'][0]].zpsys,
