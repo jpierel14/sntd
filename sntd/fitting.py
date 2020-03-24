@@ -55,7 +55,7 @@ class newDict(dict):
 
 
 def fit_data(curves=None, snType='Ia',bands=None, models=None, params=None, bounds={}, ignore=None, constants=None,
-             method='parallel',t0_guess=None,effect_names=[],effect_frames=[],batch_init=None,
+             method='parallel',t0_guess=None,effect_names=[],effect_frames=[],batch_init=None,cut_time=None,
              dust=None,flip=False,microlensing=None,fitOrder=None,color_bands=None,min_points_per_band=3,
              fit_prior=None,par_or_batch='parallel',batch_partition=None,batch_script=None,nbatch_jobs=None,
              batch_python_path=None,wait_for_batch=False,guess_amplitude=True,test_micro=False,
@@ -732,7 +732,11 @@ def _fitColor(all_args):
             par_ref=args['refImage']
 
 
-
+        if args['cut_time'] is not None:
+            args['curves'].color.table=args['curves'].color.table[args['curves'].color.table['time']>=\
+                                                                  args['cut_time'][0]+args['curves'].color.meta['reft0']]
+            args['curves'].color.table=args['curves'].color.table[args['curves'].color.table['time']<=\
+                                                                  args['cut_time'][1]+args['curves'].color.meta['reft0']]
         tempMod.set(t0=args['curves'].color.meta['reft0'])
         all_vparam_names=np.array([x for x in all_vparam_names if x!=tempMod.param_names[2]])
         params,res,model=nest_color_lc(args['curves'].color.table,tempMod,nimage,color=args['bands'],
@@ -1084,6 +1088,11 @@ def _fitseries(all_args):
         else:
             par_ref=args['refImage']
             guess_amplitude=True
+        if args['cut_time'] is not None:
+            args['curves'].series.table=args['curves'].series.table[args['curves'].series.table['time']>= \
+                                                                  args['cut_time'][0]+args['curves'].series.meta['reft0']]
+            args['curves'].series.table=args['curves'].series.table[args['curves'].series.table['time']<= \
+                                                                  args['cut_time'][1]+args['curves'].series.meta['reft0']]
         tempMod.set(t0=args['curves'].series.meta['reft0'])
         tempMod.parameters[2]=args['curves'].series.meta['refamp']
 
@@ -1398,7 +1407,7 @@ def _fitparallel(all_args):
 
 
     if 'amplitude' in args['bounds']:
-        args['guess_amplitude']
+        args['guess_amplitude']=False
 
 
     if args['fitOrder'] is None:
@@ -1412,6 +1421,7 @@ def _fitparallel(all_args):
     if args['t0_guess'] is not None:
         if 't0' in args['bounds']:
             args['bounds']['t0']=(t0Bounds[0]+args['t0_guess'][d],t0Bounds[1]+args['t0_guess'][d])
+            guess_t0=args['t0_guess']
         else:
             print('If you supply a t0 guess, you must also supply bounds.')
             sys.exit(1)
@@ -1453,7 +1463,11 @@ def _fitparallel(all_args):
                     guess_amp
             else:
                 args['bounds'][tempMod.param_names[2]]=[.1*guess_amp,10*guess_amp]
-
+        if args['cut_time'] is not None:
+            args['curves'].images[args['fitOrder'][0]].table=args['curves'].images[args['fitOrder'][0]].table[args['curves'].images[args['fitOrder'][0]].table['time']>= \
+                                                                    args['cut_time'][0]+guess_t0]
+            args['curves'].images[args['fitOrder'][0]].table=args['curves'].images[args['fitOrder'][0]].table[args['curves'].images[args['fitOrder'][0]].table['time']<= \
+                                                                    args['cut_time'][1]+guess_t0]
         res,fit=sncosmo.nest_lc(args['curves'].images[args['fitOrder'][0]].table,tempMod,args['params'],
                                 bounds=args['bounds'],
                               priors=args.get('priors',None), ppfs=args.get('None'), method=args.get('nest_method','single'),
@@ -1486,7 +1500,7 @@ def _fitparallel(all_args):
         params,args['curves'].images[d].fits['model'],args['curves'].images[d].fits['res']\
             =nest_parallel_lc(args['curves'].images[d].table,first_res[1],first_res[2],initial_bounds,
                             guess_amplitude_bound=True,priors=args.get('priors',None), ppfs=args.get('None'),
-                         method=args.get('nest_method','single'),
+                         method=args.get('nest_method','single'),cut_time=args['cut_time'],
                          maxcall=args.get('maxcall',None), modelcov=args.get('modelcov',False),
                          rstate=args.get('rstate',None),
                          maxiter=args.get('maxiter',None),npoints=args.get('npoints',1000))
@@ -1554,7 +1568,7 @@ def _fitparallel(all_args):
 
     return args['curves']
 
-def nest_parallel_lc(data,model,prev_res,bounds,guess_amplitude_bound=False,
+def nest_parallel_lc(data,model,prev_res,bounds,guess_amplitude_bound=False,cut_time=None,
                    minsnr=5., priors=None, ppfs=None, npoints=100, method='single',
                    maxiter=None, maxcall=None, modelcov=False, rstate=None,
                    verbose=False, warn=True,**kwargs):
@@ -1579,7 +1593,9 @@ def nest_parallel_lc(data,model,prev_res,bounds,guess_amplitude_bound=False,
 
         bounds[model.param_names[2]]=(0,10*guess_amp)
         bounds['t0']=np.array(bounds['t0'])+guess_t0
-
+    if cut_time is not None and guess_amplitude_bound:
+        data=data[data['time']>=cut_time[0]+guess_t0]
+        data=data[data['time']<=cut_time[1]+guess_t0]
     # Convert bounds/priors combinations into ppfs
     if bounds is not None:
         for key, val in bounds.items():
