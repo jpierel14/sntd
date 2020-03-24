@@ -303,7 +303,7 @@ def fit_data(curves=None, snType='Ia',bands=None, models=None, params=None, boun
                 #os.system('sbatch %s'%(os.path.join(folder_name,script_name)))
                 if wait_for_batch:
 
-                    result=subprocess.call(['sbatch',os.path.join(os.path.abspath(folder_name),
+                    result=subprocess.Popen(['sbatch',os.path.join(os.path.abspath(folder_name),
                                                                             script_name)], stdout=subprocess.PIPE)
                     while True:
                         output=glob.glob(os.path.join(os.path.abspath(folder_name),'*fit*.pkl'))
@@ -436,7 +436,7 @@ def fit_data(curves=None, snType='Ia',bands=None, models=None, params=None, boun
 
                 #os.system('sbatch %s'%(os.path.join(folder_name,script_name)))
                 if wait_for_batch:
-                    result=subprocess.call(['sbatch',os.path.join(os.path.abspath(folder_name),
+                    result=subprocess.Popen(['sbatch',os.path.join(os.path.abspath(folder_name),
                                                                   script_name)], stdout=subprocess.PIPE)
                     while True:
                         output=glob.glob(os.path.join(os.path.abspath(folder_name),'*fit*.pkl'))
@@ -532,7 +532,7 @@ def fit_data(curves=None, snType='Ia',bands=None, models=None, params=None, boun
 
                 #os.system('sbatch %s'%(os.path.join(folder_name,script_name)))
                 if wait_for_batch:
-                    result=subprocess.call(['sbatch',os.path.join(os.path.abspath(folder_name),
+                    result=subprocess.Popen(['sbatch',os.path.join(os.path.abspath(folder_name),
                                                                   script_name)], stdout=subprocess.PIPE)
                     while True:
                         output=glob.glob(os.path.join(os.path.abspath(folder_name),'*fit*.pkl'))
@@ -626,7 +626,7 @@ def fit_data(curves=None, snType='Ia',bands=None, models=None, params=None, boun
 
                 #os.system('sbatch %s'%(os.path.join(folder_name,script_name)))
                 if wait_for_batch:
-                    result=subprocess.call(['sbatch',os.path.join(os.path.abspath(folder_name),
+                    result=subprocess.Popen(['sbatch',os.path.join(os.path.abspath(folder_name),
                                                                   script_name)], stdout=subprocess.PIPE)
                     while True:
                         output=glob.glob(os.path.join(os.path.abspath(folder_name),'*fit*.pkl'))
@@ -1509,7 +1509,7 @@ def _fitparallel(all_args):
                                                res.parameters[i] for i in range(len(res.param_names)) if res.param_names[i] \
                                                 in list(res.errors.keys())}
             args['bounds']['t0']=np.array(initial_bounds['t0'])+fit.get('t0')
-            
+
         res,fit=sncosmo.nest_lc(args['curves'].images[args['fitOrder'][0]].table,tempMod,args['params'],
                                 bounds=args['bounds'],
                               priors=args.get('priors',None), ppfs=args.get('ppfs',None),
