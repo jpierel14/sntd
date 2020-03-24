@@ -873,7 +873,9 @@ def nest_color_lc(data,model,nimage,color, vparam_names,bounds,ref='image_1',
     td_params=[x for x in vparam_names[len(vparam_names)-nimage:] if x[0]=='t']
     td_idx=np.array([vparam_names.index(name) for name in td_params])
     im_indices=[np.where(data['image']==i)[0] for i in np.unique(data['image'])]
-
+    mindat=model.mintime()
+    maxdat=model.maxtime()
+    data=data[np.where(np.logical_and(data['time']>=mindat,data['time']<=maxdat))]
     def chisq_likelihood(parameters):
         model.set(**{model_param_names[k]:parameters[model_idx[k]] for k in range(len(model_idx))})
         all_data=deepcopy(data)
