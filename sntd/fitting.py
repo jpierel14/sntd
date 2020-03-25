@@ -1545,6 +1545,10 @@ def _fitparallel(all_args):
 
     args['curves'].images[args['fitOrder'][0]].param_quantiles={k:first_params[first_res[2].vparam_names.index(k)] for\
                                                                  k in first_res[2].vparam_names}
+    for i in range(len(first_res[2].vparam_names)):
+        if first_res[2].vparam_names[i]==first_res[1].param_names[2] or first_res[2].vparam_names[i]=='t0':
+            continue
+        initial_bounds[first_res[2].vparam_names[i]]=np.array([first_params[i][0],first_params[i][2]])
     for d in args['fitOrder'][1:]:
         args['curves'].images[d].fits=newDict()
         initial_bounds['t0']=t0Bounds
