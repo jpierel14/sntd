@@ -324,7 +324,7 @@ def fit_data(curves=None, snType='Ia',bands=None, models=None, params=None, boun
                                     if ind>total_jobs:
                                         continue
                                     result=subprocess.call(['sbatch',os.path.join(os.path.abspath(folder_name),
-                                                                              script_name),ind],stdout=subprocess.PIPE)
+                                                                              script_name),ind],stdout=subprocess.DEVNULL)
                             ndone=len(output)
                             printProgressBar(ndone,total_jobs)
                         if len(output)==total_jobs:
