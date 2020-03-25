@@ -308,11 +308,11 @@ def fit_data(curves=None, snType='Ia',bands=None, models=None, params=None, boun
                 #os.system('sbatch %s'%(os.path.join(folder_name,script_name)))
                 total_jobs=math.ceil(len(args['curves'])/n_per_node)
 
-                printProgressBar(0,total_jobs)
+
                 if wait_for_batch:
                     result=subprocess.call(['sbatch',os.path.join(os.path.abspath(folder_name),
                                                                            script_name_init)])
-
+                    printProgressBar(0,total_jobs)
                     ndone=0
                     nadded=0
                     while True:
@@ -324,7 +324,7 @@ def fit_data(curves=None, snType='Ia',bands=None, models=None, params=None, boun
                                     if ind>total_jobs:
                                         continue
                                     result=subprocess.call(['sbatch',os.path.join(os.path.abspath(folder_name),
-                                                                              script_name),ind])
+                                                                              script_name),ind],stdout=subprocess.PIPE)
                             ndone=len(output)
                             printProgressBar(ndone,total_jobs)
                         if len(output)==total_jobs:

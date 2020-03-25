@@ -78,7 +78,7 @@ def run_sbatch(partition=None,njobs=None,python_path=None,init=False,folder=None
     sbatch=sbatch.replace('myPython',python_path)
     sbatch=sbatch.replace('run_sntd.py',os.path.join(os.path.abspath(folder_name),pyfile))
     if init:
-        sbatch=sbatch.replace('njobs',str(njobs))
+        sbatch=sbatch.replace('njobs','0-'+str(njobs-1))
 
     if not init:
         with open(os.path.join(folder_name,'sbatch_job.BATCH'),'w') as f:
