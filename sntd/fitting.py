@@ -1,4 +1,4 @@
-import warnings,sncosmo,os,sys,pyParz,pickle,subprocess,glob
+import warnings,sncosmo,os,sys,pyParz,pickle,subprocess,glob,math
 import numpy as np
 import matplotlib.pyplot as plt
 from copy import deepcopy,copy
@@ -59,7 +59,7 @@ def fit_data(curves=None, snType='Ia',bands=None, models=None, params=None, boun
              dust=None,flip=False,microlensing=None,fitOrder=None,color_bands=None,min_points_per_band=3,
              fit_prior=None,par_or_batch='parallel',batch_partition=None,batch_script=None,nbatch_jobs=None,
              batch_python_path=None,wait_for_batch=False,guess_amplitude=True,test_micro=False,trial_fit=True,
-             kernel='RBF',refImage='image_1',nMicroSamples=100,color_curve=None,warning_supress=True,
+             kernel='RBF',refImage='image_1',nMicroSamples=100,color_curve=None,warning_supress=True,n_per_node=1,
              verbose=True,**kwargs):
 
     """The main high-level fitting function.
@@ -205,8 +205,10 @@ def fit_data(curves=None, snType='Ia',bands=None, models=None, params=None, boun
                 print('Have not yet set up parallelized multi-fit processing')
                 sys.exit(1)
             else:
-                script_name,folder_name=run_sbatch(partition=batch_partition,sbatch_script=batch_script,
-                                                   njobs=nbatch_jobs,python_path=batch_python_path)
+                script_name_init,folder_name=run_sbatch(partition=batch_partition,
+                                                   njobs=nbatch_jobs,python_path=batch_python_path,init=True)
+                script_name,folder_name=run_sbatch(partition=batch_partition,folder=folder_name,
+                                                   njobs=nbatch_jobs,python_path=batch_python_path,init=False)
 
 
                 for i in range(len(args['curves'])):
@@ -222,97 +224,110 @@ def fit_data(curves=None, snType='Ia',bands=None, models=None, params=None, boun
 
 
                 pickle.dump(args['curves'],open(os.path.join(folder_name,'sntd_data.pkl'),'wb'))
+                for pyfile in ['run_sntd_init.py','run_sntd.py']:
+                    with open(os.path.join(__dir__,'batch',pyfile)) as f:
+                        batch_py=f.read()
+                    if 'init' in pyfile:
+                        batch_py=batch_py.replace('nlcsreplace',str(min(int(n_per_node*nbatch_jobs),len(args['curves']))))
+                        batch_py=batch_py.replace('njobsreplace',str(nbatch_jobs))
+                    else:
+                        batch_py=batch_py.replace('nlcsreplace',str(n_per_node))
+                    if batch_init is None:
+                        batch_py=batch_py.replace('batchinitreplace','print("Nothing to initialize...")')
+                    else:
+                        batch_py=batch_py.replace('batchinitreplace',batch_init)
 
-                with open(os.path.join(__dir__,'batch','run_sntd.py')) as f:
-                    batch_py=f.read()
-                batch_py=batch_py.replace('njobsreplace',str(nbatch_jobs))
-                batch_py=batch_py.replace('nlcsreplace',str(len(args['curves'])))
-                if batch_init is None:
-                    batch_py=batch_py.replace('batchinitreplace','print("Nothing to initialize...")')
-                else:
-                    batch_py=batch_py.replace('batchinitreplace',batch_init)
-
-                indent1=batch_py.find('fitCurves=')
-                indent=batch_py.find('try:')+len('try:')+1
+                    indent1=batch_py.find('fitCurves=')
+                    indent=batch_py.find('try:')+len('try:')+1
 
 
-                sntd_command=''
-                for i in range(len(method)):
-                    fit_method=method[i]
-                    sntd_command+='sntd.fit_data('
-                    for par,val in locs.items():
-                        if par =='curves':
-                            if i==0:
-                                sntd_command+='curves=all_dat[i],'
-                            else:
-                                sntd_command+='curves=fitCurves,'
-                        elif par=='constants':
-                            sntd_command+='constants=all_dat[i].constants,'
-                        elif par=='batch_init':
-                            sntd_command+='batch_init=None,'
-
-                        elif par=='test_micro' and test_micro:
-                            if i>0:
-                                sntd_command+='test_micro=False,'
-                            else:
-                                sntd_command+='test_micro=True,'
-                        elif par=='bands' and test_micro:
-                            if i>0:
-                                if fit_method!='color':
-                                    sntd_command+='bands=fitCurves.micro_bands,'
+                    sntd_command=''
+                    for i in range(len(method)):
+                        fit_method=method[i]
+                        sntd_command+='sntd.fit_data('
+                        for par,val in locs.items():
+                            if par =='curves':
+                                if i==0:
+                                    sntd_command+='curves=all_dat[i],'
                                 else:
-                                    sntd_command+='bands=fitCurves.micro_color_bands,'
-                            else:
-                                sntd_command+='bands=None,'
-                        elif fit_method=='color' and par=='bands':
-                            if color_bands is not None:
-                                sntd_command+='bands='+str(color_bands)+','
+                                    sntd_command+='curves=fitCurves,'
+                            elif par=='constants':
+                                sntd_command+='constants=all_dat[i].constants,'
+                            elif par=='batch_init':
+                                sntd_command+='batch_init=None,'
 
-                            #elif len(args['bands'])!=2:
-                            #    print('Setting up color batch mode but more than 2 bands and color_bands not set,'+\
-                            #          ')
-                            #    sys.exit(1)
-                            else:
-                                sntd_command+='bands='+str(val)+','
-
-                        elif par=='method':
-                            sntd_command+='method="'+fit_method+'",'
-                        elif par=='fit_prior' and fit_method!='parallel':
-                            sntd_command+='fit_prior=fitCurves,'
-                        elif isinstance(val,str):
-                            sntd_command+=str(par)+'="'+str(val)+'",'
-                        elif par=='kwargs':
-
-                            for par2,val2 in val.items():
-                                if isinstance(val,str):
-                                    sntd_command+=str(par2)+'="'+str(val2)+'",'
+                            elif par=='test_micro' and test_micro:
+                                if i>0:
+                                    sntd_command+='test_micro=False,'
                                 else:
-                                    sntd_command+=str(par2)+'='+str(val2)+','
-                        else:
-                            sntd_command+=str(par)+'='+str(val)+','
+                                    sntd_command+='test_micro=True,'
+                            elif par=='bands' and test_micro:
+                                if i>0:
+                                    if fit_method!='color':
+                                        sntd_command+='bands=fitCurves.micro_bands,'
+                                    else:
+                                        sntd_command+='bands=fitCurves.micro_color_bands,'
+                                else:
+                                    sntd_command+='bands=None,'
+                            elif fit_method=='color' and par=='bands':
+                                if color_bands is not None:
+                                    sntd_command+='bands='+str(color_bands)+','
 
-                    sntd_command=sntd_command[:-1]+')\n'
-                    if i<len(method)-1:
-                        sntd_command+=' '*(indent1-indent)+'fitCurves='
+                                #elif len(args['bands'])!=2:
+                                #    print('Setting up color batch mode but more than 2 bands and color_bands not set,'+\
+                                #          ')
+                                #    sys.exit(1)
+                                else:
+                                    sntd_command+='bands='+str(val)+','
 
-                batch_py=batch_py.replace('sntdcommandreplace',sntd_command)
+                            elif par=='method':
+                                sntd_command+='method="'+fit_method+'",'
+                            elif par=='fit_prior' and fit_method!='parallel':
+                                sntd_command+='fit_prior=fitCurves,'
+                            elif isinstance(val,str):
+                                sntd_command+=str(par)+'="'+str(val)+'",'
+                            elif par=='kwargs':
 
-                with open(os.path.join(folder_name,'run_sntd.py'),'w') as f:
-                    f.write(batch_py)
+                                for par2,val2 in val.items():
+                                    if isinstance(val,str):
+                                        sntd_command+=str(par2)+'="'+str(val2)+'",'
+                                    else:
+                                        sntd_command+=str(par2)+'='+str(val2)+','
+                            else:
+                                sntd_command+=str(par)+'='+str(val)+','
+
+                        sntd_command=sntd_command[:-1]+')\n'
+                        if i<len(method)-1:
+                            sntd_command+=' '*(indent1-indent)+'fitCurves='
+
+                    batch_py=batch_py.replace('sntdcommandreplace',sntd_command)
+
+                    with open(os.path.join(folder_name,pyfile),'w') as f:
+                        f.write(batch_py)
 
                 #os.system('sbatch %s'%(os.path.join(folder_name,script_name)))
-                if wait_for_batch:
+                total_jobs=math.ceil(len(args['curves'])/n_per_node)
 
+                printProgressBar(0,total_jobs)
+                if wait_for_batch:
                     result=subprocess.call(['sbatch',os.path.join(os.path.abspath(folder_name),
-                                                                  script_name)])
+                                                                           script_name_init)])
+
                     ndone=0
-                    printProgressBar(0,nbatch_jobs)
+                    nadded=0
                     while True:
                         output=glob.glob(os.path.join(os.path.abspath(folder_name),'*fit*.pkl'))
                         if len(output)!=ndone:
+                            if nbatch_jobs+nadded<total_jobs:
+                                for i in range(len(output)-ndone):
+                                    ind=nbatch_jobs+nadded+i
+                                    if ind>total_jobs:
+                                        continue
+                                    result=subprocess.call(['sbatch',os.path.join(os.path.abspath(folder_name),
+                                                                              script_name),ind])
                             ndone=len(output)
-                            printProgressBar(len(output),nbatch_jobs)
-                        if len(output)==nbatch_jobs:
+                            printProgressBar(ndone,total_jobs)
+                        if len(output)==total_jobs:
                             break
 
                     outfiles=glob.glob(os.path.join(os.path.abspath(folder_name),'*fit*.pkl'))
@@ -448,7 +463,6 @@ def fit_data(curves=None, snType='Ia',bands=None, models=None, params=None, boun
                             printProgressBar(len(output),nbatch_jobs)
                         if len(output)==nbatch_jobs:
                             break
-
 
                     outfiles=glob.glob(os.path.join(os.path.abspath(folder_name),'*fit*.pkl'))
                     all_result=[]
