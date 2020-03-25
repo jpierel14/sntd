@@ -312,7 +312,7 @@ def fit_data(curves=None, snType='Ia',bands=None, models=None, params=None, boun
                 if wait_for_batch:
                     result=subprocess.call(['sbatch',os.path.join(os.path.abspath(folder_name),
                                                                            script_name_init)])
-                    printProgressBar(0,total_jobs)
+                    #printProgressBar(0,total_jobs)
                     ndone=0
                     nadded=0
                     while True:
@@ -321,12 +321,13 @@ def fit_data(curves=None, snType='Ia',bands=None, models=None, params=None, boun
                             if nbatch_jobs+nadded<total_jobs:
                                 for i in range(len(output)-ndone):
                                     ind=nbatch_jobs+nadded+i
+                                    print(ind)
                                     if ind>total_jobs:
                                         continue
                                     result=subprocess.call(['sbatch',os.path.join(os.path.abspath(folder_name),
                                                                               script_name),str(ind)],stdout=subprocess.DEVNULL)
                             ndone=len(output)
-                            printProgressBar(ndone,total_jobs)
+                            #printProgressBar(ndone,total_jobs)
                         if len(output)==total_jobs:
                             break
 

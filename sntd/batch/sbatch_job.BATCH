@@ -1,5 +1,4 @@
 #!/bin/bash
-sbatch <<EOT
 #SBATCH -o pyjob%j.out
 #SBATCH -p partition
 #SBATCH --job-name=SNTD
@@ -12,5 +11,3 @@ hostname
 
 # creates a python virtual environment
 myPython run_sntd.py $1
-
-EOT
