@@ -689,7 +689,7 @@ def _fitColor(all_args):
         args=all_args
 
     if args['clip_data']:
-        args['curves'].clipData(minsnr=args.get('minsnr',0),mintime=args['cut_time'][0],maxtime=args['cut_time'][1])
+        args['curves'].clip_data(minsnr=args.get('minsnr',0),mintime=args['cut_time'][0],maxtime=args['cut_time'][1])
 
     args['bands']=list(args['bands'])
     if len(args['bands'])<2:
@@ -1030,7 +1030,7 @@ def _fitseries(all_args):
         args=all_args
 
     if args['clip_data']:
-        args['curves'].clipData(minsnr=args.get('minsnr',0),mintime=args['cut_time'][0],maxtime=args['cut_time'][1])
+        args['curves'].clip_data(minsnr=args.get('minsnr',0),mintime=args['cut_time'][0],maxtime=args['cut_time'][1])
 
     args['bands']=list(args['bands'])
     final_bands=[]
@@ -1449,7 +1449,7 @@ def _fitparallel(all_args):
     else:
         args=all_args
     if args['clip_data']:
-        args['curves'].clipData(minsnr=args.get('minsnr',0),mintime=args['cut_time'][0],maxtime=args['cut_time'][1])
+        args['curves'].clip_data(minsnr=args.get('minsnr',0),mintime=args['cut_time'][0],maxtime=args['cut_time'][1])
     if 't0' in args['bounds']:
         t0Bounds=copy(args['bounds']['t0'])
     final_bands=[]
