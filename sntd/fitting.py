@@ -60,7 +60,7 @@ def fit_data(curves=None, snType='Ia',bands=None, models=None, params=None, boun
              fit_prior=None,par_or_batch='parallel',batch_partition=None,batch_script=None,nbatch_jobs=None,
              batch_python_path=None,wait_for_batch=False,guess_amplitude=True,test_micro=False,trial_fit=True,
              kernel='RBF',refImage='image_1',nMicroSamples=100,color_curve=None,warning_supress=True,n_per_node=1,
-             verbose=True,**kwargs):
+             verbose=True,clip_data=False,**kwargs):
 
     """The main high-level fitting function.
 
@@ -216,10 +216,7 @@ def fit_data(curves=None, snType='Ia',bands=None, models=None, params=None, boun
                                                    njobs=nbatch_jobs,python_path=batch_python_path,init=False)
 
                 pickle.dump(constants,open(os.path.join(folder_name,'sntd_constants.pkl'),'wb'))
-                if filelist:
-                    pickle.dump(args['curves'],open(os.path.join(folder_name,'sntd_data.pkl'),'wb'))
-                else:
-                    pickle.dump(args['curves'],open(os.path.join(folder_name,'sntd_data.pkl'),'wb'))
+                pickle.dump(args['curves'],open(os.path.join(folder_name,'sntd_data.pkl'),'wb'))
                 for pyfile in ['run_sntd_init.py','run_sntd.py']:
                     with open(os.path.join(__dir__,'batch',pyfile)) as f:
                         batch_py=f.read()
@@ -691,6 +688,10 @@ def _fitColor(all_args):
             print('Fitting MISN number %i...'%curves.nsn)
     else:
         args=all_args
+
+    if args['clip_data']:
+        args['curves'].clipData(minsnr=args.get('minsnr',0),mintime=args['cut_time'][0],maxtime=args['cut_time'][1])
+
     args['bands']=list(args['bands'])
     if len(args['bands'])<2:
         raise RuntimeError("If you want to analyze color curves, you need two bands!")
@@ -710,6 +711,8 @@ def _fitColor(all_args):
         sorted=np.flip(np.argsort(all_SNR))
         args['bands']=np.array(args['bands'])[sorted]
         args['bands']=args['bands'][:2]
+
+
 
     if 't0' in args['params']:
         args['params'].remove('t0')
@@ -1026,6 +1029,10 @@ def _fitseries(all_args):
             print('Fitting MISN number %i...'%curves.nsn)
     else:
         args=all_args
+
+    if args['clip_data']:
+        args['curves'].clipData(minsnr=args.get('minsnr',0),mintime=args['cut_time'][0],maxtime=args['cut_time'][1])
+
     args['bands']=list(args['bands'])
     final_bands=[]
     for band in args['bands']:
@@ -1036,6 +1043,8 @@ def _fitseries(all_args):
         if to_add:
             final_bands.append(band)
     args['bands']=np.array(final_bands)
+
+
 
     if 't0' in args['params']:
         args['params'].remove('t0')
@@ -1440,7 +1449,8 @@ def _fitparallel(all_args):
             print('Fitting MISN number %i...'%curves.nsn)
     else:
         args=all_args
-
+    if args['clip_data']:
+        args['curves'].clipData(minsnr=args.get('minsnr',0),mintime=args['cut_time'][0],maxtime=args['cut_time'][1])
     if 't0' in args['bounds']:
         t0Bounds=copy(args['bounds']['t0'])
     final_bands=[]
