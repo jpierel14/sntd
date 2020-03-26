@@ -17,6 +17,8 @@ inds[1]=min(inds[-1],len(all_dat))
 
 all_res=[]
 for i in range(inds[0],inds[1]):
+    if isinstance(all_dat[i],str):
+        all_dat[i]=pickle.load(open(all_dat[i],'rb'))
     try:
         fitCurves=sntdcommandreplace
         all_res.append(copy(fitCurves))

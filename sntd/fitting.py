@@ -151,11 +151,16 @@ def fit_data(curves=None, snType='Ia',bands=None, models=None, params=None, boun
         args[k]=kwargs[k]
 
     if isinstance(curves,(list,tuple)):
-        args['curves']=[]
-        for i in range(len(curves)):
-            temp=_sntd_deepcopy(curves[i])
-            temp.nsn=i+1
-            args['curves'].append(temp)
+
+        if isinstance(curves[0],str):#then its a filename list
+            filelist=True
+        else:
+            filelist=False
+            args['curves']=[]
+            for i in range(len(curves)):
+                temp=_sntd_deepcopy(curves[i])
+                temp.nsn=i+1
+                args['curves'].append(temp)
         args['parlist']=True
     else:
         args['curves']=_sntd_deepcopy(curves)
@@ -210,20 +215,11 @@ def fit_data(curves=None, snType='Ia',bands=None, models=None, params=None, boun
                 script_name,folder_name=run_sbatch(partition=batch_partition,folder=folder_name,
                                                    njobs=nbatch_jobs,python_path=batch_python_path,init=False)
 
-
-                for i in range(len(args['curves'])):
-                    args['curves'][i].constants={}
-                    if constants is not None:
-                        for c in constants:
-                            if isinstance(constants[c],(list,tuple,np.ndarray)):
-
-                                args['curves'][i].constants[c]=constants[c][i]
-                            else:
-                                args['curves'][i].constants[c]=constants[c]
-
-
-
-                pickle.dump(args['curves'],open(os.path.join(folder_name,'sntd_data.pkl'),'wb'))
+                pickle.dump(constants,open(os.path.join(folder_name,'sntd_constants.pkl'),'wb'))
+                if filelist:
+                    pickle.dump(args['curves'],open(os.path.join(folder_name,'sntd_data.pkl'),'wb'))
+                else:
+                    pickle.dump(args['curves'],open(os.path.join(folder_name,'sntd_data.pkl'),'wb'))
                 for pyfile in ['run_sntd_init.py','run_sntd.py']:
                     with open(os.path.join(__dir__,'batch',pyfile)) as f:
                         batch_py=f.read()
