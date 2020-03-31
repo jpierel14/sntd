@@ -150,7 +150,7 @@ def fit_data(curves=None, snType='Ia',bands=None, models=None, params=None, boun
     for k in kwargs.keys():
         args[k]=kwargs[k]
 
-    if isinstance(curves,(list,tuple)):
+    if isinstance(curves,(list,tuple,np.ndarray)):
 
         if isinstance(curves[0],str):#then its a filename list
             filelist=True
@@ -934,6 +934,7 @@ def nest_color_lc(data,model,nimage,color, vparam_names,bounds,ref='image_1',
     mindat=model.mintime()
     maxdat=model.maxtime()
     data=data[np.where(np.logical_and(data['time']>=mindat,data['time']<=maxdat))]
+
     im_indices=[np.where(data['image']==i)[0] for i in np.unique(data['image'])]
     def chisq_likelihood(parameters):
         model.set(**{model_param_names[k]:parameters[model_idx[k]] for k in range(len(model_idx))})
@@ -942,12 +943,12 @@ def nest_color_lc(data,model,nimage,color, vparam_names,bounds,ref='image_1',
         for i in range(len(im_indices)):
             all_data['time'][im_indices[i]]-=parameters[td_idx[i]]
 
-        model_observations = model.color(color[0],color[1],all_data['zpsys'][0],all_data['time'])
+        model_observations = 10**(-.4*model.color(color[0],color[1],all_data['zpsys'][0],all_data['time']))
 
-
+        err=(all_data['flux_%s'%color[0]]/all_data['flux_%s'%color[1]])*np.sqrt((all_data['fluxerr_%s'%color[0]]/all_data['flux_%s'%color[0]])**2+(all_data['fluxerr_%s'%color[1]]/all_data['flux_%s'%color[1]])**2)
         if modelcov:
             all_cov=None
-            cov = np.diag(all_data['%s-%s_err'%(color[0],color[1])]**2)
+            cov = np.diag(err)
             for i in range(2):
 
                 _, mcov = model.bandfluxcov(color[i],
@@ -967,12 +968,12 @@ def nest_color_lc(data,model,nimage,color, vparam_names,bounds,ref='image_1',
             cov = cov + all_cov
             invcov = np.linalg.pinv(cov)
 
-            diff = all_data['%s-%s'%(color[0],color[1])]-model_observations
+            diff = all_data['flux_%s'%color[0]]/all_data['flux_%s'%color[1]]-model_observations
             chisq=np.dot(np.dot(diff, invcov), diff)
 
         else:
-            chisq=np.sum((all_data['%s-%s'%(color[0],color[1])]-model_observations)**2/\
-                         (all_data['%s-%s_err'%(color[0],color[1])]**2))
+            chisq=np.sum((all_data['flux_%s'%color[0]]/all_data['flux_%s'%color[1]]-model_observations)**2/\
+                         err**2)
         return chisq
 
     def loglike(parameters):
