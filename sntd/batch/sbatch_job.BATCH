@@ -1,6 +1,6 @@
 #!/bin/bash
 #SBATCH -o pyjob%j.out
-#SBATCH -p partition
+partition
 #SBATCH --job-name=SNTD
 
 

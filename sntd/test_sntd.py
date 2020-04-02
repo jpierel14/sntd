@@ -1,5 +1,5 @@
 ##Tests for pipeline
-import sys,os,traceback
+import sys,os,traceback,shutil
 from copy import deepcopy
 sys.path.append(os.path.join(os.path.dirname(os.path.abspath(__file__)),'..'))
 import sntd
@@ -24,7 +24,7 @@ def test_sntd():
 	try:    
 		total+=1
 		print('Testing microlensing realization...',end='')
-		myML=sntd.realizeMicro(nray=1,kappas=1,kappac=.3,gamma=.4)
+		myML=sntd.realizeMicro(nray=10,kappas=1,kappac=.3,gamma=.4)
 		print('Passed!')
 	except Exception as e:
 		print('Failed')
@@ -62,11 +62,10 @@ def test_sntd():
 		total+=1
 		
 		print('Testing fitting MISN with microlensing using parallel method...',end='')
-		
 		fitCurves=sntd.fit_data(myMISN_ml,snType='Ia', models='salt2-extended',bands=['bessellb','bessellr'],
-			params=['x0','x1','t0','c'],constants={'z':.5},bounds={'t0':(-15,15),'x1':(-2,2),'c':(0,1)},
+			params=['x0','x1','t0','c'],constants={'z':.5},bounds={'t0':(-1,1),'x1':(-2,2),'c':(0,1)},
 			method='parallel',microlensing='achromatic',t0_guess={'image_1':10,'image_2':70},
-			nMicroSamples=1,maxcall=5,minsnr=0)
+			nMicroSamples=1,maxcall=10,minsnr=0)
 
 		print('Passed!')
 	except Exception as e:
@@ -98,32 +97,37 @@ def test_sntd():
 		print('Failed (this will ruin the next test)')
 		print(traceback.format_exc())
 		failed+=1
-	
+
+	print('-----------------------------')
+	print('OPTIONAL TESTS')
+	print('-----------------------------')
 	try:
 		total+=1
-		print('Testing fitting a list of MISN...',end='')
-		myMISN1 = sntd.createMultiplyImagedSN(sourcename='salt2-extended', snType='Ia', redshift=.5,z_lens=.2, bands=['bessellb','bessellr'],
-			  zp=[25,25], cadence=3., epochs=35.,time_delays=[10., 30.], magnifications=[20,20],
-			  objectName='My Type Ia SN',telescopename='HST')
-
-		myMISN2 = sntd.createMultiplyImagedSN(sourcename='salt2-extended', snType='Ia', redshift=1,z_lens=.2, bands=['bessellb','bessellr'],
-			  zp=[25,25], cadence=3., epochs=35.,time_delays=[10., 20.], magnifications=[20,20],
-			  objectName='My Type Ia SN',telescopename='HST')
-		
-		
-		curve_list=[myMISN1,myMISN2]
-
-		fitCurves=sntd.fit_data(curve_list,snType='Ia', models='salt2-extended',bands=['bessellb','bessellr'],
-			params=['x0','x1','t0','c'],constants=[{'z':.5},{'z':1}],t0_guess={'image_1':10,'image_2':70},
-			bounds={'t0':(-15,15),'x1':(-2,2),'c':(0,1)},
-			method='parallel',microlensing=None,maxcall=5,verbose=False,minsnr=0)
-	
+		print('Testing parallelization...',end='')
+		fitCurves=sntd.fit_data([myMISN]*2,snType='Ia', models='salt2-extended',bands=['bessellb','bessellr'],
+				params=['x0','x1','t0','c'],constants={'z':.5},bounds={'t0':(-15,15),'x1':(-2,2),'c':(0,1),'td':(-15,15),'mu':(.5,2)},
+				method='parallel',microlensing=None,maxcall=5,minsnr=0,t0_guess={'image_1':10,'image_2':70})
 		print('Passed!')
-	except:
+	except Exception as e:
 		print('Failed')
 		print(traceback.format_exc())
-		failed+=1
-
+		failed+=1	
+	try:
+		total+=1
+		print('Testing batch mode...',end='')
+		fitCurves=sntd.fit_data([myMISN]*100,snType='Ia', models='salt2-extended',bands=['bessellb','bessellr'],
+				params=['x0','x1','t0','c'],constants={'z':.5},bounds={'t0':(-15,15),'x1':(-2,2),'c':(0,1),'td':(-15,15),'mu':(.5,2)},
+				method='parallel',
+				par_or_batch='batch',nbatch_jobs=2,wait_for_batch=True,microlensing=None,maxcall=5,minsnr=0,t0_guess={'image_1':10,'image_2':70})
+		print('Passed!')
+	except Exception as e:
+		print('Failed')
+		print(traceback.format_exc())
+		failed+=1	
+	try:
+		shutil.rmtree('batch_output')
+	except RuntimeError:
+		pass
 	print('Passed %i/%i tests.'%(total-failed,total))
 
 	return
