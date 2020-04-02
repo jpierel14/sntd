@@ -306,13 +306,13 @@ def fit_data(curves=None, snType='Ia',bands=None, models=None, params=None, boun
                                                                            script_name_init)])
                     printProgressBar(0,total_jobs)
                     ndone=0
-                    nadded=0
+                    nadded=nbatch_jobs
                     while True:
                         output=glob.glob(os.path.join(os.path.abspath(folder_name),'*fit*.pkl'))
                         if len(output)!=ndone:
-                            if nbatch_jobs+nadded<total_jobs:
+                            if nadded<total_jobs:
                                 for i in range(len(output)-ndone):
-                                    ind=nbatch_jobs+nadded+i
+                                    ind=nadded+i+1
                                     if ind>=total_jobs:
                                         continue
                                     result=subprocess.call(['sbatch',os.path.join(os.path.abspath(folder_name),
