@@ -331,8 +331,8 @@ def fit_data(curves=None, snType='Ia',bands=None, models=None, params=None, boun
                     curves= list(np.reshape(all_result,(-1,1)).flatten())
 
                 else:
-                    result=subprocess.call(['sbatch', os.path.join(os.path.abspath(folder_name),
-                                                                   script_name)])
+                    result=subprocess.call(['sbatch',os.path.join(os.path.abspath(folder_name),
+                                                                           script_name_init)])
 
                     print('Batch submitted successfully')
                     return
@@ -474,8 +474,8 @@ def fit_data(curves=None, snType='Ia',bands=None, models=None, params=None, boun
                     curves= list(np.reshape(all_result,(-1,1)).flatten())
 
                 else:
-                    result=subprocess.call(['sbatch', os.path.join(os.path.abspath(folder_name),
-                                                                 script_name)])
+                    result=subprocess.call(['sbatch',os.path.join(os.path.abspath(folder_name),
+                                                                           script_name_init)])
 
                     print('Batch submitted successfully')
                     return
@@ -578,8 +578,8 @@ def fit_data(curves=None, snType='Ia',bands=None, models=None, params=None, boun
                     curves= list(np.reshape(all_result,(-1,1)).flatten())
 
                 else:
-                    result=subprocess.call(['sbatch', os.path.join(os.path.abspath(folder_name),
-                                                                   script_name)])
+                    result=subprocess.call(['sbatch',os.path.join(os.path.abspath(folder_name),
+                                                                           script_name_init)])
 
                     print('Batch submitted successfully')
                     return
@@ -680,8 +680,8 @@ def fit_data(curves=None, snType='Ia',bands=None, models=None, params=None, boun
                     curves= list(np.reshape(all_result,(-1,1)).flatten())
 
                 else:
-                    result=subprocess.call(['sbatch', os.path.join(os.path.abspath(folder_name),
-                                                                   script_name)])
+                    result=subprocess.call(['sbatch',os.path.join(os.path.abspath(folder_name),
+                                                                           script_name_init)])
 
                     print('Batch submitted successfully')
                     return
