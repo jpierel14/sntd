@@ -38,7 +38,7 @@ def load_example_data():
     example_files=glob.glob(os.path.join(__dir__,'data','examples','*.dat'))
     return(ascii.read(example_files[0]),ascii.read(example_files[1]))
 
-def run_sbatch(total_lcs,partition=None,njobs=None,python_path=None,init=False,folder=None):
+def run_sbatch(partition=None,njobs=None,python_path=None,init=False,folder=None):
     if njobs is None:
         print("Batch mode requires a number of jobs!")
         sys.exit(1)
@@ -81,7 +81,7 @@ def run_sbatch(total_lcs,partition=None,njobs=None,python_path=None,init=False,f
     sbatch=sbatch.replace('myPython',python_path)
     sbatch=sbatch.replace('run_sntd.py',os.path.join(os.path.abspath(folder_name),pyfile))
     if init:
-        sbatch=sbatch.replace('njobs','0-'+str(total_lcs)+'%'+str(njobs-1))
+        sbatch=sbatch.replace('njobs','0-%i'%(njobs-1))
 
     if not init:
         with open(os.path.join(folder_name,'sbatch_job.BATCH'),'w') as f:

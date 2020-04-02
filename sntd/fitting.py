@@ -1,4 +1,4 @@
-import warnings,sncosmo,os,sys,pyParz,pickle,subprocess,glob,math
+import warnings,sncosmo,os,sys,pyParz,pickle,subprocess,glob,math,time
 import numpy as np
 import matplotlib.pyplot as plt
 from copy import deepcopy,copy
@@ -210,14 +210,14 @@ def fit_data(curves=None, snType='Ia',bands=None, models=None, params=None, boun
                 sys.exit(1)
             else:
                 total_jobs=math.ceil(len(args['curves'])/n_per_node)
-                script_name_init,folder_name=run_sbatch(total_jobs,partition=batch_partition,
+                script_name_init,folder_name=run_sbatch(partition=batch_partition,
                                                    njobs=nbatch_jobs,python_path=batch_python_path,init=True)
-                #script_name,folder_name=run_sbatch(partition=batch_partition,folder=folder_name,
-                #                                   njobs=nbatch_jobs,python_path=batch_python_path,init=False)
+                script_name,folder_name=run_sbatch(partition=batch_partition,folder=folder_name,
+                                                  njobs=nbatch_jobs,python_path=batch_python_path,init=False)
 
                 pickle.dump(constants,open(os.path.join(folder_name,'sntd_constants.pkl'),'wb'))
                 pickle.dump(args['curves'],open(os.path.join(folder_name,'sntd_data.pkl'),'wb'))
-                for pyfile in ['run_sntd_init.py']:#,'run_sntd.py']:
+                for pyfile in ['run_sntd_init.py','run_sntd.py']:
                     with open(os.path.join(__dir__,'batch',pyfile)) as f:
                         batch_py=f.read()
                     if 'init' in pyfile:
@@ -302,40 +302,37 @@ def fit_data(curves=None, snType='Ia',bands=None, models=None, params=None, boun
                 
 
 
+                
+                result=subprocess.call(['sbatch',os.path.join(os.path.abspath(folder_name),
+                                                                       script_name_init)])
                 if wait_for_batch:
-                    result=subprocess.call(['sbatch',os.path.join(os.path.abspath(folder_name),
-                                                                           script_name_init)])
                     printProgressBar(0,total_jobs)
-                    ndone=0
-                    while True:
-                        output=glob.glob(os.path.join(os.path.abspath(folder_name),'*fit*.pkl'))
-                        #if len(output)!=ndone:
-                        #    if nadded<total_jobs:
-                        #        for i in range(len(output)-ndone):
-                        #            ind=nadded+i+1
-                        #            if ind>=total_jobs:
-                        #                continue
-                        #            result=subprocess.call(['sbatch',os.path.join(os.path.abspath(folder_name),
-                        #                                                      script_name),str(ind)],stdout=subprocess.DEVNULL)
-                        #            nadded+=1
+                ndone=0
+                nadded=nbatch_jobs
+                while True:
+                    time.sleep(5) #update every 5 seconds
+                    output=glob.glob(os.path.join(os.path.abspath(folder_name),'*fit*.pkl'))
+                    if len(output)!=ndone:
+                       if nadded<total_jobs:
+                           for i in range(len(output)-ndone):
+                               ind=nadded+i
+                               if ind>total_jobs:
+                                   continue
+                               result=subprocess.call(['sbatch',os.path.join(os.path.abspath(folder_name),
+                                                                         script_name),str(ind)],stdout=subprocess.DEVNULL)
+                               nadded+=1
                         ndone=len(output)
-                        printProgressBar(ndone,total_jobs)
-                        if len(output)==total_jobs:
-                            break
+                        if wait_for_batch:
+                            printProgressBar(ndone,total_jobs)
+                    if len(output)==total_jobs:
+                        break
 
-                    outfiles=glob.glob(os.path.join(os.path.abspath(folder_name),'*fit*.pkl'))
-                    all_result=[]
-                    for f in outfiles:
-                        all_result.append(pickle.load(open(f,'rb')))
+                outfiles=glob.glob(os.path.join(os.path.abspath(folder_name),'*fit*.pkl'))
+                all_result=[]
+                for f in outfiles:
+                    all_result.append(pickle.load(open(f,'rb')))
 
-                    curves= list(np.reshape(all_result,(-1,1)).flatten())
-
-                else:
-                    result=subprocess.call(['sbatch',os.path.join(os.path.abspath(folder_name),
-                                                                           script_name_init)])
-
-                    print('Batch submitted successfully')
-                    return
+                curves= list(np.reshape(all_result,(-1,1)).flatten())
 
 
 
@@ -392,14 +389,14 @@ def fit_data(curves=None, snType='Ia',bands=None, models=None, params=None, boun
                 curves=pyParz.foreach(par_arg_vals,_fitparallel,[args])
             else:
                 total_jobs=math.ceil(len(args['curves'])/n_per_node)
-                script_name_init,folder_name=run_sbatch(total_jobs,partition=batch_partition,
+                script_name_init,folder_name=run_sbatch(partition=batch_partition,
                                                    njobs=nbatch_jobs,python_path=batch_python_path,init=True)
-                #script_name,folder_name=run_sbatch(partition=batch_partition,folder=folder_name,
-                #                                   njobs=nbatch_jobs,python_path=batch_python_path,init=False)
+                script_name,folder_name=run_sbatch(partition=batch_partition,folder=folder_name,
+                                                  njobs=nbatch_jobs,python_path=batch_python_path,init=False)
 
                 pickle.dump(constants,open(os.path.join(folder_name,'sntd_constants.pkl'),'wb'))
                 pickle.dump(args['curves'],open(os.path.join(folder_name,'sntd_data.pkl'),'wb'))
-                for pyfile in ['run_sntd_init.py']:#,'run_sntd.py']:
+                for pyfile in ['run_sntd_init.py','run_sntd.py']:
                     with open(os.path.join(__dir__,'batch',pyfile)) as f:
                         batch_py=f.read()
                     if 'init' in pyfile:
@@ -500,14 +497,14 @@ def fit_data(curves=None, snType='Ia',bands=None, models=None, params=None, boun
                 curves=pyParz.foreach(par_arg_vals,_fitseries,[args])
             else:
                 total_jobs=math.ceil(len(args['curves'])/n_per_node)
-                script_name_init,folder_name=run_sbatch(total_jobs,partition=batch_partition,
+                script_name_init,folder_name=run_sbatch(partition=batch_partition,
                                                    njobs=nbatch_jobs,python_path=batch_python_path,init=True)
-                #script_name,folder_name=run_sbatch(partition=batch_partition,folder=folder_name,
-                #                                   njobs=nbatch_jobs,python_path=batch_python_path,init=False)
+                script_name,folder_name=run_sbatch(partition=batch_partition,folder=folder_name,
+                                                  njobs=nbatch_jobs,python_path=batch_python_path,init=False)
 
                 pickle.dump(constants,open(os.path.join(folder_name,'sntd_constants.pkl'),'wb'))
                 pickle.dump(args['curves'],open(os.path.join(folder_name,'sntd_data.pkl'),'wb'))
-                for pyfile in ['run_sntd_init.py']:#,'run_sntd.py']:
+                for pyfile in ['run_sntd_init.py','run_sntd.py']:
                     with open(os.path.join(__dir__,'batch',pyfile)) as f:
                         batch_py=f.read()
                     if 'init' in pyfile:
@@ -602,14 +599,14 @@ def fit_data(curves=None, snType='Ia',bands=None, models=None, params=None, boun
                 curves=pyParz.foreach(par_arg_vals,_fitColor,[args])
             else:
                 total_jobs=math.ceil(len(args['curves'])/n_per_node)
-                script_name_init,folder_name=run_sbatch(total_jobs,partition=batch_partition,
+                script_name_init,folder_name=run_sbatch(partition=batch_partition,
                                                    njobs=nbatch_jobs,python_path=batch_python_path,init=True)
-                #script_name,folder_name=run_sbatch(partition=batch_partition,folder=folder_name,
-                #                                   njobs=nbatch_jobs,python_path=batch_python_path,init=False)
+                script_name,folder_name=run_sbatch(partition=batch_partition,folder=folder_name,
+                                                  njobs=nbatch_jobs,python_path=batch_python_path,init=False)
 
                 pickle.dump(constants,open(os.path.join(folder_name,'sntd_constants.pkl'),'wb'))
                 pickle.dump(args['curves'],open(os.path.join(folder_name,'sntd_data.pkl'),'wb'))
-                for pyfile in ['run_sntd_init.py']:#,'run_sntd.py']:
+                for pyfile in ['run_sntd_init.py','run_sntd.py']:
                     with open(os.path.join(__dir__,'batch',pyfile)) as f:
                         batch_py=f.read()
                     if 'init' in pyfile:
