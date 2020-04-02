@@ -308,20 +308,24 @@ def fit_data(curves=None, snType='Ia',bands=None, models=None, params=None, boun
 				if wait_for_batch:
 					printProgressBar(0,total_jobs)
 				ndone=0
+				nactive=nbatch_jobs
 				nadded=nbatch_jobs
 				while True:
 					time.sleep(5) #update every 5 seconds
 					output=glob.glob(os.path.join(os.path.abspath(folder_name),'*fit*.pkl'))
 					if len(output)!=ndone:
+						print(len(output),ndone,nadded)
 						if nadded<total_jobs:
 							for i in range(len(output)-ndone):
 								ind=nadded+i
+								print(ind)
 								if ind>total_jobs:
 									continue
 								result=subprocess.call(['sbatch',os.path.join(os.path.abspath(folder_name),
 																		 script_name),str(ind)],stdout=subprocess.DEVNULL)
 								nadded+=1
 						ndone=len(output)
+
 						if wait_for_batch:
 							printProgressBar(ndone,total_jobs)
 					if len(output)==total_jobs:
