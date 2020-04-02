@@ -316,8 +316,9 @@ def fit_data(curves=None, snType='Ia',bands=None, models=None, params=None, boun
 					if len(output)!=ndone:
 						print(len(output),ndone,nadded)
 						if nadded<total_jobs:
+							ind=nadded
 							for i in range(len(output)-ndone):
-								ind=nadded+i
+								ind+=i
 								print(ind)
 								if ind>total_jobs:
 									continue
