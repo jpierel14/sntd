@@ -701,7 +701,7 @@ def _fitColor(all_args):
 		args=all_args
 
 	if args['clip_data']:
-		args['curves'].clip_data(minsnr=args.get('minsnr',0),mintime=args['cut_time'][0],maxtime=args['cut_time'][1])
+		args['curves'].clip_data(minsnr=args.get('minsnr',0))
 
 	args['bands']=list(args['bands'])
 	if len(args['bands'])<2:
@@ -1043,7 +1043,7 @@ def _fitseries(all_args):
 		args=all_args
 
 	if args['clip_data']:
-		args['curves'].clip_data(minsnr=args.get('minsnr',0),mintime=args['cut_time'][0],maxtime=args['cut_time'][1])
+		args['curves'].clip_data(minsnr=args.get('minsnr',0))
 
 	args['bands']=list(args['bands'])
 	final_bands=[]
@@ -1461,8 +1461,7 @@ def _fitparallel(all_args):
 			print('Fitting MISN number %i...'%curves.nsn)
 	else:
 		args=all_args
-	if args['clip_data']:
-		args['curves'].clip_data(minsnr=args.get('minsnr',0),mintime=args['cut_time'][0],maxtime=args['cut_time'][1])
+	
 	if 't0' in args['bounds']:
 		t0Bounds=copy(args['bounds']['t0'])
 	final_bands=[]
@@ -1549,7 +1548,13 @@ def _fitparallel(all_args):
 			args['bounds']={res.param_names[i]:np.array([-res.errors[res.param_names[i]],res.errors[res.param_names[i]]])*3+\
 											   res.parameters[i] for i in range(len(res.param_names)) if res.param_names[i] \
 												in list(res.errors.keys())}
+
 			args['bounds']['t0']=np.array(initial_bounds['t0'])+fit.get('t0')
+			guess_t0=fit.get('t0')
+
+
+		if args['clip_data']:
+			args['curves'].clip_data(minsnr=args.get('minsnr',0),mintime=args['cut_time'][0]+guess_t0,maxtime=args['cut_time'][1]+guess_t0)
 		
 		res,fit=sncosmo.nest_lc(args['curves'].images[args['fitOrder'][0]].table,tempMod,args['params'],
 								bounds=args['bounds'],
