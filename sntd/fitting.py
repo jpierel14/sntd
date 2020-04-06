@@ -55,7 +55,7 @@ class newDict(dict):
 
 
 def fit_data(curves=None, snType='Ia',bands=None, models=None, params=None, bounds={}, ignore=None, constants=None,
-			 method='parallel',t0_guess=None,effect_names=[],effect_frames=[],batch_init=None,cut_time=[-np.inf,np.inf],
+			 method='parallel',t0_guess=None,effect_names=[],effect_frames=[],batch_init=None,cut_time=None,
 			 dust=None,flip=False,microlensing=None,fitOrder=None,color_bands=None,min_points_per_band=3,
 			 fit_prior=None,par_or_batch='parallel',batch_partition=None,nbatch_jobs=None,
 			 batch_python_path=None,wait_for_batch=False,guess_amplitude=True,test_micro=False,trial_fit=True,
