@@ -317,15 +317,12 @@ class curveDict(dict):
 
     def clip_data(self,minsnr=0,mintime=-np.inf,maxtime=np.inf,remove_bands=[]):
         for im in self.images.keys():
-            print(self.images[im].table)
             self.images[im].table=self.images[im].table[np.abs(self.images[im].table['flux'])/\
                                                         self.images[im].table['fluxerr']>minsnr]
             self.images[im].table=self.images[im].table[self.images[im].table['time']>mintime]
             self.images[im].table=self.images[im].table[self.images[im].table['time']<maxtime]
             for b in remove_bands:
                 self.images[im].table=self.images[im].table[self.images[im].table['band']!=b]
-            print(self.images[im].table)
-        sys.exit()
 
     def color_table(self,band1,band2,time_delays=None,referenceImage='image_1',ignore_images=[],
                     static=False,model=None,minsnr=0.0):
@@ -404,6 +401,7 @@ class curveDict(dict):
             temp2['magerr']=1.0857*temp2['fluxerr']/temp2['flux']
             temp1['mag']=-2.5*np.log10(temp1['flux'])+temp1['zp']
             temp1['magerr']=1.0857*temp1['fluxerr']/temp1['flux']
+
             temp1_remove=[i for i in range(len(temp1)) if temp1['time'][i] not in temp2['time']]
             temp1.remove_rows(temp1_remove)
             temp2_remove=[i for i in range(len(temp2)) if temp2['time'][i] not in temp1['time']]
