@@ -317,13 +317,15 @@ class curveDict(dict):
 
     def clip_data(self,minsnr=0,mintime=-np.inf,maxtime=np.inf,remove_bands=[]):
         for im in self.images.keys():
+            print(self.images[im].table)
             self.images[im].table=self.images[im].table[np.abs(self.images[im].table['flux'])/\
                                                         self.images[im].table['fluxerr']>minsnr]
             self.images[im].table=self.images[im].table[self.images[im].table['time']>mintime]
             self.images[im].table=self.images[im].table[self.images[im].table['time']<maxtime]
             for b in remove_bands:
                 self.images[im].table=self.images[im].table[self.images[im].table['band']!=b]
-
+            print(self.images[im].table)
+        sys.exit()
 
     def color_table(self,band1,band2,time_delays=None,referenceImage='image_1',ignore_images=[],
                     static=False,model=None,minsnr=0.0):
