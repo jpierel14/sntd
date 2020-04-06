@@ -387,8 +387,8 @@ class curveDict(dict):
             time_delays={k:0 for k in self.images.keys()}
         self.color.meta['td']=time_delays
         for im in [x for x in self.images.keys() if x not in ignore_images]:
-            temp2=copy(self.images[im].table[self.images[im].table['band']==band2])
-            temp1=copy(self.images[im].table[self.images[im].table['band']==band1])
+            temp2=deepcopy(self.images[im].table[self.images[im].table['band']==band2])
+            temp1=deepcopy(self.images[im].table[self.images[im].table['band']==band1])
             temp1=temp1[temp1['flux']>0]
             temp2=temp2[temp2['flux']>0]
             temp1=temp1[temp1['flux']/temp1['fluxerr']>minsnr]
