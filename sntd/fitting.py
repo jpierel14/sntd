@@ -314,7 +314,6 @@ def fit_data(curves=None, snType='Ia',bands=None, models=None, params=None, boun
 					time.sleep(5) #update every 5 seconds
 					output=glob.glob(os.path.join(os.path.abspath(folder_name),'*fit*.pkl'))
 					if len(output)!=ndone:
-						print(len(output),ndone,nadded)
 						if nadded<total_jobs:
 							ind=nadded
 							for i in range(len(output)-ndone):
@@ -447,39 +446,36 @@ def fit_data(curves=None, snType='Ia',bands=None, models=None, params=None, boun
 
 				#os.system('sbatch %s'%(os.path.join(folder_name,script_name)))
 				if wait_for_batch:
-					result=subprocess.call(['sbatch',os.path.join(os.path.abspath(folder_name),
-																		   script_name_init)])
 					printProgressBar(0,total_jobs)
-					ndone=0
-					while True:
-						output=glob.glob(os.path.join(os.path.abspath(folder_name),'*fit*.pkl'))
-						#if len(output)!=ndone:
-						#    if nadded<total_jobs:
-						#        for i in range(len(output)-ndone):
-						#            ind=nadded+i+1
-						#            if ind>=total_jobs:
-						#                continue
-						#            result=subprocess.call(['sbatch',os.path.join(os.path.abspath(folder_name),
-						#                                                      script_name),str(ind)],stdout=subprocess.DEVNULL)
-						#            nadded+=1
+				ndone=0
+				nactive=nbatch_jobs
+				nadded=nbatch_jobs
+				while True:
+					time.sleep(5) #update every 5 seconds
+					output=glob.glob(os.path.join(os.path.abspath(folder_name),'*fit*.pkl'))
+					if len(output)!=ndone:
+						if nadded<total_jobs:
+							ind=nadded
+							for i in range(len(output)-ndone):
+								if ind>total_jobs:
+									continue
+								ind+=1
+								result=subprocess.call(['sbatch',os.path.join(os.path.abspath(folder_name),
+																		 script_name),str(ind)],stdout=subprocess.DEVNULL)
+								nadded+=1
 						ndone=len(output)
-						printProgressBar(ndone,total_jobs)
-						if len(output)==total_jobs:
-							break
 
-					outfiles=glob.glob(os.path.join(os.path.abspath(folder_name),'*fit*.pkl'))
-					all_result=[]
-					for f in outfiles:
-						all_result.append(pickle.load(open(f,'rb')))
+						if wait_for_batch:
+							printProgressBar(ndone,total_jobs)
+					if len(output)==total_jobs:
+						break
 
-					curves= list(np.reshape(all_result,(-1,1)).flatten())
+				outfiles=glob.glob(os.path.join(os.path.abspath(folder_name),'*fit*.pkl'))
+				all_result=[]
+				for f in outfiles:
+					all_result.append(pickle.load(open(f,'rb')))
 
-				else:
-					result=subprocess.call(['sbatch',os.path.join(os.path.abspath(folder_name),
-																		   script_name_init)])
-
-					print('Batch submitted successfully')
-					return
+				curves= list(np.reshape(all_result,(-1,1)).flatten())
 
 
 
@@ -551,39 +547,36 @@ def fit_data(curves=None, snType='Ia',bands=None, models=None, params=None, boun
 
 				#os.system('sbatch %s'%(os.path.join(folder_name,script_name)))
 				if wait_for_batch:
-					result=subprocess.call(['sbatch',os.path.join(os.path.abspath(folder_name),
-																		   script_name_init)])
 					printProgressBar(0,total_jobs)
-					ndone=0
-					while True:
-						output=glob.glob(os.path.join(os.path.abspath(folder_name),'*fit*.pkl'))
-						#if len(output)!=ndone:
-						#    if nadded<total_jobs:
-						#        for i in range(len(output)-ndone):
-						#            ind=nadded+i+1
-						#            if ind>=total_jobs:
-						#                continue
-						#            result=subprocess.call(['sbatch',os.path.join(os.path.abspath(folder_name),
-						#                                                      script_name),str(ind)],stdout=subprocess.DEVNULL)
-						#            nadded+=1
+				ndone=0
+				nactive=nbatch_jobs
+				nadded=nbatch_jobs
+				while True:
+					time.sleep(5) #update every 5 seconds
+					output=glob.glob(os.path.join(os.path.abspath(folder_name),'*fit*.pkl'))
+					if len(output)!=ndone:
+						if nadded<total_jobs:
+							ind=nadded
+							for i in range(len(output)-ndone):
+								if ind>total_jobs:
+									continue
+								ind+=1
+								result=subprocess.call(['sbatch',os.path.join(os.path.abspath(folder_name),
+																		 script_name),str(ind)],stdout=subprocess.DEVNULL)
+								nadded+=1
 						ndone=len(output)
-						printProgressBar(ndone,total_jobs)
-						if len(output)==total_jobs:
-							break
 
-					outfiles=glob.glob(os.path.join(os.path.abspath(folder_name),'*fit*.pkl'))
-					all_result=[]
-					for f in outfiles:
-						all_result.append(pickle.load(open(f,'rb')))
+						if wait_for_batch:
+							printProgressBar(ndone,total_jobs)
+					if len(output)==total_jobs:
+						break
 
-					curves= list(np.reshape(all_result,(-1,1)).flatten())
+				outfiles=glob.glob(os.path.join(os.path.abspath(folder_name),'*fit*.pkl'))
+				all_result=[]
+				for f in outfiles:
+					all_result.append(pickle.load(open(f,'rb')))
 
-				else:
-					result=subprocess.call(['sbatch',os.path.join(os.path.abspath(folder_name),
-																		   script_name_init)])
-
-					print('Batch submitted successfully')
-					return
+				curves= list(np.reshape(all_result,(-1,1)).flatten())
 		else:
 			curves=_fitseries(args)
 
@@ -653,39 +646,36 @@ def fit_data(curves=None, snType='Ia',bands=None, models=None, params=None, boun
 
 				#os.system('sbatch %s'%(os.path.join(folder_name,script_name)))
 				if wait_for_batch:
-					result=subprocess.call(['sbatch',os.path.join(os.path.abspath(folder_name),
-																		   script_name_init)])
 					printProgressBar(0,total_jobs)
-					ndone=0
-					while True:
-						output=glob.glob(os.path.join(os.path.abspath(folder_name),'*fit*.pkl'))
-						#if len(output)!=ndone:
-						#    if nadded<total_jobs:
-						#        for i in range(len(output)-ndone):
-						#            ind=nadded+i+1
-						#            if ind>=total_jobs:
-						#                continue
-						#            result=subprocess.call(['sbatch',os.path.join(os.path.abspath(folder_name),
-						#                                                      script_name),str(ind)],stdout=subprocess.DEVNULL)
-						#            nadded+=1
+				ndone=0
+				nactive=nbatch_jobs
+				nadded=nbatch_jobs
+				while True:
+					time.sleep(5) #update every 5 seconds
+					output=glob.glob(os.path.join(os.path.abspath(folder_name),'*fit*.pkl'))
+					if len(output)!=ndone:
+						if nadded<total_jobs:
+							ind=nadded
+							for i in range(len(output)-ndone):
+								if ind>total_jobs:
+									continue
+								ind+=1
+								result=subprocess.call(['sbatch',os.path.join(os.path.abspath(folder_name),
+																		 script_name),str(ind)],stdout=subprocess.DEVNULL)
+								nadded+=1
 						ndone=len(output)
-						printProgressBar(ndone,total_jobs)
-						if len(output)==total_jobs:
-							break
 
-					outfiles=glob.glob(os.path.join(os.path.abspath(folder_name),'*fit*.pkl'))
-					all_result=[]
-					for f in outfiles:
-						all_result.append(pickle.load(open(f,'rb')))
+						if wait_for_batch:
+							printProgressBar(ndone,total_jobs)
+					if len(output)==total_jobs:
+						break
 
-					curves= list(np.reshape(all_result,(-1,1)).flatten())
+				outfiles=glob.glob(os.path.join(os.path.abspath(folder_name),'*fit*.pkl'))
+				all_result=[]
+				for f in outfiles:
+					all_result.append(pickle.load(open(f,'rb')))
 
-				else:
-					result=subprocess.call(['sbatch',os.path.join(os.path.abspath(folder_name),
-																		   script_name_init)])
-
-					print('Batch submitted successfully')
-					return
+				curves= list(np.reshape(all_result,(-1,1)).flatten())
 		else:
 			if args['color_bands'] is not None:
 				args['bands']=args['color_bands']
