@@ -319,9 +319,9 @@ def fit_data(curves=None, snType='Ia',bands=None, models=None, params=None, boun
 							for i in range(len(output)-ndone):
 								if ind>total_jobs:
 									continue
-								ind+=1
 								result=subprocess.call(['sbatch',os.path.join(os.path.abspath(folder_name),
 																		 script_name),str(ind)],stdout=subprocess.DEVNULL)
+								ind+=1
 								nadded+=1
 						ndone=len(output)
 
@@ -1599,7 +1599,7 @@ def _fitparallel(all_args):
 							guess_amplitude_bound=True,priors=args.get('priors',None), ppfs=args.get('None'),
 						 method=args.get('nest_method','single'),cut_time=args['cut_time'],
 						 maxcall=args.get('maxcall',None), modelcov=args.get('modelcov',False),
-						 rstate=args.get('rstate',None),
+						 rstate=args.get('rstate',None),minsnr=args.get('minsnr',5),
 						 maxiter=args.get('maxiter',None),npoints=args.get('npoints',1000))
 
 
