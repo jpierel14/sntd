@@ -417,7 +417,7 @@ class curveDict(dict):
             temp1['flux_%s'%band1]=temp1['flux']
             temp1['fluxerr_%s'%band1]=temp1['fluxerr']
             temp1['flux_%s'%band2]=temp2['flux']
-            temp1['fluxerr_%s'%band2]=temp2['flux']
+            temp1['fluxerr_%s'%band2]=temp2['fluxerr']
             temp1['zp_%s'%band1]=temp1['zp']
             temp1['zp_%s'%band2]=temp2['zp']
             to_remove=[x for x in temp1.colnames if x not in names]
