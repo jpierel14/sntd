@@ -1,4 +1,4 @@
-import pickle,sys,sntd,os
+import pickle,sys,sntd,os,traceback
 from optparse import OptionParser
 from copy import copy
 import numpy as np
@@ -33,7 +33,9 @@ for i in range(inds[0],inds[1]):
     try:
         fitCurves=sntdcommandreplace
         all_res.append(copy(fitCurves))
-    except:
+    except Exception as e:
+        print('Failed')
+        print(traceback.format_exc())
         all_res.append(None)
 
 pickle.dump(all_res,open(os.path.join(os.path.abspath(os.path.dirname(__file__)),'sntd_fit%s.pkl'%sys.argv[1]),'wb'))
