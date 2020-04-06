@@ -1554,7 +1554,10 @@ def _fitparallel(all_args):
 
 
 		if args['clip_data']:
-			args['curves'].clip_data(minsnr=args.get('minsnr',0),mintime=args['cut_time'][0]+guess_t0,maxtime=args['cut_time'][1]+guess_t0)
+			if args['cut_time'] is not None:
+				args['curves'].clip_data(minsnr=args.get('minsnr',0),mintime=args['cut_time'][0]+guess_t0,maxtime=args['cut_time'][1]+guess_t0)
+			else:
+				args['curves'].clip_data(minsnr=args.get('minsnr',0))
 		
 		res,fit=sncosmo.nest_lc(args['curves'].images[args['fitOrder'][0]].table,tempMod,args['params'],
 								bounds=args['bounds'],
