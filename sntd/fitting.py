@@ -701,7 +701,8 @@ def _fitColor(all_args):
 		args=all_args
 
 	if args['clip_data']:
-		args['curves'].clip_data(minsnr=args.get('minsnr',0))
+		for im in args['curves'].images.keys():
+			args['curves'].clip_data(im=im,minsnr=args.get('minsnr',0))
 
 	args['bands']=list(args['bands'])
 	if len(args['bands'])<2:
@@ -1044,7 +1045,8 @@ def _fitseries(all_args):
 		args=all_args
 
 	if args['clip_data']:
-		args['curves'].clip_data(minsnr=args.get('minsnr',0))
+		for im in args['curves'].images.keys():
+			args['curves'].clip_data(im=im,minsnr=args.get('minsnr',0))
 
 	args['bands']=list(args['bands'])
 	final_bands=[]
@@ -1467,7 +1469,8 @@ def _fitparallel(all_args):
 		t0Bounds=copy(args['bounds']['t0'])
 
 	if args['clip_data']:
-		args['curves'].clip_data(minsnr=args.get('minsnr',0))
+		for im in args['curves'].images.keys():
+			args['curves'].clip_data(im=im,minsnr=args.get('minsnr',0))
 
 	final_bands=[]
 	band_dict={im:[] for im in args['curves'].images.keys()}
