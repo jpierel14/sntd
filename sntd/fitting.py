@@ -1484,7 +1484,7 @@ def _fitparallel(all_args):
 	args['curves'].bands=final_bands
 	
 	for d in args['curves'].images.keys():
-		for b in [x for x in np.unique(args['curves'].images[d].table['band']) if x not in band_dict[d]:
+		for b in [x for x in np.unique(args['curves'].images[d].table['band']) if x not in band_dict[d]]:
 			args['curves'].images[d].table=args['curves'].images[d].table[args['curves'].images[d].table['band']!=b]
 
 
