@@ -1564,9 +1564,9 @@ def _fitparallel(all_args):
 
 		if args['clip_data']:
 			if args['cut_time'] is not None:
-				args['curves'].clip_data(minsnr=args.get('minsnr',0),mintime=args['cut_time'][0]+guess_t0,maxtime=args['cut_time'][1]+guess_t0)
+				args['curves'].clip_data(im=args['fitOrder'][0],minsnr=args.get('minsnr',0),mintime=args['cut_time'][0],maxtime=args['cut_time'][1],peak=guess_t0)
 			else:
-				args['curves'].clip_data(minsnr=args.get('minsnr',0))
+				args['curves'].clip_data(im=args['fitOrder'][0],minsnr=args.get('minsnr',0))
 		
 		res,fit=sncosmo.nest_lc(args['curves'].images[args['fitOrder'][0]].table,tempMod,args['params'],
 								bounds=args['bounds'],
@@ -1648,7 +1648,11 @@ def _fitparallel(all_args):
 			args['curves'].parallel.time_delay_errors[k]=np.array([t_quant[0]-t_quant[1],t_quant[2]-t_quant[1]])
 			args['curves'].parallel.magnification_errors[k]= \
 				np.array([a_quant[0]-a_quant[1],a_quant[2]-a_quant[1]])
-
+		if args['clip_data']:
+			if args['cut_time'] is not None:
+				args['curves'].clip_data(im=k,minsnr=args.get('minsnr',0),mintime=args['cut_time'][0],maxtime=args['cut_time'][1],peak=args['curves'].parallel.time_delays[k])
+			else:
+				args['curves'].clip_data(im=k,minsnr=args.get('minsnr',0))
 
 	if args['microlensing'] is not None:
 		for k in args['curves'].images.keys():
@@ -1702,6 +1706,7 @@ def nest_parallel_lc(data,model,prev_res,bounds,guess_amplitude_bound=False,cut_
 
 		bounds[model.param_names[2]]=(0,10*guess_amp)
 		bounds['t0']=np.array(bounds['t0'])+guess_t0
+
 	if cut_time is not None and guess_amplitude_bound:
 		data=data[data['time']>=cut_time[0]*(1+model.get('z'))+guess_t0]
 		data=data[data['time']<=cut_time[1]*(1+model.get('z'))+guess_t0]

@@ -315,14 +315,17 @@ class curveDict(dict):
 
         return(self)
 
-    def clip_data(self,minsnr=0,mintime=-np.inf,maxtime=np.inf,remove_bands=[]):
-        for im in self.images.keys():
-            self.images[im].table=self.images[im].table[self.images[im].table['flux']/\
-                                                        self.images[im].table['fluxerr']>minsnr]
-            self.images[im].table=self.images[im].table[self.images[im].table['time']>mintime]
-            self.images[im].table=self.images[im].table[self.images[im].table['time']<maxtime]
-            for b in remove_bands:
-                self.images[im].table=self.images[im].table[self.images[im].table['band']!=b]
+    def clip_data(self,im,minsnr=0,mintime=-np.inf,maxtime=np.inf,peak=0,remove_bands=[]):
+        
+        self.images[im].table=self.images[im].table[self.images[im].table['flux']/\
+                                                    self.images[im].table['fluxerr']>minsnr]
+        
+        self.images[im].table=self.images[im].table[self.images[im].table['time']>mintime+peak]
+        self.images[im].table=self.images[im].table[self.images[im].table['time']<maxtime+peak]
+        
+
+        for b in remove_bands:
+            self.images[im].table=self.images[im].table[self.images[im].table['band']!=b]
 
     def color_table(self,band1,band2,time_delays=None,referenceImage='image_1',ignore_images=[],
                     static=False,model=None,minsnr=0.0):
