@@ -707,22 +707,31 @@ def _fitColor(all_args):
 	args['bands']=list(args['bands'])
 	if len(args['bands'])<2:
 		raise RuntimeError("If you want to analyze color curves, you need two bands!")
-	elif len(args['bands'])>2:
+	else:
+		to_add=[]
+		for band in list(args['bands']):
+			to_add=True
+			for im in args['curves'].images.keys():
+				if len(np.where(args['curves'].images[im].table['band']==band)[0])<args['min_points_per_band']:
+					to_add=False
+			if to_add:
+				final_bands.append(band)
+		if len(args['bands'])>2 or len(final_bands)<2:
+			all_SNR=[]
+			for band in args['bands']:
+				ims=[]
+				for d in args['curves'].images.keys():
+					inds=np.where(args['curves'].images[d].table['band']==band)[0]
+					if len(inds)==0:
+						ims.append(0)
+					else:
+						ims.append(np.sum(args['curves'].images[d].table['flux'][inds]/args['curves'].images[d].table['fluxerr'][inds])*\
+							 np.sqrt(len(inds)))
+				all_SNR.append(np.sum(ims))
+			sorted=np.flip(np.argsort(all_SNR))
+			args['bands']=np.array(args['bands'])[sorted]
+			args['bands']=args['bands'][:2]
 
-		all_SNR=[]
-		for band in args['bands']:
-			ims=[]
-			for d in args['curves'].images.keys():
-				inds=np.where(args['curves'].images[d].table['band']==band)[0]
-				if len(inds)==0:
-					ims.append(0)
-				else:
-					ims.append(np.sum(args['curves'].images[d].table['flux'][inds]/args['curves'].images[d].table['fluxerr'][inds])*\
-						 np.sqrt(len(inds)))
-			all_SNR.append(np.sum(ims))
-		sorted=np.flip(np.argsort(all_SNR))
-		args['bands']=np.array(args['bands'])[sorted]
-		args['bands']=args['bands'][:2]
 
 
 
