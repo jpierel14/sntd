@@ -789,7 +789,7 @@ def _fitColor(all_args):
 			par_ref=args['fit_prior'].parallel.fitOrder[0]
 			temp_delays={k:args['fit_prior'].parallel.time_delays[k]-args['fit_prior'].parallel.time_delays[par_ref] \
 						 for k in args['fit_prior'].parallel.fitOrder}
-			args['curves'].color_table(args['bands'][0],args['bands'][1],time_delays=temp_delays,minsr=args.get('minsnr',0))
+			args['curves'].color_table(args['bands'][0],args['bands'][1],time_delays=temp_delays,minsnr=args.get('minsnr',0))
 			args['curves'].color.meta['reft0']=args['fit_prior'].images[par_ref].fits.model.get('t0')
 
 		else:
