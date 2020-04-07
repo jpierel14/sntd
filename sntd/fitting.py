@@ -1465,6 +1465,10 @@ def _fitparallel(all_args):
 	
 	if 't0' in args['bounds']:
 		t0Bounds=copy(args['bounds']['t0'])
+
+	if args['clip_data']:
+		args['curves'].clip_data(minsnr=args.get('minsnr',0))
+
 	final_bands=[]
 	for band in list(args['bands']):
 		to_add=True
