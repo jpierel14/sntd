@@ -317,7 +317,7 @@ class curveDict(dict):
 
     def clip_data(self,minsnr=0,mintime=-np.inf,maxtime=np.inf,remove_bands=[]):
         for im in self.images.keys():
-            self.images[im].table=self.images[im].table[np.abs(self.images[im].table['flux'])/\
+            self.images[im].table=self.images[im].table[self.images[im].table['flux']/\
                                                         self.images[im].table['fluxerr']>minsnr]
             self.images[im].table=self.images[im].table[self.images[im].table['time']>mintime]
             self.images[im].table=self.images[im].table[self.images[im].table['time']<maxtime]
