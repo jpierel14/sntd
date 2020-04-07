@@ -709,7 +709,7 @@ def _fitColor(all_args):
 		raise RuntimeError("If you want to analyze color curves, you need two bands!")
 	else:
 		final_bands=[]
-		for band in list(args['bands']):
+		for band in np.unique(args['curves'].images[args['refImage']].table['band']):
 			to_add=True
 			for im in args['curves'].images.keys():
 				if len(np.where(args['curves'].images[im].table['band']==band)[0])<args['min_points_per_band']:
