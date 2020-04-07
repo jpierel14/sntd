@@ -708,7 +708,7 @@ def _fitColor(all_args):
 	if len(args['bands'])<2:
 		raise RuntimeError("If you want to analyze color curves, you need two bands!")
 	else:
-		to_add=[]
+		final_bands=[]
 		for band in list(args['bands']):
 			to_add=True
 			for im in args['curves'].images.keys():
