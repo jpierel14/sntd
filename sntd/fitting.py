@@ -1470,18 +1470,21 @@ def _fitparallel(all_args):
 		args['curves'].clip_data(minsnr=args.get('minsnr',0))
 
 	final_bands=[]
+	band_dict={im:[] for im in args['curves'].images.keys()}
 	for band in list(args['bands']):
 		to_add=True
 		for im in args['curves'].images.keys():
 			if len(np.where(args['curves'].images[im].table['band']==band)[0])<args['min_points_per_band']:
 				to_add=False
+			else:
+				band_dict[im].append(band)
 		if to_add:
 			final_bands.append(band)
 	args['bands']=np.array(final_bands)
 	args['curves'].bands=final_bands
 	
 	for d in args['curves'].images.keys():
-		for b in [x for x in np.unique(args['curves'].images[d].table['band']) if x not in args['bands']]:
+		for b in [x for x in np.unique(args['curves'].images[d].table['band']) if x not in band_dict[d]:
 			args['curves'].images[d].table=args['curves'].images[d].table[args['curves'].images[d].table['band']!=b]
 
 
