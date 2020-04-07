@@ -1577,7 +1577,10 @@ def _fitparallel(all_args):
 																	args['cut_time'][1]*(1+tempMod.get('z'))+guess_t0]
 		if args['trial_fit'] and args['t0_guess'] is None:
 			best_bands=band_SNR[args['fitOrder'][0]][:min(len(band_SNR[args['fitOrder'][0]]),2)]
-			inds=(np.array([np.where(args['curves'].images[args['fitOrder'][0]].table['band']==b)[0] for b in best_bands]).flatten()).astype(int)
+			temp_bands=[]
+			for b in best_bands:
+				temp_bands=np.append(temp_bands,np.where(args['curves'].images[args['fitOrder'][0]].table['band']==b)[0])
+			inds=temp_bands.astype(int)
 			res,fit=sncosmo.fit_lc(args['curves'].images[args['fitOrder'][0]].table[inds],tempMod,args['params'],
 									bounds=args['bounds'],minsnr=args.get('minsnr',5.0))
 
@@ -1634,7 +1637,10 @@ def _fitparallel(all_args):
 				initial_bounds['t0']=(t0Bounds[0]+args['t0_guess'][d],t0Bounds[1]+args['t0_guess'][d])
 		else:
 			best_bands=band_SNR[d][:min(len(band_SNR[d]),2)]
-			inds=(np.array([np.where(args['curves'].images[d].table['band']==b)[0] for b in best_bands]).flatten()).astype(int)
+			temp_bands=[]
+			for b in best_bands:
+				temp_bands=np.append(temp_bands,np.where(args['curves'].images[args['fitOrder'][0]].table['band']==b)[0])
+			inds=temp_bands.astype(int)
 		
 		params,args['curves'].images[d].fits['model'],args['curves'].images[d].fits['res']\
 			=nest_parallel_lc(args['curves'].images[d].table,first_res[1],first_res[2],initial_bounds,
