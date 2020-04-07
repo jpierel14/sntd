@@ -1639,7 +1639,7 @@ def _fitparallel(all_args):
 			best_bands=band_SNR[d][:min(len(band_SNR[d]),2)]
 			temp_bands=[]
 			for b in best_bands:
-				temp_bands=np.append(temp_bands,np.where(args['curves'].images[args['fitOrder'][0]].table['band']==b)[0])
+				temp_bands=np.append(temp_bands,np.where(args['curves'].images[d].table['band']==b)[0])
 			inds=temp_bands.astype(int)
 		
 		params,args['curves'].images[d].fits['model'],args['curves'].images[d].fits['res']\
