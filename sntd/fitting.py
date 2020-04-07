@@ -862,6 +862,7 @@ def _fitColor(all_args):
 	args['curves'].color.meta['td']=time_delays
 	args['curves'].color.refImage=args['refImage']
 	args['curves'].color.priorImage=par_ref
+	args['curves'].color.bands=args['bands']
 
 	args['curves'].color.fits=newDict()
 	args['curves'].color.fits['model']=finalmodel
