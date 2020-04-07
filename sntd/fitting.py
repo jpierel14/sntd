@@ -716,9 +716,9 @@ def _fitColor(all_args):
 					to_add=False
 			if to_add:
 				final_bands.append(band)
-		if len(args['bands'])>2 or len(final_bands)<2:
+		if len(args['bands'])>2 or np.any([x not in final_bands for x in args['bands']])<2:
 			all_SNR=[]
-			for band in args['bands']:
+			for band in final_bands:
 				ims=[]
 				for d in args['curves'].images.keys():
 					inds=np.where(args['curves'].images[d].table['band']==band)[0]
