@@ -1496,7 +1496,18 @@ def _fitparallel(all_args):
 			final_bands.append(band)
 	args['bands']=np.array(final_bands)
 	args['curves'].bands=final_bands
-	
+	all_SNR=[]
+	band_SNR={}
+	for d in args['curves'].images.keys():
+		for band in final_bands:	
+			inds=np.where(args['curves'].images[d].table['band']==band)[0]
+			if len(inds)==0:
+				band_SNR[d]=0
+			else:
+				band_SNR[d]=np.sum(args['curves'].images[d].table['flux'][inds]/args['curves'].images[d].table['fluxerr'][inds])*\
+					 np.sqrt(len(inds))
+		
+	band_SNR={k:np.array(final_bands)[np.flip(np.argsort(band_SNR[k]))] for k in band_SNR.keys()}
 	for d in args['curves'].images.keys():
 		for b in [x for x in np.unique(args['curves'].images[d].table['band']) if x not in band_dict[d]]:
 			args['curves'].images[d].table=args['curves'].images[d].table[args['curves'].images[d].table['band']!=b]
@@ -1565,9 +1576,12 @@ def _fitparallel(all_args):
 			args['curves'].images[args['fitOrder'][0]].table=args['curves'].images[args['fitOrder'][0]].table[args['curves'].images[args['fitOrder'][0]].table['time']<= \
 																	args['cut_time'][1]*(1+tempMod.get('z'))+guess_t0]
 		if args['trial_fit'] and args['t0_guess'] is None:
-			res,fit=sncosmo.fit_lc(args['curves'].images[args['fitOrder'][0]].table,tempMod,args['params'],
+			best_bands=band_SNR[args['fitOrder'][0]][:min(len(band_SNR),2)]
+			inds=np.array([np.where(args['curves'].images[args['fitOrder'][0]].table['band']==b)[0] for b in best_bands]).flatten()
+			res,fit=sncosmo.fit_lc(args['curves'].images[args['fitOrder'][0]].table[inds],tempMod,args['params'],
 									bounds=args['bounds'],minsnr=args.get('minsnr',5.0))
-
+			print(fit.get('t0'))
+			sys.exit()
 			args['bounds']={res.param_names[i]:np.array([-res.errors[res.param_names[i]],res.errors[res.param_names[i]]])*3+\
 											   res.parameters[i] for i in range(len(res.param_names)) if res.param_names[i] \
 												in list(res.errors.keys())}
