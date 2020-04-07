@@ -1478,6 +1478,7 @@ def _fitparallel(all_args):
 		if to_add:
 			final_bands.append(band)
 	args['bands']=np.array(final_bands)
+	args['curves'].bands=final_bands
 	
 	for d in args['curves'].images.keys():
 		for b in [x for x in np.unique(args['curves'].images[d].table['band']) if x not in args['bands']]:
