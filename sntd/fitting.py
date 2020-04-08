@@ -275,7 +275,7 @@ def fit_data(curves=None, snType='Ia',bands=None, models=None, params=None, boun
 
 							elif par=='method':
 								sntd_command+='method="'+fit_method+'",'
-							elif par=='fit_prior' and fit_method!='parallel':
+							elif par=='fit_prior' and fit_method!='parallel' and (fit_prior is not None and fit_prior is not False):
 								sntd_command+='fit_prior=fitCurves,'
 							elif isinstance(val,str):
 								sntd_command+=str(par)+'="'+str(val)+'",'
