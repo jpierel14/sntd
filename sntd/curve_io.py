@@ -239,7 +239,7 @@ class curveDict(dict):
         return(self)
 
     def combine_curves(self,time_delays=None,magnifications=None,referenceImage='image_1',static=False,
-                       model=None,minsnr=5.):
+                       model=None,minsnr=0):
         """
         Takes the multiple images in self.images and combines
         the data into a single light curve using defined

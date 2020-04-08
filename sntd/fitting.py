@@ -708,6 +708,8 @@ def _fitColor(all_args):
 			args['curves'].clip_data(im=im,minsnr=args.get('minsnr',0))
 
 	args['bands']=list(args['bands'])
+	_,band_SNR,_=getBandSNR(args['curves'],args['bands'],args['min_points_per_band'])
+	
 	if len(args['bands'])<2:
 		raise RuntimeError("If you want to analyze color curves, you need two bands!")
 	else:
@@ -808,7 +810,28 @@ def _fitColor(all_args):
 			args['curves'].color.meta['reft0']=args['fit_prior'].images[par_ref].fits.model.get('t0')
 
 		else:
-			args['curves'].color_table(args['bands'][0],args['bands'][1],referenceImage=args['refImage'],
+			if args['trial_fit']:
+				
+				temp_delays={}
+				for im in args['curves'].images.keys():
+					temp_bands=[]
+					for b in args['bands']:
+						temp_bands=np.append(temp_bands,np.where(args['curves'].images[im].table['band']==b)[0])
+					inds=temp_bands.astype(int)
+					res,fit=sncosmo.fit_lc(args['curves'].images[im].table[inds],tempMod,args['params'],
+											bounds={b:args['bounds'][b]+(args['bounds'][b]-np.median(args['bounds'][b]))*2 if b=='t0' else args['bounds'][b] for b in args['bounds']},
+											minsnr=args.get('minsnr',0))
+					temp_delays[im]=fit.get('t0')
+				args['curves'].color.meta['reft0']=temp_delays[args['refImage']]
+				temp_delays={im:temp_delays[im]-temp_delays[args['refImage']] for im in temp_delays.keys()}
+				
+				for b in args['bounds']:
+						if b in list(res.errors.keys()):
+							args['bounds'][b]=np.array([-res.errors[b],res.errors[b]])*3+fit.get(b)
+				args['curves'].color_table(args['bands'][0],args['bands'][1],referenceImage=args['refImage'],
+									   static=False,time_delays=temp_delays,minsnr=args.get('minsnr',0))
+			else:
+				args['curves'].color_table(args['bands'][0],args['bands'][1],referenceImage=args['refImage'],
 									   static=False,model=tempMod,minsnr=args.get('minsnr',0))
 			par_ref=args['refImage']
 
@@ -1062,18 +1085,8 @@ def _fitseries(all_args):
 		for im in args['curves'].images.keys():
 			args['curves'].clip_data(im=im,minsnr=args.get('minsnr',0))
 
-	args['bands']=list(args['bands'])
-	final_bands=[]
-	for band in args['bands']:
-		to_add=True
-		for im in args['curves'].images.keys():
-			if len(np.where(args['curves'].images[im].table['band']==band)[0])<args['min_points_per_band']:
-				to_add=False
-		if to_add:
-			final_bands.append(band)
-	args['bands']=np.array(final_bands)
-
-
+	args['bands'],band_SNR,_=getBandSNR(args['curves'],args['bands'],args['min_points_per_band'])
+	args['curves'].series.bands=args['bands']
 
 	if 't0' in args['params']:
 		args['params'].remove('t0')
@@ -1173,7 +1186,31 @@ def _fitseries(all_args):
 					args['fit_prior'].images[par_ref].fits.model.get(tempMod.param_names[2])
 			else:
 				par_ref=args['refImage']
-				args['curves'].combine_curves(referenceImage=args['refImage'],static=False,model=tempMod)
+				if args['trial_fit']:
+					best_bands=band_SNR[args['refImage']][:min(len(band_SNR[args['refImage']]),2)]
+					temp_delays={}
+					temp_mags={}
+					for im in args['curves'].images.keys():
+						temp_bands=[]
+						for b in best_bands:
+							temp_bands=np.append(temp_bands,np.where(args['curves'].images[im].table['band']==b)[0])
+						inds=temp_bands.astype(int)
+						res,fit=sncosmo.fit_lc(args['curves'].images[im].table[inds],tempMod,args['params'],
+												bounds={b:args['bounds'][b]+(args['bounds'][b]-np.median(args['bounds'][b]))*2 if b=='t0' else args['bounds'][b] for b in args['bounds']},
+												minsnr=args.get('minsnr',0))
+						temp_delays[im]=fit.get('t0')
+						temp_mags[im]=fit.parameters[2]
+					args['curves'].series.meta['reft0']=temp_delays[args['refImage']]
+					args['curves'].series.meta['refamp']=temp_mags[args['refImage']]
+
+					temp_delays={im:temp_delays[im]-temp_delays[args['refImage']] for im in temp_delays.keys()}
+					temp_mags={im:temp_mags[im]/temp_mags[args['refImage']] for im in temp_mags}
+					for b in args['bounds']:
+						if b in list(res.errors.keys()):
+							args['bounds'][b]=np.array([-res.errors[b],res.errors[b]])*3+fit.get(b)
+					args['curves'].combine_curves(referenceImage=args['refImage'],static=False,time_delays=temp_delays,magnifications=temp_mags)
+				else:
+					args['curves'].combine_curves(referenceImage=args['refImage'],static=False,model=tempMod)
 			guess_amplitude=False
 		else:
 			par_ref=args['refImage']
@@ -1462,6 +1499,32 @@ def nest_series_lc(data,model,nimage,vparam_names,bounds,guess_amplitude_bound=F
 	return params,res,model
 
 
+def getBandSNR(curves,bands,min_points_per_band):
+	final_bands=[]
+	band_dict={im:[] for im in curves.images.keys()}
+	for band in list(bands):
+		to_add=True
+		for im in curves.images.keys():
+			if len(np.where(curves.images[im].table['band']==band)[0])<min_points_per_band:
+				to_add=False
+			else:
+				band_dict[im].append(band)
+		if to_add:
+			final_bands.append(band)
+	
+	all_SNR=[]
+	band_SNR={im:[] for im in curves.images.keys()}
+	for d in curves.images.keys():
+		for band in final_bands:	
+			inds=np.where(curves.images[d].table['band']==band)[0]
+			if len(inds)==0:
+				band_SNR[d].append(0)
+			else:
+				band_SNR[d].append(np.sum(curves.images[d].table['flux'][inds]/curves.images[d].table['fluxerr'][inds])*\
+					 np.sqrt(len(inds)))
+		
+	band_SNR={k:np.array(final_bands)[np.flip(np.argsort(band_SNR[k]))] for k in band_SNR.keys()}
+	return(np.array(final_bands),band_SNR,band_dict)
 
 def _fitparallel(all_args):
 	if isinstance(all_args,(list,tuple,np.ndarray)):
@@ -1486,31 +1549,9 @@ def _fitparallel(all_args):
 		for im in args['curves'].images.keys():
 			args['curves'].clip_data(im=im,minsnr=args.get('minsnr',0))
 
-	final_bands=[]
-	band_dict={im:[] for im in args['curves'].images.keys()}
-	for band in list(args['bands']):
-		to_add=True
-		for im in args['curves'].images.keys():
-			if len(np.where(args['curves'].images[im].table['band']==band)[0])<args['min_points_per_band']:
-				to_add=False
-			else:
-				band_dict[im].append(band)
-		if to_add:
-			final_bands.append(band)
-	args['bands']=np.array(final_bands)
-	args['curves'].bands=final_bands
-	all_SNR=[]
-	band_SNR={im:[] for im in args['curves'].images.keys()}
-	for d in args['curves'].images.keys():
-		for band in final_bands:	
-			inds=np.where(args['curves'].images[d].table['band']==band)[0]
-			if len(inds)==0:
-				band_SNR[d].append(0)
-			else:
-				band_SNR[d].append(np.sum(args['curves'].images[d].table['flux'][inds]/args['curves'].images[d].table['fluxerr'][inds])*\
-					 np.sqrt(len(inds)))
-		
-	band_SNR={k:np.array(final_bands)[np.flip(np.argsort(band_SNR[k]))] for k in band_SNR.keys()}
+	args['bands'],band_SNR,band_dict=getBandSNR(args['curves'],args['bands'],args['min_points_per_band'])
+	args['curves'].bands=args['bands']
+	
 	for d in args['curves'].images.keys():
 		for b in [x for x in np.unique(args['curves'].images[d].table['band']) if x not in band_dict[d]]:
 			args['curves'].images[d].table=args['curves'].images[d].table[args['curves'].images[d].table['band']!=b]
