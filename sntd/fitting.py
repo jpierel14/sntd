@@ -57,7 +57,7 @@ class newDict(dict):
 def fit_data(curves=None, snType='Ia',bands=None, models=None, params=None, bounds={}, ignore=None, constants=None,
 			 method='parallel',t0_guess=None,effect_names=[],effect_frames=[],batch_init=None,cut_time=None,
 			 dust=None,flip=False,microlensing=None,fitOrder=None,color_bands=None,min_points_per_band=3,
-			 fit_prior=None,par_or_batch='parallel',batch_partition=None,nbatch_jobs=None,
+			 fit_prior=None,par_or_batch='parallel',batch_partition=None,nbatch_jobs=None,band_order=None,
 			 batch_python_path=None,wait_for_batch=False,guess_amplitude=True,test_micro=False,trial_fit=True,
 			 kernel='RBF',refImage='image_1',nMicroSamples=100,color_curve=None,warning_supress=True,n_per_node=1,
 			 verbose=True,clip_data=False,**kwargs):
@@ -842,6 +842,8 @@ def _fitColor(all_args):
 																  args['cut_time'][1]*(1+tempMod.get('z'))+args['curves'].color.meta['reft0']]
 		tempMod.set(t0=args['curves'].color.meta['reft0'])
 		all_vparam_names=np.array([x for x in all_vparam_names if x!=tempMod.param_names[2]])
+		if args['band_order'] is not None:
+			args['bands']=[x for x in args['band_order'] if x in args['bands']]
 		params,res,model=nest_color_lc(args['curves'].color.table,tempMod,nimage,color=args['bands'],
 											bounds=args['bounds'],
 											 vparam_names=all_vparam_names,ref=par_ref,
