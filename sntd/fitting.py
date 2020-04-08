@@ -811,7 +811,6 @@ def _fitColor(all_args):
 
 		else:
 			if args['trial_fit']:
-				
 				temp_delays={}
 				for im in args['curves'].images.keys():
 					temp_bands=[]
@@ -819,7 +818,7 @@ def _fitColor(all_args):
 						temp_bands=np.append(temp_bands,np.where(args['curves'].images[im].table['band']==b)[0])
 					inds=temp_bands.astype(int)
 					res,fit=sncosmo.fit_lc(args['curves'].images[im].table[inds],tempMod,args['params'],
-											bounds={b:args['bounds'][b]+(args['bounds'][b]-np.median(args['bounds'][b]))*2 if b=='t0' else args['bounds'][b] for b in args['bounds']},
+											bounds={b:args['bounds'][b]+(args['bounds'][b]-np.median(args['bounds'][b]))*2 for b in [x for x in args['bounds'].keys() if x!='t0']},
 											minsnr=args.get('minsnr',0))
 					temp_delays[im]=fit.get('t0')
 				args['curves'].color.meta['reft0']=temp_delays[args['refImage']]
