@@ -1581,7 +1581,7 @@ def _fitparallel(all_args):
 				temp_bands=np.append(temp_bands,np.where(args['curves'].images[args['fitOrder'][0]].table['band']==b)[0])
 			inds=temp_bands.astype(int)
 			res,fit=sncosmo.fit_lc(args['curves'].images[args['fitOrder'][0]].table[inds],tempMod,args['params'],
-									bounds={b:args['bounds'][b]*3 if b=='t0' else args['bounds'][b] for b in args['bounds']},minsnr=args.get('minsnr',0))
+									bounds={b:args['bounds'][b]+(args['bounds'][b]-np.median(args['bounds'][b]))*2 if b=='t0' else args['bounds'][b] for b in args['bounds']},minsnr=args.get('minsnr',0))
 
 			args['bounds']={res.param_names[i]:np.array([-res.errors[res.param_names[i]],res.errors[res.param_names[i]]])*3+\
 											   res.parameters[i] for i in range(len(res.param_names)) if res.param_names[i] \
