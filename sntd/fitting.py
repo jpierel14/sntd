@@ -444,7 +444,8 @@ def fit_data(curves=None, snType='Ia',bands=None, models=None, params=None, boun
 				with open(os.path.join(folder_name,'run_sntd.py'),'w') as f:
 					f.write(batch_py)
 
-				#os.system('sbatch %s'%(os.path.join(folder_name,script_name)))
+				result=subprocess.call(['sbatch',os.path.join(os.path.abspath(folder_name),
+																	   script_name_init)])
 				if wait_for_batch:
 					printProgressBar(0,total_jobs)
 				ndone=0
@@ -457,17 +458,17 @@ def fit_data(curves=None, snType='Ia',bands=None, models=None, params=None, boun
 						if nadded<total_jobs:
 							ind=nadded
 							for i in range(len(output)-ndone):
-								if ind>total_jobs:
+								if ind>total_jobs-1:
 									continue
-								ind+=1
 								result=subprocess.call(['sbatch',os.path.join(os.path.abspath(folder_name),
 																		 script_name),str(ind)],stdout=subprocess.DEVNULL)
+								ind+=1
 								nadded+=1
 						ndone=len(output)
 
 						if wait_for_batch:
 							printProgressBar(ndone,total_jobs)
-					if len(output)==total_jobs:
+					if len(output)>=total_jobs:
 						break
 
 				outfiles=glob.glob(os.path.join(os.path.abspath(folder_name),'*fit*.pkl'))
@@ -545,7 +546,8 @@ def fit_data(curves=None, snType='Ia',bands=None, models=None, params=None, boun
 				with open(os.path.join(folder_name,'run_sntd.py'),'w') as f:
 					f.write(batch_py)
 
-				#os.system('sbatch %s'%(os.path.join(folder_name,script_name)))
+				result=subprocess.call(['sbatch',os.path.join(os.path.abspath(folder_name),
+																	   script_name_init)])
 				if wait_for_batch:
 					printProgressBar(0,total_jobs)
 				ndone=0
@@ -558,17 +560,17 @@ def fit_data(curves=None, snType='Ia',bands=None, models=None, params=None, boun
 						if nadded<total_jobs:
 							ind=nadded
 							for i in range(len(output)-ndone):
-								if ind>total_jobs:
+								if ind>total_jobs-1:
 									continue
-								ind+=1
 								result=subprocess.call(['sbatch',os.path.join(os.path.abspath(folder_name),
 																		 script_name),str(ind)],stdout=subprocess.DEVNULL)
+								ind+=1
 								nadded+=1
 						ndone=len(output)
 
 						if wait_for_batch:
 							printProgressBar(ndone,total_jobs)
-					if len(output)==total_jobs:
+					if len(output)>=total_jobs:
 						break
 
 				outfiles=glob.glob(os.path.join(os.path.abspath(folder_name),'*fit*.pkl'))
@@ -644,7 +646,8 @@ def fit_data(curves=None, snType='Ia',bands=None, models=None, params=None, boun
 				with open(os.path.join(folder_name,'run_sntd.py'),'w') as f:
 					f.write(batch_py)
 
-				#os.system('sbatch %s'%(os.path.join(folder_name,script_name)))
+				result=subprocess.call(['sbatch',os.path.join(os.path.abspath(folder_name),
+																	   script_name_init)])
 				if wait_for_batch:
 					printProgressBar(0,total_jobs)
 				ndone=0
@@ -657,17 +660,17 @@ def fit_data(curves=None, snType='Ia',bands=None, models=None, params=None, boun
 						if nadded<total_jobs:
 							ind=nadded
 							for i in range(len(output)-ndone):
-								if ind>total_jobs:
+								if ind>total_jobs-1:
 									continue
-								ind+=1
 								result=subprocess.call(['sbatch',os.path.join(os.path.abspath(folder_name),
 																		 script_name),str(ind)],stdout=subprocess.DEVNULL)
+								ind+=1
 								nadded+=1
 						ndone=len(output)
 
 						if wait_for_batch:
 							printProgressBar(ndone,total_jobs)
-					if len(output)==total_jobs:
+					if len(output)>=total_jobs:
 						break
 
 				outfiles=glob.glob(os.path.join(os.path.abspath(folder_name),'*fit*.pkl'))
@@ -1570,11 +1573,7 @@ def _fitparallel(all_args):
 					guess_amp
 			else:
 				args['bounds'][tempMod.param_names[2]]=[.1*guess_amp,10*guess_amp]
-		if args['cut_time'] is not None:
-			args['curves'].images[args['fitOrder'][0]].table=args['curves'].images[args['fitOrder'][0]].table[args['curves'].images[args['fitOrder'][0]].table['time']>= \
-																	args['cut_time'][0]*(1+tempMod.get('z'))+guess_t0]
-			args['curves'].images[args['fitOrder'][0]].table=args['curves'].images[args['fitOrder'][0]].table[args['curves'].images[args['fitOrder'][0]].table['time']<= \
-																	args['cut_time'][1]*(1+tempMod.get('z'))+guess_t0]
+		
 		if args['trial_fit'] and args['t0_guess'] is None:
 			best_bands=band_SNR[args['fitOrder'][0]][:min(len(band_SNR[args['fitOrder'][0]]),2)]
 			temp_bands=[]
@@ -1582,7 +1581,7 @@ def _fitparallel(all_args):
 				temp_bands=np.append(temp_bands,np.where(args['curves'].images[args['fitOrder'][0]].table['band']==b)[0])
 			inds=temp_bands.astype(int)
 			res,fit=sncosmo.fit_lc(args['curves'].images[args['fitOrder'][0]].table[inds],tempMod,args['params'],
-									bounds=args['bounds'],minsnr=args.get('minsnr',5.0))
+									bounds={b:args['bounds'][b]*3 if b=='t0' else args['bounds'][b] for b in args['bounds']},minsnr=args.get('minsnr',0))
 
 			args['bounds']={res.param_names[i]:np.array([-res.errors[res.param_names[i]],res.errors[res.param_names[i]]])*3+\
 											   res.parameters[i] for i in range(len(res.param_names)) if res.param_names[i] \
@@ -1594,7 +1593,7 @@ def _fitparallel(all_args):
 
 		if args['clip_data']:
 			if args['cut_time'] is not None:
-				args['curves'].clip_data(im=args['fitOrder'][0],minsnr=args.get('minsnr',0),mintime=args['cut_time'][0],maxtime=args['cut_time'][1],peak=guess_t0)
+				args['curves'].clip_data(im=args['fitOrder'][0],minsnr=args.get('minsnr',0),mintime=args['cut_time'][0]*(1+tempMod.get('z')),maxtime=args['cut_time'][1],peak=guess_t0)
 			else:
 				args['curves'].clip_data(im=args['fitOrder'][0],minsnr=args.get('minsnr',0))
 		
@@ -1635,13 +1634,14 @@ def _fitparallel(all_args):
 		if args['t0_guess'] is not None:
 			if 't0' in args['bounds']:
 				initial_bounds['t0']=(t0Bounds[0]+args['t0_guess'][d],t0Bounds[1]+args['t0_guess'][d])
+			inds=None
 		else:
 			best_bands=band_SNR[d][:min(len(band_SNR[d]),2)]
 			temp_bands=[]
 			for b in best_bands:
 				temp_bands=np.append(temp_bands,np.where(args['curves'].images[d].table['band']==b)[0])
 			inds=temp_bands.astype(int)
-		
+
 		params,args['curves'].images[d].fits['model'],args['curves'].images[d].fits['res']\
 			=nest_parallel_lc(args['curves'].images[d].table,first_res[1],first_res[2],initial_bounds,
 							guess_amplitude_bound=True,priors=args.get('priors',None), ppfs=args.get('None'),
@@ -1686,7 +1686,9 @@ def _fitparallel(all_args):
 				np.array([a_quant[0]-a_quant[1],a_quant[2]-a_quant[1]])
 		if args['clip_data']:
 			if args['cut_time'] is not None:
-				args['curves'].clip_data(im=k,minsnr=args.get('minsnr',0),mintime=args['cut_time'][0],maxtime=args['cut_time'][1],peak=args['curves'].images[k].fits.model.get('t0'))
+				args['curves'].clip_data(im=k,minsnr=args.get('minsnr',0),mintime=args['cut_time'][0]*(1+args['curves'].images[k].fits.model.get('t0')),
+					maxtime=args['cut_time'][1]*(1+args['curves'].images[k].fits.model.get('t0')),
+						peak=args['curves'].images[k].fits.model.get('t0'))
 			else:
 				args['curves'].clip_data(im=k,minsnr=args.get('minsnr',0))
 
@@ -1733,8 +1735,10 @@ def nest_parallel_lc(data,model,prev_res,bounds,guess_amplitude_bound=False,cut_
 
 	model=copy(model)
 	if guess_amplitude_bound:
+
 		if snr_band_inds is None:
 			snr_band_inds=np.arange(0,len(data),1).astype(int)
+
 		guess_t0,guess_amp=sncosmo.fitting.guess_t0_and_amplitude(sncosmo.photdata.photometric_data(data[snr_band_inds]),
 																  model,minsnr)
 

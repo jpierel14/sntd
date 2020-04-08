@@ -117,8 +117,8 @@ def test_sntd():
 		print('Testing batch mode...',end='')
 		fitCurves=sntd.fit_data([myMISN]*100,snType='Ia', models='salt2-extended',bands=['bessellb','bessellr'],
 				params=['x0','x1','t0','c'],constants={'z':.5},bounds={'t0':(-15,15),'x1':(-2,2),'c':(0,1),'td':(-15,15),'mu':(.5,2)},
-				method='parallel',
-				par_or_batch='batch',nbatch_jobs=2,wait_for_batch=True,microlensing=None,maxcall=5,minsnr=0,t0_guess={'image_1':10,'image_2':70})
+				method='parallel',wait_for_batch=False,
+				par_or_batch='batch',nbatch_jobs=2,microlensing=None,maxcall=5,minsnr=0,t0_guess={'image_1':10,'image_2':70})
 		print('Passed!')
 	except Exception as e:
 		print('Failed')
