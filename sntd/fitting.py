@@ -1686,8 +1686,8 @@ def _fitparallel(all_args):
 				np.array([a_quant[0]-a_quant[1],a_quant[2]-a_quant[1]])
 		if args['clip_data']:
 			if args['cut_time'] is not None:
-				args['curves'].clip_data(im=k,minsnr=args.get('minsnr',0),mintime=args['cut_time'][0]*(1+args['curves'].images[k].fits.model.get('t0')),
-					maxtime=args['cut_time'][1]*(1+args['curves'].images[k].fits.model.get('t0')),
+				args['curves'].clip_data(im=k,minsnr=args.get('minsnr',0),mintime=args['cut_time'][0]*(1+args['curves'].images[k].fits.model.get('z')),
+					maxtime=args['cut_time'][1]*(1+args['curves'].images[k].fits.model.get('z')),
 						peak=args['curves'].images[k].fits.model.get('t0'))
 			else:
 				args['curves'].clip_data(im=k,minsnr=args.get('minsnr',0))
