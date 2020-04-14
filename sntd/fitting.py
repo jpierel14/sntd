@@ -416,36 +416,36 @@ def fit_data(curves=None, snType='Ia',bands=None, models=None, params=None, boun
 					indent=batch_py.find('try:')+len('try:')+1
 
 
-				sntd_command='sntd.fit_data('
-				for par,val in locs.items():
+					sntd_command='sntd.fit_data('
+					for par,val in locs.items():
 
-					if par =='curves':
-						sntd_command+='curves=all_dat[i],'
-					elif par=='batch_init':
-						sntd_command+='batch_init=None,'
-					elif par=='constants':
-						sntd_command+='constants=all_dat[i].constants,'
-					elif par=='method':
-						sntd_command+='method="parallel",'
-					elif isinstance(val,str):
-						sntd_command+=str(par)+'="'+str(val)+'",'
-					elif par=='kwargs':
+						if par =='curves':
+							sntd_command+='curves=all_dat[i],'
+						elif par=='batch_init':
+							sntd_command+='batch_init=None,'
+						elif par=='constants':
+							sntd_command+='constants=all_dat[i].constants,'
+						elif par=='method':
+							sntd_command+='method="parallel",'
+						elif isinstance(val,str):
+							sntd_command+=str(par)+'="'+str(val)+'",'
+						elif par=='kwargs':
 
-						for par2,val2 in val.items():
-							if isinstance(val,str):
-								sntd_command+=str(par2)+'="'+str(val2)+'",'
-							else:
-								sntd_command+=str(par2)+'='+str(val2)+','
+							for par2,val2 in val.items():
+								if isinstance(val,str):
+									sntd_command+=str(par2)+'="'+str(val2)+'",'
+								else:
+									sntd_command+=str(par2)+'='+str(val2)+','
 
-					else:
-						sntd_command+=str(par)+'='+str(val)+','
+						else:
+							sntd_command+=str(par)+'='+str(val)+','
 
-				sntd_command=sntd_command[:-1]+')'
+					sntd_command=sntd_command[:-1]+')'
 
-				batch_py=batch_py.replace('sntdcommandreplace',sntd_command)
+					batch_py=batch_py.replace('sntdcommandreplace',sntd_command)
 
-				with open(os.path.join(folder_name,'run_sntd.py'),'w') as f:
-					f.write(batch_py)
+					with open(os.path.join(folder_name,pyfile),'w') as f:
+						f.write(batch_py)
 
 				result=subprocess.call(['sbatch',os.path.join(os.path.abspath(folder_name),
 																	   script_name_init)])
@@ -523,34 +523,34 @@ def fit_data(curves=None, snType='Ia',bands=None, models=None, params=None, boun
 
 					indent1=batch_py.find('fitCurves=')
 					indent=batch_py.find('try:')+len('try:')+1
-				sntd_command='sntd.fit_data('
-				for par,val in locs.items():
-					if par =='curves':
-						sntd_command+='curves=all_dat[i],'
-					elif par=='batch_init':
-						sntd_command+='batch_init=None,'
-					elif par=='constants':
-						sntd_command+='constants=all_dat[i].constants,'
-					elif par=='method':
-						sntd_command+='method="series",'
-					elif isinstance(val,str):
-						sntd_command+=str(par)+'="'+str(val)+'",'
-					elif par=='kwargs':
+					sntd_command='sntd.fit_data('
+					for par,val in locs.items():
+						if par =='curves':
+							sntd_command+='curves=all_dat[i],'
+						elif par=='batch_init':
+							sntd_command+='batch_init=None,'
+						elif par=='constants':
+							sntd_command+='constants=all_dat[i].constants,'
+						elif par=='method':
+							sntd_command+='method="series",'
+						elif isinstance(val,str):
+							sntd_command+=str(par)+'="'+str(val)+'",'
+						elif par=='kwargs':
 
-						for par2,val2 in val.items():
-							if isinstance(val,str):
-								sntd_command+=str(par2)+'="'+str(val2)+'",'
-							else:
-								sntd_command+=str(par2)+'='+str(val2)+','
-					else:
-						sntd_command+=str(par)+'='+str(val)+','
+							for par2,val2 in val.items():
+								if isinstance(val,str):
+									sntd_command+=str(par2)+'="'+str(val2)+'",'
+								else:
+									sntd_command+=str(par2)+'='+str(val2)+','
+						else:
+							sntd_command+=str(par)+'='+str(val)+','
 
-				sntd_command=sntd_command[:-1]+')'
+					sntd_command=sntd_command[:-1]+')'
 
-				batch_py=batch_py.replace('sntdcommandreplace',sntd_command)
+					batch_py=batch_py.replace('sntdcommandreplace',sntd_command)
 
-				with open(os.path.join(folder_name,'run_sntd.py'),'w') as f:
-					f.write(batch_py)
+					with open(os.path.join(folder_name,pyfile),'w') as f:
+						f.write(batch_py)
 
 				result=subprocess.call(['sbatch',os.path.join(os.path.abspath(folder_name),
 																	   script_name_init)])
@@ -626,34 +626,34 @@ def fit_data(curves=None, snType='Ia',bands=None, models=None, params=None, boun
 
 					indent1=batch_py.find('fitCurves=')
 					indent=batch_py.find('try:')+len('try:')+1
-				sntd_command='sntd.fit_data('
-				for par,val in locs.items():
-					if par =='curves':
-						sntd_command+='curves=all_dat[i],'
-					elif par=='batch_init':
-						sntd_command+='batch_init=None,'
-					elif par=='constants':
-						sntd_command+='constants=all_dat[i].constants,'
-					elif par=='method':
-						sntd_command+='method="color",'
-					elif isinstance(val,str):
-						sntd_command+=str(par)+'="'+str(val)+'",'
-					elif par=='kwargs':
+					sntd_command='sntd.fit_data('
+					for par,val in locs.items():
+						if par =='curves':
+							sntd_command+='curves=all_dat[i],'
+						elif par=='batch_init':
+							sntd_command+='batch_init=None,'
+						elif par=='constants':
+							sntd_command+='constants=all_dat[i].constants,'
+						elif par=='method':
+							sntd_command+='method="color",'
+						elif isinstance(val,str):
+							sntd_command+=str(par)+'="'+str(val)+'",'
+						elif par=='kwargs':
 
-						for par2,val2 in val.items():
-							if isinstance(val,str):
-								sntd_command+=str(par2)+'="'+str(val2)+'",'
-							else:
-								sntd_command+=str(par2)+'='+str(val2)+','
-					else:
-						sntd_command+=str(par)+'='+str(val)+','
+							for par2,val2 in val.items():
+								if isinstance(val,str):
+									sntd_command+=str(par2)+'="'+str(val2)+'",'
+								else:
+									sntd_command+=str(par2)+'='+str(val2)+','
+						else:
+							sntd_command+=str(par)+'='+str(val)+','
 
-				sntd_command=sntd_command[:-1]+')'
+					sntd_command=sntd_command[:-1]+')'
 
-				batch_py=batch_py.replace('sntdcommandreplace',sntd_command)
+					batch_py=batch_py.replace('sntdcommandreplace',sntd_command)
 
-				with open(os.path.join(folder_name,'run_sntd.py'),'w') as f:
-					f.write(batch_py)
+					with open(os.path.join(folder_name,pyfile),'w') as f:
+						f.write(batch_py)
 
 				result=subprocess.call(['sbatch',os.path.join(os.path.abspath(folder_name),
 																	   script_name_init)])
