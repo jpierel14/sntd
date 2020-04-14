@@ -412,6 +412,9 @@ def fit_data(curves=None, snType='Ia',bands=None, models=None, params=None, boun
 					else:
 						batch_py=batch_py.replace('batchinitreplace',batch_init)
 
+					indent1=batch_py.find('fitCurves=')
+					indent=batch_py.find('try:')+len('try:')+1
+
 
 				sntd_command='sntd.fit_data('
 				for par,val in locs.items():
@@ -517,6 +520,9 @@ def fit_data(curves=None, snType='Ia',bands=None, models=None, params=None, boun
 						batch_py=batch_py.replace('batchinitreplace','print("Nothing to initialize...")')
 					else:
 						batch_py=batch_py.replace('batchinitreplace',batch_init)
+
+					indent1=batch_py.find('fitCurves=')
+					indent=batch_py.find('try:')+len('try:')+1
 				sntd_command='sntd.fit_data('
 				for par,val in locs.items():
 					if par =='curves':
@@ -617,6 +623,9 @@ def fit_data(curves=None, snType='Ia',bands=None, models=None, params=None, boun
 						batch_py=batch_py.replace('batchinitreplace','print("Nothing to initialize...")')
 					else:
 						batch_py=batch_py.replace('batchinitreplace',batch_init)
+
+					indent1=batch_py.find('fitCurves=')
+					indent=batch_py.find('try:')+len('try:')+1
 				sntd_command='sntd.fit_data('
 				for par,val in locs.items():
 					if par =='curves':
