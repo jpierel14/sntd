@@ -835,7 +835,7 @@ def _fitColor(all_args):
 				
 				for b in args['bounds']:
 						if b in list(res.errors.keys()):
-							args['bounds'][b]=np.array([-res.errors[b],res.errors[b]])*3+fit.get(b)
+							args['bounds'][b]=(np.array(args['bounds'][b])-np.median(args['bounds'][b]))/2+fit.get(b)
 				args['curves'].color_table(args['bands'][0],args['bands'][1],referenceImage=args['refImage'],
 									   static=False,time_delays=temp_delays,minsnr=args.get('minsnr',0))
 			else:
@@ -1215,9 +1215,10 @@ def _fitseries(all_args):
 
 					temp_delays={im:temp_delays[im]-temp_delays[args['refImage']] for im in temp_delays.keys()}
 					temp_mags={im:temp_mags[im]/temp_mags[args['refImage']] for im in temp_mags}
+
 					for b in args['bounds']:
 						if b in list(res.errors.keys()):
-							args['bounds'][b]=np.array([-res.errors[b],res.errors[b]])*3+fit.get(b)
+							args['bounds'][b]=(np.array(args['bounds'][b])-np.median(args['bounds'][b]))/2+fit.get(b)
 					args['curves'].combine_curves(referenceImage=args['refImage'],static=False,time_delays=temp_delays,magnifications=temp_mags)
 				else:
 					args['curves'].combine_curves(referenceImage=args['refImage'],static=False,model=tempMod)
@@ -1637,8 +1638,8 @@ def _fitparallel(all_args):
 			args['bounds']={res.param_names[i]:np.array([-res.errors[res.param_names[i]],res.errors[res.param_names[i]]])*3+\
 											   res.parameters[i] for i in range(len(res.param_names)) if res.param_names[i] \
 												in list(res.errors.keys())}
-
-			args['bounds']['t0']=np.array(initial_bounds['t0'])+fit.get('t0')
+			args['bounds']={b:(np.array(args['bounds'][b])-np.median(args['bounds'][b]))/2+fit.get(b) for b in args['bounds'].keys()}
+			
 			guess_t0=fit.get('t0')
 
 
