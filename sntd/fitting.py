@@ -54,10 +54,11 @@ class newDict(dict):
 
 
 
-def fit_data(curves=None, snType='Ia',bands=None, models=None, params=None, bounds={}, ignore=None, constants=None,
+def fit_data(curves=None, snType='Ia',bands=None, models=None, params=None, bounds={}, ignore=None, constants={},
 			 method='parallel',t0_guess=None,effect_names=[],effect_frames=[],batch_init=None,cut_time=None,
 			 dust=None,flip=False,microlensing=None,fitOrder=None,color_bands=None,min_points_per_band=3,
 			 fit_prior=None,par_or_batch='parallel',batch_partition=None,nbatch_jobs=None,band_order=None,
+			 set_from_simMeta=None,
 			 batch_python_path=None,wait_for_batch=False,guess_amplitude=True,test_micro=False,trial_fit=True,
 			 kernel='RBF',refImage='image_1',nMicroSamples=100,color_curve=None,warning_supress=True,n_per_node=1,
 			 verbose=True,clip_data=False,**kwargs):
@@ -809,6 +810,8 @@ def _fitColor(all_args):
 		source=sncosmo.get_source(mod)
 		tempMod = sncosmo.Model(source=source,effects=effects,effect_names=effect_names,effect_frames=effect_frames)
 		tempMod.set(**args['constants'])
+		if args['set_from_simMeta'] is not None:
+			tempMod.set(**{k:args['curves'].images[args['refImage']].simMeta[args['set_from_simMeta'][k]] for k in args['set_from_simMeta'].keys()})
 
 
 		if args['fit_prior'] is not None:
@@ -1179,6 +1182,8 @@ def _fitseries(all_args):
 		source=sncosmo.get_source(mod)
 		tempMod = sncosmo.Model(source=source,effects=effects,effect_names=effect_names,effect_frames=effect_frames)
 		tempMod.set(**args['constants'])
+		if args['set_from_simMeta'] is not None:
+			tempMod.set(**{k:args['curves'].images[args['refImage']].simMeta[args['set_from_simMeta'][k]] for k in args['set_from_simMeta'].keys()})
 		all_vparam_names=np.array([x for x in all_vparam_names if x!=tempMod.param_names[2]])
 
 		if not args['curves'].series.table:
@@ -1613,6 +1618,8 @@ def _fitparallel(all_args):
 		source=sncosmo.get_source(mod)
 		tempMod = sncosmo.Model(source=source,effects=effects,effect_names=effect_names,effect_frames=effect_frames)
 		tempMod.set(**args['constants'])
+		if args['set_from_simMeta'] is not None:
+			tempMod.set(**{k:args['curves'].images[args['refImage']].simMeta[args['set_from_simMeta'][k]] for k in args['set_from_simMeta'].keys()})
 		guess_t0,guess_amp=sncosmo.fitting.guess_t0_and_amplitude( \
 			sncosmo.photdata.photometric_data(args['curves'].images[args['fitOrder'][0]].table),
 			tempMod,args.get('minsnr',5.))
