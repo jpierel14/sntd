@@ -239,7 +239,7 @@ class curveDict(dict):
         return(self)
 
     def combine_curves(self,time_delays=None,magnifications=None,referenceImage='image_1',static=False,
-                       model=None,minsnr=5.):
+                       model=None,minsnr=0):
         """
         Takes the multiple images in self.images and combines
         the data into a single light curve using defined
@@ -315,6 +315,17 @@ class curveDict(dict):
 
         return(self)
 
+    def clip_data(self,im,minsnr=0,mintime=-np.inf,maxtime=np.inf,peak=0,remove_bands=[]):
+        
+        self.images[im].table=self.images[im].table[self.images[im].table['flux']/\
+                                                    self.images[im].table['fluxerr']>minsnr]
+        
+        self.images[im].table=self.images[im].table[self.images[im].table['time']>mintime+peak]
+        self.images[im].table=self.images[im].table[self.images[im].table['time']<maxtime+peak]
+        
+
+        for b in remove_bands:
+            self.images[im].table=self.images[im].table[self.images[im].table['band']!=b]
 
     def color_table(self,band1,band2,time_delays=None,referenceImage='image_1',ignore_images=[],
                     static=False,model=None,minsnr=0.0):
@@ -379,8 +390,8 @@ class curveDict(dict):
             time_delays={k:0 for k in self.images.keys()}
         self.color.meta['td']=time_delays
         for im in [x for x in self.images.keys() if x not in ignore_images]:
-            temp2=copy(self.images[im].table[self.images[im].table['band']==band2])
-            temp1=copy(self.images[im].table[self.images[im].table['band']==band1])
+            temp2=deepcopy(self.images[im].table[self.images[im].table['band']==band2])
+            temp1=deepcopy(self.images[im].table[self.images[im].table['band']==band1])
             temp1=temp1[temp1['flux']>0]
             temp2=temp2[temp2['flux']>0]
             temp1=temp1[temp1['flux']/temp1['fluxerr']>minsnr]
@@ -393,6 +404,7 @@ class curveDict(dict):
             temp2['magerr']=1.0857*temp2['fluxerr']/temp2['flux']
             temp1['mag']=-2.5*np.log10(temp1['flux'])+temp1['zp']
             temp1['magerr']=1.0857*temp1['fluxerr']/temp1['flux']
+
             temp1_remove=[i for i in range(len(temp1)) if temp1['time'][i] not in temp2['time']]
             temp1.remove_rows(temp1_remove)
             temp2_remove=[i for i in range(len(temp2)) if temp2['time'][i] not in temp1['time']]
@@ -408,7 +420,7 @@ class curveDict(dict):
             temp1['flux_%s'%band1]=temp1['flux']
             temp1['fluxerr_%s'%band1]=temp1['fluxerr']
             temp1['flux_%s'%band2]=temp2['flux']
-            temp1['fluxerr_%s'%band2]=temp2['flux']
+            temp1['fluxerr_%s'%band2]=temp2['fluxerr']
             temp1['zp_%s'%band1]=temp1['zp']
             temp1['zp_%s'%band2]=temp2['zp']
             to_remove=[x for x in temp1.colnames if x not in names]
@@ -558,7 +570,7 @@ class curveDict(dict):
         leg=[]
 
         if method=='series':
-            if bands == 'all':
+            if isinstance(bands,str) and bands == 'all':
                 bands = set(self.series.table['band'])
 
             nbands = len(bands)
@@ -685,7 +697,7 @@ class curveDict(dict):
                 i+=1
         elif method =='color':
             n3dPlots=1
-            if bands=='all':
+            if isinstance(bands,str) and bands=='all':
                 if len([x for x in self.color.table.colnames if '-' in x and '_' not in x])!=1:
                     print("Want to plot color curves but need 2 bands specified.")
                     sys.exit(1)
@@ -750,8 +762,12 @@ class curveDict(dict):
                     else:
                         ax.plot(mod_time,modCol,color='y')
         else:
-            if bands == 'all':
-                bands = self.bands
+            if isinstance(bands,str):
+                if bands == 'all':
+                    bands = self.bands
+                else:
+                    bands=[bands]
+
 
             nbands = len(bands)
             if orientation.startswith('v'):
@@ -889,7 +905,6 @@ class curveDict(dict):
                         if microAx[b] is False:
                             ax_divider = make_axes_locatable(ax)
                             ax_ml = ax_divider.append_axes("bottom", size="25%", pad=.4)
-                            #ax_ml.set_xlabel('Days (Observer Frame)',fontsize='large')
                             if b==list(bands)[0]:
                                 ax_ml.set_ylabel('Microlensing ($\mu$)',fontsize='large')
                             microAx[b]=ax_ml
@@ -941,7 +956,6 @@ class curveDict(dict):
                                autorange='reversed'
 
 
-                               #titlefont=dict(size=18,color='rgb(255,255,255)'),
                            ),
                            yaxis=dict(
                                gridcolor='rgb(255, 255, 255)',
@@ -949,10 +963,8 @@ class curveDict(dict):
                                showbackground=True,
                                backgroundcolor='rgb(230, 230, 230)',
                                title='Corrected Time (Observer Frame)',
-                               #autorange='reversed',
                                mirror=False
 
-                               #titlefont=dict(size=18,color='rgb(255,255,255)'),
 
                            ),
                            zaxis=dict(
@@ -963,13 +975,9 @@ class curveDict(dict):
                                title=zname,
                                mirror=False
 
-                               #titlefont=dict(size=18,color='rgb(255,255,255)'),
 
                            ))
-            #def cam_change(layout, camera):
-            #    for s in fig.layout.keys():
-            #        if s.startswith('scene') and len(s)>len('scene'):
-            #            fig.layout[s]['camera']= camera
+            
             scenes=dict([])
             for i in range(n3dPlots):
                 if i>0:
@@ -978,7 +986,6 @@ class curveDict(dict):
                 else:
                     key='scene'
                     scenes[key]=tempscene
-                    #scenes[key].on_change(cam_change,'camera')
 
 
 

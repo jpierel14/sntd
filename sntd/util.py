@@ -21,7 +21,7 @@ PARALLEL = 2  # (pigz -dc, pigz) or (pbzip2 -dc, pbzip2)
 
 __all__=['flux_to_mag','_cast_str','_get_default_prop_name','_isfloat','anyOpen','_props','_findMax','_findMin',
          '_guess_time_delays','_guess_magnifications','__dir__','load_example_data','posterior','weighted_quantile',
-         'run_sbatch']
+         'run_sbatch','printProgressBar']
 _props=odict([
     ('time',{'mjd', 'mjdobs', 'jd', 'time', 'date', 'mjd_obs','mhjd','jds'}),
     ('band',{'filter', 'band', 'flt', 'bandpass'}),
@@ -38,43 +38,81 @@ def load_example_data():
     example_files=glob.glob(os.path.join(__dir__,'data','examples','*.dat'))
     return(ascii.read(example_files[0]),ascii.read(example_files[1]))
 
-def run_sbatch(partition=None,sbatch_script=None,njobs=None,python_path=None):
-    if (partition is None and sbatch_script is None) or njobs is None:
-        print("Batch mode requires a partition or sbatch script and a number of jobs!")
+def run_sbatch(partition=None,njobs=None,python_path=None,init=False,folder=None):
+    if njobs is None:
+        print("Batch mode requires a number of jobs!")
         sys.exit(1)
-    n=0
-    add=''
-    done=False
-    while not done:
-        try:
-            folder_name='batch_output%s'%add
-            os.mkdir(folder_name)
-            done=True
-        except:
-            add=str(n)
-            n+=1
-        if n>10:
-            print('Having trouble making batch output folder.')
-            sys.exit(1)
+    if init:
+        n=0
+        add=''
+        done=False
+        while not done:
+            try:
+                folder_name='batch_output%s'%add
+                os.mkdir(folder_name)
+                done=True
+            except:
+                add=str(n)
+                n+=1
+            if n>50:
+                print('Having trouble making batch output folder.')
+                sys.exit(1)
+    else:
+        folder_name=folder
 
-    if sbatch_script is not None:
 
-        return sbatch_script,folder_name
     if python_path is None:
         python_path=subprocess.check_output("which python", shell=True).decode('utf-8').strip('\n')
-    with open(os.path.join(__dir__,'batch','sbatch_job.BATCH')) as f:
-        sbatch=f.read()
+    if not init:
+        with open(os.path.join(__dir__,'batch','sbatch_job.BATCH')) as f:
+            sbatch=f.read()
+        pyfile='run_sntd.py'
+    else:
+        with open(os.path.join(__dir__,'batch','sbatch_job_init.BATCH')) as f:
+            sbatch=f.read()
+        pyfile='run_sntd_init.py'
 
 
     sbatch=sbatch.replace('pyjob%j.out',os.path.join(folder_name,'pyjob%j.out'))
-    sbatch=sbatch.replace('partition',partition)
-    sbatch=sbatch.replace('njobs','0-%i'%(njobs-1))
+    if partition is not None:
+        sbatch=sbatch.replace('partition','#SBATCH -p %s'%partition)
+    else:
+        sbatch=sbatch.replace('partition','')
     sbatch=sbatch.replace('myPython',python_path)
-    sbatch=sbatch.replace('run_sntd.py',os.path.join(folder_name,'run_sntd.py'))
+    sbatch=sbatch.replace('run_sntd.py',os.path.join(os.path.abspath(folder_name),pyfile))
+    if init:
+        sbatch=sbatch.replace('njobs','0-%i'%(njobs-1))
 
-    with open(os.path.join(folder_name,'sbatch_job.BATCH'),'w') as f:
-        f.write(sbatch)
-    return('sbatch_job.BATCH',folder_name)
+    if not init:
+        with open(os.path.join(folder_name,'sbatch_job.BATCH'),'w') as f:
+            f.write(sbatch)
+        return('sbatch_job.BATCH',folder_name)
+    else:
+        with open(os.path.join(folder_name,'sbatch_job_init.BATCH'),'w') as f:
+            f.write(sbatch)
+        return('sbatch_job_init.BATCH',folder_name)
+
+
+def printProgressBar (iteration, total, prefix = '', suffix = '', decimals = 1, length = 100, fill = '█', printEnd = "\r"):
+    """
+    Call in a loop to create terminal progress bar
+    @params:
+        iteration   - Required  : current iteration (Int)
+        total       - Required  : total iterations (Int)
+        prefix      - Optional  : prefix string (Str)
+        suffix      - Optional  : suffix string (Str)
+        decimals    - Optional  : positive number of decimals in percent complete (Int)
+        length      - Optional  : character length of bar (Int)
+        fill        - Optional  : bar fill character (Str)
+        printEnd    - Optional  : end character (e.g. "\r", "\r\n") (Str)
+    """
+    percent = ("{0:." + str(decimals) + "f}").format(100 * (iteration / float(total)))
+    filledLength = int(length * iteration // total)
+    bar = fill * filledLength + '-' * (length - filledLength)
+    print('\r%s |%s| %s%% %s' % (prefix, bar, percent, suffix), end = printEnd)
+    # Print New Line on Complete
+    if iteration == total:
+        print()
 
 def weighted_quantile(values, quantiles, sample_weight=None,
                       values_sorted=False, old_style=False):

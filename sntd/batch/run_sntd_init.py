@@ -3,7 +3,8 @@ from optparse import OptionParser
 from copy import copy
 import numpy as np
 
-nlcs_per=nlcsreplace
+njobs=njobsreplace
+nlcs=nlcsreplace
 parser = OptionParser()
 
 (options,args)=parser.parse_args()
@@ -14,7 +15,8 @@ all_dat=pickle.load(open(os.path.join(os.path.abspath(os.path.dirname(__file__))
                                       'sntd_data.pkl'),'rb'))
 all_const=pickle.load(open(os.path.join(os.path.abspath(os.path.dirname(__file__)),
                                         'sntd_constants.pkl'),'rb'))
-inds=[int(int(sys.argv[1])*nlcs_per),(int(sys.argv[1])+1)*int(nlcs_per)]
+
+inds=[int(nlcs/njobs)*int(sys.argv[1]),int(nlcs/njobs)*int(sys.argv[1])+int(nlcs/njobs)]
 inds[1]=min(inds[-1],len(all_dat))
 
 all_res=[]

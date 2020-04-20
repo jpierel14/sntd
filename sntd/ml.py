@@ -59,7 +59,6 @@ def realizeMicro(arand=.25,debug=0,kappas=.75,kappac=.15,gamma=.76,eps=.6,nray=3
     except:
         pass
     os.chdir(os.path.join(__dir__,'microlens'))
-    print(os.system('pwd'))
     if verbose:
         subprocess.call(r'./microlens')
     else:
@@ -67,13 +66,15 @@ def realizeMicro(arand=.25,debug=0,kappas=.75,kappac=.15,gamma=.76,eps=.6,nray=3
             subprocess.call(r'./microlens',stdout=f)
 
 
-    num=np.loadtxt(os.path.join(__dir__,'microlens','jobnum'),dtype='str')
+    np.savetxt(os.path.join(__dir__,'microlens','jobnum'),[num],fmt='%s')
+    #print(num)
+    #sys.exit()
     try:
         fitsFile=fits.open(os.path.join(__dir__,'microlens','IRIS'+str(num)+'.fits'))
         lensPlane=fitsFile[0].data
         fitsFile.close()
 
-    except:
+    except RuntimeError:
         print('There was an error with the inputs of your microcaustic.')
         sys.exit()
     os.chdir(__current_dir__)
