@@ -466,7 +466,7 @@ Batch Processing Time Delay Measurements
 
 Parallel processing and batch processing is built into SNTD in order to fit a large number of (likely simulated) MISN. To access this feature,
 simply provide a list of MISN instead of a single sntd curveDict object, specifying whether you want to use multiprocessing (split the list across multiple cores)
-or batch processing (splitting the list into multiple jobs with sbatch). If you specify batch mode, you need to provide either a batch script (`batch_script`) or
+or batch processing (splitting the list into multiple jobs with sbatch). If you specify batch mode, you need to provide
 the partition and number of jobs you want to implement. 
 
 .. code-block:: python
