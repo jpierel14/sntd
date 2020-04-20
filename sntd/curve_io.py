@@ -903,7 +903,6 @@ class curveDict(dict):
                         if microAx[b] is False:
                             ax_divider = make_axes_locatable(ax)
                             ax_ml = ax_divider.append_axes("bottom", size="25%", pad=.4)
-                            #ax_ml.set_xlabel('Days (Observer Frame)',fontsize='large')
                             if b==list(bands)[0]:
                                 ax_ml.set_ylabel('Microlensing ($\mu$)',fontsize='large')
                             microAx[b]=ax_ml
@@ -955,7 +954,6 @@ class curveDict(dict):
                                autorange='reversed'
 
 
-                               #titlefont=dict(size=18,color='rgb(255,255,255)'),
                            ),
                            yaxis=dict(
                                gridcolor='rgb(255, 255, 255)',
@@ -963,10 +961,8 @@ class curveDict(dict):
                                showbackground=True,
                                backgroundcolor='rgb(230, 230, 230)',
                                title='Corrected Time (Observer Frame)',
-                               #autorange='reversed',
                                mirror=False
 
-                               #titlefont=dict(size=18,color='rgb(255,255,255)'),
 
                            ),
                            zaxis=dict(
@@ -977,13 +973,9 @@ class curveDict(dict):
                                title=zname,
                                mirror=False
 
-                               #titlefont=dict(size=18,color='rgb(255,255,255)'),
 
                            ))
-            #def cam_change(layout, camera):
-            #    for s in fig.layout.keys():
-            #        if s.startswith('scene') and len(s)>len('scene'):
-            #            fig.layout[s]['camera']= camera
+            
             scenes=dict([])
             for i in range(n3dPlots):
                 if i>0:
@@ -992,7 +984,6 @@ class curveDict(dict):
                 else:
                     key='scene'
                     scenes[key]=tempscene
-                    #scenes[key].on_change(cam_change,'camera')
 
 
 

@@ -56,12 +56,11 @@ class newDict(dict):
 
 def fit_data(curves=None, snType='Ia',bands=None, models=None, params=None, bounds={}, ignore=None, constants={},
 			 method='parallel',t0_guess=None,effect_names=[],effect_frames=[],batch_init=None,cut_time=None,
-			 dust=None,flip=False,microlensing=None,fitOrder=None,color_bands=None,min_points_per_band=3,
-			 fit_prior=None,par_or_batch='parallel',batch_partition=None,nbatch_jobs=None,band_order=None,
-			 set_from_simMeta=None,
-			 batch_python_path=None,wait_for_batch=False,guess_amplitude=True,test_micro=False,trial_fit=True,
-			 kernel='RBF',refImage='image_1',nMicroSamples=100,color_curve=None,warning_supress=True,n_per_node=1,
-			 verbose=True,clip_data=False,**kwargs):
+			 dust=None,microlensing=None,fitOrder=None,color_bands=None,min_points_per_band=3,identify_micro=False,
+			 fit_prior=None,par_or_batch='parallel',batch_partition=None,nbatch_jobs=None,batch_python_path=None,n_per_node=1,
+			 wait_for_batch=False,band_order=None,set_from_simMeta=None,guess_amplitude=True,trial_fit=True,clip_data=False,
+			 kernel='RBF',refImage='image_1',nMicroSamples=100,color_curve=None,warning_supress=True,
+			 verbose=True,**kwargs):
 
 	"""The main high-level fitting function.
 
@@ -91,17 +90,22 @@ def fit_data(curves=None, snType='Ia',bands=None, models=None, params=None, boun
 		List of effect names if model contains a :class:`~sncosmo.PropagationEffect`.
 	effect_frames: :class:`~list` of :class:`~str`
 		List of the frames (e.g. obs or rest) that correspond to the effects in effect_names
+	batch_init: :class:`~str`
+		A string to be pasted into the batch python file (e.g. extra imports or filters added to sncosmo.)
+	cut_time: :class:`~list`
+		The start and end (rest frame) phase that you want to fit in, default accept all phases. 
 	dust: :class:`sncosmo.PropagationEffect`
 		An sncosmo dust propagation effect to include in the model
-	flip: bool
-		If True, the time axis of the model is flipped
-
 	microlensing: str
 		If None microlensing is ignored, otherwise should be str (e.g. achromatic, chromatic)
 	fitOrder: :class:`~list`
 		The order you want to fit the images if using parallel method (default chooses by npoints/SNR)
 	color_bands: :class:`~list`
 		If using multiple methods (in batch mode), the subset of bands to use for color fitting.
+	min_points_per_band: int
+		Only accept bands to fit with this number of points fitting other criterion (e.g. minsnr)
+	identify_micro: bool
+		If True, function is run to attempt to identify bands where microlensing is least problematic.
 	fit_prior: :class:`~sntd.curve_io.curveDict` or bool
 		if implementing parallel method alongside others and fit_prior is True, will use output of parallel as prior
 		for series/color. If SNTD curveDict object, used as prior for series or color.
@@ -110,16 +114,28 @@ def fit_data(curves=None, snType='Ia',bands=None, models=None, params=None, boun
 		parameters if batch is chosen, so parallel is default.
 	batch_partition: str
 		The name of the partition for sbatch command
-	batch_script: str
-		filename for your own batch_script
 	nbatch_jobs: int
 		number of jobs (10 jobs for 100 light curves is 10 light curves per job)
 	batch_python_path: str
 		path to python you want to use for batch mode (if different from current)
+	n_per_node: int
+		Number of SNe to fit per node (in series) in batch mode.
 	wait_for_batch: bool
-		if false, submits job in the background. If true, waits for job to finish and returns output.
+		if false, submits job in the background. If true, waits for job to finish (shows progress bar) and returns output.
+	band_order: :class:`~list`
+		If you want colors to be fit in a specific order (e.g. B-V instead of V-B depending on band order)
+	set_from_simMeta: :class:`~dict`
+		Dictionary where keys are model parameters and values are the corresponding key in the 
+		:class:`~sntd.curve_io.curveDict`.images.simMeta dictionary (e.g. {'z':'sim_redshift'} if you want to set the model
+		redshift based on a simulated redshift in simMeta called 'sim_redshfit')
 	guess_amplitude: bool
 		If True, the amplitude parameter for the model is estimated, as well as its bounds
+	trial_fit: bool
+		If true, a simple minuit fit is performed to locate the parameter space for nestle fits, otherwise the full parameter
+		range in bounds is used. 
+	clip_data: bool
+		If true, criterion like minsnr and cut_time actually will remove data from the light curve, as opposed to simply not
+		fitting those data points. 
 	kernel: str
 		The kernel to use for microlensing GPR
 	refImage: str
@@ -167,15 +183,13 @@ def fit_data(curves=None, snType='Ia',bands=None, models=None, params=None, boun
 		args['curves']=_sntd_deepcopy(curves)
 		args['parlist']=False
 
-	if method !='color' or test_micro:
+	if method !='color' or identify_micro:
 		args['bands'] = [bands] if bands is not None and not isinstance(bands,(tuple,list,np.ndarray)) else bands
 		args['bands'] = list(set(bands)) if bands is not None else None
 		#sets the bands to user's if defined (set, so that they're unique), otherwise to all the bands that exist in curves
 		if args['bands']is None:
 			args['bands'] = list(curves.bands) if not isinstance(curves,(list,tuple,np.ndarray)) and not isinstance(args['curves'][0],str) else None
-	#elif not test_micro and len(args['bands'])!=2:
-	#    print('Must provide exactly 2 bands for color curve fitting.')
-	#    sys.exit(1)
+	
 
 	models=[models] if models and not isinstance(models,(tuple,list)) else models
 	if not models:
@@ -191,8 +205,8 @@ def fit_data(curves=None, snType='Ia',bands=None, models=None, params=None, boun
 	args['mods']=mods
 	if warning_supress:
 		warnings.simplefilter('ignore')
-	if test_micro and not args['parlist']:
-		all_bands,color_bands=test_micro_func(args)
+	if identify_micro and not args['parlist']:
+		all_bands,color_bands=identify_micro_func(args)
 		args['color_bands']=color_bands
 		args['bands']=all_bands
 		args['curves'].micro_bands=all_bands
@@ -250,12 +264,12 @@ def fit_data(curves=None, snType='Ia',bands=None, models=None, params=None, boun
 							elif par=='batch_init':
 								sntd_command+='batch_init=None,'
 
-							elif par=='test_micro' and test_micro:
+							elif par=='identify_micro' and identify_micro:
 								if i>0:
-									sntd_command+='test_micro=False,'
+									sntd_command+='identify_micro=False,'
 								else:
-									sntd_command+='test_micro=True,'
-							elif par=='bands' and test_micro:
+									sntd_command+='identify_micro=True,'
+							elif par=='bands' and identify_micro:
 								if i>0:
 									if fit_method!='color':
 										sntd_command+='bands=fitCurves.micro_bands,'
@@ -267,10 +281,6 @@ def fit_data(curves=None, snType='Ia',bands=None, models=None, params=None, boun
 								if color_bands is not None:
 									sntd_command+='bands='+str(color_bands)+','
 
-								#elif len(args['bands'])!=2:
-								#    print('Setting up color batch mode but more than 2 bands and color_bands not set,'+\
-								#          ')
-								#    sys.exit(1)
 								else:
 									sntd_command+='bands='+str(val)+','
 
@@ -299,7 +309,6 @@ def fit_data(curves=None, snType='Ia',bands=None, models=None, params=None, boun
 					with open(os.path.join(folder_name,pyfile),'w') as f:
 						f.write(batch_py)
 
-				#os.system('sbatch %s'%(os.path.join(folder_name,script_name)))
 				
 
 
@@ -366,13 +375,7 @@ def fit_data(curves=None, snType='Ia',bands=None, models=None, params=None, boun
 				if 'td' not in args['bounds']:
 					print('td not in bounds for color method, choosing based on parallel bounds...')
 					args['bounds']['td']=args['bounds']['t0']
-				#if len (args['bands'])>2:
-				#    print('Did not specify 2 bands for color method, choosing first 2...')
-				#    args['bands']=args['bands'][0:2]
-				#elif len(args['bands'])<2:
-				#    print('Must provide 2 bands for color method, skipping...')
-				#    return(curves)
-
+				
 				curves=_fitColor(args)
 	elif method not in ['parallel','series','color']:
 			raise RuntimeError('Parameter "method" must be "parallel","series", or "color".')
@@ -733,7 +736,7 @@ def _fitColor(all_args):
 				final_bands.append(band)
 		if len(args['bands'])>2 or np.any([x not in final_bands for x in args['bands']]):
 			all_SNR=[]
-			for band in final_bands:#[x for x in final_bands if x not in args['bands']]:
+			for band in final_bands:
 				ims=[]
 				for d in args['curves'].images.keys():
 					inds=np.where(args['curves'].images[d].table['band']==band)[0]
@@ -744,8 +747,7 @@ def _fitColor(all_args):
 							 np.sqrt(len(inds)))
 				all_SNR.append(np.sum(ims))
 			sorted=np.flip(np.argsort(all_SNR))
-			args['bands']=np.array(final_bands)[sorted]#np.append([x for x in final_bands if x in args['bands']],np.array([x for x in final_bands if\
-													#								x not in args['bands']])[sorted])
+			args['bands']=np.array(final_bands)[sorted]
 			
 			args['bands']=args['bands'][:2]
 
@@ -774,7 +776,7 @@ def _fitColor(all_args):
 													  args['fit_prior'].images[im].param_quantiles['t0'][2]- \
 													  args['fit_prior'].images[im].param_quantiles['t0'][1]])
 				else:
-					args['bounds'][param]=np.array(args['bounds']['td'])#+time_delays[im]
+					args['bounds'][param]=np.array(args['bounds']['td'])
 
 		elif args['fit_prior'] is not None:
 			par_ref=args['fit_prior'].parallel.fitOrder[0]
@@ -925,6 +927,7 @@ def nest_color_lc(data,model,nimage,color, vparam_names,bounds,ref='image_1',
 				   minsnr=5., priors=None, ppfs=None, npoints=100, method='single',
 				   maxiter=None, maxcall=None, modelcov=False, rstate=None,
 				   verbose=False, warn=True,**kwargs):
+	####Taken from SNCosmo nest_lc
 
 	# experimental parameters
 	tied = kwargs.get("tied", None)
@@ -1366,7 +1369,8 @@ def nest_series_lc(data,model,nimage,vparam_names,bounds,guess_amplitude_bound=F
 					 minsnr=5., priors=None, ppfs=None, npoints=100, method='single',
 					 maxiter=None, maxcall=None, modelcov=False, rstate=None,
 					 verbose=False, warn=True,**kwargs):
-
+	
+	####Taken from SNCosmo nest_lc
 	# experimental parameters
 	tied = kwargs.get("tied", None)
 
@@ -1380,10 +1384,8 @@ def nest_series_lc(data,model,nimage,vparam_names,bounds,guess_amplitude_bound=F
 		guess_t0,guess_amp=sncosmo.fitting.guess_t0_and_amplitude(sncosmo.photdata.photometric_data(data[data['image']==ref]),
 															  model,minsnr)
 
-	#print(guess_t0,guess_amp)
 		model.set(t0=guess_t0)
 		model.parameters[2]=guess_amp
-	#bounds['x0']=(.1*guess_amp,10*guess_amp)
 
 	# Convert bounds/priors combinations into ppfs
 	if bounds is not None:
@@ -1782,7 +1784,8 @@ def nest_parallel_lc(data,model,prev_res,bounds,guess_amplitude_bound=False,cut_
 				   minsnr=5., priors=None, ppfs=None, npoints=100, method='single',
 				   maxiter=None, maxcall=None, modelcov=False, rstate=None,
 				   verbose=False, warn=True,**kwargs):
-
+	
+	####Taken from SNCosmo nest_lc
 	# experimental parameters
 	tied = kwargs.get("tied", None)
 
@@ -1801,7 +1804,6 @@ def nest_parallel_lc(data,model,prev_res,bounds,guess_amplitude_bound=False,cut_
 		guess_t0,guess_amp=sncosmo.fitting.guess_t0_and_amplitude(sncosmo.photdata.photometric_data(data[snr_band_inds]),
 																  model,minsnr)
 
-		#print(guess_t0,guess_amp)
 		model.set(t0=guess_t0)
 		model.parameters[2]=guess_amp
 
@@ -2043,9 +2045,7 @@ def fit_micro(fit,dat,zpsys,nsamples,micro_type='achromatic',kernel='RBF'):
 			ax.plot(X,curves.images['image_2'].simMeta['microlensing_params'](X/(1+1.33))/np.median(curves.images['image_2'].simMeta['microlensing_params'](X/(1+1.33))),'k',label='True $\mu$-Lensing')
 			ax.legend(fontsize=10)
 			plt.show()
-			#plt.savefig('microlensing_gpr.pdf',format='pdf',overwrite=True)
 			plt.close()
-			#sys.exit()
 
 
 		tempX=X[:,0]
@@ -2117,7 +2117,7 @@ def param_fit(args,modName,fit=False):
 	return({'res':res,'model':mod})
 
 
-def test_micro_func(args):
+def identify_micro_func(args):
 	if len(args['bands'])<=2:
 		return args['bands'],args['bands']
 	res_dict={}
