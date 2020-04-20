@@ -134,10 +134,10 @@ There are 3 methods built into SNTD to measure time delays (parallel, series, co
                     params=['x0','t0','x1','c'],constants={'z':1.2},refImage='image_1',
                     bounds={'t0':(-20,20),'x1':(-3,3),'c':(-1,1),'mu':(.5,2)},fitOrder=['image_2','image_1'],
                     method='parallel',microlensing=None,modelcov=False,npoints=500,maxiter=None)
-	print(fitCurves.time_delays)
-	print(fitCurves.time_delay_errors)
-	print(fitCurves.magnifications)
-	print(fitCurves.magnification_errors)
+	print(fitCurves.parallel.time_delays)
+	print(fitCurves.parallel.time_delay_errors)
+	print(fitCurves.parallel.magnifications)
+	print(fitCurves.parallel.magnification_errors)
 	fitCurves.plot_object(showFit=True,method='parallel')
 	plt.show()
 	fitCurves.plot_fit(method='parallel',par_image='image_1')
