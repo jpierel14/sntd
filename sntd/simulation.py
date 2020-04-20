@@ -46,7 +46,7 @@ def _getAbsFromDist(dist):
 def createMultiplyImagedSN(
         sourcename, snType, redshift,z_lens=None, telescopename='telescope',
         objectName='object', time_delays=[10., 50.], magnifications=[2., 1.],
-        numImages=2, cadence=5, epochs=30, bands=['F105W', 'F160W'],
+        numImages=2, cadence=5, epochs=30, clip_time=[-30,150],bands=['F105W', 'F160W'],start_time=None,
         gain=200., skynoiseRange=(1, 1.1), timeArr=None,zpsys='ab', zp=None,
         microlensing_type=None, microlensing_params=[],ml_loc=[None,None],
         dust_model='CCM89Dust', av_host=.3, av_lens=None,fix_luminosity=False,
@@ -83,8 +83,14 @@ def createMultiplyImagedSN(
         The cadence of the simulated observations (if timeArr is not defined)
     epochs : int
         The number of simulated observations (if timeArr is not defined)
+    clip_time: :class:`~list`
+        Rest frame phase start and end time, will clip output table to these values.
     bands : :class:`~list` of :class:`~sncosmo.Bandpass` or :class:`~str`
         The bandpass(es) used for simulated observations
+    start_time: float
+        Start time for the leading image. If None, start will be the first value in 
+        the time array, and the peak will be this ± the 
+        relative time delay for the leading image. 
     gain : float
         Gain of the telescope "obtaining" the simulated observations (if snrFunc
         not defined)
@@ -143,7 +149,9 @@ def createMultiplyImagedSN(
         times=timeArr
     else:
         times=np.linspace(0,int(cadence*epochs),int(epochs))
-
+        if start_time is not None:
+            times+=start_time
+    leading_peak=times[0]
     bandList=np.array([np.tile(b,len(times)) for b in bands]).flatten()
     ms=sncosmo.get_magsystem(zpsys)
 
@@ -165,7 +173,6 @@ def createMultiplyImagedSN(
                       'skynoise':np.random.uniform(
                           skynoiseRange[0],skynoiseRange[1],len(bandList)),
                       'gain':[gain for i in range(len(bandList))]})
-
     absolutes=_getAbsoluteDist()
 
     # Set up the dust_model extinction effects in the host galaxy and lens plane
@@ -218,7 +225,7 @@ def createMultiplyImagedSN(
                                 absBand, zpsys)
     # TODO: allow user to specify parameters like x1, c, t0 if desired.
 
-    t0=0
+    t0=leading_peak
     if snType=='Ia':
         x0=model.get('x0')
         params={'z':redshift, 't0':t0, 'x0':x0,
@@ -277,18 +284,7 @@ def createMultiplyImagedSN(
 
                 ml_effect = AchromaticMicrolensing(
                     time+model_i._source._phase[0],dmag, magformat='multiply')
-                # time=np.arange(-10,5,.5)
-                # lc1=model_i.bandflux('bessellb',time,zp=26.8,zpsys='ab')
-                # lc2=model_i.bandflux('bessellb',time-.5,zp=26.8,zpsys='ab')
-                # lc1/=np.max(lc1)
-                # lc2/=np.max(lc2)
-                # dmag=lc2/lc1
-                # dmag/=np.mean(dmag)
-                # import matplotlib.pyplot as plt
-                # fig=plt.figure()
-                # ax=fig.gca()
-                # ax.plot(time,dmag)
-                #ml_effect=AchromaticMicrolensing(time,dmag)
+                
             model_i.add_effect(ml_effect, 'microlensing', 'rest')
         else:
             ml_effect = None
@@ -313,8 +309,8 @@ def createMultiplyImagedSN(
             return None
         table_i=table_i[0]
         if timeArr is None:
-            table_i=table_i[table_i['time']<td+60]
-            table_i=table_i[table_i['time']>td-30]
+            table_i=table_i[table_i['time']<model_i.get('t0')+clip_time[1]*(1+model_i.get('z'))]
+            table_i=table_i[table_i['time']>model_i.get('t0')+clip_time[0]*(1+model_i.get('z'))]
         #create is curve with all parameters and add it to the overall curveDict object from above
         curve_i=curve()
         curve_i.object=None
