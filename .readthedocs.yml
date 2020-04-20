@@ -22,7 +22,7 @@ python:
   install:
       - requirements: docs/source/requirements.txt
       - requirements: docs/source/requirements2.txt
-#  install:
-#    - method: setuptools
-#      path: .
+  install:
+    - method: setuptools
+      path: .
 
