@@ -37,7 +37,7 @@ def test_sntd():
 			total+=1
 			print('Testing fitting MISN without microlensing using %s method...'%method,end='')
 			fitCurves=sntd.fit_data(myMISN,snType='Ia', models='salt2-extended',bands=['bessellb','bessellr'],
-				params=['x0','x1','t0','c'],bounds={'t0':(-15,15),'x1':(-2,2),'c':(0,1),'td':(-15,15),'mu':(.5,2)},
+				params=['x0','x1','t0','c'],bounds={'t0':(-15,15),'x1':(-2,2),'c':(-1,1),'td':(-15,15),'mu':(.5,2)},
 				method=method,microlensing=None,maxcall=5,minsnr=0,set_from_simMeta={'z':'z'},t0_guess={'image_1':10,'image_2':70})
 			print('Passed!')
 		except Exception as e:
@@ -63,9 +63,9 @@ def test_sntd():
 		
 		print('Testing fitting MISN with microlensing using parallel method...',end='')
 		fitCurves=sntd.fit_data(myMISN_ml,snType='Ia', models='salt2-extended',bands=['bessellb','bessellr'],
-			params=['x0','x1','t0','c'],constants={'z':.5},bounds={'t0':(-1,1),'x1':(-2,2),'c':(0,1)},
+			params=['x0','x1','t0','c'],constants={'z':.5},bounds={'t0':(-1,1),'x1':(-2,2),'c':(-1,1)},
 			method='parallel',microlensing='achromatic',t0_guess={'image_1':10,'image_2':70},
-			nMicroSamples=1,maxcall=10,minsnr=0)
+			nMicroSamples=10,maxcall=500,minsnr=0)
 
 		print('Passed!')
 	except Exception as e:
@@ -78,7 +78,7 @@ def test_sntd():
 		print('Testing fitting MISN with microlensing using series method...',end='')
 		
 		fitCurves=sntd.fit_data(myMISN_ml,snType='Ia', models='salt2-extended',bands=['bessellb','bessellr'],
-			params=['x1','c'],constants={'z':.5},bounds={'t0':(-15,15),'x1':(-2,2),'c':(0,1),'td':(-15,15),'mu':(.5,2)},
+			params=['x1','c'],constants={'z':.5},bounds={'t0':(-15,15),'x1':(-2,2),'c':(-1,1),'td':(-15,15),'mu':(.5,2)},
 			method='series',microlensing='achromatic',t0_guess={'image_1':10,'image_2':70},
 			nMicroSamples=1,maxcall=5,minsnr=0)
 
@@ -105,7 +105,7 @@ def test_sntd():
 		total+=1
 		print('Testing parallelization...',end='')
 		fitCurves=sntd.fit_data([myMISN]*2,snType='Ia', models='salt2-extended',bands=['bessellb','bessellr'],
-				params=['x0','x1','t0','c'],constants={'z':.5},bounds={'t0':(-15,15),'x1':(-2,2),'c':(0,1),'td':(-15,15),'mu':(.5,2)},
+				params=['x0','x1','t0','c'],constants={'z':.5},bounds={'t0':(-15,15),'x1':(-2,2),'c':(-1,1),'td':(-15,15),'mu':(.5,2)},
 				method='parallel',microlensing=None,maxcall=5,minsnr=0,t0_guess={'image_1':10,'image_2':70})
 		print('Passed!')
 	except Exception as e:
@@ -116,7 +116,7 @@ def test_sntd():
 		total+=1
 		print('Testing batch mode...',end='')
 		fitCurves=sntd.fit_data([myMISN]*100,snType='Ia', models='salt2-extended',bands=['bessellb','bessellr'],
-				params=['x0','x1','t0','c'],constants={'z':.5},bounds={'t0':(-15,15),'x1':(-2,2),'c':(0,1),'td':(-15,15),'mu':(.5,2)},
+				params=['x0','x1','t0','c'],constants={'z':.5},bounds={'t0':(-15,15),'x1':(-2,2),'c':(-1,1),'td':(-15,15),'mu':(.5,2)},
 				method='parallel',wait_for_batch=False,
 				par_or_batch='batch',nbatch_jobs=2,microlensing=None,maxcall=5,minsnr=0,t0_guess={'image_1':10,'image_2':70})
 		print('Passed!')

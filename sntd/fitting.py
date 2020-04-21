@@ -1641,7 +1641,8 @@ def _fitparallel(all_args):
 			fit_table=fit_table[fit_table['time']>=guess_t0+(args['cut_time'][0]*(1+tempMod.get('z')))]
 			fit_table=fit_table[fit_table['time']<=guess_t0+(args['cut_time'][1]*(1+tempMod.get('z')))]
 			fit_table=fit_table[fit_table['flux']/fit_table['fluxerr']>=args.get('minsnr',0)]
-
+		else:
+			fit_table=deepcopy(args['curves'].images[args['fitOrder'][0]].table)
 		res,fit=sncosmo.nest_lc(fit_table,tempMod,args['params'],
 								bounds=args['bounds'],
 							  priors=args.get('priors',None), ppfs=args.get('ppfs',None),
