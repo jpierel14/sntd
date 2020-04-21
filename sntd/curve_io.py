@@ -435,7 +435,7 @@ class curveDict(dict):
         return(self)
 
 
-    def plot_fit(self,method='parallel'):
+    def plot_fit(self,method='parallel',par_image=None):
         """
         Makes a corner plot based on one of the fitting methods
 
@@ -449,11 +449,12 @@ class curveDict(dict):
         figure object: :class:`~matplotlib.pyplot.figure`
         """
         if method=='parallel':
-
-            res=self.images[self.parallel.fitOrder[0]].fits.res
+            if par_image is None:
+                par_image=self.parallel.fitOrder[0]
+            res=self.images[par_image].fits.res
             samples=res.samples
             try:
-                truths=[self.images[self.parallel.fitOrder[0]].simMeta['model'].get(x) for x in res.vparam_names]
+                truths=[self.images[par_image].simMeta['model'].get(x) for x in res.vparam_names]
             except:
                 truths=None
         elif method=='series':

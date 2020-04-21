@@ -50,7 +50,7 @@ MANIFEST
 .idea
 
 # ipython notebooks
-*.ipynb
+*.ipynb_checkpoints
 
 # misc helpers
 misc/Make.user

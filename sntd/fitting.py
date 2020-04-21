@@ -883,31 +883,18 @@ def _fitColor(all_args):
 		if k==args['refImage']:
 			args['curves'].color.time_delays[k]=0
 			args['curves'].color.time_delay_errors[k]=[0,0]
-			if par_ref!=args['refImage']:
-				args['curves'].color.t_peaks[k]=finalmodel.get('t0')+time_delays[args['refImage']]-\
-											weighted_quantile(trefSamples,.5,finalres.weights)
-			else:
-				args['curves'].color.t_peaks[k]=finalmodel.get('t0')+time_delays[args['refImage']]+ \
+			args['curves'].color.t_peaks[k]=finalmodel.get('t0')+time_delays[args['refImage']]+ \
 												weighted_quantile(trefSamples,.5,finalres.weights)
-
-		elif par_ref!=args['refImage']:
-			ttempSamples=finalres.samples[:,finalres.vparam_names.index('t_'+k[-1])]
-			t_quant=weighted_quantile(trefSamples-ttempSamples,[.16,.5,.84],finalres.weights)
-			args['curves'].color.time_delays[k]=t_quant[1]+time_delays[k]-time_delays[args['refImage']]
-			args['curves'].color.time_delay_errors[k]=np.array([t_quant[0]-t_quant[1],t_quant[2]-t_quant[1]])
-			args['curves'].color.t_peaks[k]=finalmodel.get('t0')+time_delays[k]- \
-											weighted_quantile(ttempSamples,.5,finalres.weights)
 
 		else:
 			ttempSamples=finalres.samples[:,finalres.vparam_names.index('t_'+k[-1])]
 			t_quant=weighted_quantile(ttempSamples-trefSamples,[.16,.5,.84],finalres.weights)
-			args['curves'].color.time_delays[k]=t_quant[1]+time_delays[k]
+			args['curves'].color.time_delays[k]=t_quant[1]+time_delays[k]-time_delays[args['refImage']]
 			args['curves'].color.time_delay_errors[k]=np.array([t_quant[0]-t_quant[1],t_quant[2]-t_quant[1]])
 			args['curves'].color.t_peaks[k]=finalmodel.get('t0')+time_delays[k]+ \
 											weighted_quantile(ttempSamples,.5,finalres.weights)
 
-
-
+		
 
 	finalmodel.set(t0=args['curves'].color.t_peaks[args['refImage']])
 
@@ -994,6 +981,7 @@ def nest_color_lc(data,model,nimage,color, vparam_names,bounds,ref='image_1',
 
 
 	model_param_names=[x for x in vparam_names[:len(vparam_names)-nimage]]
+
 	model_idx = np.array([vparam_names.index(name) for name in model_param_names])
 	td_params=[x for x in vparam_names[len(vparam_names)-nimage:] if x[0]=='t']
 	td_idx=np.array([vparam_names.index(name) for name in td_params])
@@ -1003,6 +991,8 @@ def nest_color_lc(data,model,nimage,color, vparam_names,bounds,ref='image_1',
 	data=data[np.where(np.logical_and(data['time']>=mindat,data['time']<=maxdat))]
 
 	im_indices=[np.where(data['image']==i)[0] for i in np.unique(data['image'])]
+	colzp1=data['zp_'+color[0]][0]
+	colzp2=data['zp_'+color[1]][0]
 	def chisq_likelihood(parameters):
 		model.set(**{model_param_names[k]:parameters[model_idx[k]] for k in range(len(model_idx))})
 		all_data=deepcopy(data)
@@ -1010,9 +1000,10 @@ def nest_color_lc(data,model,nimage,color, vparam_names,bounds,ref='image_1',
 		for i in range(len(im_indices)):
 			all_data['time'][im_indices[i]]-=parameters[td_idx[i]]
 
-		model_observations = 10**(-.4*model.color(color[0],color[1],all_data['zpsys'][0],all_data['time']))
-
-		err=(all_data['flux_%s'%color[0]]/all_data['flux_%s'%color[1]])*np.sqrt((all_data['fluxerr_%s'%color[0]]/all_data['flux_%s'%color[0]])**2+(all_data['fluxerr_%s'%color[1]]/all_data['flux_%s'%color[1]])**2)
+		model_observations = 10**(-.4*(model.color(color[0],color[1],all_data['zpsys'][0],all_data['time'])+colzp2-colzp1))
+		
+		err=(all_data['flux_%s'%color[0]]/all_data['flux_%s'%color[1]])*np.sqrt((all_data['fluxerr_%s'%color[0]]/all_data['flux_%s'%color[0]])**2+\
+																				(all_data['fluxerr_%s'%color[1]]/all_data['flux_%s'%color[1]])**2)
 		if modelcov:
 			all_cov=None
 			cov = np.diag(err)
@@ -1039,6 +1030,9 @@ def nest_color_lc(data,model,nimage,color, vparam_names,bounds,ref='image_1',
 			chisq=np.dot(np.dot(diff, invcov), diff)
 
 		else:
+			
+	
+			
 			chisq=np.sum((all_data['flux_%s'%color[0]]/all_data['flux_%s'%color[1]]-model_observations)**2/\
 						 err**2)
 		return chisq
@@ -1202,6 +1196,7 @@ def _fitseries(all_args):
 				args['curves'].series.meta['reft0']=args['fit_prior'].images[par_ref].fits.model.get('t0')
 				args['curves'].series.meta['refamp']=\
 					args['fit_prior'].images[par_ref].fits.model.get(tempMod.param_names[2])
+
 			else:
 				par_ref=args['refImage']
 				if args['trial_fit']:
@@ -1234,11 +1229,13 @@ def _fitseries(all_args):
 		else:
 			par_ref=args['refImage']
 			guess_amplitude=True
+
 		if args['cut_time'] is not None:
 			args['curves'].series.table=args['curves'].series.table[args['curves'].series.table['time']>= \
 																  args['cut_time'][0]*(1+tempMod.get('z'))+args['curves'].series.meta['reft0']]
 			args['curves'].series.table=args['curves'].series.table[args['curves'].series.table['time']<= \
 																  args['cut_time'][1]*(1+tempMod.get('z'))+args['curves'].series.meta['reft0']]
+
 		tempMod.set(t0=args['curves'].series.meta['reft0'])
 		tempMod.parameters[2]=args['curves'].series.meta['refamp']
 
@@ -1266,6 +1263,7 @@ def _fitseries(all_args):
 
 	trefSamples=finalres.samples[:,finalres.vparam_names.index('t_'+args['refImage'][-1])]
 	arefSamples=finalres.samples[:,finalres.vparam_names.index('a_'+args['refImage'][-1])]
+	
 	for k in args['curves'].images.keys():
 
 		if k==args['refImage']:
@@ -1273,55 +1271,38 @@ def _fitseries(all_args):
 			args['curves'].series.time_delay_errors[k]=[0,0]
 			args['curves'].series.magnifications[k]=1
 			args['curves'].series.magnification_errors[k]=[0,0]
-			if par_ref!=args['refImage']:
-				args['curves'].series.t_peaks[k]=finalmodel.get('t0')+time_delays[args['refImage']]- \
-												weighted_quantile(trefSamples,.5,finalres.weights)
-				args['curves'].series.a_peaks[k]=finalmodel.parameters[2]*magnifications[k]/ \
-												 weighted_quantile(arefSamples,.5,finalres.weights)
-			else:
-				args['curves'].series.t_peaks[k]=finalmodel.get('t0')+time_delays[args['refImage']]+ \
-												weighted_quantile(trefSamples,.5,finalres.weights)
-
-				args['curves'].series.a_peaks[k]=finalmodel.parameters[2]*magnifications[k]* \
-												 weighted_quantile(arefSamples,.5,finalres.weights)
-
-		elif par_ref!=args['refImage']:
-			ttempSamples=finalres.samples[:,finalres.vparam_names.index('t_'+k[-1])]
-			atempSamples=finalres.samples[:,finalres.vparam_names.index('a_'+k[-1])]
-			t_quant=weighted_quantile(trefSamples-ttempSamples,[.16,.5,.84],finalres.weights)
-			a_quant=weighted_quantile(atempSamples/arefSamples,[.16,.5,.84],finalres.weights)
-			args['curves'].series.time_delays[k]=t_quant[1]+time_delays[k]-time_delays[args['refImage']]
-			args['curves'].series.time_delay_errors[k]=np.array([t_quant[0]-t_quant[1],t_quant[2]-t_quant[1]])
-			args['curves'].series.t_peaks[k]=finalmodel.get('t0')+time_delays[k]- \
-											weighted_quantile(ttempSamples,.5,finalres.weights)
-			args['curves'].series.magnifications[k]=magnifications[k]*a_quant[1]/magnifications[args['refImage']]
-			args['curves'].series.magnification_errors[k]= \
-				magnifications[k]*np.array([a_quant[0]-a_quant[1],a_quant[2]-a_quant[1]])
-			args['curves'].series.a_peaks[k]=finalmodel.parameters[2]*magnifications[k]/ \
-											 weighted_quantile(atempSamples,.5,finalres.weights)
+			args['curves'].series.t_peaks[k]=finalmodel.get('t0')+time_delays[k]+ \
+										weighted_quantile(trefSamples,.5,finalres.weights)
+			args['curves'].series.a_peaks[k]=finalmodel.parameters[2]*magnifications[k]* \
+										 weighted_quantile(arefSamples,.5,finalres.weights)			
 
 		else:
 			ttempSamples=finalres.samples[:,finalres.vparam_names.index('t_'+k[-1])]
 			atempSamples=finalres.samples[:,finalres.vparam_names.index('a_'+k[-1])]
 			t_quant=weighted_quantile(ttempSamples-trefSamples,[.16,.5,.84],finalres.weights)
 			a_quant=weighted_quantile(atempSamples/arefSamples,[.16,.5,.84],finalres.weights)
-			args['curves'].series.time_delays[k]=t_quant[1]+time_delays[k]
+		
+			args['curves'].series.time_delays[k]=t_quant[1]+time_delays[k]-time_delays[args['refImage']]
 			args['curves'].series.time_delay_errors[k]=np.array([t_quant[0]-t_quant[1],t_quant[2]-t_quant[1]])
-			args['curves'].series.magnifications[k]=magnifications[k]*a_quant[1]
-			args['curves'].series.magnification_errors[k]= \
-				magnifications[k]*np.array([a_quant[0]-a_quant[1],a_quant[2]-a_quant[1]])
 			args['curves'].series.t_peaks[k]=finalmodel.get('t0')+time_delays[k]+ \
 											weighted_quantile(ttempSamples,.5,finalres.weights)
+			
+			args['curves'].series.magnifications[k]=magnifications[k]*a_quant[1]/magnifications[args['refImage']]
+			args['curves'].series.magnification_errors[k]= \
+				magnifications[k]*np.array([a_quant[0]-a_quant[1],a_quant[2]-a_quant[1]])
 			args['curves'].series.a_peaks[k]=finalmodel.parameters[2]*magnifications[k]* \
 											 weighted_quantile(atempSamples,.5,finalres.weights)
 
-
+		
+		
+		
 
 	args['curves'].combine_curves(time_delays=args['curves'].series.time_delays,magnifications=args['curves'].series.magnifications,referenceImage=args['refImage'])
 	args['curves'].series.meta['td']=time_delays
 	args['curves'].series.meta['mu']=magnifications
 
 	finalmodel.set(t0=args['curves'].series.t_peaks[args['refImage']])
+
 	finalmodel.parameters[2]=args['curves'].series.a_peaks[args['refImage']]
 
 	args['curves'].series.refImage=args['refImage']
@@ -1644,21 +1625,24 @@ def _fitparallel(all_args):
 			res,fit=sncosmo.fit_lc(args['curves'].images[args['fitOrder'][0]].table[inds],tempMod,args['params'],
 									bounds={b:args['bounds'][b]+(args['bounds'][b]-np.median(args['bounds'][b]))*2 if b=='t0' else args['bounds'][b] for b in args['bounds']},minsnr=args.get('minsnr',0))
 
-			args['bounds']={res.param_names[i]:np.array([-res.errors[res.param_names[i]],res.errors[res.param_names[i]]])*3+\
-											   res.parameters[i] for i in range(len(res.param_names)) if res.param_names[i] \
-												in list(res.errors.keys())}
-			args['bounds']={b:(np.array(args['bounds'][b])-np.median(args['bounds'][b]))/2+fit.get(b) for b in args['bounds'].keys()}
+			args['bounds']={b:(np.array(args['bounds'][b])-np.median(args['bounds'][b]))/2+fit.get(b) if b in res.param_names else args['bounds'][b] for b in args['bounds'].keys()}
 			
 			guess_t0=fit.get('t0')
 
-
 		if args['clip_data']:
 			if args['cut_time'] is not None:
-				args['curves'].clip_data(im=args['fitOrder'][0],minsnr=args.get('minsnr',0),mintime=args['cut_time'][0]*(1+tempMod.get('z')),maxtime=args['cut_time'][1],peak=guess_t0)
+				args['curves'].clip_data(im=args['fitOrder'][0],minsnr=args.get('minsnr',0),mintime=args['cut_time'][0]*(1+tempMod.get('z')),
+						maxtime=args['cut_time'][1]*(1+tempMod.get('z')),peak=guess_t0)
 			else:
 				args['curves'].clip_data(im=args['fitOrder'][0],minsnr=args.get('minsnr',0))
-		
-		res,fit=sncosmo.nest_lc(args['curves'].images[args['fitOrder'][0]].table,tempMod,args['params'],
+			fit_table=args['curves'].images[args['fitOrder'][0]].table
+		elif args['cut_time'] is not None:
+			fit_table=deepcopy(args['curves'].images[args['fitOrder'][0]].table)
+			fit_table=fit_table[fit_table['time']>=guess_t0+(args['cut_time'][0]*(1+tempMod.get('z')))]
+			fit_table=fit_table[fit_table['time']<=guess_t0+(args['cut_time'][1]*(1+tempMod.get('z')))]
+			fit_table=fit_table[fit_table['flux']/fit_table['fluxerr']>=args.get('minsnr',0)]
+
+		res,fit=sncosmo.nest_lc(fit_table,tempMod,args['params'],
 								bounds=args['bounds'],
 							  priors=args.get('priors',None), ppfs=args.get('ppfs',None),
 								minsnr=args.get('minsnr',5.0), method=args.get('nest_method','single'),
@@ -1668,7 +1652,6 @@ def _fitparallel(all_args):
 							  maxiter=args.get('maxiter',None),npoints=args.get('npoints',100))
 		if finallogz<res.logz:
 			first_res=[args['fitOrder'][0],copy(fit),copy(res)]
-
 
 	first_params=[weighted_quantile(first_res[2].samples[:,i],[.16,.5,.84],first_res[2].weights)\
 				  for i in range(len(first_res[2].vparam_names))]
@@ -1692,6 +1675,7 @@ def _fitparallel(all_args):
 	for d in args['fitOrder'][1:]:
 		args['curves'].images[d].fits=newDict()
 		initial_bounds['t0']=deepcopy(t0Bounds)
+		
 		if args['t0_guess'] is not None:
 			if 't0' in args['bounds']:
 				initial_bounds['t0']=(t0Bounds[0]+args['t0_guess'][d],t0Bounds[1]+args['t0_guess'][d])
@@ -1702,9 +1686,12 @@ def _fitparallel(all_args):
 			for b in best_bands:
 				temp_bands=np.append(temp_bands,np.where(args['curves'].images[d].table['band']==b)[0])
 			inds=temp_bands.astype(int)
-
+		if args['clip_data']:
+			fit_table=args['curves'].images[d].table
+		else:
+			fit_table=deepcopy(args['curves'].images[d].table)
 		params,args['curves'].images[d].fits['model'],args['curves'].images[d].fits['res']\
-			=nest_parallel_lc(args['curves'].images[d].table,first_res[1],first_res[2],initial_bounds,
+			=nest_parallel_lc(fit_table,first_res[1],first_res[2],initial_bounds,
 							guess_amplitude_bound=True,priors=args.get('priors',None), ppfs=args.get('None'),
 						 method=args.get('nest_method','single'),cut_time=args['cut_time'],snr_band_inds=inds,
 						 maxcall=args.get('maxcall',None), modelcov=args.get('modelcov',False),
@@ -1720,12 +1707,14 @@ def _fitparallel(all_args):
 												  for d in args['curves'].images[k].fits['res'].vparam_names}
 	trefSamples,arefSamples=sample_dict[args['refImage']]
 	refWeights=args['curves'].images[args['refImage']].fits['res'].weights
+
+	args['curves'].parallel.time_delays={args['refImage']:0}
+	args['curves'].parallel.magnifications={args['refImage']:1}
+	args['curves'].parallel.time_delay_errors={args['refImage']:[0,0]}
+	args['curves'].parallel.magnification_errors={args['refImage']:[0,0]}
 	for k in args['curves'].images.keys():
 		if k==args['refImage']:
-			args['curves'].parallel.time_delays={k:0}
-			args['curves'].parallel.magnifications={k:1}
-			args['curves'].parallel.time_delay_errors={k:[0,0]}
-			args['curves'].parallel.magnification_errors={k:[0,0]}
+			continue
 		else:
 			ttempSamples,atempSamples=sample_dict[k]
 
@@ -1813,6 +1802,7 @@ def nest_parallel_lc(data,model,prev_res,bounds,guess_amplitude_bound=False,cut_
 	if cut_time is not None and guess_amplitude_bound:
 		data=data[data['time']>=cut_time[0]*(1+model.get('z'))+guess_t0]
 		data=data[data['time']<=cut_time[1]*(1+model.get('z'))+guess_t0]
+
 	# Convert bounds/priors combinations into ppfs
 	if bounds is not None:
 		for key, val in bounds.items():
@@ -1845,6 +1835,8 @@ def nest_parallel_lc(data,model,prev_res,bounds,guess_amplitude_bound=False,cut_
 		temp=posterior('temp',np.min(prev_res.samples[:,ind]),np.max(prev_res.samples[:,ind]))
 		samples=np.linspace(np.min(prev_res.samples[:,ind]),
 							np.max(prev_res.samples[:,ind]),1000)
+		
+
 		final_priors.append(scipy.interpolate.interp1d(samples,
 													   np.log(temp._pdf(samples,prev_res.samples[:,ind],
 																		prev_res.weights)),fill_value=-np.inf,

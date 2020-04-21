@@ -153,9 +153,10 @@ class posterior(rv_continuous):
     "Skewed Normal Distribution"
     def _pdf(self,x,samples,weights):
         pdf,edges=np.histogram(samples,weights=weights,
-                               bins=20,density=True)
+                               bins=30,density=True)
+        
         func=scipy.interpolate.interp1d([(edges[i]+edges[i+1])/2 for i in range(len(edges)-1)],
-                                        pdf,fill_value=0,bounds_error=False)
+                                        pdf/np.max(pdf),fill_value=0,bounds_error=False)
         return(func(x))
 
     def _argcheck(self,*args):
