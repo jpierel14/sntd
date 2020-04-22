@@ -330,10 +330,10 @@ def fit_data(curves=None, snType='Ia',bands=None, models=None, params=None, boun
 					output=glob.glob(os.path.join(os.path.abspath(folder_name),'sntd_fit*'))
 					nfit=len(output)+saved_fits
 					for filename in output:
-			        	out.add(filename)
-			        	os.remove(filename)
-			        	saved_fits+=1
-			    	if nfit!=ndone:
+						out.add(filename)
+						os.remove(filename)
+						saved_fits+=1
+					if nfit!=ndone:
 						if nadded<total_jobs:
 							ind=nadded
 							for i in range(nfit-ndone):
@@ -477,10 +477,10 @@ def fit_data(curves=None, snType='Ia',bands=None, models=None, params=None, boun
 					output=glob.glob(os.path.join(os.path.abspath(folder_name),'sntd_fit*'))
 					nfit=len(output)+saved_fits
 					for filename in output:
-			        	out.add(filename)
-			        	os.remove(filename)
-			        	saved_fits+=1
-			    	if nfit!=ndone:
+						out.add(filename)
+						os.remove(filename)
+						saved_fits+=1
+					if nfit!=ndone:
 						if nadded<total_jobs:
 							ind=nadded
 							for i in range(nfit-ndone):
@@ -591,10 +591,10 @@ def fit_data(curves=None, snType='Ia',bands=None, models=None, params=None, boun
 					output=glob.glob(os.path.join(os.path.abspath(folder_name),'sntd_fit*'))
 					nfit=len(output)+saved_fits
 					for filename in output:
-			        	out.add(filename)
-			        	os.remove(filename)
-			        	saved_fits+=1
-			    	if nfit!=ndone:
+						out.add(filename)
+						os.remove(filename)
+						saved_fits+=1
+					if nfit!=ndone:
 						if nadded<total_jobs:
 							ind=nadded
 							for i in range(nfit-ndone):
@@ -703,10 +703,10 @@ def fit_data(curves=None, snType='Ia',bands=None, models=None, params=None, boun
 					output=glob.glob(os.path.join(os.path.abspath(folder_name),'sntd_fit*'))
 					nfit=len(output)+saved_fits
 					for filename in output:
-			        	out.add(filename)
-			        	os.remove(filename)
-			        	saved_fits+=1
-			    	if nfit!=ndone:
+						out.add(filename)
+						os.remove(filename)
+						saved_fits+=1
+					if nfit!=ndone:
 						if nadded<total_jobs:
 							ind=nadded
 							for i in range(nfit-ndone):
