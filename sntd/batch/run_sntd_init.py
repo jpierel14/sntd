@@ -41,8 +41,19 @@ for i in range(inds[0],inds[1]):
 
 filename=os.path.join(os.path.abspath(os.path.dirname(__file__)),'sntd_fit%s.pkl'%sys.argv[1])
 pickle.dump(all_res,open(filename,'wb'))
-out=tarfile.open('sntd_fits.tar.gz','a')
-out.add(filename)
-out.close()
-os.remove(filename)
+opened=False
+tried=0
+while not opened:
+    try:
+        out=tarfile.open('sntd_fits.tar.gz','a')
+        out.add(filename)
+        out.close()
+        opened=True
+    except:
+        opened=False
+    tried+=1
+    if tried>100:
+        break
+if opened:
+    os.remove(filename)
 
