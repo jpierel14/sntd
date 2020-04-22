@@ -312,8 +312,7 @@ def fit_data(curves=None, snType='Ia',bands=None, models=None, params=None, boun
 
 				
 
-				fits_output=tarfile.open(os.path.join(os.path.abspath(folder_name),'sntd_fits.tar.gz'),mode='w')
-				fits_output.close()
+				fits_output=tarfile.open(os.path.join(os.path.abspath(folder_name),'sntd_fits.tar.gz'),mode='a')
 
 				
 				result=subprocess.call(['sbatch',os.path.join(os.path.abspath(folder_name),
@@ -323,14 +322,13 @@ def fit_data(curves=None, snType='Ia',bands=None, models=None, params=None, boun
 				ndone=0
 				nactive=nbatch_jobs
 				nadded=nbatch_jobs
-				fits_output=tarfile.open(os.path.join(os.path.abspath(folder_name),'sntd_fits.tar.gz'),mode='a')
 				saved_fits=0
 				while True:
 					time.sleep(10) #update every 10 seconds
 					output=glob.glob(os.path.join(os.path.abspath(folder_name),'sntd_fit*'))
 					nfit=len(output)+saved_fits
 					for filename in output:
-						out.add(filename)
+						fits_output.add(filename)
 						os.remove(filename)
 						saved_fits+=1
 					if nfit!=ndone:
@@ -349,7 +347,7 @@ def fit_data(curves=None, snType='Ia',bands=None, models=None, params=None, boun
 							printProgressBar(ndone,total_jobs)
 					if nfit>=total_jobs:
 						break
-				out.close()
+				fits_output.close()
 				print('Done!')
 				return
 					
@@ -470,14 +468,14 @@ def fit_data(curves=None, snType='Ia',bands=None, models=None, params=None, boun
 				ndone=0
 				nactive=nbatch_jobs
 				nadded=nbatch_jobs
-				fits_output=tarfile.open(os.path.join(os.path.abspath(folder_name),'sntd_fits.tar.gz'),mode='a')
+
 				saved_fits=0
 				while True:
 					time.sleep(10) #update every 10 seconds
 					output=glob.glob(os.path.join(os.path.abspath(folder_name),'sntd_fit*'))
 					nfit=len(output)+saved_fits
 					for filename in output:
-						out.add(filename)
+						fits_output.add(filename)
 						os.remove(filename)
 						saved_fits+=1
 					if nfit!=ndone:
@@ -496,7 +494,7 @@ def fit_data(curves=None, snType='Ia',bands=None, models=None, params=None, boun
 							printProgressBar(ndone,total_jobs)
 					if nfit>=total_jobs:
 						break
-				out.close()
+				fits_output.close()
 				print('Done!')
 				return
 
@@ -584,14 +582,14 @@ def fit_data(curves=None, snType='Ia',bands=None, models=None, params=None, boun
 				ndone=0
 				nactive=nbatch_jobs
 				nadded=nbatch_jobs
-				fits_output=tarfile.open(os.path.join(os.path.abspath(folder_name),'sntd_fits.tar.gz'),mode='a')
+
 				saved_fits=0
 				while True:
 					time.sleep(10) #update every 10 seconds
 					output=glob.glob(os.path.join(os.path.abspath(folder_name),'sntd_fit*'))
 					nfit=len(output)+saved_fits
 					for filename in output:
-						out.add(filename)
+						fits_output.add(filename)
 						os.remove(filename)
 						saved_fits+=1
 					if nfit!=ndone:
@@ -610,7 +608,7 @@ def fit_data(curves=None, snType='Ia',bands=None, models=None, params=None, boun
 							printProgressBar(ndone,total_jobs)
 					if nfit>=total_jobs:
 						break
-				out.close()
+				fits_output.close()
 				print('Done!')
 				return
 		else:
@@ -696,14 +694,14 @@ def fit_data(curves=None, snType='Ia',bands=None, models=None, params=None, boun
 				ndone=0
 				nactive=nbatch_jobs
 				nadded=nbatch_jobs
-				fits_output=tarfile.open(os.path.join(os.path.abspath(folder_name),'sntd_fits.tar.gz'),mode='a')
+
 				saved_fits=0
 				while True:
 					time.sleep(10) #update every 10 seconds
 					output=glob.glob(os.path.join(os.path.abspath(folder_name),'sntd_fit*'))
 					nfit=len(output)+saved_fits
 					for filename in output:
-						out.add(filename)
+						fits_output.add(filename)
 						os.remove(filename)
 						saved_fits+=1
 					if nfit!=ndone:
@@ -722,7 +720,7 @@ def fit_data(curves=None, snType='Ia',bands=None, models=None, params=None, boun
 							printProgressBar(ndone,total_jobs)
 					if nfit>=total_jobs:
 						break
-				out.close()
+				fits_output.close()
 				print('Done!')
 				return
 		else:
