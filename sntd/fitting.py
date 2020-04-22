@@ -328,7 +328,7 @@ def fit_data(curves=None, snType='Ia',bands=None, models=None, params=None, boun
 					output=tarfile.open(os.path.join(os.path.abspath(folder_name),'sntd_fits.tar.gz'),mode='r')
 					nfit=len(output.getmembers())
 					output.close()
-					if len(nfit)!=ndone:
+					if nfit!=ndone:
 						if nadded<total_jobs:
 							ind=nadded
 							for i in range(nfit-ndone):
@@ -469,7 +469,7 @@ def fit_data(curves=None, snType='Ia',bands=None, models=None, params=None, boun
 					output=tarfile.open(os.path.join(os.path.abspath(folder_name),'sntd_fits.tar.gz'),mode='r')
 					nfit=len(output.getmembers())
 					output.close()
-					if len(nfit)!=ndone:
+					if nfit!=ndone:
 						if nadded<total_jobs:
 							ind=nadded
 							for i in range(nfit-ndone):
@@ -577,7 +577,7 @@ def fit_data(curves=None, snType='Ia',bands=None, models=None, params=None, boun
 					output=tarfile.open(os.path.join(os.path.abspath(folder_name),'sntd_fits.tar.gz'),mode='r')
 					nfit=len(output.getmembers())
 					output.close()
-					if len(nfit)!=ndone:
+					if nfit!=ndone:
 						if nadded<total_jobs:
 							ind=nadded
 							for i in range(nfit-ndone):
@@ -683,7 +683,7 @@ def fit_data(curves=None, snType='Ia',bands=None, models=None, params=None, boun
 					output=tarfile.open(os.path.join(os.path.abspath(folder_name),'sntd_fits.tar.gz'),mode='r')
 					nfit=len(output.getmembers())
 					output.close()
-					if len(nfit)!=ndone:
+					if nfit!=ndone:
 						if nadded<total_jobs:
 							ind=nadded
 							for i in range(nfit-ndone):
