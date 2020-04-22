@@ -307,12 +307,12 @@ def fit_data(curves=None, snType='Ia',bands=None, models=None, params=None, boun
 
 					batch_py=batch_py.replace('sntdcommandreplace',sntd_command)
 
-					with open(os.path.join(folder_name,pyfile),'w') as f:
+					with open(os.path.join(os.path.abspath(folder_name),pyfile),'w') as f:
 						f.write(batch_py)
 
 				
 
-				fits_output=tarfile.open('sntd_fits.tar.gz',mode='w')
+				fits_output=tarfile.open(os.path.join(os.path.abspath(folder_name),'sntd_fits.tar.gz'),mode='w')
 				fits_output.close()
 
 				
@@ -448,10 +448,12 @@ def fit_data(curves=None, snType='Ia',bands=None, models=None, params=None, boun
 
 					batch_py=batch_py.replace('sntdcommandreplace',sntd_command)
 
-					with open(os.path.join(folder_name,pyfile),'w') as f:
+					with open(os.path.join(os.path.abspath(folder_name),pyfile),'w') as f:
 						f.write(batch_py)
 
-				fits_output=tarfile.open('sntd_fits.tar.gz',mode='w')
+				
+
+				fits_output=tarfile.open(os.path.join(os.path.abspath(folder_name),'sntd_fits.tar.gz'),mode='w')
 				fits_output.close()
 
 				
@@ -554,10 +556,12 @@ def fit_data(curves=None, snType='Ia',bands=None, models=None, params=None, boun
 
 					batch_py=batch_py.replace('sntdcommandreplace',sntd_command)
 
-					with open(os.path.join(folder_name,pyfile),'w') as f:
+					with open(os.path.join(os.path.abspath(folder_name),pyfile),'w') as f:
 						f.write(batch_py)
 
-				fits_output=tarfile.open('sntd_fits.tar.gz',mode='w')
+				
+
+				fits_output=tarfile.open(os.path.join(os.path.abspath(folder_name),'sntd_fits.tar.gz'),mode='w')
 				fits_output.close()
 
 				
@@ -658,10 +662,12 @@ def fit_data(curves=None, snType='Ia',bands=None, models=None, params=None, boun
 
 					batch_py=batch_py.replace('sntdcommandreplace',sntd_command)
 
-					with open(os.path.join(folder_name,pyfile),'w') as f:
+					with open(os.path.join(os.path.abspath(folder_name),pyfile),'w') as f:
 						f.write(batch_py)
 
-				fits_output=tarfile.open('sntd_fits.tar.gz',mode='w')
+				
+
+				fits_output=tarfile.open(os.path.join(os.path.abspath(folder_name),'sntd_fits.tar.gz'),mode='w')
 				fits_output.close()
 
 				
