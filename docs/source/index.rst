@@ -4,19 +4,31 @@
    contain the root `toctree` directive.
 
 
-Welcome to SNTD's documentation!
-================================
+
+.. image:: _static/logo.jpg
+    :width: 600px
+    :height: 400px
+
+Welcome to SuperNova Time Delays (SNTD)!
+========================================
 
 .. raw:: html
 
 	<iframe width="1200" height="800" frameborder="0" scrolling="yes" src="//plot.ly/~jpierel/18.embed"></iframe>
 
 .. toctree::
-   :maxdepth: 2
-   :caption: Contents:
+   :maxdepth: 1
+   :titlesonly:
 
    install
-   examples
+
+.. include:: examples/index.rst
+
+.. toctree::
+   :hidden:
+   :titlesonly:
+
+   examples/index
    api
 
 :doc:`api`

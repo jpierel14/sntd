@@ -44,7 +44,8 @@ extensions = [
     'sphinx.ext.viewcode',
     'sphinx.ext.autosummary',
     'sphinx.ext.napoleon',
-    'sphinx.ext.intersphinx'
+    'sphinx.ext.intersphinx',
+    'sphinx_gallery.gen_gallery'
 ]
 
 intersphinx_mapping = {'python': ('https://docs.python.org/3', None)}
@@ -89,12 +90,23 @@ html_theme= 'sphinx_rtd_theme'
 # documentation.
 #
 # html_theme_options = {}
+sphinx_gallery_conf = {
+    'examples_dirs': '_examples',  # path to examples scripts
+    'gallery_dirs': 'examples',   # path to gallery generated examples
+    'backreferences_dir': 'modules/generated',  # path to store the module
+                                             # using example template
+    'doc_module': ('sntd',),  # documented module(s)
+    'download_section_examples': False,
+    'download_all_examples': False,  # don't package up examples.
+    #'default_thumb_file': os.path.join(os.path.dirname(__file__), '_logo',
+    #                                   'spectral_white_bkg.png')
+}
 
 # Add any paths that contain custom static files (such as style sheets) here,
 # relative to this directory. They are copied after the builtin static files,
 # so a file named "default.css" will overwrite the builtin "default.css".
 html_static_path = ['_static']
-html_favicon = 'favicon.png'
+html_favicon = '_static/favicon.png'
 # Custom sidebar templates, must be a dictionary that maps document names
 # to template names.
 #

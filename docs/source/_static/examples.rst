@@ -1,6 +1,6 @@
-**********************
-Simulating with SNTD
-**********************
+***********
+Simulations
+***********
 
 No Microlensing
 ===============
@@ -118,9 +118,9 @@ Out:
     :alt: alternate text
 
 
-*******************************
-Measuring Time Delays with SNTD
-*******************************
+*********************
+Measuring Time Delays
+*********************
 
 Fitting a Multiply-Imaged Supernova
 ===================================
@@ -368,9 +368,9 @@ Out::
 
 
 
-*****************************
-Using Your Own Data with SNTD
-*****************************
+*******************
+Using Your Own Data
+*******************
 In order to fit your own data, you must turn your light curve into an astropy table. There is an example multiply-imaged
 SN example provided for reference. In this example, we have a doubly-imaged SN with image files (in the sntd/data/examples folder)
 'example_image_1.dat' and 'example_image_2.dat'. The only optional column in these files is "image", which sets the name of the key

@@ -1,0 +1,58 @@
+
+
+Examples using ``sntd.createMultiplyImagedSN``
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+.. raw:: html
+
+    <div class="sphx-glr-thumbcontainer" tooltip="Create a simulated multiply-imaged supernova that we can then fit, with no microlensing include...">
+
+.. only:: html
+
+ .. figure:: /examples/images/thumb/sphx_glr_sim_thumb.png
+
+     :ref:`sphx_glr_examples_sim.py`
+
+.. raw:: html
+
+    </div>
+
+.. only:: not html
+
+ * :ref:`sphx_glr_examples_sim.py`
+
+.. raw:: html
+
+    <div class="sphx-glr-thumbcontainer" tooltip="Simulate a microlensing microcaustic. ">
+
+.. only:: html
+
+ .. figure:: /examples/images/thumb/sphx_glr_micro_thumb.png
+
+     :ref:`sphx_glr_examples_micro.py`
+
+.. raw:: html
+
+    </div>
+
+.. only:: not html
+
+ * :ref:`sphx_glr_examples_micro.py`
+
+.. raw:: html
+
+    <div class="sphx-glr-thumbcontainer" tooltip="There are 3 methods built into SNTD to measure time delays  (parallel, series, color). They are...">
+
+.. only:: html
+
+ .. figure:: /examples/images/thumb/sphx_glr_fitting_thumb.png
+
+     :ref:`sphx_glr_examples_fitting.py`
+
+.. raw:: html
+
+    </div>
+
+.. only:: not html
+
+ * :ref:`sphx_glr_examples_fitting.py`
