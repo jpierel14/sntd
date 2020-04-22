@@ -42,7 +42,7 @@ opened=False
 tried=0
 while not opened:
     try:
-        out=tarfile.open('sntd_fits.tar.gz','a')
+        out=tarfile.open(os.path.join(os.path.abspath(os.path.dirname(__file__)),'sntd_fits.tar.gz'),'a')
         out.add(filename)
         out.close()
         opened=True
