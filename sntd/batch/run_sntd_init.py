@@ -2,6 +2,7 @@ import pickle,sys,sntd,os,traceback
 from optparse import OptionParser
 from copy import copy
 import numpy as np
+import tarfile
 
 njobs=njobsreplace
 nlcs=nlcsreplace
@@ -38,4 +39,10 @@ for i in range(inds[0],inds[1]):
         print(traceback.format_exc())
         all_res.append(None)
 
-pickle.dump(all_res,open(os.path.join(os.path.abspath(os.path.dirname(__file__)),'sntd_fit%s.pkl'%sys.argv[1]),'wb'))
+filename=os.path.join(os.path.abspath(os.path.dirname(__file__)),'sntd_fit%s.pkl'%sys.argv[1])
+pickle.dump(all_res,open(filename,'wb'))
+out=tarfile.open('sntd_fits.tar.gz','a')
+out.add(filename)
+out.close()
+os.remove(filename)
+
