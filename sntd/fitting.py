@@ -467,13 +467,13 @@ def fit_data(curves=None, snType='Ia',bands=None, models=None, params=None, boun
 				ndone=0
 				nactive=nbatch_jobs
 				nadded=nbatch_jobs
-
+				
 				saved_fits=0
 				while True:
 					time.sleep(10) #update every 10 seconds
 					output=glob.glob(os.path.join(os.path.abspath(folder_name),'sntd_fit*'))
 					nfit=len(output)+saved_fits
-					print(len(output),saved_fits,total_jobs,done)
+					print(len(output),saved_fits,total_jobs,ndone)
 					for filename in output:
 						fits_output.add(filename)
 						os.remove(filename)
