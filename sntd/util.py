@@ -8,7 +8,7 @@ import scipy
 
 from scipy.interpolate import splrep,splev
 from copy import copy
-
+import tarfile,os,pickle
 from scipy.stats import rv_continuous
 
 
@@ -21,7 +21,7 @@ PARALLEL = 2  # (pigz -dc, pigz) or (pbzip2 -dc, pbzip2)
 
 __all__=['flux_to_mag','_cast_str','_get_default_prop_name','_isfloat','anyOpen','_props','_findMax','_findMin',
          '_guess_time_delays','_guess_magnifications','__dir__','load_example_data','posterior','weighted_quantile',
-         'run_sbatch','printProgressBar']
+         'run_sbatch','printProgressBar','load_batch_fit_names','load_batch_fit']
 _props=odict([
     ('time',{'mjd', 'mjdobs', 'jd', 'time', 'date', 'mjd_obs','mhjd','jds'}),
     ('band',{'filter', 'band', 'flt', 'bandpass'}),
@@ -37,6 +37,22 @@ _props=odict([
 def load_example_data():
     example_files=glob.glob(os.path.join(__dir__,'data','examples','*.dat'))
     return(ascii.read(example_files[0]),ascii.read(example_files[1]))
+
+def load_batch_fit_names(folder_name,verbose=True):
+    tar=tarfile.open(os.path.join(folder_name,'sntd_fits.tar.gz'),'r')
+    all_fits=tar.getmembers()
+    if verbose:
+        print('Found %i fits, loading...'%len(all_fits))
+    tar.close()
+    return [x.name for x in all_fits]
+
+def load_batch_fit(folder_name,fit_name):
+    tar=tarfile.open(os.path.join(folder_name,'sntd_fits.tar.gz'),'r')
+    f=tar.extractfile(fit_name).read()
+    dat=pickle.loads(f)
+    tar.close()
+    return(dat)
+
 
 def run_sbatch(partition=None,njobs=None,python_path=None,init=False,folder=None):
     if njobs is None:

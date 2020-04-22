@@ -1,4 +1,4 @@
-import warnings,sncosmo,os,sys,pyParz,pickle,subprocess,glob,math,time
+import warnings,sncosmo,os,sys,pyParz,pickle,subprocess,glob,math,time,tarfile
 import numpy as np
 import matplotlib.pyplot as plt
 from copy import deepcopy,copy
@@ -10,6 +10,7 @@ from sklearn.gaussian_process.kernels import RBF
 import scipy
 import itertools
 from sncosmo import nest_lc
+
 
 from .util import *
 from .curve_io import _sntd_deepcopy
@@ -311,6 +312,8 @@ def fit_data(curves=None, snType='Ia',bands=None, models=None, params=None, boun
 
 				
 
+				fits_output=tarfile.open('sntd_fits.tar.gz',mode='w')
+				fits_output.close()
 
 				
 				result=subprocess.call(['sbatch',os.path.join(os.path.abspath(folder_name),
@@ -322,31 +325,28 @@ def fit_data(curves=None, snType='Ia',bands=None, models=None, params=None, boun
 				nadded=nbatch_jobs
 				while True:
 					time.sleep(5) #update every 5 seconds
-					output=glob.glob(os.path.join(os.path.abspath(folder_name),'*fit*.pkl'))
-					if len(output)!=ndone:
+					output=tarfile.open(os.path.join(os.path.abspath(folder_name),'sntd_fits.tar.gz'),mode='r')
+					nfit=len(output.getmembers())
+					output.close()
+					if len(nfit)!=ndone:
 						if nadded<total_jobs:
 							ind=nadded
-							for i in range(len(output)-ndone):
+							for i in range(nfit-ndone):
 								if ind>total_jobs-1:
 									continue
 								result=subprocess.call(['sbatch',os.path.join(os.path.abspath(folder_name),
 																		 script_name),str(ind)],stdout=subprocess.DEVNULL)
 								ind+=1
 								nadded+=1
-						ndone=len(output)
+						ndone=nfit
 
 						if wait_for_batch:
 							printProgressBar(ndone,total_jobs)
-					if len(output)>=total_jobs:
+					if nfit>=total_jobs:
 						break
-
-				outfiles=glob.glob(os.path.join(os.path.abspath(folder_name),'*fit*.pkl'))
-				all_result=[]
-				for f in outfiles:
-					all_result.append(pickle.load(open(f,'rb')))
-
-				curves= list(np.reshape(all_result,(-1,1)).flatten())
-
+				print('Done!')
+				return
+					
 
 
 		else:
@@ -451,6 +451,10 @@ def fit_data(curves=None, snType='Ia',bands=None, models=None, params=None, boun
 					with open(os.path.join(folder_name,pyfile),'w') as f:
 						f.write(batch_py)
 
+				fits_output=tarfile.open('sntd_fits.tar.gz',mode='w')
+				fits_output.close()
+
+				
 				result=subprocess.call(['sbatch',os.path.join(os.path.abspath(folder_name),
 																	   script_name_init)])
 				if wait_for_batch:
@@ -460,30 +464,27 @@ def fit_data(curves=None, snType='Ia',bands=None, models=None, params=None, boun
 				nadded=nbatch_jobs
 				while True:
 					time.sleep(5) #update every 5 seconds
-					output=glob.glob(os.path.join(os.path.abspath(folder_name),'*fit*.pkl'))
-					if len(output)!=ndone:
+					output=tarfile.open(os.path.join(os.path.abspath(folder_name),'sntd_fits.tar.gz'),mode='r')
+					nfit=len(output.getmembers())
+					output.close()
+					if len(nfit)!=ndone:
 						if nadded<total_jobs:
 							ind=nadded
-							for i in range(len(output)-ndone):
+							for i in range(nfit-ndone):
 								if ind>total_jobs-1:
 									continue
 								result=subprocess.call(['sbatch',os.path.join(os.path.abspath(folder_name),
 																		 script_name),str(ind)],stdout=subprocess.DEVNULL)
 								ind+=1
 								nadded+=1
-						ndone=len(output)
+						ndone=nfit
 
 						if wait_for_batch:
 							printProgressBar(ndone,total_jobs)
-					if len(output)>=total_jobs:
+					if nfit>=total_jobs:
 						break
-
-				outfiles=glob.glob(os.path.join(os.path.abspath(folder_name),'*fit*.pkl'))
-				all_result=[]
-				for f in outfiles:
-					all_result.append(pickle.load(open(f,'rb')))
-
-				curves= list(np.reshape(all_result,(-1,1)).flatten())
+				print('Done!')
+				return
 
 
 
@@ -556,6 +557,10 @@ def fit_data(curves=None, snType='Ia',bands=None, models=None, params=None, boun
 					with open(os.path.join(folder_name,pyfile),'w') as f:
 						f.write(batch_py)
 
+				fits_output=tarfile.open('sntd_fits.tar.gz',mode='w')
+				fits_output.close()
+
+				
 				result=subprocess.call(['sbatch',os.path.join(os.path.abspath(folder_name),
 																	   script_name_init)])
 				if wait_for_batch:
@@ -565,30 +570,27 @@ def fit_data(curves=None, snType='Ia',bands=None, models=None, params=None, boun
 				nadded=nbatch_jobs
 				while True:
 					time.sleep(5) #update every 5 seconds
-					output=glob.glob(os.path.join(os.path.abspath(folder_name),'*fit*.pkl'))
-					if len(output)!=ndone:
+					output=tarfile.open(os.path.join(os.path.abspath(folder_name),'sntd_fits.tar.gz'),mode='r')
+					nfit=len(output.getmembers())
+					output.close()
+					if len(nfit)!=ndone:
 						if nadded<total_jobs:
 							ind=nadded
-							for i in range(len(output)-ndone):
+							for i in range(nfit-ndone):
 								if ind>total_jobs-1:
 									continue
 								result=subprocess.call(['sbatch',os.path.join(os.path.abspath(folder_name),
 																		 script_name),str(ind)],stdout=subprocess.DEVNULL)
 								ind+=1
 								nadded+=1
-						ndone=len(output)
+						ndone=nfit
 
 						if wait_for_batch:
 							printProgressBar(ndone,total_jobs)
-					if len(output)>=total_jobs:
+					if nfit>=total_jobs:
 						break
-
-				outfiles=glob.glob(os.path.join(os.path.abspath(folder_name),'*fit*.pkl'))
-				all_result=[]
-				for f in outfiles:
-					all_result.append(pickle.load(open(f,'rb')))
-
-				curves= list(np.reshape(all_result,(-1,1)).flatten())
+				print('Done!')
+				return
 		else:
 			curves=_fitseries(args)
 
@@ -659,6 +661,10 @@ def fit_data(curves=None, snType='Ia',bands=None, models=None, params=None, boun
 					with open(os.path.join(folder_name,pyfile),'w') as f:
 						f.write(batch_py)
 
+				fits_output=tarfile.open('sntd_fits.tar.gz',mode='w')
+				fits_output.close()
+
+				
 				result=subprocess.call(['sbatch',os.path.join(os.path.abspath(folder_name),
 																	   script_name_init)])
 				if wait_for_batch:
@@ -668,30 +674,27 @@ def fit_data(curves=None, snType='Ia',bands=None, models=None, params=None, boun
 				nadded=nbatch_jobs
 				while True:
 					time.sleep(5) #update every 5 seconds
-					output=glob.glob(os.path.join(os.path.abspath(folder_name),'*fit*.pkl'))
-					if len(output)!=ndone:
+					output=tarfile.open(os.path.join(os.path.abspath(folder_name),'sntd_fits.tar.gz'),mode='r')
+					nfit=len(output.getmembers())
+					output.close()
+					if len(nfit)!=ndone:
 						if nadded<total_jobs:
 							ind=nadded
-							for i in range(len(output)-ndone):
+							for i in range(nfit-ndone):
 								if ind>total_jobs-1:
 									continue
 								result=subprocess.call(['sbatch',os.path.join(os.path.abspath(folder_name),
 																		 script_name),str(ind)],stdout=subprocess.DEVNULL)
 								ind+=1
 								nadded+=1
-						ndone=len(output)
+						ndone=nfit
 
 						if wait_for_batch:
 							printProgressBar(ndone,total_jobs)
-					if len(output)>=total_jobs:
+					if nfit>=total_jobs:
 						break
-
-				outfiles=glob.glob(os.path.join(os.path.abspath(folder_name),'*fit*.pkl'))
-				all_result=[]
-				for f in outfiles:
-					all_result.append(pickle.load(open(f,'rb')))
-
-				curves= list(np.reshape(all_result,(-1,1)).flatten())
+				print('Done!')
+				return
 		else:
 			if args['color_bands'] is not None:
 				args['bands']=args['color_bands']
@@ -2111,5 +2114,101 @@ def param_fit(args,modName,fit=False):
 
 
 def identify_micro_func(args):
-	print('Only a development function for now!')
-	return args['bands'],args['bands']
+	if len(args['bands'])<=2:
+		return args['bands'],args['bands']
+	res_dict={}
+	original_args=copy(args)
+	combos=[]
+	for r in range(len(args['bands'])-1):
+		temp=[x for x in itertools.combinations(original_args['bands'],r)]
+		for t in temp:
+			combos.append(t)
+	if 'td' not in args['bounds'].keys():
+		args['bounds']['td']=args['bounds']['t0']
+	for bands in itertools.combinations(args['bands'],2):
+		good=True
+		for b in bands:
+			if not np.all([len(np.where(original_args['curves'].images[im].table['band']==b)[0])>=3 for im in original_args['curves'].images.keys()]):
+				good=False
+		if not good:
+			continue
+		temp_args=copy(original_args)
+
+		temp_args['bands']=[x for x in bands]
+		temp_args['npoints']=200
+		temp_args['fit_prior']=None
+
+		fitCurves=_fitColor(temp_args)
+		if np.all([np.isfinite(fitCurves.color.time_delays[x]) for x in fitCurves.images.keys()]):
+			res_dict[bands[0]+'-'+bands[1]]=copy(fitCurves.color.fits.res)
+
+	if len(list(res_dict.keys()))==0:
+		print('No good fitting.',args['bands'])
+		return(args['bands'],args['bands'])
+
+	# dev_dict={}
+	# ind=res_dict[list(res_dict.keys())[0]].vparam_names.index('c')
+	# for bs in combos:
+	# 	dev_dict[','.join(list(bs))]=(np.average([weighted_quantile(res_dict[x].samples[:,ind],.5,res_dict[x].weights) \
+	# 											  for x in res_dict.keys() if np.all([b not in x for b in bs])],weights= \
+	# 												 [res_dict[x].logz for x in res_dict.keys() if np.all([b not in x for b in bs])]),
+	# 				np.std([weighted_quantile(res_dict[x].samples[:,ind],.5,res_dict[x].weights) \
+	# 		  for x in res_dict.keys() if np.all([b not in x for b in bs])]))
+	# to_remove=None
+	#
+	# best_std=dev_dict[''][1]/np.sqrt(len(args['bands']))
+	#
+	# if len(args['bands'])>3:
+	# 	for bands in dev_dict.keys():
+	# 		if dev_dict[bands][1]!=0:#len(args['bands'])-len(bands.split(','))==2:
+	# 			print(bands,dev_dict[bands][1])
+	# 			if dev_dict[bands][1]/np.sqrt(len(args['bands'])-len(bands.split(',')))<best_std:
+	# 				to_remove=bands.split(',')
+	# 				best_std=dev_dict[bands][1]/np.sqrt(len(args['bands'])-len(to_remove))
+	final_color_bands=None
+	best_logz=-np.inf
+	best_logzerr=0
+
+	for bands in res_dict.keys():
+		logz,logzerr=calc_ev(res_dict[bands],args['npoints'])
+		if logz>best_logz:
+			final_color_bands=bands
+			best_logz=logz
+			best_logzerr=logzerr
+	print(bands, best_logz,best_logzerr)
+	final_all_bands=[]
+	for bands in res_dict.keys():
+		logz,logzerr=calc_ev(res_dict[bands],args['npoints'])
+		print(bands,logz,logzerr)
+		if logz+3*logzerr>=best_logz-3*best_logzerr:
+			final_all_bands=np.append(final_all_bands,bands.split('-'))
+
+
+	print(np.unique(final_all_bands),np.array(final_color_bands.split('-')))
+	sys.exit()
+	return(np.unique(final_all_bands),np.array(final_color_bands.split('-')))
+
+	#else:
+	#	print([[x for x in args['bands'] if x not in to_remove]]*2)
+	#	sys.exit()
+	#	return [[x for x in args['bands'] if x not in to_remove]]*2
+
+	# else:
+	# 	best_bands=None
+	# 	best_logz=-np.inf
+	# 	for bands in res_dict.keys():
+	#
+	# 		if res_dict[bands].logz>best_logz:
+	# 			best_bands=bands
+	# 			best_logz=res_dict[bands].logz
+	#
+	# 	return [best_bands.split('-')]*2
+
+def calc_ev(res,nlive):
+	logZnestle = res.logz                         # value of logZ
+	infogainnestle = res.h                        # value of the information gain in nats
+	if not np.isfinite(infogainnestle):
+		infogainnestle=.1*logZnestle
+	logZerrnestle = np.sqrt(infogainnestle)#/nlive) # estimate of the statistcal uncertainty on logZ
+
+	return logZnestle, logZerrnestle
