@@ -51,7 +51,10 @@ def load_batch_fit(folder_name,fit_name):
     f=tar.extractfile(fit_name).read()
     dat=pickle.loads(f)
     tar.close()
-    return(dat)
+    if len(dat)==1:
+        return(dat[0])
+    else:
+        return dat
 
 
 def run_sbatch(partition=None,njobs=None,python_path=None,init=False,folder=None):
