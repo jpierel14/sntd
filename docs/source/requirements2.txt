@@ -7,3 +7,4 @@ pyParz
 sklearn
 pytest-astropy
 corner
+sphinx_gallery

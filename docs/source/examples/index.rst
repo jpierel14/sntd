@@ -11,13 +11,13 @@ Examples
 
 .. raw:: html
 
-    <div class="sphx-glr-thumbcontainer" tooltip="Create a simulated multiply-imaged supernova that we can then fit, with no microlensing include...">
+    <div class="sphx-glr-thumbcontainer" tooltip="Simulating a multiply-imaged supernova. ">
 
 .. only:: html
 
- .. figure:: /examples/images/thumb/sphx_glr_sim_thumb.png
+ .. figure:: /examples/images/thumb/sphx_glr_plot_sim_thumb.png
 
-     :ref:`sphx_glr_examples_sim.py`
+     :ref:`sphx_glr_examples_plot_sim.py`
 
 .. raw:: html
 
@@ -27,7 +27,7 @@ Examples
 .. toctree::
    :hidden:
 
-   /examples/sim
+   /examples/plot_sim
 
 .. raw:: html
 
@@ -35,9 +35,9 @@ Examples
 
 .. only:: html
 
- .. figure:: /examples/images/thumb/sphx_glr_micro_thumb.png
+ .. figure:: /examples/images/thumb/sphx_glr_plot_micro_thumb.png
 
-     :ref:`sphx_glr_examples_micro.py`
+     :ref:`sphx_glr_examples_plot_micro.py`
 
 .. raw:: html
 
@@ -47,17 +47,17 @@ Examples
 .. toctree::
    :hidden:
 
-   /examples/micro
+   /examples/plot_micro
 
 .. raw:: html
 
-    <div class="sphx-glr-thumbcontainer" tooltip="There are 3 methods built into SNTD to measure time delays  (parallel, series, color). They are...">
+    <div class="sphx-glr-thumbcontainer" tooltip="A series of examples demonstrating various fitting options  with SNTD. ">
 
 .. only:: html
 
- .. figure:: /examples/images/thumb/sphx_glr_fitting_thumb.png
+ .. figure:: /examples/images/thumb/sphx_glr_plot_fitting_thumb.png
 
-     :ref:`sphx_glr_examples_fitting.py`
+     :ref:`sphx_glr_examples_plot_fitting.py`
 
 .. raw:: html
 
@@ -67,7 +67,7 @@ Examples
 .. toctree::
    :hidden:
 
-   /examples/fitting
+   /examples/plot_fitting
 .. raw:: html
 
     <div class="sphx-glr-clear"></div>

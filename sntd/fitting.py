@@ -837,9 +837,11 @@ def _fitColor(all_args):
 	for mod in np.array(args['models']).flatten():
 
 
-
-		source=sncosmo.get_source(mod)
-		tempMod = sncosmo.Model(source=source,effects=effects,effect_names=effect_names,effect_frames=effect_frames)
+		if isinstance(mod,str):
+			source=sncosmo.get_source(mod)
+			tempMod = sncosmo.Model(source=source,effects=effects,effect_names=effect_names,effect_frames=effect_frames)
+		else:
+			tempMod=copy(mod)
 		tempMod.set(**args['constants'])
 		if args['set_from_simMeta'] is not None:
 			tempMod.set(**{k:args['curves'].images[args['refImage']].simMeta[args['set_from_simMeta'][k]] for k in args['set_from_simMeta'].keys()})
@@ -860,7 +862,7 @@ def _fitColor(all_args):
 					for b in args['bands']:
 						temp_bands=np.append(temp_bands,np.where(args['curves'].images[im].table['band']==b)[0])
 					inds=temp_bands.astype(int)
-					res,fit=sncosmo.fit_lc(args['curves'].images[im].table[inds],tempMod,args['params']+['t0'],
+					res,fit=sncosmo.fit_lc(args['curves'].images[im].table[inds],tempMod,args['params']+['t0','x0'],
 											bounds={b:args['bounds'][b]+(args['bounds'][b]-np.median(args['bounds'][b]))*2 for b in [x for x in args['bounds'].keys() if x!='t0']},
 											minsnr=args.get('minsnr',0))
 					temp_delays[im]=fit.get('t0')
@@ -1205,59 +1207,64 @@ def _fitseries(all_args):
 
 
 
-		source=sncosmo.get_source(mod)
-		tempMod = sncosmo.Model(source=source,effects=effects,effect_names=effect_names,effect_frames=effect_frames)
+		if isinstance(mod,str):
+			source=sncosmo.get_source(mod)
+			tempMod = sncosmo.Model(source=source,effects=effects,effect_names=effect_names,effect_frames=effect_frames)
+		else:
+			tempMod=copy(mod)
 		tempMod.set(**args['constants'])
 		if args['set_from_simMeta'] is not None:
 			tempMod.set(**{k:args['curves'].images[args['refImage']].simMeta[args['set_from_simMeta'][k]] for k in args['set_from_simMeta'].keys()})
 		all_vparam_names=np.array([x for x in all_vparam_names if x!=tempMod.param_names[2]])
 
-		if not args['curves'].series.table:
-			if args['fit_prior'] is not None:
-				par_ref=args['fit_prior'].parallel.fitOrder[0]
+		if args['fit_prior'] is not None:
+			par_ref=args['fit_prior'].parallel.fitOrder[0]
 
-				temp_delays={k:args['fit_prior'].parallel.time_delays[k]-args['fit_prior'].parallel.time_delays[par_ref]\
-							 for k in args['fit_prior'].parallel.fitOrder}
-				temp_mags={k:args['fit_prior'].parallel.magnifications[k]/args['fit_prior'].parallel.magnifications[par_ref] \
-							 for k in args['fit_prior'].parallel.fitOrder}
-				args['curves'].combine_curves(time_delays=temp_delays,
-					magnifications=temp_mags)
-				args['curves'].series.meta['reft0']=args['fit_prior'].images[par_ref].fits.model.get('t0')
-				args['curves'].series.meta['refamp']=\
-					args['fit_prior'].images[par_ref].fits.model.get(tempMod.param_names[2])
+			temp_delays={k:args['fit_prior'].parallel.time_delays[k]-args['fit_prior'].parallel.time_delays[par_ref]\
+						 for k in args['fit_prior'].parallel.fitOrder}
+			temp_mags={k:args['fit_prior'].parallel.magnifications[k]/args['fit_prior'].parallel.magnifications[par_ref] \
+						 for k in args['fit_prior'].parallel.fitOrder}
+			args['curves'].combine_curves(time_delays=temp_delays,
+				magnifications=temp_mags)
+			args['curves'].series.meta['reft0']=args['fit_prior'].images[par_ref].fits.model.get('t0')
+			args['curves'].series.meta['refamp']=\
+				args['fit_prior'].images[par_ref].fits.model.get(tempMod.param_names[2])
 
-			else:
-				par_ref=args['refImage']
-				if args['trial_fit']:
-					best_bands=band_SNR[args['refImage']][:min(len(band_SNR[args['refImage']]),2)]
-					temp_delays={}
-					temp_mags={}
-					for im in args['curves'].images.keys():
-						temp_bands=[]
-						for b in best_bands:
-							temp_bands=np.append(temp_bands,np.where(args['curves'].images[im].table['band']==b)[0])
-						inds=temp_bands.astype(int)
-						res,fit=sncosmo.fit_lc(args['curves'].images[im].table[inds],tempMod,args['params']+['t0'],
-												bounds={b:args['bounds'][b]+(args['bounds'][b]-np.median(args['bounds'][b]))*2 if b=='t0' else args['bounds'][b] for b in args['bounds']},
-												minsnr=args.get('minsnr',0))
-						temp_delays[im]=fit.get('t0')
-						temp_mags[im]=fit.parameters[2]
-					args['curves'].series.meta['reft0']=temp_delays[args['refImage']]
-					args['curves'].series.meta['refamp']=temp_mags[args['refImage']]
-
-					temp_delays={im:temp_delays[im]-temp_delays[args['refImage']] for im in temp_delays.keys()}
-					temp_mags={im:temp_mags[im]/temp_mags[args['refImage']] for im in temp_mags}
-
-					for b in args['bounds']:
-						if b in list(res.errors.keys()):
-							args['bounds'][b]=(np.array(args['bounds'][b])-np.median(args['bounds'][b]))/2+fit.get(b)
-					args['curves'].combine_curves(referenceImage=args['refImage'],static=False,time_delays=temp_delays,magnifications=temp_mags)
-				else:
-					args['curves'].combine_curves(referenceImage=args['refImage'],static=False,model=tempMod)
-			guess_amplitude=False
 		else:
 			par_ref=args['refImage']
-			guess_amplitude=True
+			if args['trial_fit']:
+				
+				best_bands=band_SNR[args['refImage']][:min(len(band_SNR[args['refImage']]),2)]
+				temp_delays={}
+				temp_mags={}
+
+				for im in args['curves'].images.keys():
+					temp_bands=[]
+					for b in best_bands:
+						temp_bands=np.append(temp_bands,np.where(args['curves'].images[im].table['band']==b)[0])
+					inds=temp_bands.astype(int)
+					
+					res,fit=sncosmo.fit_lc(deepcopy(args['curves'].images[im].table[inds]),tempMod,args['params']+['t0','x0'],
+											bounds={b:args['bounds'][b]+(args['bounds'][b]-np.median(args['bounds'][b]))*2 if b=='t0' else args['bounds'][b] for b in args['bounds']},
+											minsnr=args.get('minsnr',0))
+					temp_delays[im]=fit.get('t0')
+
+					temp_mags[im]=fit.parameters[2]
+				args['curves'].series.meta['reft0']=temp_delays[args['refImage']]
+				args['curves'].series.meta['refamp']=temp_mags[args['refImage']]
+
+				temp_delays={im:temp_delays[im]-temp_delays[args['refImage']] for im in temp_delays.keys()}
+				temp_mags={im:temp_mags[im]/temp_mags[args['refImage']] for im in temp_mags}
+
+				for b in args['bounds']:
+					if b in list(res.errors.keys()):
+						args['bounds'][b]=(np.array(args['bounds'][b])-np.median(args['bounds'][b]))/2+fit.get(b)
+
+				args['curves'].combine_curves(referenceImage=args['refImage'],static=False,time_delays=temp_delays,magnifications=temp_mags)
+			else:
+				args['curves'].combine_curves(referenceImage=args['refImage'],static=False,model=tempMod)
+
+		
 
 		if args['cut_time'] is not None:
 			args['curves'].series.table=args['curves'].series.table[args['curves'].series.table['time']>= \
@@ -1270,7 +1277,7 @@ def _fitseries(all_args):
 
 		params,res,model=nest_series_lc(args['curves'].series.table,tempMod,nimage,bounds=args['bounds'],
 									  vparam_names=all_vparam_names,ref=par_ref,
-									  guess_amplitude_bound=guess_amplitude,
+									  guess_amplitude_bound=False,
 									  minsnr=args.get('minsnr',5.),priors=args.get('priors',None),ppfs=args.get('ppfs',None),
 									  method=args.get('nest_method','single'),maxcall=args.get('maxcall',None),
 									  modelcov=args.get('modelcov',None),rstate=args.get('rstate',None),
@@ -1627,8 +1634,12 @@ def _fitparallel(all_args):
 
 
 	for mod in np.array(args['models']).flatten():
-		source=sncosmo.get_source(mod)
-		tempMod = sncosmo.Model(source=source,effects=effects,effect_names=effect_names,effect_frames=effect_frames)
+		if isinstance(mod,str):
+			source=sncosmo.get_source(mod)
+			tempMod = sncosmo.Model(source=source,effects=effects,effect_names=effect_names,effect_frames=effect_frames)
+		else:
+			tempMod=copy(mod)
+		
 		tempMod.set(**args['constants'])
 		if args['set_from_simMeta'] is not None:
 			tempMod.set(**{k:args['curves'].images[args['refImage']].simMeta[args['set_from_simMeta'][k]] for k in args['set_from_simMeta'].keys()})
