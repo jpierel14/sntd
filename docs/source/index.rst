@@ -22,7 +22,7 @@ Welcome to SuperNova Time Delays (SNTD)!
 
 .. raw:: html
 
-	<iframe width="1200" height="800" frameborder="0" scrolling="yes" src="//plot.ly/~jpierel/18.embed"></iframe>
+	<iframe width="1000" height="750" frameborder="0" scrolling="yes" src="//plot.ly/~jpierel/18.embed"></iframe>
 
 .. include:: examples/index.rst
 
