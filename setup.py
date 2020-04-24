@@ -51,7 +51,7 @@ setup(
     cmdclass={'test': SNTDTest},
     setup_requires=['numpy','cython'],
     install_requires=['numpy','scipy','cython','sncosmo',
-    	'astropy','matplotlib','nestle','pyParz','sklearn',
+    	'astropy','matplotlib','nestle','pyParz','sklearn','iminuit',
         'pytest-astropy'],
     packages=['sntd'],
     version=VERSION,

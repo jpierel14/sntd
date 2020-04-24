@@ -8,3 +8,4 @@ sklearn
 pytest-astropy
 corner
 sphinx_gallery
+iminuit
