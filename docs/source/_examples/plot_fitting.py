@@ -113,13 +113,13 @@ print('lensebv:',myMISN2.images['image_1'].simMeta['lensebv'],
 fitCurves_dust=sntd.fit_data(myMISN2,snType='Ia', models='salt2-extended',bands=['F110W','F160W'],
                                                      params=['x0','x1','t0','c'],npoints=200,
                                                      constants={'z':1.4},minsnr=1,cut_time=[-50,30],
-                                                     bounds={'t0':(-15,15),'x1':(-3,3),'c':(-.5,.5)})
+                                                     bounds={'t0':(-15,15),'x1':(-3,3),'c':(-.3,.3)})
 print(fitCurves_dust.parallel.time_delays)
 print(fitCurves_dust.parallel.time_delay_errors)
 print('c:',fitCurves_dust.images['image_1'].fits.model.get('c'))
 fitCurves_dust.plot_object(showFit=True)
 ########################################################################################################################
-# We can see that the fitter has done reasonably well, and the time delay is still accurate (True delay is 50 days). 
+# We can see that the fitter has done reasonably well, and the time delay is still accurate (True delay is 60 days). 
 # However, one issue is that the measured value for **c** is vastly different than the actual value 
 # as it attempts to compensate for extinction without a propagation effect. Now let's add in the propagation effects:
 
@@ -129,7 +129,7 @@ salt2_model=sncosmo.Model('salt2-extended',effects=[dust,dust],effect_names=['le
 fitCurves_dust=sntd.fit_data(myMISN2,snType='Ia', models=salt2_model,bands=['F110W','F160W'],npoints=200,
                     params=['x0','x1','t0','c','lensebv','hostebv'],minsnr=1,cut_time=[-50,30],
                     constants={'z':1.4,'lensr_v':3.1,'lensz':0.53,'hostr_v':3.1},
-                    bounds={'t0':(-15,15),'x1':(-3,3),'c':(-.5,.5),'lensebv':(0,1.),'hostebv':(0,1.)})
+                    bounds={'t0':(-15,15),'x1':(-3,3),'c':(-.3,.3),'lensebv':(0,1.),'hostebv':(0,1.)})
 
 print(fitCurves_dust.parallel.time_delays)
 print(fitCurves_dust.parallel.time_delay_errors)

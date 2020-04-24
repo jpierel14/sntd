@@ -271,38 +271,37 @@ class curveDict(dict):
         if len(self.images) <2:
             print("Not enough curves to combine!")
             return(self)
-        if not static:
 
-            if time_delays is None:
-                if model is not None:
-                    time_delays={}
-                    magnifications={}
-                    model=sncosmo.Model(model) if isinstance(model,str) else model
-                    ref_t0,ref_amp=sncosmo.fitting.guess_t0_and_amplitude(sncosmo.photdata.photometric_data( \
-                        self.images[referenceImage].table),model,minsnr)
-                    self.series.meta['reft0']=ref_t0
-                    self.series.meta['refamp']=ref_amp
-                    time_delays[referenceImage]=0
-                    magnifications[referenceImage]=1
-                    for k in self.images.keys():
-                        if k==referenceImage:
-                            continue
-                        guess_t0,guess_amp=sncosmo.fitting.guess_t0_and_amplitude(sncosmo.photdata.photometric_data(\
-                            self.images[k].table),model,minsnr)
-                        time_delays[k]=guess_t0-ref_t0
-                        magnifications[k]=guess_amp/ref_amp
-                else:
-                    time_delays=_guess_time_delays(self,referenceImage) #TODO fix these guessing functions
-            if magnifications is None:
-                magnifications=_guess_magnifications(self,referenceImage)
-        else:
-            time_delays={k:0 for k in self.images.keys()}
-            magnifications={k:1 for k in self.images.keys()}
+        if time_delays is None:
+            if model is not None:
+                time_delays={}
+                magnifications={}
+                model=sncosmo.Model(model) if isinstance(model,str) else model
+                ref_t0,ref_amp=sncosmo.fitting.guess_t0_and_amplitude(sncosmo.photdata.photometric_data( \
+                    self.images[referenceImage].table),model,minsnr)
+                self.series.meta['reft0']=ref_t0
+                self.series.meta['refamp']=ref_amp
+                time_delays[referenceImage]=0
+                magnifications[referenceImage]=1
+                for k in self.images.keys():
+                    if k==referenceImage:
+                        continue
+                    guess_t0,guess_amp=sncosmo.fitting.guess_t0_and_amplitude(sncosmo.photdata.photometric_data(\
+                        self.images[k].table),model,minsnr)
+                    time_delays[k]=guess_t0-ref_t0
+                    magnifications[k]=guess_amp/ref_amp
+            else:
+                time_delays=_guess_time_delays(self,referenceImage) #TODO fix these guessing functions
+        if magnifications is None:
+            magnifications=_guess_magnifications(self,referenceImage)
+
+        
         self.series.table=Table(names=self.table.colnames,dtype=[self.table.dtype[x] for x in self.table.colnames])
         for k in np.sort(list(self.images.keys())):
             temp=deepcopy(self.images[k].table)
-            temp['time']-=time_delays[k]
-            temp['flux']/=magnifications[k]
+            if not static:
+                temp['time']-=time_delays[k]
+                temp['flux']/=magnifications[k]
             temp.meta=dict([])
 
             self.series.table=vstack([self.series.table,temp])
@@ -367,27 +366,25 @@ class curveDict(dict):
         dtype=np.append(dtype,[dtype[0],dtype[0],dtype[0],
                                dtype[0],dtype[0],dtype[0],dtype[0],dtype[0]])
         self.color.table=Table(names=names,dtype=dtype)
-        if not static:
 
-            if time_delays is None:
-                if model is not None:
-                    time_delays={}
-                    model=sncosmo.Model(model) if isinstance(model,str) else model
-                    ref_t0,ref_amp=sncosmo.fitting.guess_t0_and_amplitude(sncosmo.photdata.photometric_data( \
-                        self.images[referenceImage].table),model,minsnr)
-                    self.color.meta['reft0']=ref_t0
-                    time_delays[referenceImage]=0
-                    for k in self.images.keys():
-                        if k==referenceImage:
-                            continue
-                        guess_t0,guess_amp=sncosmo.fitting.guess_t0_and_amplitude(sncosmo.photdata.photometric_data( \
-                            self.images[k].table),model,minsnr)
-                        time_delays[k]=guess_t0-ref_t0
-                else:
-                    time_delays=_guess_time_delays(self,referenceImage) #TODO fix these guessing functions
+        if time_delays is None:
+            if model is not None:
+                time_delays={}
+                model=sncosmo.Model(model) if isinstance(model,str) else model
+                ref_t0,ref_amp=sncosmo.fitting.guess_t0_and_amplitude(sncosmo.photdata.photometric_data( \
+                    self.images[referenceImage].table),model,minsnr)
+                self.color.meta['reft0']=ref_t0
+                time_delays[referenceImage]=0
+                for k in self.images.keys():
+                    if k==referenceImage:
+                        continue
+                    guess_t0,guess_amp=sncosmo.fitting.guess_t0_and_amplitude(sncosmo.photdata.photometric_data( \
+                        self.images[k].table),model,minsnr)
+                    time_delays[k]=guess_t0-ref_t0
+            else:
+                time_delays=_guess_time_delays(self,referenceImage) #TODO fix these guessing functions
 
-        else:
-            time_delays={k:0 for k in self.images.keys()}
+        
         self.color.meta['td']=time_delays
         for im in [x for x in self.images.keys() if x not in ignore_images]:
             temp2=deepcopy(self.images[im].table[self.images[im].table['band']==band2])
@@ -396,8 +393,9 @@ class curveDict(dict):
             temp2=temp2[temp2['flux']>0]
             temp1=temp1[temp1['flux']/temp1['fluxerr']>minsnr]
             temp2=temp2[temp2['flux']/temp2['fluxerr']>minsnr]
-            temp1['time']-=time_delays[im]
-            temp2['time']-=time_delays[im]
+            if not static:
+                temp1['time']-=time_delays[im]
+                temp2['time']-=time_delays[im]
 
 
             temp2['mag']=-2.5*np.log10(temp2['flux'])+temp2['zp']
@@ -460,46 +458,39 @@ class curveDict(dict):
         elif method=='series':
             res=self.series.fits.res
             samples=res.samples
-            refa=weighted_quantile(samples[:,res.vparam_names.index('a_'+self.series.refImage[-1])],.5,res.weights)
-            for im in self.images.keys():
-                ind=res.vparam_names.index('t_'+im[-1])
-                ind2=res.vparam_names.index('a_'+im[-1])
-                samples[:,ind]+=self.series.meta['td'][im]+self.series.meta['reft0']
-                samples[:,ind2]*=self.series.meta['mu'][im]/self.series.meta['mu'][self.series.refImage]/refa
-
+            
             try:
                 truths=[]
                 for p in res.vparam_names:
-                    if p[0:2]=='a_':
+                    if p.startswith('mu_'):
                         im=[x for x in self.images.keys() if x[-1]==p[-1]][0]
                         truths.append(self.images[im].simMeta['model'].parameters[2]/ \
                                       self.images[self.series.refImage].simMeta['model'].parameters[2])
 
-                    elif p[0:2]=='t_':
+                    elif p.startswith('dt_'):
                         im=[x for x in self.images.keys() if x[-1]==p[-1]][0]
-                        truths.append(self.images[im].simMeta['model'].get('t0'))
+                        truths.append(self.images[im].simMeta['model'].get('t0')-\
+                            self.images[self.series.refImage].simMeta['model'].get('t0'))
                     else:
-                        im=list(self.images.keys())[0]
+                        im=self.series.refImage
                         truths.append(self.images[im].simMeta['model'].get(p))
-            except:
+            except RuntimeError:
                 truths=None
 
         else:
             res=self.color.fits.res
             samples=res.samples
-            for im in self.images.keys():
-                ind=res.vparam_names.index('t_'+im[-1])
-                samples[:,ind]+=self.color.meta['reft0']+self.color.meta['td'][im]
 
             try:
                 truths=[]
                 for p in res.vparam_names:
-                    if p[0:2]=='t_':
+                    if p.startswith('dt_'):
                         im=[x for x in self.images.keys() if x[-1]==p[-1]][0]
-                        truths.append(self.images[im].simMeta['model'].get('t0'))
+                        truths.append(self.images[im].simMeta['model'].get('t0')-\
+                            self.images[self.color.refImage].simMeta['model'].get('t0'))
                     else:
                         im=list(self.images.keys())[0]
-                        truths.append(self.images[im].simMeta['model'].get(p))
+                        truths.append(self.images[self.color.refImage].simMeta['model'].get(p))
             except:
                 truths=None
         fig = corner.corner(
