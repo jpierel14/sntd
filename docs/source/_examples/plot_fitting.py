@@ -18,8 +18,7 @@ with SNTD.
 
 import sntd
 
-ex_1,ex_2=sntd.load_example_data()
-myMISN=sntd.table_factory([ex_1,ex_2],telescopename='HST',object_name='example_SN')
+myMISN=sntd.load_example_misn()
 
 fitCurves=sntd.fit_data(myMISN,snType='Ia', models='salt2-extended',bands=['F110W','F160W'],
                 params=['x0','t0','x1','c'],constants={'z':1.4},refImage='image_1',cut_time=[-50,30],
@@ -43,8 +42,8 @@ fitCurves.plot_fit(method='parallel',par_image='image_2')
 
 
 fitCurves=sntd.fit_data(myMISN,snType='Ia', models='salt2-extended',bands=['F110W','F160W'],
-        params=['x1','c'],constants={'z':1.4},refImage='image_1',cut_time=[-50,30],
-        bounds={'td':(-20,20),'mu':(.5,2),'x1':(-3,3),'c':(-.5,.5)},
+        params=['x0','t0','x1','c'],constants={'z':1.4},refImage='image_1',cut_time=[-50,30],
+        bounds={'t0':(-20,20),'td':(-20,20),'mu':(.5,2),'x1':(-3,3),'c':(-.5,.5)},
         method='series',npoints=100)
         
 
@@ -61,8 +60,8 @@ fitCurves.plot_fit(method='series')
 
     
 fitCurves=sntd.fit_data(myMISN,snType='Ia', models='salt2-extended',bands=['F110W','F160W'],
-                    params=['c'],constants={'z':1.4,'x1':fitCurves.images['image_1'].fits.model.get('x1')},refImage='image_1',
-                    bounds={'td':(-20,20),'mu':(.5,2),'c':(-.5,.5)},cut_time=[-50,30],
+                    params=['t0','c'],constants={'z':1.4,'x1':fitCurves.images['image_1'].fits.model.get('x1')},refImage='image_1',
+                    bounds={'t0':(-20,20),'td':(-20,20),'mu':(.5,2),'c':(-.5,.5)},cut_time=[-50,30],
                     method='color',microlensing=None,modelcov=False,npoints=100,maxiter=None)
 
 print(fitCurves.color.time_delays)
@@ -80,8 +79,8 @@ fitCurves_parallel=sntd.fit_data(myMISN,snType='Ia', models='salt2-extended',ban
                 	bounds={'t0':(-20,20),'x1':(-3,3),'c':(-.5,.5),'mu':(.5,2)},fitOrder=['image_2','image_1'],cut_time=[-50,30],
                	    method='parallel',microlensing=None,modelcov=False,npoints=100,maxiter=None)
 fitCurves_color=sntd.fit_data(myMISN,snType='Ia', models='salt2-extended',bands=['F110W','F160W'],cut_time=[-50,30],
-                	params=['c'],constants={'z':1.4,'x1':fitCurves.images['image_1'].fits.model.get('x1')},refImage='image_1',
-                	bounds={'td':(-20,20),'mu':(.5,2),'c':(-.5,.5)},fit_prior=fitCurves_parallel,
+                	params=['t0','c'],constants={'z':1.4,'x1':fitCurves.images['image_1'].fits.model.get('x1')},refImage='image_1',
+                	bounds={'t0':(-20,20),'td':(-20,20),'mu':(.5,2),'c':(-.5,.5)},fit_prior=fitCurves_parallel,
                 	method='color',microlensing=None,modelcov=False,npoints=100,maxiter=None)
 
 print(fitCurves_parallel.parallel.time_delays)
