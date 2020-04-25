@@ -18,7 +18,7 @@ class SNTDTest(TestCommand):
 
 AUTHOR = 'Justin Pierel'
 AUTHOR_EMAIL = 'jr23@email.sc.edu'
-VERSION = '2.0.1'
+VERSION = '2.1.1'
 LICENSE = 'BSD'
 URL = 'sntd.readthedocs.org'
 

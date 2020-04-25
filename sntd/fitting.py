@@ -57,7 +57,7 @@ class newDict(dict):
 
 def fit_data(curves=None, snType='Ia',bands=None, models=None, params=None, bounds={}, ignore=None, constants={},
 			 method='parallel',t0_guess=None,effect_names=[],effect_frames=[],batch_init=None,cut_time=None,
-			 dust=None,microlensing=None,fitOrder=None,color_bands=None,color_param_ignore=None,min_points_per_band=3,identify_micro=False,
+			 dust=None,microlensing=None,fitOrder=None,color_bands=None,color_param_ignore=[],min_points_per_band=3,identify_micro=False,
 			 fit_prior=None,par_or_batch='parallel',batch_partition=None,nbatch_jobs=None,batch_python_path=None,n_per_node=1,
 			 wait_for_batch=False,band_order=None,set_from_simMeta=None,guess_amplitude=True,trial_fit=True,clip_data=False,
 			 kernel='RBF',refImage='image_1',nMicroSamples=100,color_curve=None,warning_supress=True,
@@ -897,8 +897,9 @@ def _fitColor(all_args):
 				for param in args['color_param_ignore']:
 					if param not in args['constants']:
 						args['constants'][param]=fit.get(param)
-						if param in all_vparam_names:
-							all_vparam_names=np.array([x for x in all_vparam_names if x !=param])
+					if param in all_vparam_names:
+						all_vparam_names=np.array([x for x in all_vparam_names if x !=param])
+					
 				tempMod.set(**args['constants'])
 				args['curves'].color.meta['reft0']=temp_delays[args['refImage']]
 

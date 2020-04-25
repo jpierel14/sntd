@@ -474,7 +474,7 @@ class curveDict(dict):
                     else:
                         im=self.series.refImage
                         truths.append(self.images[im].simMeta['model'].get(p))
-            except RuntimeError:
+            except:
                 truths=None
 
         else:

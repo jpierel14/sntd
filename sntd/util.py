@@ -21,7 +21,7 @@ PARALLEL = 2  # (pigz -dc, pigz) or (pbzip2 -dc, pbzip2)
 
 __all__=['flux_to_mag','_cast_str','_get_default_prop_name','_isfloat','anyOpen','_props','_findMax','_findMin',
          '_guess_time_delays','_guess_magnifications','__dir__','load_example_data','posterior','weighted_quantile',
-         'run_sbatch','printProgressBar','load_batch_fit_names','load_batch_fit']
+         'run_sbatch','printProgressBar','load_batch_fit_names','load_batch_fit','load_example_misn']
 _props=odict([
     ('time',{'mjd', 'mjdobs', 'jd', 'time', 'date', 'mjd_obs','mhjd','jds'}),
     ('band',{'filter', 'band', 'flt', 'bandpass'}),
@@ -37,6 +37,10 @@ _props=odict([
 def load_example_data():
     example_files=glob.glob(os.path.join(__dir__,'data','examples','*.dat'))
     return(ascii.read(example_files[0]),ascii.read(example_files[1]))
+
+def load_example_misn():
+    example_file=glob.glob(os.path.join(__dir__,'data','examples','*.pkl'))
+    return(pickle.load(open(example_file[0],'rb')))
 
 def load_batch_fit_names(folder_name,verbose=True):
     tar=tarfile.open(os.path.join(folder_name,'sntd_fits.tar.gz'),'r')

@@ -6,7 +6,7 @@ from .curve_io import *
 from .simulation import *
 from .fitting import *
 from .ml import *
-from .util import load_example_data
+from .util import load_example_data,load_example_misn
 from .test_sntd import test_sntd
 
 import sncosmo
