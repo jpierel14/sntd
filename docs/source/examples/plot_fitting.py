@@ -10,7 +10,7 @@ with SNTD.
 ###############################################################
 # There are 3 methods built into SNTD to measure time delays 
 # (parallel, series, color). They are accessed by the same 
-# function:`~sntd.fit_data`. Here ``myMISN`` could be generated
+# function:`~sntd.fit_data`. Here ``myMISN`` was generated
 # in the simulation example of the documentation. The true
 # delay for all of these fits is 50 days.
 # 

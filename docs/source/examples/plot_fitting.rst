@@ -18,7 +18,7 @@ with SNTD.
 
 There are 3 methods built into SNTD to measure time delays 
 (parallel, series, color). They are accessed by the same 
-function:`~sntd.fit_data`. Here ``myMISN`` could be generated
+function:`~sntd.fit_data`. Here ``myMISN`` was generated
 in the simulation example of the documentation. The true
 delay for all of these fits is 50 days.
 
@@ -72,10 +72,10 @@ delay for all of these fits is 50 days.
 
  .. code-block:: none
 
-    {'image_1': 0, 'image_2': 49.860556660583946}
-    {'image_1': array([0, 0]), 'image_2': array([-0.15561465,  0.14250854])}
-    {'image_1': 1, 'image_2': 0.5026650472661763}
-    {'image_1': array([0, 0]), 'image_2': array([-0.00472346,  0.00490838])}
+    {'image_1': 0, 'image_2': 49.8414730726705}
+    {'image_1': array([0, 0]), 'image_2': array([-0.14189589,  0.17789041])}
+    {'image_1': 1, 'image_2': 0.502636885869371}
+    {'image_1': array([0, 0]), 'image_2': array([-0.00427823,  0.0044266 ])}
 
     <Figure size 970x970 with 16 Axes>
 
@@ -129,10 +129,10 @@ Other methods are called in a similar fashion, with a couple of extra arguments:
 
  .. code-block:: none
 
-    {'image_1': 0, 'image_2': 49.84096677329644}
-    {'image_1': array([0, 0]), 'image_2': array([-0.07142286,  0.07903005])}
-    {'image_1': 1, 'image_2': 0.5040792581408016}
-    {'image_1': array([0, 0]), 'image_2': array([-0.00143155,  0.00162082])}
+    {'image_1': 0, 'image_2': 49.833777108305775}
+    {'image_1': array([0, 0]), 'image_2': array([-0.06296027,  0.0816385 ])}
+    {'image_1': 1, 'image_2': 0.5041403357149801}
+    {'image_1': array([0, 0]), 'image_2': array([-0.00154946,  0.00161014])}
 
     <Figure size 1390x1390 with 36 Axes>
 
@@ -179,8 +179,8 @@ Other methods are called in a similar fashion, with a couple of extra arguments:
 
  .. code-block:: none
 
-    {'image_1': 0, 'image_2': 51.58304093454188}
-    {'image_1': array([0, 0]), 'image_2': array([-1.02578827,  1.34245385])}
+    {'image_1': 0, 'image_2': 51.719262633703245}
+    {'image_1': array([0, 0]), 'image_2': array([-1.24855496,  1.15507826])}
 
     <Figure size 760x760 with 9 Axes>
 
@@ -217,10 +217,10 @@ You can include your fit from the parallel method as a prior on light curve and 
 
  .. code-block:: none
 
-    {'image_1': 0, 'image_2': 49.8547130448932}
-    {'image_1': array([0, 0]), 'image_2': array([-0.13743794,  0.14972471])}
-    {'image_1': 0, 'image_2': 49.79959793855588}
-    {'image_1': array([0, 0]), 'image_2': array([-0.26364169,  0.2988952 ])}
+    {'image_1': 0, 'image_2': 49.84516251087465}
+    {'image_1': array([0, 0]), 'image_2': array([-0.12609506,  0.16281335])}
+    {'image_1': 0, 'image_2': 49.75614031311763}
+    {'image_1': array([0, 0]), 'image_2': array([-0.27391995,  0.29953949])}
 
 
 
@@ -255,7 +255,7 @@ extreme dust in the source and lens frames (your final simulations may look slig
 
  .. code-block:: none
 
-    lensebv: 0.48387096774193544 hostebv: 0.3225806451612903 c: -0.09649250226303359
+    lensebv: 0.48387096774193544 hostebv: 0.3225806451612903 c: 0.08593983958258328
 
 
 
@@ -289,9 +289,9 @@ Okay, now we can fit the MISN first without taking these effects into account:
 
  .. code-block:: none
 
-    {'image_1': 0, 'image_2': 58.49511851295709}
-    {'image_1': array([0, 0]), 'image_2': array([-0.49744451,  0.52519439])}
-    c: 0.4485049009039765
+    {'image_1': 0, 'image_2': 58.30224826127008}
+    {'image_1': array([0, 0]), 'image_2': array([-0.71705348,  0.75502806])}
+    c: 0.4485157726999839
 
     <Figure size 1000x1000 with 2 Axes>
 
@@ -332,9 +332,9 @@ as it attempts to compensate for extinction without a propagation effect. Now le
 
  .. code-block:: none
 
-    {'image_1': 0, 'image_2': 59.84602683201931}
-    {'image_1': array([0, 0]), 'image_2': array([-0.56489726,  0.53156521])}
-    c: 0.26303473401969024 lensebv: 0.3079005782743273 hostebv: 0.12534865557575403
+    {'image_1': 0, 'image_2': 60.90542764935438}
+    {'image_1': array([0, 0]), 'image_2': array([-0.86472438,  0.90865522])}
+    c: -0.10578358855019536 lensebv: -0.004136941634245686 hostebv: 0.8916999498661559
 
     <Figure size 1000x1000 with 2 Axes>
 
@@ -346,7 +346,7 @@ more accurate.
 
 .. rst-class:: sphx-glr-timing
 
-   **Total running time of the script:** ( 9 minutes  38.110 seconds)
+   **Total running time of the script:** ( 7 minutes  19.303 seconds)
 
 
 .. _sphx_glr_download_examples_plot_fitting.py:
