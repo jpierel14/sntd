@@ -72,10 +72,10 @@ delay for all of these fits is 50 days.
 
  .. code-block:: none
 
-    {'image_1': 0, 'image_2': 49.9985803494886}
-    {'image_1': array([0, 0]), 'image_2': array([-0.51177351,  0.45040825])}
-    {'image_1': 1, 'image_2': 0.49736985736500794}
-    {'image_1': array([0, 0]), 'image_2': array([-0.0141462 ,  0.01851803])}
+    {'image_1': 0, 'image_2': 49.860556660583946}
+    {'image_1': array([0, 0]), 'image_2': array([-0.15561465,  0.14250854])}
+    {'image_1': 1, 'image_2': 0.5026650472661763}
+    {'image_1': array([0, 0]), 'image_2': array([-0.00472346,  0.00490838])}
 
     <Figure size 970x970 with 16 Axes>
 
@@ -129,10 +129,10 @@ Other methods are called in a similar fashion, with a couple of extra arguments:
 
  .. code-block:: none
 
-    {'image_1': 0, 'image_2': 49.80415396105778}
-    {'image_1': array([0, 0]), 'image_2': array([-0.34824474,  0.37816746])}
-    {'image_1': 1, 'image_2': 0.510471204611251}
-    {'image_1': array([0, 0]), 'image_2': array([-0.00509144,  0.00556558])}
+    {'image_1': 0, 'image_2': 49.84096677329644}
+    {'image_1': array([0, 0]), 'image_2': array([-0.07142286,  0.07903005])}
+    {'image_1': 1, 'image_2': 0.5040792581408016}
+    {'image_1': array([0, 0]), 'image_2': array([-0.00143155,  0.00162082])}
 
     <Figure size 1390x1390 with 36 Axes>
 
@@ -148,8 +148,8 @@ Other methods are called in a similar fashion, with a couple of extra arguments:
     
     fitCurves=sntd.fit_data(myMISN,snType='Ia', models='salt2-extended',bands=['F110W','F160W'],
                         params=['t0','c'],constants={'z':1.4,'x1':fitCurves.images['image_1'].fits.model.get('x1')},refImage='image_1',
-                        bounds={'t0':(-20,20),'td':(-20,20),'mu':(.5,2),'c':(-.5,.5)},cut_time=[-50,30],
-                        method='color',microlensing=None,modelcov=False,npoints=100,maxiter=None)
+                        color_param_ignore=['x1'],bounds={'t0':(-20,20),'td':(-20,20),'mu':(.5,2),'c':(-.5,.5)},cut_time=[-50,30],
+                        method='color',microlensing=None,modelcov=False,npoints=100,maxiter=None,minsnr=3)
 
     print(fitCurves.color.time_delays)
     print(fitCurves.color.time_delay_errors)
@@ -179,8 +179,8 @@ Other methods are called in a similar fashion, with a couple of extra arguments:
 
  .. code-block:: none
 
-    {'image_1': 0, 'image_2': 50.684879087849076}
-    {'image_1': array([0, 0]), 'image_2': array([-3.08206672,  3.57411765])}
+    {'image_1': 0, 'image_2': 51.58304093454188}
+    {'image_1': array([0, 0]), 'image_2': array([-1.02578827,  1.34245385])}
 
     <Figure size 760x760 with 9 Axes>
 
@@ -201,7 +201,7 @@ You can include your fit from the parallel method as a prior on light curve and 
     fitCurves_color=sntd.fit_data(myMISN,snType='Ia', models='salt2-extended',bands=['F110W','F160W'],cut_time=[-50,30],
                     	params=['t0','c'],constants={'z':1.4,'x1':fitCurves.images['image_1'].fits.model.get('x1')},refImage='image_1',
                     	bounds={'t0':(-20,20),'td':(-20,20),'mu':(.5,2),'c':(-.5,.5)},fit_prior=fitCurves_parallel,
-                    	method='color',microlensing=None,modelcov=False,npoints=100,maxiter=None)
+                    	method='color',microlensing=None,modelcov=False,npoints=100,maxiter=None,minsnr=3)
 
     print(fitCurves_parallel.parallel.time_delays)
     print(fitCurves_parallel.parallel.time_delay_errors)
@@ -217,10 +217,10 @@ You can include your fit from the parallel method as a prior on light curve and 
 
  .. code-block:: none
 
-    {'image_1': 0, 'image_2': 49.98150714866265}
-    {'image_1': array([0, 0]), 'image_2': array([-0.52434736,  0.49941772])}
-    {'image_1': 0, 'image_2': 50.58503664012973}
-    {'image_1': array([0, 0]), 'image_2': array([-1.11444829,  0.65825169])}
+    {'image_1': 0, 'image_2': 49.8547130448932}
+    {'image_1': array([0, 0]), 'image_2': array([-0.13743794,  0.14972471])}
+    {'image_1': 0, 'image_2': 49.79959793855588}
+    {'image_1': array([0, 0]), 'image_2': array([-0.26364169,  0.2988952 ])}
 
 
 
@@ -255,7 +255,7 @@ extreme dust in the source and lens frames (your final simulations may look slig
 
  .. code-block:: none
 
-    lensebv: 0.48387096774193544 hostebv: 0.3225806451612903 c: 0.05689484873204784
+    lensebv: 0.48387096774193544 hostebv: 0.3225806451612903 c: -0.09649250226303359
 
 
 
@@ -289,9 +289,9 @@ Okay, now we can fit the MISN first without taking these effects into account:
 
  .. code-block:: none
 
-    {'image_1': 0, 'image_2': 56.37144308439915}
-    {'image_1': array([0, 0]), 'image_2': array([-1.24819719,  1.31974326])}
-    c: 0.44536110694292835
+    {'image_1': 0, 'image_2': 58.49511851295709}
+    {'image_1': array([0, 0]), 'image_2': array([-0.49744451,  0.52519439])}
+    c: 0.4485049009039765
 
     <Figure size 1000x1000 with 2 Axes>
 
@@ -332,9 +332,9 @@ as it attempts to compensate for extinction without a propagation effect. Now le
 
  .. code-block:: none
 
-    {'image_1': 0, 'image_2': 58.33759568287604}
-    {'image_1': array([0, 0]), 'image_2': array([-1.49599579,  1.41254812])}
-    c: 0.25045148647447085 lensebv: 0.4082530038617715 hostebv: 0.15042008925269848
+    {'image_1': 0, 'image_2': 59.84602683201931}
+    {'image_1': array([0, 0]), 'image_2': array([-0.56489726,  0.53156521])}
+    c: 0.26303473401969024 lensebv: 0.3079005782743273 hostebv: 0.12534865557575403
 
     <Figure size 1000x1000 with 2 Axes>
 
@@ -346,7 +346,7 @@ more accurate.
 
 .. rst-class:: sphx-glr-timing
 
-   **Total running time of the script:** ( 5 minutes  49.975 seconds)
+   **Total running time of the script:** ( 9 minutes  38.110 seconds)
 
 
 .. _sphx_glr_download_examples_plot_fitting.py:

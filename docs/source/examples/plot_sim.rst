@@ -30,7 +30,7 @@ supernova.
 
     myMISN = sntd.createMultiplyImagedSN(sourcename='salt2-extended', snType='Ia', redshift=1.4,z_lens=.53, bands=['F110W','F160W'],
                  zp=[26.8,26.2], cadence=5., epochs=35.,time_delays=[20., 70.], magnifications=[10,5],
-     objectName='My Type Ia SN',telescopename='HST')
+     objectName='My Type Ia SN',telescopename='HST',av_host=False)
     print(myMISN)
     myMISN.plot_object()
 
@@ -55,36 +55,36 @@ supernova.
 
     ------------------
     Image: image_1:
-    Bands: ['F110W', 'F160W']
+    Bands: ['F160W', 'F110W']
     Date Range: 0.00000->138.97059
     Number of points: 56
 
     Metadata:
        z:1.4
        t0:20.0
-       x0:8.88999859195672e-06
-       x1:1.5642737128831914
-       c:0.002151575968023273
+       x0:5.99836319401665e-06
+       x1:0.24077428249899727
+       c:0.03405930070585791
        sourcez:1.4
-       hostebv:0.0967741935483871
+       hostebv:0
        lensebv:0
        lensz:0.53
        mu:10
        td:20.0
     ------------------
     Image: image_2:
-    Bands: ['F110W', 'F160W']
-    Date Range: 30.88235->175.00000
-    Number of points: 57
+    Bands: ['F160W', 'F110W']
+    Date Range: 25.73529->175.00000
+    Number of points: 58
 
     Metadata:
        z:1.4
        t0:70.0
-       x0:4.44499929597836e-06
-       x1:1.5642737128831914
-       c:0.002151575968023273
+       x0:2.999181597008325e-06
+       x1:0.24077428249899727
+       c:0.03405930070585791
        sourcez:1.4
-       hostebv:0.0967741935483871
+       hostebv:0
        lensebv:0
        lensz:0.53
        mu:5
@@ -98,7 +98,7 @@ supernova.
 
 .. rst-class:: sphx-glr-timing
 
-   **Total running time of the script:** ( 0 minutes  5.459 seconds)
+   **Total running time of the script:** ( 0 minutes  8.002 seconds)
 
 
 .. _sphx_glr_download_examples_plot_sim.py:
