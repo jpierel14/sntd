@@ -6,7 +6,7 @@
 
 
 .. image:: _static/logo.jpg
-    :width: 620px
+    :width: 650px
     :height: 400px
     :target: https://github.com/jpierel14/sntd
 
