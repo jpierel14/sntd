@@ -6,9 +6,9 @@
 
 
 .. image:: _static/logo.jpg
-	:target: https://github.com/jpierel14/sntd
     :width: 620px
     :height: 400px
+    :target: https://github.com/jpierel14/sntd
 
 Welcome to SuperNova Time Delays (SNTD)!
 ========================================
