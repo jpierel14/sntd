@@ -899,7 +899,7 @@ def _fitColor(all_args):
 						args['constants'][param]=fit.get(param)
 					if param in all_vparam_names:
 						all_vparam_names=np.array([x for x in all_vparam_names if x !=param])
-					
+
 				tempMod.set(**args['constants'])
 				args['curves'].color.meta['reft0']=temp_delays[args['refImage']]
 
@@ -1523,6 +1523,7 @@ def _fitseries(all_args):
 					 for p in args['curves'].series.fits.res.vparam_names}
 
 		temp_bounds['t0']=args['bounds']['td']+args['curves'].series.t_peaks[args['refImage']]
+		temp_bounds={b:temp_bounds[b] for b in temp_bounds.keys() if b!=args['curves'].series.fits.model.param_names[2]}
 		if args['par_or_batch']=='parallel':
 			t0s=pyParz.foreach(samples.T,_micro_uncertainty,
 						   [args['curves'].series.fits.model,np.array(tempTable),tempTable.colnames,
@@ -1943,7 +1944,7 @@ def _fitparallel(all_args):
 
 			if args['par_or_batch']=='parallel':
 
-
+					
 				t0s=pyParz.foreach(samples.T,_micro_uncertainty,
 							   [args['curves'].images[k].fits.model,np.array(tempTable),tempTable.colnames,
 								x_pred,args['curves'].images[k].fits.res.vparam_names,

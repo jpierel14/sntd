@@ -11,26 +11,6 @@ Examples
 
 .. raw:: html
 
-    <div class="sphx-glr-thumbcontainer" tooltip="Simulating a multiply-imaged supernova. ">
-
-.. only:: html
-
- .. figure:: /examples/images/thumb/sphx_glr_plot_sim_thumb.png
-
-     :ref:`sphx_glr_examples_plot_sim.py`
-
-.. raw:: html
-
-    </div>
-
-
-.. toctree::
-   :hidden:
-
-   /examples/plot_sim
-
-.. raw:: html
-
     <div class="sphx-glr-thumbcontainer" tooltip="Simulate a microlensing microcaustic. ">
 
 .. only:: html
@@ -48,6 +28,26 @@ Examples
    :hidden:
 
    /examples/plot_micro
+
+.. raw:: html
+
+    <div class="sphx-glr-thumbcontainer" tooltip="Simulating a multiply-imaged supernova. ">
+
+.. only:: html
+
+ .. figure:: /examples/images/thumb/sphx_glr_plot_sim_thumb.png
+
+     :ref:`sphx_glr_examples_plot_sim.py`
+
+.. raw:: html
+
+    </div>
+
+
+.. toctree::
+   :hidden:
+
+   /examples/plot_sim
 
 .. raw:: html
 

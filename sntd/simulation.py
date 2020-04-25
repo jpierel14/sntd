@@ -45,11 +45,11 @@ def _getAbsFromDist(dist):
 
 def createMultiplyImagedSN(
         sourcename, snType, redshift,z_lens=None, telescopename='telescope',
-        objectName='object', time_delays=[10., 50.], magnifications=[2., 1.],
+        objectName='object', time_delays=[10., 50.], magnifications=[2., 1.],sn_params={},av_dists={},
         numImages=2, cadence=5, epochs=30, clip_time=[-30,150],bands=['F105W', 'F160W'],start_time=None,
-        gain=200., skynoiseRange=(1, 1.1), timeArr=None,zpsys='ab', zp=None,
+        gain=200., skynoiseRange=(1, 1.1), timeArr=None,zpsys='ab', zp=None,hostr_v=3.1,lensr_v=3.1,
         microlensing_type=None, microlensing_params=[],ml_loc=[None,None],
-        dust_model='CCM89Dust', av_host=.3, av_lens=None,fix_luminosity=False,
+        dust_model='CCM89Dust', av_host=.3, av_lens=0,fix_luminosity=False,
         minsnr=0.0, scatter=True,snrFunc=None):
     """
     Generate a multiply-imaged SN light curve set, with user-specified time
@@ -77,6 +77,12 @@ def createMultiplyImagedSN(
     magnifications : :class:`~list` of :class:`~float`
         The relative magnifications for the multiple images of hte supernova. Must
         be same length as numImages
+    sn_params: :class:`~dict`
+        A dictionary with SN model parameters as keys, and some sort of pdf or
+        other callable function that returns the model parameter.
+    av_dists: :class:`~dict`
+        A dictionary with 'host' or 'lens' as keys, and some sort of pdf or
+        other callable function that returns the relevant av parameter.
     numImages : int
         The number of images to simulate
     cadence : float
@@ -104,6 +110,10 @@ def createMultiplyImagedSN(
     zp : float or :class:`~list` of :class:`~float`
         The zero-point used to define the photometry, list if simulating multiple
         bandpasses. Then this list must be the same length as bands
+    hostr_v: float
+        The r_v parameter for the host.
+    lensr_v: float
+        The r_v parameter for the lens.
     microlensing_type : str
         If microlensing is to be included, defines whether it is
         "AchromaticSplineMicrolensing" or "AchromaticMicrolensing"
@@ -179,21 +189,20 @@ def createMultiplyImagedSN(
     # TODO allow additional dust screens, not in the host or lens plane?
     # TODO sample from a prior for host and lens-plane dust A_V?
     # TODO : allow different lens-plane dust_model for each image?
-    R_V = 3.1  # TODO: allow user-specified alternate dust R_V
-    RV_lens = R_V
-    RV_host = R_V
+    RV_lens = lensr_v
+    RV_host = hostr_v
     dust_frames = []
     dust_names = []
     dust_effect_list = []
-    if dust_model and (av_lens or av_host):
+    if dust_model and (av_lens or av_host or len(av_dists)>0):
         dust_effect = {'CCM89Dust': sncosmo.CCM89Dust,
                        'OD94Dust': sncosmo.OD94Dust,
                        'F99Dust': sncosmo.F99Dust}[dust_model]()
-        if av_host:
+        if av_host or 'host' in av_dists.keys():
             dust_frames.append('rest')
             dust_names.append('host')
             dust_effect_list.append(dust_effect)
-        if av_lens:
+        if av_lens or 'lens' in av_dists.keys():
             dust_frames.append('free')
             dust_names.append('lens')
             dust_effect_list.append(dust_effect)
@@ -217,31 +226,46 @@ def createMultiplyImagedSN(
         absBand='bessellb'
     else:
         absBand='bessellr'
-    if fix_luminosity:
-        model.set_source_peakabsmag(absolutes[snType]['dist'][0],
+    if model.param_names[2] not in sn_params.keys():
+        if fix_luminosity:
+            model.set_source_peakabsmag(absolutes[snType]['dist'][0],
+                                        absBand, zpsys)
+        else:
+            model.set_source_peakabsmag(_getAbsFromDist(absolutes[snType]['dist']),
                                     absBand, zpsys)
     else:
-        model.set_source_peakabsmag(_getAbsFromDist(absolutes[snType]['dist']),
-                                absBand, zpsys)
-    # TODO: allow user to specify parameters like x1, c, t0 if desired.
+        model.parameters[2]=sn_params[model.param_names[2]]()
+    
 
     t0=leading_peak
     if snType=='Ia':
         x0=model.get('x0')
-        params={'z':redshift, 't0':t0, 'x0':x0,
-                'x1':np.random.normal(0.,1.), 'c':np.random.normal(0.,.1)}
+        params={'z':redshift, 't0':t0, 'x0':x0}
+        if 'x1' not in sn_params.keys():
+            params['x1']=np.random.normal(0.,1.)
+        else:
+            params['x1']=sn_params['x1']() 
+        if 'c' not in sn_params.keys():
+            params['c']=np.random.normal(0.,.1)
+        else:
+            params['c']=sn_params['c']()
     else:
         amp=model.get('amplitude')
         params={'z':redshift, 't0':t0, 'amplitude':amp}
     model.set(**params)
-    if av_host:
+    if av_host or 'host' in av_dists.keys():
+        if 'host' in av_dists.keys():
+            av_host=av_dists['host']()
         ebv_host = av_host/RV_host
         model.set(hostebv=ebv_host, hostr_v=RV_host)
     else:
         ebv_host = 0
-    if av_lens:
+    if av_lens or 'lens' in av_dists.keys():
         if z_lens is None:
-            z_lens = redshift / 2.  # TODO : Warn user about missing z_lens
+            print('No z_lens set, assuming half of source z...')
+            z_lens = redshift / 2.
+        if 'lens' in av_dists.keys():
+            av_lens=av_dists['lens']()
         ebv_lens = av_lens/RV_lens
         model.set(lensz=z_lens, lensebv=ebv_lens, lensr_v=RV_lens)
     else:
@@ -439,9 +463,9 @@ def realize_lcs(observations, model, params, thresh=None,
                 fluxerr=np.ones(len(flux))
                 for b in snobs[colname['band']]:
                     inds=np.where(snobs[colname['band']]==b)[0]
-                    fluxerr[inds]=flux[inds]/snrFunc[b](-2.5*np.log10(flux[inds])+snobs[colname['zp']][inds])
+                    fluxerr[inds]=np.abs(flux[inds]/snrFunc[b](-2.5*np.log10(flux[inds])+snobs[colname['zp']][inds]))
             else:
-                fluxerr=flux/snrFunc(-2.5*np.log10(flux)+snobs[colname['zp']])
+                fluxerr=np.abs(flux/snrFunc(-2.5*np.log10(flux)+snobs[colname['zp']]))
         else:
             fluxerr = np.sqrt(snobs[colname['skynoise']]**2 +
                               np.abs(flux) / snobs[colname['gain']])

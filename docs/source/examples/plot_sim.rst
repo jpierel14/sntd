@@ -27,13 +27,13 @@ supernova.
 
    
     import sntd
+    import numpy as np
 
     myMISN = sntd.createMultiplyImagedSN(sourcename='salt2-extended', snType='Ia', redshift=1.4,z_lens=.53, bands=['F110W','F160W'],
                  zp=[26.8,26.2], cadence=5., epochs=35.,time_delays=[20., 70.], magnifications=[10,5],
      objectName='My Type Ia SN',telescopename='HST',av_host=False)
     print(myMISN)
     myMISN.plot_object()
-
 
 
 
@@ -55,16 +55,16 @@ supernova.
 
     ------------------
     Image: image_1:
-    Bands: ['F160W', 'F110W']
+    Bands: ['F110W', 'F160W']
     Date Range: 0.00000->138.97059
     Number of points: 56
 
     Metadata:
        z:1.4
        t0:20.0
-       x0:5.99836319401665e-06
-       x1:0.24077428249899727
-       c:0.03405930070585791
+       x0:1.5932872394214797e-05
+       x1:-1.871808150877844
+       c:-0.060914333857906504
        sourcez:1.4
        hostebv:0
        lensebv:0
@@ -73,16 +73,16 @@ supernova.
        td:20.0
     ------------------
     Image: image_2:
-    Bands: ['F160W', 'F110W']
+    Bands: ['F110W', 'F160W']
     Date Range: 25.73529->175.00000
-    Number of points: 58
+    Number of points: 57
 
     Metadata:
        z:1.4
        t0:70.0
-       x0:2.999181597008325e-06
-       x1:0.24077428249899727
-       c:0.03405930070585791
+       x0:7.966436197107398e-06
+       x1:-1.871808150877844
+       c:-0.060914333857906504
        sourcez:1.4
        hostebv:0
        lensebv:0
@@ -95,10 +95,166 @@ supernova.
 
 
 
+Specify the distributions you want to use for any model
+parameter by providing a function that returns the parameter
+in any way you want. 
+
+
+.. code-block:: default
+
+
+    def x1_func():
+        return(np.random.normal(1,.5))
+    def c_func():
+        return(np.random.normal(-.05,.02))
+    param_funcs={'x1':x1_func,'c':c_func}
+    myMISN2 = sntd.createMultiplyImagedSN(sourcename='salt2-extended', snType='Ia', redshift=1.33,z_lens=.53, bands=['F110W','F125W'],
+                  zp=[26.8,26.2], cadence=5., epochs=35.,time_delays=[10., 70.], magnifications=[7,3.5],
+                  objectName='My Type Ia SN',telescopename='HST',sn_params=param_funcs)
+    print(myMISN2)
+    myMISN2.plot_object()
+
+
+
+
+
+.. image:: /examples/images/sphx_glr_plot_sim_002.png
+    :class: sphx-glr-single-img
+
+
+.. rst-class:: sphx-glr-script-out
+
+ Out:
+
+ .. code-block:: none
+
+    Telescope: HST
+    Object: My Type Ia SN
+    Number of bands: 2
+
+    ------------------
+    Image: image_1:
+    Bands: ['F110W', 'F125W']
+    Date Range: 0.00000->123.52941
+    Number of points: 50
+
+    Metadata:
+       z:1.33
+       t0:10.0
+       x0:1.2561391983309993e-05
+       x1:0.8229871997654377
+       c:-0.055061642099907215
+       sourcez:1.33
+       hostebv:0.0967741935483871
+       lensebv:0
+       lensz:0.53
+       mu:7
+       td:10.0
+    ------------------
+    Image: image_2:
+    Bands: ['F110W', 'F125W']
+    Date Range: 25.73529->175.00000
+    Number of points: 58
+
+    Metadata:
+       z:1.33
+       t0:70.0
+       x0:6.280695991654996e-06
+       x1:0.8229871997654377
+       c:-0.055061642099907215
+       sourcez:1.33
+       hostebv:0.0967741935483871
+       lensebv:0
+       lensz:0.53
+       mu:3.5
+       td:70.0
+    ------------------
+
+    <Figure size 1000x1000 with 2 Axes>
+
+
+
+Specify the distributions you want to use for dust
+parameters by providing a function that returns the parameter
+in any way you want. 
+
+
+.. code-block:: default
+
+
+    def hostav_func():
+        return(np.random.normal(.5,.1))
+    def lensav_func():
+        return(np.random.normal(.7,.2))
+    param_funcs={'host':hostav_func,'lens':lensav_func}
+    myMISN3 = sntd.createMultiplyImagedSN(sourcename='salt2-extended', snType='Ia', redshift=1.33,z_lens=.53, bands=['F110W','F125W'],
+                  zp=[26.8,26.2], cadence=5., epochs=35.,time_delays=[10., 70.], magnifications=[7,3.5],
+                  objectName='My Type Ia SN',telescopename='HST',av_dists=param_funcs)
+    print(myMISN3)
+    myMISN3.plot_object()
+
+
+
+.. image:: /examples/images/sphx_glr_plot_sim_003.png
+    :class: sphx-glr-single-img
+
+
+.. rst-class:: sphx-glr-script-out
+
+ Out:
+
+ .. code-block:: none
+
+    Telescope: HST
+    Object: My Type Ia SN
+    Number of bands: 2
+
+    ------------------
+    Image: image_1:
+    Bands: ['F110W', 'F125W']
+    Date Range: 0.00000->123.52941
+    Number of points: 49
+
+    Metadata:
+       z:1.33
+       t0:10.0
+       x0:4.891221481728929e-06
+       x1:-0.009577443244118713
+       c:-0.2789072375453796
+       sourcez:1.33
+       hostebv:0.17640412882468665
+       lensebv:0.15250667583225738
+       lensz:0.53
+       mu:7
+       td:10.0
+    ------------------
+    Image: image_2:
+    Bands: ['F110W', 'F125W']
+    Date Range: 25.73529->175.00000
+    Number of points: 55
+
+    Metadata:
+       z:1.33
+       t0:70.0
+       x0:2.4456107408644644e-06
+       x1:-0.009577443244118713
+       c:-0.2789072375453796
+       sourcez:1.33
+       hostebv:0.17640412882468665
+       lensebv:0.15250667583225738
+       lensz:0.53
+       mu:3.5
+       td:70.0
+    ------------------
+
+    <Figure size 1000x1000 with 2 Axes>
+
+
+
 
 .. rst-class:: sphx-glr-timing
 
-   **Total running time of the script:** ( 0 minutes  8.002 seconds)
+   **Total running time of the script:** ( 0 minutes  6.239 seconds)
 
 
 .. _sphx_glr_download_examples_plot_sim.py:

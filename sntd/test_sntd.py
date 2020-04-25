@@ -38,6 +38,7 @@ def test_sntd():
 			print('Testing fitting MISN without microlensing using %s method...'%method,end='')
 			fitCurves=sntd.fit_data(myMISN,snType='Ia', models='salt2-extended',bands=['bessellb','bessellr'],
 				params=['x0','x1','t0','c'],bounds={'t0':(-15,15),'x1':(-2,2),'c':(-1,1),'td':(-15,15),'mu':(.5,2)},
+				color_param_ignore=['x1'],
 				method=method,microlensing=None,maxcall=5,minsnr=0,set_from_simMeta={'z':'z'},t0_guess={'image_1':10,'image_2':70})
 			print('Passed!')
 		except Exception as e:
@@ -78,9 +79,9 @@ def test_sntd():
 		print('Testing fitting MISN with microlensing using series method...',end='')
 		
 		fitCurves=sntd.fit_data(myMISN_ml,snType='Ia', models='salt2-extended',bands=['bessellb','bessellr'],
-			params=['x1','c'],constants={'z':.5},bounds={'t0':(-15,15),'x1':(-2,2),'c':(-1,1),'td':(-15,15),'mu':(.5,2)},
+			params=['t0','x0','x1','c'],constants={'z':.5},bounds={'t0':(-15,15),'x1':(-2,2),'c':(-1,1),'td':(-15,15),'mu':(.5,2)},
 			method='series',microlensing='achromatic',t0_guess={'image_1':10,'image_2':70},
-			nMicroSamples=1,maxcall=5,minsnr=0)
+			nMicroSamples=10,maxcall=50,minsnr=0)
 
 		print('Passed!')
 	except Exception as e:
