@@ -10,9 +10,10 @@ with SNTD.
 ###############################################################
 # There are 3 methods built into SNTD to measure time delays 
 # (parallel, series, color). They are accessed by the same 
-# function:`~sntd.fit_data`. Here ``myMISN`` was generated
-# in the simulation example of the documentation. The true
-# delay for all of these fits is 50 days.
+# function: ~sntd.fit_data . 
+# Here ``myMISN`` was generated in the [simulation example](https://sntd.readthedocs.io/en/latest/examples/plot_sim.html#simulating-supernovae) 
+# of the documentation, using the ~sntd.createMultiplyImagedSN 
+# function. The true delay for all of these fits is 50 days.
 # 
 # **Parallel:**
 
@@ -62,7 +63,7 @@ fitCurves.plot_fit(method='series')
 fitCurves=sntd.fit_data(myMISN,snType='Ia', models='salt2-extended',bands=['F110W','F160W'],
                     params=['t0','c'],constants={'z':1.4,'x1':fitCurves.images['image_1'].fits.model.get('x1')},refImage='image_1',
                     color_param_ignore=['x1'],bounds={'t0':(-20,20),'td':(-20,20),'mu':(.5,2),'c':(-.5,.5)},cut_time=[-50,30],
-                    method='color',microlensing=None,modelcov=False,npoints=100,maxiter=None,minsnr=3)
+                    method='color',microlensing=None,modelcov=False,npoints=200,maxiter=None,minsnr=3)
 
 print(fitCurves.color.time_delays)
 print(fitCurves.color.time_delay_errors)
@@ -81,7 +82,7 @@ fitCurves_parallel=sntd.fit_data(myMISN,snType='Ia', models='salt2-extended',ban
 fitCurves_color=sntd.fit_data(myMISN,snType='Ia', models='salt2-extended',bands=['F110W','F160W'],cut_time=[-50,30],
                 	params=['t0','c'],constants={'z':1.4,'x1':fitCurves.images['image_1'].fits.model.get('x1')},refImage='image_1',
                 	bounds={'t0':(-20,20),'td':(-20,20),'mu':(.5,2),'c':(-.5,.5)},fit_prior=fitCurves_parallel,
-                	method='color',microlensing=None,modelcov=False,npoints=100,maxiter=None,minsnr=3)
+                	method='color',microlensing=None,modelcov=False,npoints=200,maxiter=None,minsnr=3)
 
 print(fitCurves_parallel.parallel.time_delays)
 print(fitCurves_parallel.parallel.time_delay_errors)
