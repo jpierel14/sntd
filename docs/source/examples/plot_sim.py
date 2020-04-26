@@ -11,7 +11,7 @@ Simulating a multiply-imaged supernova.
 # with no microlensing included in the simulation. Note that your final
 # printed information will be different, as this is a randomly generated
 # supernova. The function being used in these examples is 
-# `~sntd.createMultiplyImagedSN` .  
+# :py:func:`~sntd.simulation.createMultiplyImagedSN` . 
 #
 # **No Microlensing**
    

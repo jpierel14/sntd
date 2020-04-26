@@ -38,7 +38,9 @@ Simulate a microlensing microcaustic.
 **Including Microlensing in Simulations**
 Now we can take the simulated microcaustic 
 and use it to include microlensing in a 
-multiply-imaged supernova simulation.
+multiply-imaged supernova simulation. See
+:ref:`examples/plot_sim:Simulating Supernovae` for more simulation
+examples.
 
 
 .. code-block:: default
@@ -70,7 +72,7 @@ multiply-imaged supernova simulation.
 
 .. rst-class:: sphx-glr-timing
 
-   **Total running time of the script:** ( 0 minutes  51.086 seconds)
+   **Total running time of the script:** ( 0 minutes  39.498 seconds)
 
 
 .. _sphx_glr_download_examples_plot_micro.py:

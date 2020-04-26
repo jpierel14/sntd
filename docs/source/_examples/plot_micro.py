@@ -16,7 +16,9 @@ time,dmag=sntd.microcaustic_field_to_curve(field=myML,time=np.arange(0,100,1),zl
 # **Including Microlensing in Simulations**
 # Now we can take the simulated microcaustic 
 # and use it to include microlensing in a 
-# multiply-imaged supernova simulation.
+# multiply-imaged supernova simulation. See
+# :ref:`examples/plot_sim:Simulating Supernovae` for more simulation
+# examples.
 
 
 

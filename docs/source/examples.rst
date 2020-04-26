@@ -2,10 +2,10 @@
 Using Your Own Data
 *******************
 In order to fit your own data, you must turn your light curve into an astropy table. There is an example multiply-imaged
-SN example provided for reference. In this example, we have a doubly-imaged SN with image files (in the sntd/data/examples folder)
-'example_image_1.dat' and 'example_image_2.dat'. The only optional column in these files is "image", which sets the name of the key
-used to reference this SN image. If you do not provide flux/fluxerr but instead magnitude/magerr SNTD will attemp to translate to
-flux/fluxerr, but it's best to simply provide flux from the beginning to avoid conversion errors. First we can read in these tables:
+SN example provided for reference. In this example, we have a doubly-imaged SN with image files (in the ``sntd/data/examples`` folder)
+``example_image_1.dat`` and ``example_image_2.dat``. The only optional column in these files is ``image``, which sets the name of the key
+used to reference this SN image. If you do not provide ``flux``/``fluxerr`` but instead ``magnitude``/``magerr`` SNTD will attemp to translate to
+``flux``/``fluxerr``, but it's best to simply provide flux from the beginning to avoid conversion errors. First we can read in these tables:
 
 .. code-block:: python
 	
@@ -40,7 +40,7 @@ Out::
 	58.651685393258425 F160W 17.198071229182016 ... 26.2    AB image_1
 	Length = 60 rows
 
-Now, to turn these two data tables into an SNTD curveDict object that will be fit, we use the table_factory function:
+Now, to turn these two data tables into an :py:class:`~sntd.curve_io.curveDict` object that will be fit, we use the :py:func:`~sntd.curve_io.table_factory` function:
 
 .. code-block:: python
 
@@ -83,7 +83,7 @@ Out::
 
 	{'image_1': 0, 'image_2': 60.2649320870058}
 
-.. image:: examples/example_fit.png
+.. image:: _static/example_fit.png
     :width: 600px
     :align: center
     :height: 600px
@@ -95,7 +95,7 @@ Batch Processing Time Delay Measurements
 ****************************************
 
 Parallel processing and batch processing is built into SNTD in order to fit a large number of (likely simulated) MISN. To access this feature,
-simply provide a list of MISN instead of a single sntd curveDict object, specifying whether you want to use multiprocessing (split the list across multiple cores)
+simply provide a list of MISN instead of a single :py:class:`~sntd.curve_io.curveDict` object, specifying whether you want to use multiprocessing (split the list across multiple cores)
 or batch processing (splitting the list into multiple jobs with sbatch). If you specify batch mode, you need to provide
 the partition and number of jobs you want to implement. 
 
@@ -134,8 +134,8 @@ Out::
   {'image_1': 0, 'image_2': 40.22834982372733}
 
 
-If you would like to run multiple methods in a row in batch mode, the recommended way is by providing a list of the methods to the fit_data function. You 
-can have it use the parallel fit as a prior on the subsequent fits by setting fit_prior to True instead of giving it a curveDict object.
+If you would like to run multiple methods in a row in batch mode, the recommended way is by providing a list of the methods to the :py:func:`~sntd.fitting.fit_data` function. You 
+can have it use the parallel fit as a prior on the subsequent fits by setting ``fit_prior`` to ``True`` instead of giving it a :py:class:`~sntd.curve_io.curveDict` object.
 
 
 .. code-block:: python

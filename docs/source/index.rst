@@ -33,6 +33,7 @@ Welcome to SuperNova Time Delays (SNTD)!
 
    examples/index
    api
+   contributors
 
 :doc:`api`
 ================

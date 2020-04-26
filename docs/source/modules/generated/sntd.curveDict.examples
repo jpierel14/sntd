@@ -20,3 +20,21 @@ Examples using ``sntd.curveDict``
 .. only:: not html
 
  * :ref:`sphx_glr_examples_plot_sim.py`
+
+.. raw:: html
+
+    <div class="sphx-glr-thumbcontainer" tooltip="A series of examples demonstrating various fitting options  with SNTD. ">
+
+.. only:: html
+
+ .. figure:: /examples/images/thumb/sphx_glr_plot_fitting_thumb.png
+
+     :ref:`sphx_glr_examples_plot_fitting.py`
+
+.. raw:: html
+
+    </div>
+
+.. only:: not html
+
+ * :ref:`sphx_glr_examples_plot_fitting.py`

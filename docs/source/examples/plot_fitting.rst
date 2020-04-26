@@ -18,10 +18,12 @@ with SNTD.
 
 There are 3 methods built into SNTD to measure time delays 
 (parallel, series, color). They are accessed by the same 
-function: ~sntd.fit_data . 
-Here ``myMISN`` was generated in the [simulation example](https://sntd.readthedocs.io/en/latest/examples/plot_sim.html#simulating-supernovae) 
-of the documentation, using the ~sntd.createMultiplyImagedSN 
+function: :py:func:`~sntd.fitting.fit_data` . 
+Here ``myMISN`` was generated in the :ref:`examples/plot_sim:Simulating Supernovae` part 
+of the documentation, using the :py:func:`~sntd.simulation.createMultiplyImagedSN` 
 function. The true delay for all of these fits is 50 days.
+You can batch process using any or all of these methods as well 
+(see :ref:`examples:Batch Processing Time Delay Measurements`)
 
 **Parallel:**
 
@@ -73,10 +75,10 @@ function. The true delay for all of these fits is 50 days.
 
  .. code-block:: none
 
-    {'image_1': 0, 'image_2': 49.836900725635836}
-    {'image_1': array([0, 0]), 'image_2': array([-0.13812494,  0.18187725])}
-    {'image_1': 1, 'image_2': 0.5029196011691007}
-    {'image_1': array([0, 0]), 'image_2': array([-0.00541875,  0.00461508])}
+    {'image_1': 0, 'image_2': 49.843697448861334}
+    {'image_1': array([0, 0]), 'image_2': array([-0.14100855,  0.15638194])}
+    {'image_1': 1, 'image_2': 0.5028070299386529}
+    {'image_1': array([0, 0]), 'image_2': array([-0.0048444 ,  0.00513595])}
 
     <Figure size 970x970 with 16 Axes>
 
@@ -130,10 +132,10 @@ Other methods are called in a similar fashion, with a couple of extra arguments:
 
  .. code-block:: none
 
-    {'image_1': 0, 'image_2': 49.83537277911139}
-    {'image_1': array([0, 0]), 'image_2': array([-0.0714221 ,  0.07063118])}
-    {'image_1': 1, 'image_2': 0.5040759649360776}
-    {'image_1': array([0, 0]), 'image_2': array([-0.00163658,  0.00172801])}
+    {'image_1': 0, 'image_2': 49.83792001909299}
+    {'image_1': array([0, 0]), 'image_2': array([-0.06455426,  0.06108559])}
+    {'image_1': 1, 'image_2': 0.5043276643091001}
+    {'image_1': array([0, 0]), 'image_2': array([-0.00168843,  0.00152426])}
 
     <Figure size 1390x1390 with 36 Axes>
 
@@ -180,8 +182,8 @@ Other methods are called in a similar fashion, with a couple of extra arguments:
 
  .. code-block:: none
 
-    {'image_1': 0, 'image_2': 51.68496378140347}
-    {'image_1': array([0, 0]), 'image_2': array([-1.36230231,  1.25204403])}
+    {'image_1': 0, 'image_2': 51.7190149557909}
+    {'image_1': array([0, 0]), 'image_2': array([-1.33735523,  1.14905258])}
 
     <Figure size 760x760 with 9 Axes>
 
@@ -218,10 +220,10 @@ You can include your fit from the parallel method as a prior on light curve and 
 
  .. code-block:: none
 
-    {'image_1': 0, 'image_2': 49.8345907956098}
-    {'image_1': array([0, 0]), 'image_2': array([-0.12805317,  0.15168829])}
-    {'image_1': 0, 'image_2': 49.771326340371765}
-    {'image_1': array([0, 0]), 'image_2': array([-0.2579495 ,  0.27347356])}
+    {'image_1': 0, 'image_2': 49.84646445116836}
+    {'image_1': array([0, 0]), 'image_2': array([-0.13954235,  0.16191134])}
+    {'image_1': 0, 'image_2': 49.78315086876655}
+    {'image_1': array([0, 0]), 'image_2': array([-0.29117494,  0.30665377])}
 
 
 
@@ -256,7 +258,7 @@ extreme dust in the source and lens frames (your final simulations may look slig
 
  .. code-block:: none
 
-    lensebv: 0.48387096774193544 hostebv: 0.3225806451612903 c: 0.06714225863301469
+    lensebv: 0.48387096774193544 hostebv: 0.3225806451612903 c: -0.01846683879648062
 
 
 
@@ -290,9 +292,9 @@ Okay, now we can fit the MISN first without taking these effects into account:
 
  .. code-block:: none
 
-    {'image_1': 0, 'image_2': 58.29077871389165}
-    {'image_1': array([0, 0]), 'image_2': array([-0.89858212,  0.86912742])}
-    c: 0.44847062781404495
+    {'image_1': 0, 'image_2': 57.956118547707476}
+    {'image_1': array([0, 0]), 'image_2': array([-0.41281896,  0.46183925])}
+    c: 0.44858588475869693
 
     <Figure size 1000x1000 with 2 Axes>
 
@@ -333,9 +335,9 @@ as it attempts to compensate for extinction without a propagation effect. Now le
 
  .. code-block:: none
 
-    {'image_1': 0, 'image_2': 61.23512012212947}
-    {'image_1': array([0, 0]), 'image_2': array([-0.92158669,  1.06504201])}
-    c: 0.22429219160119984 lensebv: 0.3612272742801242 hostebv: 0.26555264524651506
+    {'image_1': 0, 'image_2': 59.000873661776495}
+    {'image_1': array([0, 0]), 'image_2': array([-0.53415603,  0.48246966])}
+    c: 0.27127265457813654 lensebv: 0.3097131171566684 hostebv: 0.17000547312311198
 
     <Figure size 1000x1000 with 2 Axes>
 
@@ -347,7 +349,7 @@ more accurate.
 
 .. rst-class:: sphx-glr-timing
 
-   **Total running time of the script:** ( 15 minutes  30.545 seconds)
+   **Total running time of the script:** ( 9 minutes  30.511 seconds)
 
 
 .. _sphx_glr_download_examples_plot_fitting.py:
