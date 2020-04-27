@@ -199,10 +199,18 @@ def fit_data(curves=None, snType='Ia',bands=None, models=None, params=None, boun
 	if not models:
 		mod,types=np.loadtxt(os.path.join(__dir__,'data','sncosmo','models.ref'),dtype='str',unpack=True)
 		modDict={mod[i]:types[i] for i in range(len(mod))}
-		if snType!='Ia':
-			mods = [x[0] for x in sncosmo.models._SOURCES._loaders.keys() if x[0] in modDict.keys() and modDict[x[0]][:len(snType)]==snType]
-		elif snType=='Ia':
-			mods = [x[0] for x in sncosmo.models._SOURCES._loaders.keys() if 'salt2' in x[0]]
+		if isinstance(snType,str):
+			if snType!='Ia':
+				mods = [x[0] for x in sncosmo.models._SOURCES._loaders.keys() if x[0] in modDict.keys() and modDict[x[0]][:len(snType)]==snType]
+			elif snType=='Ia':
+				mods = [x[0] for x in sncosmo.models._SOURCES._loaders.keys() if 'salt2' in x[0]]
+		else:
+			mods=[]
+			for t in snType:
+				if t!='Ia':
+					mods = np.append(mods,[x[0] for x in sncosmo.models._SOURCES._loaders.keys() if x[0] in modDict.keys() and modDict[x[0]][:len(snType)]==snType])
+				elif t=='Ia':
+					mods = np.append([x[0] for x in sncosmo.models._SOURCES._loaders.keys() if 'salt2' in x[0]])
 	else:
 		mods=models
 	mods=set(mods)
@@ -355,7 +363,8 @@ def fit_data(curves=None, snType='Ia',bands=None, models=None, params=None, boun
 							printProgressBar(ndone,total_jobs)
 					if nfit>=total_jobs:
 						break
-				print('Done!')
+				if verbose:
+					print('Done!')
 				return
 					
 
@@ -363,28 +372,34 @@ def fit_data(curves=None, snType='Ia',bands=None, models=None, params=None, boun
 		else:
 			initBounds=deepcopy(args['bounds'])
 			if 'parallel' in method:
-				print('Starting parallel method...')
+				if verbose:
+					print('Starting parallel method...')
 				curves=_fitparallel(args)
 				if args['fit_prior']==True:
 					args['fit_prior']=curves
 				args['curves']=curves
 				args['bounds']=copy(initBounds)
 			if 'series' in method:
-				print('Starting series method...')
+				if verbose:
+					print('Starting series method...')
 				if 'td' not in args['bounds']:
-					print('td not in bounds for series method, choosing based on parallel bounds...')
+					if verbose:
+						print('td not in bounds for series method, choosing based on parallel bounds...')
 					args['bounds']['td']=args['bounds']['t0']
 				if 'mu' not in args['bounds']:
-					print('mu not in bounds for series method, choosing defaults...')
+					if verbose:
+						print('mu not in bounds for series method, choosing defaults...')
 					args['bounds']['mu']=[0,10]
 
 				curves=_fitseries(args)
 				args['curves']=curves
 				args['bounds']=copy(initBounds)
 			if 'color' in method:
-				print('Starting color method...')
+				if verbose:
+					print('Starting color method...')
 				if 'td' not in args['bounds']:
-					print('td not in bounds for color method, choosing based on parallel bounds...')
+					if verbose:
+						print('td not in bounds for color method, choosing based on parallel bounds...')
 					args['bounds']['td']=args['bounds']['t0']
 				
 				curves=_fitColor(args)
@@ -501,7 +516,8 @@ def fit_data(curves=None, snType='Ia',bands=None, models=None, params=None, boun
 							printProgressBar(ndone,total_jobs)
 					if nfit>=total_jobs:
 						break
-				print('Done!')
+				if verbose:
+					print('Done!')
 				return
 
 
@@ -614,7 +630,8 @@ def fit_data(curves=None, snType='Ia',bands=None, models=None, params=None, boun
 							printProgressBar(ndone,total_jobs)
 					if nfit>=total_jobs:
 						break
-				print('Done!')
+				if verbose:
+					print('Done!')
 				return
 		else:
 			curves=_fitseries(args)
@@ -725,7 +742,8 @@ def fit_data(curves=None, snType='Ia',bands=None, models=None, params=None, boun
 							printProgressBar(ndone,total_jobs)
 					if nfit>=total_jobs:
 						break
-				print('Done!')
+				if verbose:
+					print('Done!')
 				return
 		else:
 			if args['color_bands'] is not None:
@@ -824,6 +842,8 @@ def _fitColor(all_args):
 
 		elif args['fit_prior'] is not None:
 			par_ref=args['fit_prior'].parallel.fitOrder[0]
+			if param not in args['fit_prior'].images[par_ref].param_quantiles.keys():
+				continue
 			args['bounds'][param]=3*np.array([args['fit_prior'].images[par_ref].param_quantiles[param][0]- \
 											  args['fit_prior'].images[par_ref].param_quantiles[param][1],
 											  args['fit_prior'].images[par_ref].param_quantiles[param][2]- \
@@ -850,6 +870,10 @@ def _fitColor(all_args):
 	if not isinstance(effect_frames,(list,tuple)):
 		effects=[effect_frames]
 
+	if args['fit_prior'] is not None and args['fit_prior'].images[args['fit_prior'].parallel.fitOrder[0]].fits.model._source.name not in args['models']:
+		print('Wanted to use a fit prior but do not have the same model as an option.')
+		raise RuntimeError
+
 	finallogz=-np.inf
 	for mod in np.array(args['models']).flatten():
 
@@ -859,13 +883,15 @@ def _fitColor(all_args):
 			tempMod = sncosmo.Model(source=source,effects=effects,effect_names=effect_names,effect_frames=effect_frames)
 		else:
 			tempMod=copy(mod)
-		tempMod.set(**args['constants'])
+		tempMod.set(**{k:args['constants'][k] for k in args['constants'].keys() if k in tempMod.param_names})
 		if args['set_from_simMeta'] is not None:
-			tempMod.set(**{k:args['curves'].images[args['refImage']].simMeta[args['set_from_simMeta'][k]] for k in args['set_from_simMeta'].keys()})
+			tempMod.set(**{k:args['curves'].images[args['refImage']].simMeta[args['set_from_simMeta'][k]] for k in args['set_from_simMeta'].keys() if k in tempMod.param_names})
 
 		if args['fit_prior'] is not None:
 			par_ref=args['fit_prior'].parallel.fitOrder[0]
 
+			if mod!=args['fit_prior'].images[par_ref].fits.model._source.name:
+				continue
 			temp_delays={k:args['fit_prior'].parallel.time_delays[k]-args['fit_prior'].parallel.time_delays[par_ref]\
 						 for k in args['fit_prior'].parallel.fitOrder}
 			
@@ -890,7 +916,8 @@ def _fitColor(all_args):
 					inds=temp_bands.astype(int)
 					
 					res,fit=sncosmo.fit_lc(deepcopy(args['curves'].images[im].table[inds]),tempMod,
-											args['params']+[tempMod.param_names[2]]+[x for x in tempMod.param_names if x in args['bounds'].keys()],
+											[x for x in args['params'] if x in tempMod.param_names]+[tempMod.param_names[2]]+\
+											[x for x in tempMod.param_names if x in args['bounds'].keys()],
 											bounds={b:args['bounds'][b] for b in args['bounds'].keys() if b not in ['t0',tempMod.param_names[2]]},
 											minsnr=args.get('minsnr',0))
 					temp_delays[im]=fit.get('t0')
@@ -900,7 +927,7 @@ def _fitColor(all_args):
 					if param in all_vparam_names:
 						all_vparam_names=np.array([x for x in all_vparam_names if x !=param])
 
-				tempMod.set(**args['constants'])
+				tempMod.set(**{k:args['constants'][k] for k in args['constants'].keys() if k in tempMod.param_names})
 				args['curves'].color.meta['reft0']=temp_delays[args['refImage']]
 
 				
@@ -960,13 +987,13 @@ def _fitColor(all_args):
 
 		params,res,model=nest_color_lc(args['curves'].color.table,tempMod,nimage,color=args['bands'],
 											bounds=args['bounds'],
-											 vparam_names=all_vparam_names,ref=par_ref,
+											 vparam_names=[x for x in all_vparam_names if x in tempMod.param_names or x in snParams],ref=par_ref,
 											 minsnr=args.get('minsnr',5.),priors=args.get('priors',None),ppfs=args.get('ppfs',None),
 											 method=args.get('nest_method','single'),maxcall=args.get('maxcall',None),
 											 modelcov=args.get('modelcov',None),rstate=args.get('rstate',None),
 											 maxiter=args.get('maxiter',None),npoints=args.get('npoints',100))
-
 		if finallogz<res.logz:
+			finallogz=res.logz
 			finalres,finalmodel=res,model
 			time_delays=args['curves'].color.meta['td']
 			final_param_quantiles=params
@@ -1118,24 +1145,24 @@ def nest_color_lc(data,model,nimage,color, vparam_names,bounds,ref='image_1',
 	obs=data['flux_%s'%color[0]]/data['flux_%s'%color[1]]
 	err=(data['flux_%s'%color[0]]/data['flux_%s'%color[1]])*np.sqrt((data['fluxerr_%s'%color[0]]/data['flux_%s'%color[0]])**2+\
 																				(data['fluxerr_%s'%color[1]]/data['flux_%s'%color[1]])**2)
-
+	cov = np.diag(err)
 	def chisq_likelihood(parameters):
 		model.set(**{model_param_names[k]:parameters[model_idx[k]] for k in range(len(model_idx))})
 		all_data=deepcopy(data)
 
 		for i in range(len(im_indices)):
 			all_data['time'][im_indices[i]]-=parameters[td_idx[i]]
-
-		model_observations = 10**(-.4*(model.color(color[0],color[1],all_data['zpsys'][0],all_data['time'])+colzp2-colzp1))
+		sort_inds=np.argsort(all_data['time'])
+		model_observations = 10**(-.4*(model.color(color[0],color[1],all_data['zpsys'][0],all_data['time'][sort_inds])+colzp2-colzp1))
 		
 		
 		if modelcov:
 			all_cov=None
-			cov = np.diag(err)
+			
 			for i in range(2):
 
 				_, mcov = model.bandfluxcov(color[i],
-											all_data['time'],
+											all_data['time'][sort_inds],
 										zp=all_data['zp_%s'%color[i]],
 										zpsys=all_data['zpsys'])
 
@@ -1148,18 +1175,18 @@ def nest_color_lc(data,model,nimage,color, vparam_names,bounds,ref='image_1',
 
 			all_cov=np.sqrt(all_cov)
 
-			cov = cov + all_cov
+			cov = cov[sort_inds] + all_cov
 			invcov = np.linalg.pinv(cov)
 
-			diff = obs-model_observations
+			diff = obs[sort_inds]-model_observations
 			chisq=np.dot(np.dot(diff, invcov), diff)
 
 		else:
 			
 	
 			
-			chisq=np.sum((obs-model_observations)**2/\
-						 err**2)
+			chisq=np.sum((obs[sort_inds]-model_observations)**2/\
+						 err[sort_inds]**2)
 		return chisq
 
 	def loglike(parameters):
@@ -1265,6 +1292,8 @@ def _fitseries(all_args):
 					args['bounds'][param]=np.array(args['bounds']['mu'])#*magnifications[im]
 			elif args['fit_prior'] is not None:
 				par_ref=args['fit_prior'].parallel.fitOrder[0]
+				if param not in args['fit_prior'].images[par_ref].param_quantiles.keys():
+					continue
 				args['bounds'][param]=3*np.array([args['fit_prior'].images[par_ref].param_quantiles[param][0]- \
 												args['fit_prior'].images[par_ref].param_quantiles[param][1],
 												args['fit_prior'].images[par_ref].param_quantiles[param][2]- \
@@ -1273,6 +1302,8 @@ def _fitseries(all_args):
 
 		elif args['fit_prior'] is not None:
 			par_ref=args['fit_prior'].parallel.fitOrder[0]
+			if param not in args['fit_prior'].images[par_ref].param_quantiles.keys():
+				continue
 			args['bounds'][param]=3*np.array([args['fit_prior'].images[par_ref].param_quantiles[param][0]- \
 											  args['fit_prior'].images[par_ref].param_quantiles[param][1],
 											  args['fit_prior'].images[par_ref].param_quantiles[param][2]- \
@@ -1298,13 +1329,19 @@ def _fitseries(all_args):
 	if not isinstance(effect_frames,(list,tuple)):
 		effects=[effect_frames]
 
-
+	if args['fit_prior'] is not None and args['fit_prior'].images[args['fit_prior'].parallel.fitOrder[0]].fits.model._source.name not in args['models']:
+		print('Wanted to use a fit prior but do not have the same model as an option.')
+		raise RuntimeError
 	for mod in np.array(args['models']).flatten():
 
 
 
 		if isinstance(mod,str):
-			source=sncosmo.get_source(mod)
+			if mod.upper() in ['BAZIN','BAZINSOURCE']:
+				source=BazinSource(data=args['curves'].images[args['fitOrder'][0]].table)
+			else:
+				source=sncosmo.get_source(mod)
+			
 			tempMod = sncosmo.Model(source=source,effects=effects,effect_names=effect_names,effect_frames=effect_frames)
 		else:
 			tempMod=copy(mod)
@@ -1314,7 +1351,10 @@ def _fitseries(all_args):
 		
 
 		if args['fit_prior'] is not None:
+
 			par_ref=args['fit_prior'].parallel.fitOrder[0]
+			if mod!=args['fit_prior'].images[par_ref].fits.model._source.name:
+				continue
 
 			temp_delays={k:args['fit_prior'].parallel.time_delays[k]-args['fit_prior'].parallel.time_delays[par_ref]\
 						 for k in args['fit_prior'].parallel.fitOrder}
@@ -1342,7 +1382,7 @@ def _fitseries(all_args):
 						temp_bands=np.append(temp_bands,np.where(args['curves'].images[im].table['band']==b)[0])
 					inds=temp_bands.astype(int)
 					
-					res,fit=sncosmo.fit_lc(deepcopy(args['curves'].images[im].table[inds]),tempMod,args['params'],
+					res,fit=sncosmo.fit_lc(deepcopy(args['curves'].images[im].table[inds]),tempMod,[x for x in args['params'] if x in tempMod.param_names],
 											bounds={b:args['bounds'][b] for b in args['bounds'].keys() if b not in ['t0',tempMod.param_names[2]]},
 											minsnr=args.get('minsnr',0))
 					temp_delays[im]=fit.get('t0')
@@ -1409,12 +1449,13 @@ def _fitseries(all_args):
 																	args['curves'].series.meta['td'][im])))[0]]
 
 		params,res,model=nest_series_lc(args['curves'].series.table,tempMod,nimage,bounds=args['bounds'],
-									  vparam_names=all_vparam_names,ref=par_ref,
+									  vparam_names=[x for x in all_vparam_names if x in tempMod.param_names or x in np.array(snParams).flatten()],ref=par_ref,
 									  minsnr=args.get('minsnr',5.),priors=args.get('priors',None),ppfs=args.get('ppfs',None),
 									  method=args.get('nest_method','single'),maxcall=args.get('maxcall',None),
 									  modelcov=args.get('modelcov',None),rstate=args.get('rstate',None),
 									  maxiter=args.get('maxiter',None),npoints=args.get('npoints',100))
 		if finallogz<res.logz:
+			finallogz=res.logz
 			final_param_quantiles,finalres,finalmodel=params,res,model
 			time_delays=args['curves'].series.meta['td']
 			magnifications=args['curves'].series.meta['mu']
@@ -1629,6 +1670,7 @@ def nest_series_lc(data,model,nimage,vparam_names,bounds,ref='image_1',
 		for i in range(len(im_indices)):
 			all_data['time'][im_indices[i]]-=parameters[td_idx[i]]
 			all_data['flux'][im_indices[i]]/=parameters[amp_idx[i]]
+		all_data.sort('time')
 		model_observations = model.bandflux(all_data['band'],all_data['time'],
 											zp=all_data['zp'],zpsys=all_data['zpsys'])
 		if modelcov:
@@ -1783,29 +1825,26 @@ def _fitparallel(all_args):
 	if not isinstance(effect_frames,(list,tuple)):
 		effects=[effect_frames]
 
-
+	all_fit_dict={}
 	for mod in np.array(args['models']).flatten():
 		if isinstance(mod,str):
-			source=sncosmo.get_source(mod)
+			if mod.upper() in ['BAZIN','BAZINSOURCE']:
+				source=BazinSource(data=args['curves'].images[args['fitOrder'][0]].table)
+			else:
+				source=sncosmo.get_source(mod)
 			tempMod = sncosmo.Model(source=source,effects=effects,effect_names=effect_names,effect_frames=effect_frames)
 		else:
 			tempMod=copy(mod)
 		
-		tempMod.set(**args['constants'])
+		tempMod.set(**{k:args['constants'][k] for k in args['constants'].keys() if k in tempMod.param_names})
 		if args['set_from_simMeta'] is not None:
-			tempMod.set(**{k:args['curves'].images[args['refImage']].simMeta[args['set_from_simMeta'][k]] for k in args['set_from_simMeta'].keys()})
+			tempMod.set(**{k:args['curves'].images[args['refImage']].simMeta[args['set_from_simMeta'][k]] for k in args['set_from_simMeta'].keys() if k in tempMod.param_names})
 		guess_t0,guess_amp=sncosmo.fitting.guess_t0_and_amplitude( \
 			sncosmo.photdata.photometric_data(args['curves'].images[args['fitOrder'][0]].table),
 			tempMod,args.get('minsnr',5.))
 		if 't0' in args['bounds'] and args['t0_guess'] is None:
 
-			args['bounds']['t0']=np.array(args['bounds']['t0'])+guess_t0
-		if args['guess_amplitude']:
-			if tempMod.param_names[2] in args['bounds']:
-				args['bounds'][tempMod.param_names[2]]=np.array(args['bounds'][tempMod.param_names[2]])*\
-					guess_amp
-			else:
-				args['bounds'][tempMod.param_names[2]]=[.1*guess_amp,10*guess_amp]
+			args['bounds']['t0']=np.array(initial_bounds['t0'])+guess_t0
 		
 		if args['trial_fit'] and args['t0_guess'] is None:
 			best_bands=band_SNR[args['fitOrder'][0]][:min(len(band_SNR[args['fitOrder'][0]]),2)]
@@ -1813,12 +1852,21 @@ def _fitparallel(all_args):
 			for b in best_bands:
 				temp_bands=np.append(temp_bands,np.where(args['curves'].images[args['fitOrder'][0]].table['band']==b)[0])
 			inds=temp_bands.astype(int)
-			res,fit=sncosmo.fit_lc(args['curves'].images[args['fitOrder'][0]].table[inds],tempMod,args['params'],
-									bounds={b:args['bounds'][b]+(args['bounds'][b]-np.median(args['bounds'][b]))*2 if b=='t0' else args['bounds'][b] for b in args['bounds']},minsnr=args.get('minsnr',0))
+			res,fit=sncosmo.fit_lc(args['curves'].images[args['fitOrder'][0]].table[inds],tempMod,[x for x in args['params'] if x in tempMod.param_names],
+									bounds={b:args['bounds'][b]+(args['bounds'][b]-np.median(args['bounds'][b]))*2 if b=='t0' else args['bounds'][b] for b in args['bounds'] if b!= tempMod.param_names[2]},
+									minsnr=args.get('minsnr',0))
 
 			args['bounds']={b:(np.array(args['bounds'][b])-np.median(args['bounds'][b]))/2+fit.get(b) if b in res.param_names else args['bounds'][b] for b in args['bounds'].keys()}
+			if tempMod.param_names[2] not in args['bounds'].keys():
+				args['bounds'][tempMod.param_names[2]]=np.array([.1,10])*fit.parameters[2]
 			
 			guess_t0=fit.get('t0')
+		elif args['guess_amplitude']:
+			if tempMod.param_names[2] in args['bounds']:
+				args['bounds'][tempMod.param_names[2]]=np.array(args['bounds'][tempMod.param_names[2]])*\
+					guess_amp
+			else:
+				args['bounds'][tempMod.param_names[2]]=[.1*guess_amp,10*guess_amp]
 
 		if args['clip_data']:
 			if args['cut_time'] is not None:
@@ -1834,7 +1882,8 @@ def _fitparallel(all_args):
 			fit_table=fit_table[fit_table['flux']/fit_table['fluxerr']>=args.get('minsnr',0)]
 		else:
 			fit_table=deepcopy(args['curves'].images[args['fitOrder'][0]].table)
-		res,fit=sncosmo.nest_lc(fit_table,tempMod,args['params'],
+		
+		res,fit=sncosmo.nest_lc(fit_table,tempMod,[x for x in args['params'] if x in tempMod.param_names],
 								bounds=args['bounds'],
 							  priors=args.get('priors',None), ppfs=args.get('ppfs',None),
 								minsnr=args.get('minsnr',5.0), method=args.get('nest_method','single'),
@@ -1842,8 +1891,11 @@ def _fitparallel(all_args):
 							  rstate=args.get('rstate',None),guess_amplitude_bound=False,
 							  zpsys=args['curves'].images[args['fitOrder'][0]].zpsys,
 							  maxiter=args.get('maxiter',None),npoints=args.get('npoints',100))
+		all_fit_dict[mod]=[copy(fit),copy(res)]
+		
 		if finallogz<res.logz:
 			first_res=[args['fitOrder'][0],copy(fit),copy(res)]
+			finallogz=res.logz
 
 	first_params=[weighted_quantile(first_res[2].samples[:,i],[.16,.5,.84],first_res[2].weights)\
 				  for i in range(len(first_res[2].vparam_names))]
@@ -2019,7 +2071,7 @@ def nest_parallel_lc(data,model,prev_res,bounds,guess_amplitude_bound=False,cut_
 
 	final_priors=[]
 	for p in vparam_names:
-		if p==model.param_names[2] or p=='t0':
+		if p in __thetaL__:
 			final_priors.append(lambda x:0)
 			continue
 
@@ -2302,5 +2354,106 @@ def param_fit(args,modName,fit=False):
 
 
 def identify_micro_func(args):
-	print('Only a development function for now!')
-	return args['bands'],args['bands']
+	if len(args['bands'])<=2:
+		return args['bands'],args['bands']
+	res_dict={}
+	original_args=copy(args)
+	combos=[]
+	for r in range(len(args['bands'])-1):
+		temp=[x for x in itertools.combinations(original_args['bands'],r)]
+		for t in temp:
+			combos.append(t)
+	if 'td' not in args['bounds'].keys():
+		args['bounds']['td']=args['bounds']['t0']
+	for bands in itertools.combinations(args['bands'],2):
+		good=True
+		for b in bands:
+			if not np.all([len(np.where(original_args['curves'].images[im].table['band']==b)[0])>=3 for im in original_args['curves'].images.keys()]):
+				good=False
+		if not good:
+			continue
+		temp_args=copy(original_args)
+
+		temp_args['bands']=[x for x in bands]
+		temp_args['npoints']=200
+		temp_args['fit_prior']=None
+
+		fitCurves=_fitColor(temp_args)
+		if np.all([np.isfinite(fitCurves.color.time_delays[x]) for x in fitCurves.images.keys()]):
+			res_dict[bands[0]+'-'+bands[1]]=copy(fitCurves.color.fits.res)
+
+	if len(list(res_dict.keys()))==0:
+		print('No good fitting.',args['bands'])
+		return(args['bands'],args['bands'])
+	ind=res_dict[list(res_dict.keys())[0]].vparam_names.index('c')
+	print([(x,weighted_quantile(res_dict[x].samples[:,ind],[.16,.5,.84],res_dict[x].weights)) for x in res_dict.keys()])
+	dev_dict={}
+	
+	for bs in combos:
+		dev_dict[','.join(list(bs))]=(np.average([weighted_quantile(res_dict[x].samples[:,ind],.5,res_dict[x].weights) \
+												  for x in res_dict.keys() if np.all([b not in x for b in bs])],weights= \
+													 1/np.abs([res_dict[x].logz for x in res_dict.keys() if np.all([b not in x for b in bs])])),
+					np.std([weighted_quantile(res_dict[x].samples[:,ind],.5,res_dict[x].weights) \
+			  for x in res_dict.keys() if np.all([b not in x for b in bs])]))
+	print(dev_dict)
+
+	to_remove=None
+	
+	best_std=dev_dict[''][1]/np.sqrt(len(args['bands']))
+	
+	if len(args['bands'])>3:
+		for bands in dev_dict.keys():
+			if dev_dict[bands][1]!=0:#len(args['bands'])-len(bands.split(','))==2:
+				print(bands,dev_dict[bands])
+				if dev_dict[bands][1]/np.sqrt(len(args['bands'])-len(bands.split(',')))<best_std:
+					to_remove=bands.split(',')
+					best_std=dev_dict[bands][1]/np.sqrt(len(args['bands'])-len(to_remove))
+	print(to_remove,best_std)
+	sys.exit()
+	final_color_bands=None
+	best_logz=-np.inf
+	best_logzerr=0
+
+	for bands in res_dict.keys():
+		logz,logzerr=calc_ev(res_dict[bands],args['npoints'])
+		if logz>best_logz:
+			final_color_bands=bands
+			best_logz=logz
+			best_logzerr=logzerr
+	print(bands, best_logz,best_logzerr)
+	final_all_bands=[]
+	for bands in res_dict.keys():
+		logz,logzerr=calc_ev(res_dict[bands],args['npoints'])
+		print(bands,logz,logzerr)
+		if logz+3*logzerr>=best_logz-3*best_logzerr:
+			final_all_bands=np.append(final_all_bands,bands.split('-'))
+
+
+	print(np.unique(final_all_bands),np.array(final_color_bands.split('-')))
+	sys.exit()
+	return(np.unique(final_all_bands),np.array(final_color_bands.split('-')))
+
+	#else:
+	#	print([[x for x in args['bands'] if x not in to_remove]]*2)
+	#	sys.exit()
+	#	return [[x for x in args['bands'] if x not in to_remove]]*2
+
+	# else:
+	# 	best_bands=None
+	# 	best_logz=-np.inf
+	# 	for bands in res_dict.keys():
+	#
+	# 		if res_dict[bands].logz>best_logz:
+	# 			best_bands=bands
+	# 			best_logz=res_dict[bands].logz
+	#
+	# 	return [best_bands.split('-')]*2
+
+def calc_ev(res,nlive):
+	logZnestle = res.logz                         # value of logZ
+	infogainnestle = res.h                        # value of the information gain in nats
+	if not np.isfinite(infogainnestle):
+		infogainnestle=.1*logZnestle
+	logZerrnestle = np.sqrt(infogainnestle)#/nlive) # estimate of the statistcal uncertainty on logZ
+
+	return logZnestle, logZerrnestle

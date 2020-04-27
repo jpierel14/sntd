@@ -129,7 +129,7 @@ class BazinSource(sncosmo.Source):
         self._wave=wave
         #self._phase=np.arange(-(np.max(data['time'])-np.min(data['time'])),np.max(data['time'])-np.min(data['time']),tstep)
         self._phase=np.arange(-300,300,1)
-        self._parameters=np.array([1.,0.,15.,5.])
+        self._parameters=np.array([1.,0.,30.,15.])
         self._tstep=tstep
         if colorCurve is not None:
             color=[x for x in colorCurve.colnames if x!='time'][0]
@@ -150,12 +150,18 @@ class BazinSource(sncosmo.Source):
     def _param_flux(self,phase):
         if self._parameters[0]==0:
             return(self._constantBazin(len(phase),self._parameters[1]))
+        elif self._parameters[2]<=self._parameters[3]:
+            return(np.zeros(len(phase)))
         else:
             temp=(np.exp(-phase/self._parameters[2])/(1+np.exp(-phase/self._parameters[3])))
         if np.max(temp)==0:
             return(np.zeros(len(phase)))
-        #print(phase[temp==np.max(temp)])
-        bazinFlux=self._parameters[0]*(np.exp(-(phase+phase[temp==np.max(temp)])/self._parameters[2])/(1+np.exp(-(phase+phase[temp==np.max(temp)])/self._parameters[3])))/np.max(temp) + self._parameters[1]
+
+        
+        bazinFlux=self._parameters[0]*(np.exp(-(phase+np.median(phase[np.where(temp==np.max(temp))[0][0]]))/self._parameters[2])/\
+            (1+np.exp(-(phase+np.median(phase[np.where(temp==np.max(temp))[0]]))/self._parameters[3])))/np.max(temp) + self._parameters[1]
+        
+
 
         if np.inf in bazinFlux or np.any(np.isnan(bazinFlux)):
             return(np.zeros(len(phase)))
