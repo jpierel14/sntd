@@ -1,7 +1,7 @@
 #!/bin/bash
 partition
 #SBATCH --job-name=SNTD
-
+#SBATCH --output=/dev/null
 
 
 echo -e '\n submitted Python job'

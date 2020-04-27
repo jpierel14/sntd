@@ -2,7 +2,7 @@
 partition
 #SBATCH --job-name=SNTD
 #SBATCH --array=njobs
-
+#SBATCH --output=/dev/null
 
 echo -e '\n submitted Python job'
 echo 'hostname'
