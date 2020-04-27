@@ -157,8 +157,7 @@ class BazinSource(sncosmo.Source):
         if np.max(temp)==0:
             return(np.zeros(len(phase)))
 
-        
-        bazinFlux=self._parameters[0]*(np.exp(-(phase+np.median(phase[np.where(temp==np.max(temp))[0][0]]))/self._parameters[2])/\
+        bazinFlux=self._parameters[0]*(np.exp(-(phase+np.median(phase[np.where(temp==np.max(temp))[0]]))/self._parameters[2])/\
             (1+np.exp(-(phase+np.median(phase[np.where(temp==np.max(temp))[0]]))/self._parameters[3])))/np.max(temp) + self._parameters[1]
         
 

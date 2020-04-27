@@ -16,29 +16,28 @@ Out::
 
 	       time         band        flux        ...  zp  zpsys  image 
 	------------------ ----- ------------------ ... ---- ----- -------
-	               0.0 F125W  64.59429430606906 ... 26.8    AB image_1
-	2.0224719101123596 F125W    62.408324396966 ... 26.8    AB image_1
-	 4.044943820224719 F125W  68.10359798573809 ... 26.8    AB image_1
-	 6.067415730337078 F125W  71.76160753594853 ... 26.8    AB image_1
-	 8.089887640449438 F125W  73.43467553050705 ... 26.8    AB image_1
-	10.112359550561798 F125W  74.34296720689296 ... 26.8    AB image_1
-	12.134831460674157 F125W  71.73347707161632 ... 26.8    AB image_1
-	14.157303370786517 F125W  72.93187923529568 ... 26.8    AB image_1
-	16.179775280898877 F125W  70.64111678688164 ... 26.8    AB image_1
-	18.202247191011235 F125W  69.31085357488871 ... 26.8    AB image_1
+	               0.0 F110W  37.19064872538628 ... 26.8    AB image_1
+	 5.147058823529412 F110W  50.32055546444027 ... 26.8    AB image_1
+	10.294117647058824 F110W  58.82844698903818 ... 26.8    AB image_1
+	15.441176470588236 F110W  65.97476390948702 ... 26.8    AB image_1
+	 20.58823529411765 F110W  68.59997144436151 ... 26.8    AB image_1
+	 25.73529411764706 F110W  65.41632106171966 ... 26.8    AB image_1
+	 30.88235294117647 F110W  59.41782422093636 ... 26.8    AB image_1
+	36.029411764705884 F110W 54.662097309508674 ... 26.8    AB image_1
+	  41.1764705882353 F110W 47.645924536421205 ... 26.8    AB image_1
+	 46.32352941176471 F110W  40.80754042147044 ... 26.8    AB image_1
 	               ...   ...                ... ...  ...   ...     ...
-	38.426966292134836 F160W 19.950527074094737 ... 26.2    AB image_1
-	40.449438202247194 F160W 20.963076283234553 ... 26.2    AB image_1
-	 42.47191011235955 F160W 21.402880246191344 ... 26.2    AB image_1
-	 44.49438202247191 F160W  18.28098879531828 ... 26.2    AB image_1
-	 46.51685393258427 F160W 18.947732390210522 ... 26.2    AB image_1
-	 48.53932584269663 F160W 15.987591900959364 ... 26.2    AB image_1
-	 50.56179775280899 F160W 20.011941798193966 ... 26.2    AB image_1
-	 52.58426966292135 F160W 15.516064719260328 ... 26.2    AB image_1
-	 54.60674157303371 F160W   17.1543325162061 ... 26.2    AB image_1
-	 56.62921348314607 F160W  18.25136177909449 ... 26.2    AB image_1
-	58.651685393258425 F160W 17.198071229182016 ... 26.2    AB image_1
-	Length = 60 rows
+	              87.5 F160W 19.004911887838812 ... 26.2    AB image_1
+	 92.64705882352942 F160W 16.193649480155404 ... 26.2    AB image_1
+	 97.79411764705883 F160W  13.44274461829073 ... 26.2    AB image_1
+	102.94117647058825 F160W 12.231192259725086 ... 26.2    AB image_1
+	108.08823529411765 F160W 10.071258263342276 ... 26.2    AB image_1
+	113.23529411764707 F160W 11.750167963069211 ... 26.2    AB image_1
+	118.38235294117648 F160W  9.962239538490955 ... 26.2    AB image_1
+	123.52941176470588 F160W 6.9499842149097075 ... 26.2    AB image_1
+	 128.6764705882353 F160W  6.479431333100114 ... 26.2    AB image_1
+	133.82352941176472 F160W  7.288367029732507 ... 26.2    AB image_1
+	138.97058823529412 F160W  6.416746741653151 ... 26.2    AB image_1
 
 Now, to turn these two data tables into an :py:class:`~sntd.curve_io.curveDict` object that will be fit, we use the :py:func:`~sntd.curve_io.table_factory` function:
 
@@ -89,6 +88,48 @@ Out::
     :height: 600px
     :alt: alternate text
 
+
+*********************
+Uknown Supernova Type
+*********************
+
+You may not know that your SN is a Type Ia (as other examples here and in :ref:`examples/plot_fitting:Measuring Time Delays`).
+In that case you have two more options. You could use the parameterized `Bazin model <https://ui.adsabs.harvard.edu/abs/2009A%26A...499..653B/abstract>`_:
+
+.. code-block:: python
+
+	fitCurves=sntd.fit_data(new_MISN,snType='Ia', models='Bazin',bands=['F140W'],
+	            params=['t0','B','amplitude','rise','fall'],refImage='image_1',cut_time=None,#[-100,100],
+	            bounds={'t0':(-20,20),'amplitude':(.1,100),'rise':(1,200),'fall':(1,200),'B':(0,1),
+	                   'td':(-20,20),'mu':(.5,2)},
+	            fitOrder=['image_1','image_2'],fit_prior=None,minsnr=3,trial_fit=True,
+	            method='parallel',microlensing=None,modelcov=False,npoints=100,
+	                        maxiter=None)
+	fitCurves.plot_object(showFit=True)
+	print(fitCurves.parallel.time_delays)
+
+Out::
+	
+	{'image_1': 0, 'image_2': 50.63220454625854}
+
+.. image:: _static/bazin.png
+    :width: 600px
+    :align: center
+    :height: 600px
+    :alt: alternate text
+
+Another option is to fit multiple models from different SN types. SNTD will choose the "best" model using the Bayesian Evidence.
+
+.. code-block:: python
+
+	fitCurves=sntd.fit_data(new_MISN,snType='Ia', models=['salt2-extended','hsiao','snana-2004gq',
+            'snana-2004fe','snana-2004gv','snana-2007nc'],
+            bands=['F110W','F140W'],cut_time=[-500,30],
+            params=['x0','t0','x1','c','amplitude'],constants={'z':1.33},refImage='image_1',
+            bounds={'t0':(-20,20),'x1':(-3,3),'c':(-1,1),'td':(-20,20),'mu':(.5,2)},
+            fitOrder=['image_2','image_1'],trial_fit=True,minsnr=3,
+            method='parallel',microlensing=None,modelcov=False,npoints=50,clip_data=True,
+            maxiter=None)
 
 ****************************************
 Batch Processing Time Delay Measurements

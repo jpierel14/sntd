@@ -56,7 +56,7 @@ class newDict(dict):
 
 
 def fit_data(curves=None, snType='Ia',bands=None, models=None, params=None, bounds={}, ignore=None, constants={},
-			 method='parallel',t0_guess=None,effect_names=[],effect_frames=[],batch_init=None,cut_time=None,
+			 method='parallel',t0_guess=None,effect_names=[],effect_frames=[],batch_init=None,cut_time=None,force_positive_param=[],
 			 dust=None,microlensing=None,fitOrder=None,color_bands=None,color_param_ignore=[],min_points_per_band=3,identify_micro=False,
 			 fit_prior=None,par_or_batch='parallel',batch_partition=None,nbatch_jobs=None,batch_python_path=None,n_per_node=1,
 			 wait_for_batch=False,band_order=None,set_from_simMeta=None,guess_amplitude=True,trial_fit=True,clip_data=False,
@@ -95,6 +95,8 @@ def fit_data(curves=None, snType='Ia',bands=None, models=None, params=None, boun
 		A string to be pasted into the batch python file (e.g. extra imports or filters added to sncosmo.)
 	cut_time: :class:`~list`
 		The start and end (rest frame) phase that you want to fit in, default accept all phases. 
+	force_positive_param: :class:`~list`
+		Optional list of parameters to always make positive.
 	dust: :class:`sncosmo.PropagationEffect`
 		An sncosmo dust propagation effect to include in the model
 	microlensing: str
@@ -903,7 +905,11 @@ def _fitColor(all_args):
 			par_ref=args['refImage']
 			im_name=args['refImage'][:-1]
 			if args['trial_fit']:
-				
+				for b in args['force_positive_param']:
+					if b in args['bounds'].keys():
+						args['bounds'][b]=np.array([max([args['bounds'][b][0],0]),max([args['bounds'][b][1],0])])
+					else:
+						args['bounds'][b]=np.array([0,np.inf])
 				best_bands=band_SNR[args['refImage']][:min(len(band_SNR[args['refImage']]),2)]
 				temp_delays={}
 				temp_mags={}
@@ -984,7 +990,11 @@ def _fitColor(all_args):
 		all_vparam_names=np.array([x for x in all_vparam_names if x!=tempMod.param_names[2]])
 		if args['band_order'] is not None:
 			args['bands']=[x for x in args['band_order'] if x in args['bands']]
-
+		for b in args['force_positive_param']:
+			if b in args['bounds'].keys():
+				args['bounds'][b]=np.array([max([args['bounds'][b][0],0]),max([args['bounds'][b][1],0])])
+			else:
+				args['bounds'][b]=np.array([0,np.inf])
 		params,res,model=nest_color_lc(args['curves'].color.table,tempMod,nimage,color=args['bands'],
 											bounds=args['bounds'],
 											 vparam_names=[x for x in all_vparam_names if x in tempMod.param_names or x in snParams],ref=par_ref,
@@ -1370,7 +1380,11 @@ def _fitseries(all_args):
 			par_ref=args['refImage']
 			im_name=args['refImage'][:-1]
 			if args['trial_fit']:
-				
+				for b in args['force_positive_param']:
+					if b in args['bounds'].keys():
+						args['bounds'][b]=np.array([max([args['bounds'][b][0],0]),max([args['bounds'][b][1],0])])
+					else:
+						args['bounds'][b]=np.array([0,np.inf])
 				best_bands=band_SNR[args['refImage']][:min(len(band_SNR[args['refImage']]),2)]
 				temp_delays={}
 				temp_mags={}
@@ -1447,7 +1461,11 @@ def _fitseries(all_args):
 																	args['curves'].series.table['time']<= \
 																	args['cut_time'][1]*(1+tempMod.get('z'))+args['curves'].series.meta['reft0']+\
 																	args['curves'].series.meta['td'][im])))[0]]
-
+		for b in args['force_positive_param']:
+			if b in args['bounds'].keys():
+				args['bounds'][b]=np.array([max([args['bounds'][b][0],0]),max([args['bounds'][b][1],0])])
+			else:
+				args['bounds'][b]=np.array([0,np.inf])
 		params,res,model=nest_series_lc(args['curves'].series.table,tempMod,nimage,bounds=args['bounds'],
 									  vparam_names=[x for x in all_vparam_names if x in tempMod.param_names or x in np.array(snParams).flatten()],ref=par_ref,
 									  minsnr=args.get('minsnr',5.),priors=args.get('priors',None),ppfs=args.get('ppfs',None),
@@ -1847,6 +1865,11 @@ def _fitparallel(all_args):
 			args['bounds']['t0']=np.array(initial_bounds['t0'])+guess_t0
 		
 		if args['trial_fit'] and args['t0_guess'] is None:
+			for b in args['force_positive_param']:
+				if b in args['bounds'].keys():
+					args['bounds'][b]=np.array([max([args['bounds'][b][0],0]),max([args['bounds'][b][1],0])])
+				else:
+					args['bounds'][b]=np.array([0,np.inf])
 			best_bands=band_SNR[args['fitOrder'][0]][:min(len(band_SNR[args['fitOrder'][0]]),2)]
 			temp_bands=[]
 			for b in best_bands:
@@ -1882,7 +1905,11 @@ def _fitparallel(all_args):
 			fit_table=fit_table[fit_table['flux']/fit_table['fluxerr']>=args.get('minsnr',0)]
 		else:
 			fit_table=deepcopy(args['curves'].images[args['fitOrder'][0]].table)
-		
+		for b in args['force_positive_param']:
+			if b in args['bounds'].keys():
+				args['bounds'][b]=np.array([max([args['bounds'][b][0],0]),max([args['bounds'][b][1],0])])
+			else:
+				args['bounds'][b]=np.array([0,np.inf])
 		res,fit=sncosmo.nest_lc(fit_table,tempMod,[x for x in args['params'] if x in tempMod.param_names],
 								bounds=args['bounds'],
 							  priors=args.get('priors',None), ppfs=args.get('ppfs',None),
@@ -2354,6 +2381,8 @@ def param_fit(args,modName,fit=False):
 
 
 def identify_micro_func(args):
+	print('Only a development function for now!')
+	return args['bands'],args['bands']
 	if len(args['bands'])<=2:
 		return args['bands'],args['bands']
 	res_dict={}
