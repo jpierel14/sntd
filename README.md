@@ -10,4 +10,4 @@ Welcome to Supernova Time Delays (SNTD)
 
 Documentation for this package is hosted on [ReadTheDocs](https://sntd.readthedocs.io/en/latest/). This package is under active use and development, so please post GitHub issues if anything arises (bug or feature request). Please see the "notebooks" folder for jupyter notebook examples of using SNTD.
 
-**Citing SNTD:** [![DOI](https://img.shields.io/badge/DOI-10.3847/1538-4357/ab164a-RED.svg)](https://doi.org/10.3847/1538-4357/ab164a)
+**Citing SNTD:** [![DOI](https://img.shields.io/badge/DOI-SNTD-RED.svg)](https://doi.org/10.3847/1538-4357/ab164a)
