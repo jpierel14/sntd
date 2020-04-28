@@ -75,10 +75,6 @@ functionality in SNCosmo.
 
 - `matplotlib <http://www.matplotlib.org/>`_ for plotting
   functions.
-- `iminuit <http://iminuit.github.io/iminuit/>`_ for light curve
-  fitting using the Minuit minimizer in `sncosmo.fit_lc`.
-- `emcee <http://dan.iel.fm/emcee/>`_ for MCMC light curve parameter
-  estimation in `sncosmo.mcmc_lc`.
 - `pyParz <https://pypi.org/project/pyParz/>`_ for microlensing uncertainty estimation.
 
 These packages are all pip installable.
