@@ -21,3 +21,20 @@ Primary Contributors
     :figclass: align-left
 
     `Steve Rodney <https://github.com/srodney>`_
+
+|
+|
+|
+|
+|
+|
+|
+|
+|
+|
+|
+|
+
+Acknowledgements                       
+================
+Logo Design: `Eleanor Pierel <https://eleanorpierel.com>`_
