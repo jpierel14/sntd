@@ -30,13 +30,8 @@ def _param_to_source(source,wave,color_curve=None,band1=None,band2=None,ref_colo
 
     else:
         temp_flux=np.ones(len(finalPhase))
-    try:
-        zpnorm = 10.**(0.4 * source.lc['zp'][source.lc['band']==band.name.lower()][0])
-        band.name=band.name.lower()
-    except:
-        zpnorm = 10.**(0.4 * source.lc['zp'][source.lc['band']==band.name.upper()][0])
-        band.name=band.name.upper()
-
+    zpnorm = 10.**(0.4 * source.lc['zp'][source.lc['band']==band.name.lower()][0])
+    
 
     wave, dwave = integration_grid(band.minwave(), band.maxwave(),
                                    MODEL_BANDFLUX_SPACING)

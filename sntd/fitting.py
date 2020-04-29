@@ -1893,11 +1893,9 @@ def _fitparallel(all_args):
 				if mod.upper() in ['BAZIN','BAZINSOURCE']:
 					mod='BAZINSOURCE'
 					if len(np.unique(args['curves'].images[args['fitOrder'][0]].table['band']))>1:
-						best_bands=band_SNR[args['fitOrder'][0]][0]
-						temp_bands=[]
-						for b in best_bands:
-							temp_bands=np.append(temp_bands,np.where(args['curves'].images[args['fitOrder'][0]].table['band']==b)[0])
-						inds=temp_bands.astype(int)
+						best_band=band_SNR[args['fitOrder'][0]][0]
+						inds=np.where(args['curves'].images[args['fitOrder'][0]].table['band']==best_band)[0]
+						
 
 					source=BazinSource(data=args['curves'].images[args['fitOrder'][0]].table[inds])
 				else:
