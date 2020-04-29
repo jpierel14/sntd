@@ -59,6 +59,7 @@ class newDict(dict):
 def fit_data(curves=None, snType='Ia',bands=None, models=None, params=None, bounds={}, ignore=None, constants={},ignore_models=[],
 			 method='parallel',t0_guess=None,effect_names=[],effect_frames=[],batch_init=None,cut_time=None,force_positive_param=[],
 			 dust=None,microlensing=None,fitOrder=None,color_bands=None,color_param_ignore=[],min_points_per_band=3,identify_micro=False,
+			 max_n_bands=None,
 			 fit_prior=None,par_or_batch='parallel',batch_partition=None,nbatch_jobs=None,batch_python_path=None,n_per_node=1,fast_model_selection=True,
 			 wait_for_batch=False,band_order=None,set_from_simMeta=None,guess_amplitude=True,trial_fit=True,clip_data=False,
 			 kernel='RBF',refImage='image_1',nMicroSamples=100,color_curve=None,warning_supress=True,
@@ -116,6 +117,8 @@ def fit_data(curves=None, snType='Ia',bands=None, models=None, params=None, boun
 		Only accept bands to fit with this number of points fitting other criterion (e.g. minsnr)
 	identify_micro: bool
 		If True, function is run to attempt to identify bands where microlensing is least problematic.
+	max_n_bands: 
+		The best n bands are chosen from the data. 
 	fit_prior: :class:`~sntd.curve_io.curveDict` or bool
 		if implementing parallel method alongside others and fit_prior is True, will use output of parallel as prior
 		for series/color. If SNTD curveDict object, used as prior for series or color.
@@ -1276,8 +1279,9 @@ def _fitseries(all_args):
 			args['curves'].clip_data(im=im,minsnr=args.get('minsnr',0))
 
 	args['bands'],band_SNR,_=getBandSNR(args['curves'],args['bands'],args['min_points_per_band'])
-	args['curves'].series.bands=args['bands']
+	args['curves'].series.bands=args['bands'][:args['max_n_bands']]if args['max_n_bands'] is not None else args['bands']
 
+	
 
 	imnums=[x[-1] for x in args['curves'].images.keys()]
 	if args['fit_prior'] is not None:
@@ -1403,7 +1407,9 @@ def _fitseries(all_args):
 						args['bounds'][b]=np.array([max([args['bounds'][b][0],0]),max([args['bounds'][b][1],0])])
 					else:
 						args['bounds'][b]=np.array([0,np.inf])
-				best_bands=band_SNR[args['refImage']][:min(len(band_SNR[args['refImage']]),2)]
+
+				nbands=args['max_n_bands'] if args['max_n_bands'] is not None else 2
+				best_bands=band_SNR[args['refImage']][:min(len(band_SNR[args['refImage']]),nbands)]
 				temp_delays={}
 				temp_mags={}
 				fit_order=np.flip(args['fitOrder']) if args['fitOrder'] is not None else \
@@ -1484,6 +1490,8 @@ def _fitseries(all_args):
 				args['bounds'][b]=np.array([max([args['bounds'][b][0],0]),max([args['bounds'][b][1],0])])
 			else:
 				args['bounds'][b]=np.array([0,np.inf])
+		for b in [x for x in np.unique(args['curves'].series.table['band']) if x not in args['curves'].series.bands]:
+			args['curves'].series.table=args['curves'].series.table[args['curves'].series.table['band']!=b]
 		params,res,model=nest_series_lc(args['curves'].series.table,tempMod,nimage,bounds=args['bounds'],
 									  vparam_names=[x for x in all_vparam_names if x in tempMod.param_names or x in np.array(snParams).flatten()],ref=par_ref,
 									  minsnr=args.get('minsnr',5.),priors=args.get('priors',None),ppfs=args.get('ppfs',None),
@@ -1841,6 +1849,14 @@ def _fitparallel(all_args):
 			print('If you supply a t0 guess, you must also supply bounds.')
 			sys.exit(1)
 
+	if args['max_n_bands'] is not None:
+		best_bands=band_SNR[args['fitOrder'][0]][:min(len(band_SNR[args['fitOrder'][0]]),max_n_bands)]
+		temp_bands=[]
+		for b in best_bands:
+			temp_bands=np.append(temp_bands,np.where(args['curves'].images[args['fitOrder'][0]].table['band']==b)[0])
+		inds=temp_bands.astype(int)
+	else:
+		inds=np.arange(0,len(args['curves'].images[args['fitOrder'][0]].table),1).astype(int)
 	initial_bounds=deepcopy(args['bounds'])
 	finallogz=-np.inf
 	if args['dust'] is not None:
@@ -1868,11 +1884,7 @@ def _fitparallel(all_args):
 				args['bounds'][b]=np.array([max([args['bounds'][b][0],0]),max([args['bounds'][b][1],0])])
 			else:
 				args['bounds'][b]=np.array([0,np.inf])
-		#best_bands=band_SNR[args['fitOrder'][0]][:min(len(band_SNR[args['fitOrder'][0]]),2)]
-		#temp_bands=[]
-		#for b in best_bands:
-		#	temp_bands=np.append(temp_bands,np.where(args['curves'].images[args['fitOrder'][0]].table['band']==b)[0])
-		#inds=temp_bands.astype(int)
+		
 		minchisq=np.inf
 		for mod in np.array(args['models']).flatten():
 			if isinstance(mod,str):
@@ -1890,7 +1902,7 @@ def _fitparallel(all_args):
 
 			
 			try:
-				res,fit=sncosmo.fit_lc(args['curves'].images[args['fitOrder'][0]].table,tempMod,[x for x in args['params'] if x in tempMod.param_names],
+				res,fit=sncosmo.fit_lc(args['curves'].images[args['fitOrder'][0]].table[inds],tempMod,[x for x in args['params'] if x in tempMod.param_names],
 										bounds={b:args['bounds'][b] for b in args['bounds'] if b not in ['t0',tempMod.param_names[2]]},
 										minsnr=args.get('minsnr',0))
 			except:
@@ -1930,11 +1942,12 @@ def _fitparallel(all_args):
 					args['bounds'][b]=np.array([max([args['bounds'][b][0],0]),max([args['bounds'][b][1],0])])
 				else:
 					args['bounds'][b]=np.array([0,np.inf])
-			best_bands=band_SNR[args['fitOrder'][0]][:min(len(band_SNR[args['fitOrder'][0]]),2)]
-			temp_bands=[]
-			for b in best_bands:
-				temp_bands=np.append(temp_bands,np.where(args['curves'].images[args['fitOrder'][0]].table['band']==b)[0])
-			inds=temp_bands.astype(int)
+			if args['max_n_bands'] is None:
+				best_bands=band_SNR[args['fitOrder'][0]][:min(len(band_SNR[args['fitOrder'][0]]),2)]
+				temp_bands=[]
+				for b in best_bands:
+					temp_bands=np.append(temp_bands,np.where(args['curves'].images[args['fitOrder'][0]].table['band']==b)[0])
+				inds=temp_bands.astype(int)
 			res,fit=sncosmo.fit_lc(args['curves'].images[args['fitOrder'][0]].table[inds],tempMod,[x for x in args['params'] if x in tempMod.param_names],
 									bounds={b:args['bounds'][b]+(args['bounds'][b]-np.median(args['bounds'][b]))*2 if b=='t0' else args['bounds'][b] for b in args['bounds'] if b!= tempMod.param_names[2]},
 									minsnr=args.get('minsnr',0))
@@ -1952,6 +1965,7 @@ def _fitparallel(all_args):
 				args['bounds'][tempMod.param_names[2]]=[.1*guess_amp,10*guess_amp]
 
 		if args['clip_data']:
+			args['curves'].images[args['fitOrder'][0]].table=args['curves'].images[args['fitOrder'][0]].table[inds]
 			if args['cut_time'] is not None:
 				args['curves'].clip_data(im=args['fitOrder'][0],minsnr=args.get('minsnr',0),mintime=args['cut_time'][0]*(1+tempMod.get('z')),
 						maxtime=args['cut_time'][1]*(1+tempMod.get('z')),peak=guess_t0)
@@ -1963,8 +1977,10 @@ def _fitparallel(all_args):
 			fit_table=fit_table[fit_table['time']>=guess_t0+(args['cut_time'][0]*(1+tempMod.get('z')))]
 			fit_table=fit_table[fit_table['time']<=guess_t0+(args['cut_time'][1]*(1+tempMod.get('z')))]
 			fit_table=fit_table[fit_table['flux']/fit_table['fluxerr']>=args.get('minsnr',0)]
+			fit_table=fit_table[inds]
 		else:
 			fit_table=deepcopy(args['curves'].images[args['fitOrder'][0]].table)
+			fit_table=fit_table[inds]
 		for b in args['force_positive_param']:
 			if b in args['bounds'].keys():
 				args['bounds'][b]=np.array([max([args['bounds'][b][0],0]),max([args['bounds'][b][1],0])])
@@ -2004,13 +2020,20 @@ def _fitparallel(all_args):
 			continue
 		initial_bounds[first_res[2].vparam_names[i]]=3*np.array([first_params[i][0],first_params[i][2]])-2*first_params[i][1]
 	for d in args['fitOrder'][1:]:
+		if args['max_n_bands'] is not None:
+			best_bands=band_SNR[d][:min(len(band_SNR[d]),max_n_bands)]
+			temp_bands=[]
+			for b in best_bands:
+				temp_bands=np.append(temp_bands,np.where(args['curves'].images[d].table['band']==b)[0])
+			inds=temp_bands.astype(int)
+		else:
+			inds=np.arange(0,len(args['curves'].images[d].table),1).astype(int)
 		args['curves'].images[d].fits=newDict()
 		initial_bounds['t0']=deepcopy(t0Bounds)
 		
 		if args['t0_guess'] is not None:
 			if 't0' in args['bounds']:
 				initial_bounds['t0']=(t0Bounds[0]+args['t0_guess'][d],t0Bounds[1]+args['t0_guess'][d])
-			inds=None
 		else:
 			best_bands=band_SNR[d][:min(len(band_SNR[d]),2)]
 			temp_bands=[]
@@ -2018,9 +2041,10 @@ def _fitparallel(all_args):
 				temp_bands=np.append(temp_bands,np.where(args['curves'].images[d].table['band']==b)[0])
 			inds=temp_bands.astype(int)
 		if args['clip_data']:
-			fit_table=args['curves'].images[d].table
+			fit_table=args['curves'].images[d].table[inds]
 		else:
 			fit_table=deepcopy(args['curves'].images[d].table)
+			fit_table=fit_table[inds]
 		params,args['curves'].images[d].fits['model'],args['curves'].images[d].fits['res']\
 			=nest_parallel_lc(fit_table,first_res[1],first_res[2],initial_bounds,
 							guess_amplitude_bound=True,priors=args.get('priors',None), ppfs=args.get('None'),
