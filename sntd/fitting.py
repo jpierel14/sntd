@@ -2039,7 +2039,7 @@ def _fitparallel(all_args):
 		initial_bounds[first_res[2].vparam_names[i]]=3*np.array([first_params[i][0],first_params[i][2]])-2*first_params[i][1]
 	for d in args['fitOrder'][1:]:
 		if args['max_n_bands'] is not None:
-			best_bands=band_SNR[d][:min(len(band_SNR[d]),max_n_bands)]
+			best_bands=band_SNR[d][:min(len(band_SNR[d]),args['max_n_bands'])]
 			temp_bands=[]
 			for b in best_bands:
 				temp_bands=np.append(temp_bands,np.where(args['curves'].images[d].table['band']==b)[0])
