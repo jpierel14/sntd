@@ -1868,11 +1868,11 @@ def _fitparallel(all_args):
 				args['bounds'][b]=np.array([max([args['bounds'][b][0],0]),max([args['bounds'][b][1],0])])
 			else:
 				args['bounds'][b]=np.array([0,np.inf])
-		best_bands=band_SNR[args['fitOrder'][0]][:min(len(band_SNR[args['fitOrder'][0]]),2)]
-		temp_bands=[]
-		for b in best_bands:
-			temp_bands=np.append(temp_bands,np.where(args['curves'].images[args['fitOrder'][0]].table['band']==b)[0])
-		inds=temp_bands.astype(int)
+		#best_bands=band_SNR[args['fitOrder'][0]][:min(len(band_SNR[args['fitOrder'][0]]),2)]
+		#temp_bands=[]
+		#for b in best_bands:
+		#	temp_bands=np.append(temp_bands,np.where(args['curves'].images[args['fitOrder'][0]].table['band']==b)[0])
+		#inds=temp_bands.astype(int)
 		minchisq=np.inf
 		for mod in np.array(args['models']).flatten():
 			if isinstance(mod,str):
@@ -1890,7 +1890,7 @@ def _fitparallel(all_args):
 
 			
 			try:
-				res,fit=sncosmo.fit_lc(args['curves'].images[args['fitOrder'][0]].table[inds],tempMod,[x for x in args['params'] if x in tempMod.param_names],
+				res,fit=sncosmo.fit_lc(args['curves'].images[args['fitOrder'][0]].table,tempMod,[x for x in args['params'] if x in tempMod.param_names],
 										bounds={b:args['bounds'][b] for b in args['bounds'] if b not in ['t0',tempMod.param_names[2]]},
 										minsnr=args.get('minsnr',0))
 			except:
