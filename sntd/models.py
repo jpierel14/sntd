@@ -30,6 +30,8 @@ def _param_to_source(source,wave,color_curve=None,band1=None,band2=None,ref_colo
 
     else:
         temp_flux=np.ones(len(finalPhase))
+
+    
     zpnorm = 10.**(0.4 * source.lc['zp'][source.lc['band']==band.name][0])
     
 
