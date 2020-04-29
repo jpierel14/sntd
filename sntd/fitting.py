@@ -2052,8 +2052,15 @@ def _fitparallel(all_args):
 		if args['t0_guess'] is not None:
 			if 't0' in args['bounds']:
 				initial_bounds['t0']=(t0Bounds[0]+args['t0_guess'][d],t0Bounds[1]+args['t0_guess'][d])
+		else:
+			best_bands=band_SNR[d][:min(len(band_SNR[d]),2)]
+			temp_bands=[]
+			for b in best_bands:
+				temp_bands=np.append(temp_bands,np.where(args['curves'].images[d].table['band']==b)[0])
+			inds=temp_bands.astype(int)
+
 		if mod=='BAZINSOURCE':
-			inds=np.where(args['curves'].images[d].table['band']==np.unique(args['curves'].images[args['fitOrder'][0]].table['band'])[0])[0]
+			inds=np.where(args['curves'].images[d].table['band']==best_band)[0]
 		if args['clip_data']:
 			fit_table=args['curves'].images[d].table[inds]
 		else:
