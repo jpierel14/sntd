@@ -1893,9 +1893,12 @@ def _fitparallel(all_args):
 			if 't0' in args['bounds'] and args['t0_guess'] is None:
 
 				args['bounds']['t0']=np.array(initial_bounds['t0'])+guess_t0
-			res,fit=sncosmo.fit_lc(args['curves'].images[args['fitOrder'][0]].table[inds],tempMod,[x for x in args['params'] if x in tempMod.param_names],
+			try:
+				res,fit=sncosmo.fit_lc(args['curves'].images[args['fitOrder'][0]].table[inds],tempMod,[x for x in args['params'] if x in tempMod.param_names],guess_t0
 										bounds={b:args['bounds'][b]+(args['bounds'][b]-np.median(args['bounds'][b]))*2 if b=='t0' else args['bounds'][b] for b in args['bounds'] if b!= tempMod.param_names[2]},
 										minsnr=args.get('minsnr',0))
+			except:
+				continue
 			if res.chisq<minchisq:
 				minchisq=res.chisq
 				bestres=copy(res)
