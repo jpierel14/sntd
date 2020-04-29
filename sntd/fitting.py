@@ -2063,7 +2063,7 @@ def _fitparallel(all_args):
 			minds=np.where(args['curves'].images[d].table['band']==best_band)[0]
 			inds=None
 		else:
-			minds=inds
+			minds=np.arange(0,len(args['curves'].images[d].table),1).astype(int)
 		if args['clip_data']:
 			fit_table=args['curves'].images[d].table[minds]
 		else:
