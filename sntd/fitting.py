@@ -221,9 +221,9 @@ def fit_data(curves=None, snType='Ia',bands=None, models=None, params=None, boun
 			mods=[]
 			for t in snType:
 				if t!='Ia':
-					mods = np.append(mods,[x[0] for x in sncosmo.models._SOURCES._loaders.keys() if x[0] in modDict.keys() and modDict[x[0]][:len(snType)]==snType])
+					mods = np.append(mods,[x[0] for x in sncosmo.models._SOURCES._loaders.keys() if x[0] in modDict.keys() and modDict[x[0]][:len(t)]==t])
 				elif t=='Ia':
-					mods = np.append([x[0] for x in sncosmo.models._SOURCES._loaders.keys() if 'salt2' in x[0]])
+					mods = np.append(mods,[x[0] for x in sncosmo.models._SOURCES._loaders.keys() if 'salt2' in x[0]])
 
 
 	else:
