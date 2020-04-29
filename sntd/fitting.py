@@ -1919,8 +1919,9 @@ def _fitparallel(all_args):
 				if args['verbose']:
 					print('Issue with %s, skipping...'%mod)
 				continue
-			if res.chisq/<minchisq:
-				minchisq=res.chisq
+			tempchisq=res.chisq/(len(inds)+len([x for x in args['params'] if x in tempMod.param_names])-1)
+			if tempchisq<minchisq:
+				minchisq=tempchisq
 				bestres=copy(res)
 				bestfit=copy(fit)
 				bestmodname=copy(mod)
