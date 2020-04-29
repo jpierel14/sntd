@@ -82,6 +82,13 @@ _sncosmo_snana= [('snana-2004fe', 'SN Ic', 'CSP-2004fe.SED'),
           ('s11-2006jo', 'SN Ib', 'S11_SDSS-014492.SED'),
           ('s11-2006jl', 'SN IIP', 'S11_SDSS-014599.SED')]
 
+def get_models_by_sntype(snType):
+    mod,types=np.loadtxt(os.path.join(__filedir__,'data','sncosmo','models.ref'),dtype='str',unpack=True)
+    modDict={mod[i]:types[i] for i in range(len(mod))}
+    mods = [x[0] for x in sncosmo.models._SOURCES._loaders.keys() if x[0] in modDict.keys() and modDict[x[0]][:len(snType)]==snType]
+    return(mods)
+        
+
 def snana_to_sncosmo(snana_mod):
     for sncosmo_name,typ,snana_name in _sncosmo_snana:
         if snana_name==snana_mod:
