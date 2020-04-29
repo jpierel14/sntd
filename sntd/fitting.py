@@ -1887,9 +1887,12 @@ def _fitparallel(all_args):
 			tempMod.set(**{k:args['constants'][k] for k in args['constants'].keys() if k in tempMod.param_names})
 			if args['set_from_simMeta'] is not None:
 				tempMod.set(**{k:args['curves'].images[args['refImage']].simMeta[args['set_from_simMeta'][k]] for k in args['set_from_simMeta'].keys() if k in tempMod.param_names})
-			print(tempMod.parameters)
-			print({b:args['bounds'][b]+(args['bounds'][b]-np.median(args['bounds'][b]))*2 if b=='t0' else args['bounds'][b] for b in args['bounds'] if b!= tempMod.param_names[2]})
-			print([x for x in args['params'] if x in tempMod.param_names])
+			guess_t0,guess_amp=sncosmo.fitting.guess_t0_and_amplitude( \
+						sncosmo.photdata.photometric_data(args['curves'].images[args['fitOrder'][0]].table),
+						tempMod,args.get('minsnr',5.))
+			if 't0' in args['bounds'] and args['t0_guess'] is None:
+
+				args['bounds']['t0']=np.array(initial_bounds['t0'])+guess_t0
 			res,fit=sncosmo.fit_lc(args['curves'].images[args['fitOrder'][0]].table[inds],tempMod,[x for x in args['params'] if x in tempMod.param_names],
 										bounds={b:args['bounds'][b]+(args['bounds'][b]-np.median(args['bounds'][b]))*2 if b=='t0' else args['bounds'][b] for b in args['bounds'] if b!= tempMod.param_names[2]},
 										minsnr=args.get('minsnr',0))
