@@ -1887,9 +1887,7 @@ def _fitparallel(all_args):
 			tempMod.set(**{k:args['constants'][k] for k in args['constants'].keys() if k in tempMod.param_names})
 			if args['set_from_simMeta'] is not None:
 				tempMod.set(**{k:args['curves'].images[args['refImage']].simMeta[args['set_from_simMeta'][k]] for k in args['set_from_simMeta'].keys() if k in tempMod.param_names})
-			guess_t0,guess_amp=sncosmo.fitting.guess_t0_and_amplitude( \
-						sncosmo.photdata.photometric_data(args['curves'].images[args['fitOrder'][0]].table),
-						tempMod,args.get('minsnr',5.))
+
 			
 			try:
 				res,fit=sncosmo.fit_lc(args['curves'].images[args['fitOrder'][0]].table[inds],tempMod,[x for x in args['params'] if x in tempMod.param_names],
