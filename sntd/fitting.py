@@ -1886,10 +1886,20 @@ def _fitparallel(all_args):
 				args['bounds'][b]=np.array([0,np.inf])
 		
 		minchisq=np.inf
+		init_inds=deepcopy(inds)
 		for mod in np.array(args['models']).flatten():
+			inds=deepcopy(init_inds)
 			if isinstance(mod,str):
 				if mod.upper() in ['BAZIN','BAZINSOURCE']:
-					source=BazinSource(data=args['curves'].images[args['fitOrder'][0]].table)
+					mod='BAZINSOURCE'
+					if len(np.unique(args['curves'].images[args['fitOrder'][0]].table['band']))>1:
+						best_bands=band_SNR[args['fitOrder'][0]][0]
+						temp_bands=[]
+						for b in best_bands:
+							temp_bands=np.append(temp_bands,np.where(args['curves'].images[args['fitOrder'][0]].table['band']==b)[0])
+						inds=temp_bands.astype(int)
+
+					source=BazinSource(data=args['curves'].images[args['fitOrder'][0]].table[inds])
 				else:
 					source=sncosmo.get_source(mod)
 				tempMod = sncosmo.Model(source=source,effects=effects,effect_names=effect_names,effect_frames=effect_frames)
@@ -1909,7 +1919,7 @@ def _fitparallel(all_args):
 				if args['verbose']:
 					print('Issue with %s, skipping...'%mod)
 				continue
-			if res.chisq<minchisq:
+			if res.chisq/<minchisq:
 				minchisq=res.chisq
 				bestres=copy(res)
 				bestfit=copy(fit)
