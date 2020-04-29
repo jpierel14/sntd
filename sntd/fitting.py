@@ -1948,7 +1948,7 @@ def _fitparallel(all_args):
 		if mod=='BAZINSOURCE':
 			tempMod.set(z=0)
 		guess_t0,guess_amp=sncosmo.fitting.guess_t0_and_amplitude( \
-			sncosmo.photdata.photometric_data(args['curves'].images[args['fitOrder'][0]].table),
+			sncosmo.photdata.photometric_data(args['curves'].images[args['fitOrder'][0]].table[inds]),
 			tempMod,args.get('minsnr',5.))
 		if 't0' in args['bounds'] and args['t0_guess'] is None:
 
