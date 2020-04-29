@@ -1898,6 +1898,8 @@ def _fitparallel(all_args):
 										bounds={b:args['bounds'][b]+(args['bounds'][b]-np.median(args['bounds'][b]))*2 if b=='t0' else args['bounds'][b] for b in args['bounds'] if b!= tempMod.param_names[2]},
 										minsnr=args.get('minsnr',0))
 			except:
+				if args['verbose']:
+					print('Issue with %s, skipping...'%mod)
 				continue
 			if res.chisq<minchisq:
 				minchisq=res.chisq
