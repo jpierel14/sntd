@@ -230,8 +230,7 @@ def fit_data(curves=None, snType='Ia',bands=None, models=None, params=None, boun
 		else:
 			mods=[x for x in mods if x!=ig_mod]
 	args['mods']=mods
-	print(mods)
-	sys.exit()
+
 	if warning_supress:
 		warnings.simplefilter('ignore')
 	if identify_micro and not args['parlist']:
