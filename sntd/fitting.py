@@ -1929,7 +1929,13 @@ def _fitparallel(all_args):
 	for mod in np.array(args['models']).flatten():
 		if isinstance(mod,str):
 			if mod.upper() in ['BAZIN','BAZINSOURCE']:
-				source=BazinSource(data=args['curves'].images[args['fitOrder'][0]].table)
+				mod='BAZINSOURCE'
+				if len(np.unique(args['curves'].images[args['fitOrder'][0]].table['band']))>1 and args['color_curve'] is None:
+						best_band=band_SNR[args['fitOrder'][0]][0]
+						inds=np.where(args['curves'].images[args['fitOrder'][0]].table['band']==best_band)[0]
+						
+
+					source=BazinSource(data=args['curves'].images[args['fitOrder'][0]].table[inds],colorCurve=args['color_curve'])
 			else:
 				source=sncosmo.get_source(mod)
 			tempMod = sncosmo.Model(source=source,effects=effects,effect_names=effect_names,effect_frames=effect_frames)
@@ -1939,6 +1945,8 @@ def _fitparallel(all_args):
 		tempMod.set(**{k:args['constants'][k] for k in args['constants'].keys() if k in tempMod.param_names})
 		if args['set_from_simMeta'] is not None:
 			tempMod.set(**{k:args['curves'].images[args['refImage']].simMeta[args['set_from_simMeta'][k]] for k in args['set_from_simMeta'].keys() if k in tempMod.param_names})
+		if mod=='BAZINSOURCE':
+			tempMod.set(z=0)
 		guess_t0,guess_amp=sncosmo.fitting.guess_t0_and_amplitude( \
 			sncosmo.photdata.photometric_data(args['curves'].images[args['fitOrder'][0]].table),
 			tempMod,args.get('minsnr',5.))
