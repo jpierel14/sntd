@@ -59,7 +59,7 @@ class newDict(dict):
 def fit_data(curves=None, snType='Ia',bands=None, models=None, params=None, bounds={}, ignore=None, constants={},ignore_models=[],
 			 method='parallel',t0_guess=None,effect_names=[],effect_frames=[],batch_init=None,cut_time=None,force_positive_param=[],
 			 dust=None,microlensing=None,fitOrder=None,color_bands=None,color_param_ignore=[],min_points_per_band=3,identify_micro=False,
-			 fit_prior=None,par_or_batch='parallel',batch_partition=None,nbatch_jobs=None,batch_python_path=None,n_per_node=1,
+			 fit_prior=None,par_or_batch='parallel',batch_partition=None,nbatch_jobs=None,batch_python_path=None,n_per_node=1,fast_model_selection=True,
 			 wait_for_batch=False,band_order=None,set_from_simMeta=None,guess_amplitude=True,trial_fit=True,clip_data=False,
 			 kernel='RBF',refImage='image_1',nMicroSamples=100,color_curve=None,warning_supress=True,
 			 verbose=True,**kwargs):
@@ -130,6 +130,10 @@ def fit_data(curves=None, snType='Ia',bands=None, models=None, params=None, boun
 		path to python you want to use for batch mode (if different from current)
 	n_per_node: int
 		Number of SNe to fit per node (in series) in batch mode.
+	fast_model_selection: bool
+		If you are providing a list of models and want the best fit, turning this on will make the fitter choose based
+		on a simple minuit fit before moving to the full sntd fitting. If false, each model will be fitted with the full
+		sntd fitting and the best will be chosen. 
 	wait_for_batch: bool
 		if false, submits job in the background. If true, waits for job to finish (shows progress bar) and returns output.
 	band_order: :class:`~list`
@@ -201,7 +205,7 @@ def fit_data(curves=None, snType='Ia',bands=None, models=None, params=None, boun
 			args['bands'] = list(curves.bands) if not isinstance(curves,(list,tuple,np.ndarray)) and not isinstance(args['curves'][0],str) else None
 	
 
-	models=[models] if models is not None and not isinstance(models,(tuple,list)) else models
+	models=[models] if models is not None and not isinstance(models,(tuple,list,np.ndarray)) else models
 	if models is None:
 		mod,types=np.loadtxt(os.path.join(__filedir__,'data','sncosmo','models.ref'),dtype='str',unpack=True)
 		modDict={mod[i]:types[i] for i in range(len(mod))}
@@ -221,7 +225,7 @@ def fit_data(curves=None, snType='Ia',bands=None, models=None, params=None, boun
 
 	else:
 		mods=models
-	mods=set(mods)
+	mods=np.unique(mods)
 	for ig_mod in ignore_models:
 		if ig_mod not in mods:
 			temp=snana_to_sncosmo(ig_mod)
@@ -1858,6 +1862,41 @@ def _fitparallel(all_args):
 		effects=[effect_frames]
 
 	all_fit_dict={}
+	if args['fast_model_selection'] and len(np.array(args['models']).flatten())>1:
+		for b in args['force_positive_param']:
+			if b in args['bounds'].keys():
+				args['bounds'][b]=np.array([max([args['bounds'][b][0],0]),max([args['bounds'][b][1],0])])
+			else:
+				args['bounds'][b]=np.array([0,np.inf])
+		best_bands=band_SNR[args['fitOrder'][0]][:min(len(band_SNR[args['fitOrder'][0]]),2)]
+		temp_bands=[]
+		for b in best_bands:
+			temp_bands=np.append(temp_bands,np.where(args['curves'].images[args['fitOrder'][0]].table['band']==b)[0])
+		inds=temp_bands.astype(int)
+		minchisq=np.inf
+		for mod in np.array(args['models']).flatten():
+			if isinstance(mod,str):
+				if mod.upper() in ['BAZIN','BAZINSOURCE']:
+					source=BazinSource(data=args['curves'].images[args['fitOrder'][0]].table)
+				else:
+					source=sncosmo.get_source(mod)
+				tempMod = sncosmo.Model(source=source,effects=effects,effect_names=effect_names,effect_frames=effect_frames)
+			else:
+				tempMod=copy(mod)
+			
+			tempMod.set(**{k:args['constants'][k] for k in args['constants'].keys() if k in tempMod.param_names})
+			if args['set_from_simMeta'] is not None:
+				tempMod.set(**{k:args['curves'].images[args['refImage']].simMeta[args['set_from_simMeta'][k]] for k in args['set_from_simMeta'].keys() if k in tempMod.param_names})
+			res,fit=sncosmo.fit_lc(args['curves'].images[args['fitOrder'][0]].table[inds],tempMod,[x for x in args['params'] if x in tempMod.param_names],
+										bounds={b:args['bounds'][b]+(args['bounds'][b]-np.median(args['bounds'][b]))*2 if b=='t0' else args['bounds'][b] for b in args['bounds'] if b!= tempMod.param_names[2]},
+										minsnr=args.get('minsnr',0))
+			if res.chisq<minchisq:
+				minchisq=res.chisq
+				bestres=copy(res)
+				bestfit=copy(fit)
+				bestmodname=copy(mod)
+			all_fit_dict[mod]=[copy(fit),copy(res)]
+		args['models']=[bestmodname]
 	for mod in np.array(args['models']).flatten():
 		if isinstance(mod,str):
 			if mod.upper() in ['BAZIN','BAZINSOURCE']:
