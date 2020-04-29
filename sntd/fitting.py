@@ -233,7 +233,7 @@ def fit_data(curves=None, snType='Ia',bands=None, models=None, params=None, boun
 				mods=[x for x in mods if x!=temp[1]]
 		else:
 			mods=[x for x in mods if x!=ig_mod]
-	args['mods']=mods
+	args['models']=mods
 
 	if warning_supress:
 		warnings.simplefilter('ignore')
