@@ -2062,6 +2062,8 @@ def _fitparallel(all_args):
 		if mod=='BAZINSOURCE':
 			minds=np.where(args['curves'].images[d].table['band']==best_band)[0]
 			inds=None
+		else:
+			minds=inds
 		if args['clip_data']:
 			fit_table=args['curves'].images[d].table[minds]
 		else:
