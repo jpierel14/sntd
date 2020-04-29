@@ -2060,12 +2060,13 @@ def _fitparallel(all_args):
 			inds=temp_bands.astype(int)
 
 		if mod=='BAZINSOURCE':
-			inds=np.where(args['curves'].images[d].table['band']==best_band)[0]
+			minds=np.where(args['curves'].images[d].table['band']==best_band)[0]
+			inds=None
 		if args['clip_data']:
-			fit_table=args['curves'].images[d].table[inds]
+			fit_table=args['curves'].images[d].table[minds]
 		else:
 			fit_table=deepcopy(args['curves'].images[d].table)
-			fit_table=fit_table[inds]
+			fit_table=fit_table[minds]
 		params,args['curves'].images[d].fits['model'],args['curves'].images[d].fits['res']\
 			=nest_parallel_lc(fit_table,first_res[1],first_res[2],initial_bounds,
 							guess_amplitude_bound=True,priors=args.get('priors',None), ppfs=args.get('None'),
