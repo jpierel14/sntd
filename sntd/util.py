@@ -13,15 +13,13 @@ from scipy.stats import rv_continuous
 
 
 __current_dir__=os.path.abspath(os.getcwd())
-__dir__=os.path.abspath(os.path.dirname(__file__))
+__filedir__=os.path.abspath(os.path.dirname(__file__))
 
 NORMAL = 0    # use python zip libraries
 PROCESS = 1   # use (zcat, gzip) or (bzcat, bzip2)
 PARALLEL = 2  # (pigz -dc, pigz) or (pbzip2 -dc, pbzip2)
 
-__all__=['flux_to_mag','_cast_str','_get_default_prop_name','_isfloat','anyOpen','_props','_findMax','_findMin',
-         '_guess_time_delays','_guess_magnifications','__dir__','load_example_data','posterior','weighted_quantile',
-         'run_sbatch','printProgressBar','load_batch_fit_names','load_batch_fit','load_example_misn']
+
 _props=odict([
     ('time',{'mjd', 'mjdobs', 'jd', 'time', 'date', 'mjd_obs','mhjd','jds'}),
     ('band',{'filter', 'band', 'flt', 'bandpass'}),
@@ -33,13 +31,75 @@ _props=odict([
     ('magerr',{'magerr','magerror','magnitudeerror','magnitudeerr','magerrs'})
 ])
 
+_sncosmo_snana= [('snana-2004fe', 'SN Ic', 'CSP-2004fe.SED'),
+          ('snana-2004gq', 'SN Ic', 'CSP-2004gq.SED'),
+          ('snana-sdss004012', 'SN Ic', 'SDSS-004012.SED'),  # no IAU name
+          ('snana-2006fo', 'SN Ic', 'SDSS-013195.SED'),  # PSNID
+          ('snana-sdss014475', 'SN Ic', 'SDSS-014475.SED'),  # no IAU name
+          ('snana-2006lc', 'SN Ic', 'SDSS-015475.SED'),
+          ('snana-2007ms', 'SN II-pec', 'SDSS-017548.SED'),  # type Ic in SNANA
+          ('snana-04d1la', 'SN Ic', 'SNLS-04D1la.SED'),
+          ('snana-04d4jv', 'SN Ic', 'SNLS-04D4jv.SED'),
+          ('snana-2004gv', 'SN Ib', 'CSP-2004gv.SED'),
+          ('snana-2006ep', 'SN Ib', 'CSP-2006ep.SED'),
+          ('snana-2007Y', 'SN Ib', 'CSP-2007Y.SED'),
+          ('snana-2004ib', 'SN Ib', 'SDSS-000020.SED'),
+          ('snana-2005hm', 'SN Ib', 'SDSS-002744.SED'),  # PSNID
+          ('snana-2006jo', 'SN Ib', 'SDSS-014492.SED'),  # PSNID
+          ('snana-2007nc', 'SN Ib', 'SDSS-019323.SED'),
+          ('snana-2004hx', 'SN IIP', 'SDSS-000018.SED'),  # PSNID
+          ('snana-2005gi', 'SN IIP', 'SDSS-003818.SED'),  # PSNID
+          ('snana-2006gq', 'SN IIP', 'SDSS-013376.SED'),
+          ('snana-2006kn', 'SN IIP', 'SDSS-014450.SED'),
+          ('snana-2006jl', 'SN IIP', 'SDSS-014599.SED'),  # PSNID
+          ('snana-2006iw', 'SN IIP', 'SDSS-015031.SED'),
+          ('snana-2006kv', 'SN IIP', 'SDSS-015320.SED'),
+          ('snana-2006ns', 'SN IIP', 'SDSS-015339.SED'),
+          ('snana-2007iz', 'SN IIP', 'SDSS-017564.SED'),
+          ('snana-2007nr', 'SN IIP', 'SDSS-017862.SED'),
+          ('snana-2007kw', 'SN IIP', 'SDSS-018109.SED'),
+          ('snana-2007ky', 'SN IIP', 'SDSS-018297.SED'),
+          ('snana-2007lj', 'SN IIP', 'SDSS-018408.SED'),
+          ('snana-2007lb', 'SN IIP', 'SDSS-018441.SED'),
+          ('snana-2007ll', 'SN IIP', 'SDSS-018457.SED'),
+          ('snana-2007nw', 'SN IIP', 'SDSS-018590.SED'),
+          ('snana-2007ld', 'SN IIP', 'SDSS-018596.SED'),
+          ('snana-2007md', 'SN IIP', 'SDSS-018700.SED'),
+          ('snana-2007lz', 'SN IIP', 'SDSS-018713.SED'),
+          ('snana-2007lx', 'SN IIP', 'SDSS-018734.SED'),
+          ('snana-2007og', 'SN IIP', 'SDSS-018793.SED'),
+          ('snana-2007ny', 'SN IIP', 'SDSS-018834.SED'),
+          ('snana-2007nv', 'SN IIP', 'SDSS-018892.SED'),
+          ('snana-2007pg', 'SN IIP', 'SDSS-020038.SED'),
+          ('snana-2006ez', 'SN IIn', 'SDSS-012842.SED'),
+          ('snana-2006ix', 'SN IIn', 'SDSS-013449.SED'),
+          ('s11-2004hx', 'SN IIL/P', 'S11_SDSS-000018.SED'),
+          ('s11-2005lc', 'SN IIP', 'S11_SDSS-001472.SED'),
+          ('s11-2005hl', 'SN Ib', 'S11_SDSS-002000.SED'),
+          ('s11-2005hm', 'SN Ib', 'S11_SDSS-002744.SED'),
+          ('s11-2005gi', 'SN IIP', 'S11_SDSS-003818.SED'),
+          ('s11-2006fo', 'SN Ic', 'S11_SDSS-013195.SED'),
+          ('s11-2006jo', 'SN Ib', 'S11_SDSS-014492.SED'),
+          ('s11-2006jl', 'SN IIP', 'S11_SDSS-014599.SED')]
+
+def snana_to_sncosmo(snana_mod):
+    for sncosmo_name,typ,snana_name in _sncosmo_snana:
+        if snana_name==snana_mod:
+            return[typ,sncosmo_name]
+    return None
+
+def sncosmo_to_snana(sncosmo_mod):
+    for sncosmo_name,typ,snana_name in _sncosmo_snana:
+        if sncosmo_name==sncosmo_mod:
+            return[typ,snana_name]
+    return None
 
 def load_example_data():
-    example_files=glob.glob(os.path.join(__dir__,'data','examples','*.dat'))
+    example_files=glob.glob(os.path.join(__filedir__,'data','examples','*.dat'))
     return(ascii.read(example_files[0]),ascii.read(example_files[1]))
 
 def load_example_misn():
-    example_file=glob.glob(os.path.join(__dir__,'data','examples','*.pkl'))
+    example_file=glob.glob(os.path.join(__filedir__,'data','examples','*.pkl'))
     return(pickle.load(open(example_file[0],'rb')))
 
 def load_batch_fit_names(folder_name,verbose=True):
@@ -87,11 +147,11 @@ def run_sbatch(partition=None,njobs=None,python_path=None,init=False,folder=None
     if python_path is None:
         python_path=subprocess.check_output("which python", shell=True).decode('utf-8').strip('\n')
     if not init:
-        with open(os.path.join(__dir__,'batch','sbatch_job.BATCH')) as f:
+        with open(os.path.join(__filedir__,'batch','sbatch_job.BATCH')) as f:
             sbatch=f.read()
         pyfile='run_sntd.py'
     else:
-        with open(os.path.join(__dir__,'batch','sbatch_job_init.BATCH')) as f:
+        with open(os.path.join(__filedir__,'batch','sbatch_job_init.BATCH')) as f:
             sbatch=f.read()
         pyfile='run_sntd_init.py'
 

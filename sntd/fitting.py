@@ -13,6 +13,7 @@ from sncosmo import nest_lc
 
 
 from .util import *
+from .util import __filedir__,__current_dir__
 from .curve_io import _sntd_deepcopy
 from .models import *
 from .ml import *
@@ -55,7 +56,7 @@ class newDict(dict):
 
 
 
-def fit_data(curves=None, snType='Ia',bands=None, models=None, params=None, bounds=dict(), ignore=None, constants=dict(),
+def fit_data(curves=None, snType='Ia',bands=None, models=None, params=None, bounds={}, ignore=None, constants={},ignore_models=[],
 			 method='parallel',t0_guess=None,effect_names=[],effect_frames=[],batch_init=None,cut_time=None,force_positive_param=[],
 			 dust=None,microlensing=None,fitOrder=None,color_bands=None,color_param_ignore=[],min_points_per_band=3,identify_micro=False,
 			 fit_prior=None,par_or_batch='parallel',batch_partition=None,nbatch_jobs=None,batch_python_path=None,n_per_node=1,
@@ -83,6 +84,9 @@ def fit_data(curves=None, snType='Ia',bands=None, models=None, params=None, boun
 		List of parameters to ignore
 	constants: :class:`dict`
 		Dictionary with parameters as keys and the constant value you want to set them to as values
+	ignore_models: class:`~list`
+		List of model names to ignore, usually used if you did not specify the "models" parameter
+		and let all models for a given SN type be chosen, but you want to ignore one or more.
 	method: :class:`~str` or :class:`~list`
 		Needs to be 'parallel', 'series', or 'color', or a list containting one or more of these
 	t0_guess: :class:`dict`
@@ -197,9 +201,9 @@ def fit_data(curves=None, snType='Ia',bands=None, models=None, params=None, boun
 			args['bands'] = list(curves.bands) if not isinstance(curves,(list,tuple,np.ndarray)) and not isinstance(args['curves'][0],str) else None
 	
 
-	models=[models] if models and not isinstance(models,(tuple,list)) else models
-	if not models:
-		mod,types=np.loadtxt(os.path.join(__dir__,'data','sncosmo','models.ref'),dtype='str',unpack=True)
+	models=[models] if models is not None and not isinstance(models,(tuple,list)) else models
+	if models is None:
+		mod,types=np.loadtxt(os.path.join(__filedir__,'data','sncosmo','models.ref'),dtype='str',unpack=True)
 		modDict={mod[i]:types[i] for i in range(len(mod))}
 		if isinstance(snType,str):
 			if snType!='Ia':
@@ -213,10 +217,21 @@ def fit_data(curves=None, snType='Ia',bands=None, models=None, params=None, boun
 					mods = np.append(mods,[x[0] for x in sncosmo.models._SOURCES._loaders.keys() if x[0] in modDict.keys() and modDict[x[0]][:len(snType)]==snType])
 				elif t=='Ia':
 					mods = np.append([x[0] for x in sncosmo.models._SOURCES._loaders.keys() if 'salt2' in x[0]])
+
+
 	else:
 		mods=models
 	mods=set(mods)
+	for ig_mod in ignore_models:
+		if ig_mod not in mods:
+			temp=snana_to_sncosmo(ig_mod)
+			if temp is not None:
+				mods=[x for x in mods if x!=temp[1]]
+		else:
+			mods=[x for x in mods if x!=ig_mod]
 	args['mods']=mods
+	print(mods)
+	sys.exit()
 	if warning_supress:
 		warnings.simplefilter('ignore')
 	if identify_micro and not args['parlist']:
@@ -250,7 +265,7 @@ def fit_data(curves=None, snType='Ia',bands=None, models=None, params=None, boun
 				pickle.dump(constants,open(os.path.join(folder_name,'sntd_constants.pkl'),'wb'))
 				pickle.dump(args['curves'],open(os.path.join(folder_name,'sntd_data.pkl'),'wb'))
 				for pyfile in ['run_sntd_init.py','run_sntd.py']:
-					with open(os.path.join(__dir__,'batch',pyfile)) as f:
+					with open(os.path.join(__filedir__,'batch',pyfile)) as f:
 						batch_py=f.read()
 					if 'init' in pyfile:
 						batch_py=batch_py.replace('nlcsreplace',str(min(int(n_per_node*nbatch_jobs),len(args['curves']))))
@@ -432,7 +447,7 @@ def fit_data(curves=None, snType='Ia',bands=None, models=None, params=None, boun
 				pickle.dump(constants,open(os.path.join(folder_name,'sntd_constants.pkl'),'wb'))
 				pickle.dump(args['curves'],open(os.path.join(folder_name,'sntd_data.pkl'),'wb'))
 				for pyfile in ['run_sntd_init.py','run_sntd.py']:
-					with open(os.path.join(__dir__,'batch',pyfile)) as f:
+					with open(os.path.join(__filedir__,'batch',pyfile)) as f:
 						batch_py=f.read()
 					if 'init' in pyfile:
 						batch_py=batch_py.replace('nlcsreplace',str(min(int(n_per_node*nbatch_jobs),len(args['curves']))))
@@ -550,7 +565,7 @@ def fit_data(curves=None, snType='Ia',bands=None, models=None, params=None, boun
 				pickle.dump(constants,open(os.path.join(folder_name,'sntd_constants.pkl'),'wb'))
 				pickle.dump(args['curves'],open(os.path.join(folder_name,'sntd_data.pkl'),'wb'))
 				for pyfile in ['run_sntd_init.py','run_sntd.py']:
-					with open(os.path.join(__dir__,'batch',pyfile)) as f:
+					with open(os.path.join(__filedir__,'batch',pyfile)) as f:
 						batch_py=f.read()
 					if 'init' in pyfile:
 						batch_py=batch_py.replace('nlcsreplace',str(min(int(n_per_node*nbatch_jobs),len(args['curves']))))
@@ -662,7 +677,7 @@ def fit_data(curves=None, snType='Ia',bands=None, models=None, params=None, boun
 				pickle.dump(constants,open(os.path.join(folder_name,'sntd_constants.pkl'),'wb'))
 				pickle.dump(args['curves'],open(os.path.join(folder_name,'sntd_data.pkl'),'wb'))
 				for pyfile in ['run_sntd_init.py','run_sntd.py']:
-					with open(os.path.join(__dir__,'batch',pyfile)) as f:
+					with open(os.path.join(__filedir__,'batch',pyfile)) as f:
 						batch_py=f.read()
 					if 'init' in pyfile:
 						batch_py=batch_py.replace('nlcsreplace',str(min(int(n_per_node*nbatch_jobs),len(args['curves']))))

@@ -31,7 +31,6 @@ def test_sntd():
 		print(traceback.format_exc())
 		failed+=1
 	
-	
 	for method in ['parallel','series','color']:
 		try:
 			total+=1
