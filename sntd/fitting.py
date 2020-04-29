@@ -1897,7 +1897,7 @@ def _fitparallel(all_args):
 						inds=np.where(args['curves'].images[args['fitOrder'][0]].table['band']==best_band)[0]
 						
 
-					source=BazinSource(data=args['curves'].images[args['fitOrder'][0]].table[inds],color_curve=args['color_curve'])
+					source=BazinSource(data=args['curves'].images[args['fitOrder'][0]].table[inds],colorCurve=args['color_curve'])
 				else:
 					source=sncosmo.get_source(mod)
 				tempMod = sncosmo.Model(source=source,effects=effects,effect_names=effect_names,effect_frames=effect_frames)
