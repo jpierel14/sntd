@@ -1877,6 +1877,11 @@ def _fitparallel(all_args):
 	if not isinstance(effect_frames,(list,tuple)):
 		effects=[effect_frames]
 
+	if 'ignore_models' in args['set_from_simMeta'].keys():
+		to_ignore=args['curves'].images[args['fitOrder'][0]].simMeta[args['set_from_simMeta']['ignore_models']]
+		if isinstance(to_ignore,str):
+			to_ignore=[to_ignore]
+		args['models']=[x for x in np.array(args['models']).flatten() if x not in to_ignore]
 	all_fit_dict={}
 	if args['fast_model_selection'] and len(np.array(args['models']).flatten())>1:
 		for b in args['force_positive_param']:
