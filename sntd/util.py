@@ -252,7 +252,7 @@ class posterior(rv_continuous):
     def _argcheck(self,*args):
         return True
 
-def _guess_magnifications(curves,referenceImage):
+def guess_magnifications(curves,referenceImage):
     """Guess t0 and amplitude of the model based on the data.
 
     Assumes the data has been standardized."""
@@ -289,7 +289,7 @@ def _guess_magnifications(curves,referenceImage):
     return mags
 
 
-def _guess_time_delays(curves,referenceImage):
+def guess_time_delays(curves,referenceImage):
     #tds=colorFit(curves)
     #if tds:
     #    return tds
@@ -381,7 +381,7 @@ def _cast_str(s):
             return s.strip()
 
 
-def _get_default_prop_name(prop):
+def get_default_prop_name(prop):
     for key,value in _props.items():
         if {prop.lower()} & value:
             return key
