@@ -186,8 +186,8 @@ class curveDict(dict):
             print('Image: %s:'%c)
             print('Bands: {}'.format(self.images[c].bands))
             print('Date Range: %.5f->%.5f' % (
-            min(self.images[c].table[_get_default_prop_name('time')]),
-            max(self.images[c].table[_get_default_prop_name('time')])))
+            min(self.images[c].table[get_default_prop_name('time')]),
+            max(self.images[c].table[get_default_prop_name('time')])))
             print('Number of points: %d' %len(self.images[c].table))
             if self.images[c].simMeta.keys():
                 print('')
@@ -291,9 +291,9 @@ class curveDict(dict):
                     time_delays[k]=guess_t0-ref_t0
                     magnifications[k]=guess_amp/ref_amp
             else:
-                time_delays=_guess_time_delays(self,referenceImage) #TODO fix these guessing functions
+                time_delays=guess_time_delays(self,referenceImage) #TODO fix these guessing functions
         if magnifications is None:
-            magnifications=_guess_magnifications(self,referenceImage)
+            magnifications=guess_magnifications(self,referenceImage)
 
         
         self.series.table=Table(names=self.table.colnames,dtype=[self.table.dtype[x] for x in self.table.colnames])
@@ -382,7 +382,7 @@ class curveDict(dict):
                         self.images[k].table),model,minsnr)
                     time_delays[k]=guess_t0-ref_t0
             else:
-                time_delays=_guess_time_delays(self,referenceImage) #TODO fix these guessing functions
+                time_delays=guess_time_delays(self,referenceImage) #TODO fix these guessing functions
 
         
         self.color.meta['td']=time_delays
@@ -1036,12 +1036,12 @@ def table_factory(tables,telescopename="Unknown",object_name=None):
     for table in tables:
         newlc=curve()
         table=standardize_table_colnames(table)
-        newlc.bands={x for x in table[_get_default_prop_name('band')]}
+        newlc.bands={x for x in table[get_default_prop_name('band')]}
         zp_dict=dict([])
         zpsys_dict=dict([])
         for band in newlc.bands:
-            zp=set(table[_get_default_prop_name('zp')][table[_get_default_prop_name('band')]==band])
-            zpsys=set(table[_get_default_prop_name('zpsys')][table[_get_default_prop_name('band')]==band])
+            zp=set(table[get_default_prop_name('zp')][table[get_default_prop_name('band')]==band])
+            zpsys=set(table[get_default_prop_name('zpsys')][table[get_default_prop_name('band')]==band])
             zp_dict[band]=zp.pop() if len(zp)==1 else np.array(zp)
             zpsys_dict[band]=zpsys.pop() if len(zpsys)==1 else np.array(zpsys)
 
@@ -1120,8 +1120,8 @@ def _read_pickle(filename,telescopename="Unknown",object="Unknown",**kwargs):
 
 def standardize_table_colnames(table):
     for col in table.colnames:
-        if col != _get_default_prop_name(col.lower()):
-            table.rename_column(col, _get_default_prop_name(col.lower()))
+        if col != get_default_prop_name(col.lower()):
+            table.rename_column(col, get_default_prop_name(col.lower()))
     return table
 
 def _read_data(filename,**kwargs):
@@ -1129,14 +1129,14 @@ def _read_data(filename,**kwargs):
     try:
         table = sncosmo.read_lc(filename, masked=True,**kwargs)
         for col in table.colnames:
-            if col != _get_default_prop_name(col.lower()):
-                table.rename_column(col, _get_default_prop_name(col.lower()))
+            if col != get_default_prop_name(col.lower()):
+                table.rename_column(col, get_default_prop_name(col.lower()))
     except:
         try:
             table = ascii.read(filename, masked=True,**kwargs)
             for col in table.colnames:
-                if col != _get_default_prop_name(col.lower()):
-                    table.rename_column(col, _get_default_prop_name(col.lower()))
+                if col != get_default_prop_name(col.lower()):
+                    table.rename_column(col, get_default_prop_name(col.lower()))
         except:
             table = Table(masked=True)
             table_done=False
@@ -1170,7 +1170,7 @@ def _read_data(filename,**kwargs):
             if table.colnames:
                 colnames=table.colnames
             else:
-                colnames = odict.fromkeys([_get_default_prop_name(x.lower()) for x in line])
+                colnames = odict.fromkeys([get_default_prop_name(x.lower()) for x in line])
                 if len(colnames) != len(line):
                     raise (RuntimeError, "Do you have duplicate column names?")
                 colnames=odict(zip(colnames,range(len(colnames))))
@@ -1184,7 +1184,7 @@ def _read_data(filename,**kwargs):
             table[col]=np.asarray([_cast_str(x[colnames[col]]) for x in lines])
         colnames=colnames.keys()
 
-    for col in [_get_default_prop_name(x) for x in ['band','zp','zpsys']]:
+    for col in [get_default_prop_name(x) for x in ['band','zp','zpsys']]:
         if col not in colnames:
             temp=kwargs.get(col,None)
             if temp is not None:
@@ -1193,7 +1193,7 @@ def _read_data(filename,**kwargs):
                 print('Column "%s" is not in your file and you did not define it in kwargs.'%col)
                 sys.exit(1)
     table=standardize_table_colnames(table)
-    bnds = {x for x in table[_get_default_prop_name('band')]}
+    bnds = {x for x in table[get_default_prop_name('band')]}
     table=_norm_flux_mag(table)
     for band in bnds:
         if _isfloat(band[0]):
@@ -1205,7 +1205,7 @@ def _read_data(filename,**kwargs):
                 sncosmo.get_bandpass(band)
         except:
             print('Skipping band %s, not in registry.' %band)
-            table.mask[table[_get_default_prop_name('band')]==band]=True
+            table.mask[table[get_default_prop_name('band')]==band]=True
             continue
         myCurve.bands.append(band)
 
@@ -1226,21 +1226,21 @@ def _norm_flux_mag(table):
 
 
 def _flux_to_mag(table):
-    table[_get_default_prop_name('mag')] = np.asarray(map(lambda x, y: -2.5 * np.log10(x) + y, table[_get_default_prop_name('flux')],
-                                  table[_get_default_prop_name('zp')]))
-    table[_get_default_prop_name('magerr')] = np.asarray(map(lambda x, y: 2.5 * np.log10(np.e) * y / x, table[_get_default_prop_name('flux')],
-                                     table[_get_default_prop_name('fluxerr')]))
-    table[_get_default_prop_name('magerr')][np.isnan(table[_get_default_prop_name('mag')])]=np.nan
+    table[get_default_prop_name('mag')] = np.asarray(map(lambda x, y: -2.5 * np.log10(x) + y, table[get_default_prop_name('flux')],
+                                  table[get_default_prop_name('zp')]))
+    table[get_default_prop_name('magerr')] = np.asarray(map(lambda x, y: 2.5 * np.log10(np.e) * y / x, table[get_default_prop_name('flux')],
+                                     table[get_default_prop_name('fluxerr')]))
+    table[get_default_prop_name('magerr')][np.isnan(table[get_default_prop_name('mag')])]=np.nan
     return table
 
 
 def _mag_to_flux(table):
-    table[_get_default_prop_name('flux')] = np.asarray(
-        map(lambda x, y: 10 ** (-.4 * (x -y)), table[_get_default_prop_name('mag')],
-            table[_get_default_prop_name('zp')]))
-    table[_get_default_prop_name('fluxerr')] = np.asarray(
-        map(lambda x, y: x * y / (2.5 * np.log10(np.e)), table[_get_default_prop_name('magerr')],
-            table[_get_default_prop_name('flux')]))
+    table[get_default_prop_name('flux')] = np.asarray(
+        map(lambda x, y: 10 ** (-.4 * (x -y)), table[get_default_prop_name('mag')],
+            table[get_default_prop_name('zp')]))
+    table[get_default_prop_name('fluxerr')] = np.asarray(
+        map(lambda x, y: x * y / (2.5 * np.log10(np.e)), table[get_default_prop_name('magerr')],
+            table[get_default_prop_name('flux')]))
     return table
 
 
