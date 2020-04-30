@@ -1930,7 +1930,11 @@ def _fitparallel(all_args):
 				bestfit=copy(fit)
 				bestmodname=copy(mod)
 			all_fit_dict[mod]=[copy(fit),copy(res)]
-		args['models']=[bestmodname]
+		try:
+			args['models']=[bestmodname]
+		except:
+			print('Every model had an error.')
+			sys.exit(1)
 	for mod in np.array(args['models']).flatten():
 		if isinstance(mod,str):
 			if mod.upper() in ['BAZIN','BAZINSOURCE']:
