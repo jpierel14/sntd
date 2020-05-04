@@ -1542,7 +1542,7 @@ def _fitseries(all_args):
 
 
 	if args['max_n_bands'] is not None:
-		best_bands=band_SNR[args['fitOrder'][0]][:min(len(band_SNR[ref]),args['max_n_bands'])]
+		best_bands=band_SNR[ref][:min(len(band_SNR[ref]),args['max_n_bands'])]
 		temp_bands=[]
 		for b in best_bands:
 			temp_bands=np.append(temp_bands,np.where(args['curves'].images[ref].table['band']==b)[0])
