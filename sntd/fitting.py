@@ -469,12 +469,15 @@ def fit_data(curves=None, snType='Ia',bands=None, models=None, params=None, boun
 				par_arg_vals=[]
 				for i in range(len(args['curves'])):
 					temp_args={}
-					for par_key in ['snType','bounds','constants','t0_guess']:
-						if isinstance(args[par_key],(list,tuple,np.ndarray)):
-							temp_args[par_key]=args[par_key][i]
-					for par_key in ['bands','models','ignore','params']:
-						if isinstance(args[par_key],(list,tuple,np.ndarray)) and np.any([isinstance(x,(list,tuple,np.ndarray)) for x in args[par_key]]):
-							temp_args[par_key]=args[par_key][i]
+					try:
+						for par_key in ['snType','bounds','constants','t0_guess']:
+							if isinstance(args[par_key],(list,tuple,np.ndarray)):
+								temp_args[par_key]=args[par_key][i]
+						for par_key in ['bands','models','ignore','params']:
+							if isinstance(args[par_key],(list,tuple,np.ndarray)) and np.any([isinstance(x,(list,tuple,np.ndarray)) for x in args[par_key]]):
+								temp_args[par_key]=args[par_key][i]
+					except:
+						pass
 					par_arg_vals.append([args['curves'][i],temp_args])
 
 				curves=pyParz.foreach(par_arg_vals,_fitparallel,[args],numThreads=min(npar_cores,len(par_arg_vals)))
@@ -605,12 +608,15 @@ def fit_data(curves=None, snType='Ia',bands=None, models=None, params=None, boun
 				par_arg_vals=[]
 				for i in range(len(args['curves'])):
 					temp_args={}
-					for par_key in ['snType','bounds','constants','t0_guess']:
-						if isinstance(args[par_key],(list,tuple,np.ndarray)):
-							temp_args[par_key]=args[par_key][i]
-					for par_key in ['bands','models','ignore','params']:
-						if isinstance(args[par_key],(list,tuple,np.ndarray)) and np.any([isinstance(x,(list,tuple,np.ndarray)) for x in args[par_key]]):
-							temp_args[par_key]=args[par_key][i]
+					try:
+						for par_key in ['snType','bounds','constants','t0_guess']:
+							if isinstance(args[par_key],(list,tuple,np.ndarray)):
+								temp_args[par_key]=args[par_key][i]
+						for par_key in ['bands','models','ignore','params']:
+							if isinstance(args[par_key],(list,tuple,np.ndarray)) and np.any([isinstance(x,(list,tuple,np.ndarray)) for x in args[par_key]]):
+								temp_args[par_key]=args[par_key][i]
+					except:
+						pass
 					par_arg_vals.append([args['curves'][i],temp_args])
 				curves=pyParz.foreach(par_arg_vals,_fitseries,[args],numThreads=min(npar_cores,len(par_arg_vals)))
 			else:
@@ -734,12 +740,15 @@ def fit_data(curves=None, snType='Ia',bands=None, models=None, params=None, boun
 				par_arg_vals=[]
 				for i in range(len(args['curves'])):
 					temp_args={}
-					for par_key in ['snType','bounds','constants','t0_guess']:
-						if isinstance(args[par_key],(list,tuple,np.ndarray)):
-							temp_args[par_key]=args[par_key][i]
-					for par_key in ['bands','models','ignore','params']:
-						if isinstance(args[par_key],(list,tuple,np.ndarray)) and np.any([isinstance(x,(list,tuple,np.ndarray)) for x in args[par_key]]):
-							temp_args[par_key]=args[par_key][i]
+					try:
+						for par_key in ['snType','bounds','constants','t0_guess']:
+							if isinstance(args[par_key],(list,tuple,np.ndarray)):
+								temp_args[par_key]=args[par_key][i]
+						for par_key in ['bands','models','ignore','params']:
+							if isinstance(args[par_key],(list,tuple,np.ndarray)) and np.any([isinstance(x,(list,tuple,np.ndarray)) for x in args[par_key]]):
+								temp_args[par_key]=args[par_key][i]
+					except:
+						pass
 					par_arg_vals.append([args['curves'][i],temp_args])
 				curves=pyParz.foreach(par_arg_vals,_fitColor,[args],numThreads=min(npar_cores,len(par_arg_vals)))
 			else:
