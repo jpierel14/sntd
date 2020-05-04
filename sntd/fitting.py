@@ -1622,8 +1622,8 @@ def _fitseries(all_args):
 			tempMod = sncosmo.Model(source=source,effects=effects,effect_names=effect_names,effect_frames=effect_frames)
 		else:
 			tempMod=copy(mod)
-		tempMod.set(**args['constants'])
-		tempMod.set(**{k:args['curves'].images[args['refImage']].simMeta[args['set_from_simMeta'][k]] for k in args['set_from_simMeta'].keys()})
+		tempMod.set(**{k:args['constants'][k] for k in args['constants'].keys() if k in tempMod.param_names})
+		tempMod.set(**{k:args['curves'].images[args['refImage']].simMeta[args['set_from_simMeta'][k]] for k in args['set_from_simMeta'].keys() if k in tempMod.param_names})
 		
 
 		if args['fit_prior'] is not None:
