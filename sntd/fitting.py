@@ -1000,7 +1000,7 @@ def _fitColor(all_args):
 		effects=[effect_frames]
 
 	if 'ignore_models' in args['set_from_simMeta'].keys():
-		to_ignore=args['curves'].images[args['fitOrder'][0]].simMeta[args['set_from_simMeta']['ignore_models']]
+		to_ignore=args['curves'].images[ref].simMeta[args['set_from_simMeta']['ignore_models']]
 		if isinstance(to_ignore,str):
 			to_ignore=[to_ignore]
 		args['models']=[x for x in np.array(args['models']).flatten() if x not in to_ignore]
