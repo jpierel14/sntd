@@ -934,6 +934,8 @@ def _fitColor(all_args):
 
 	imnums=[x[-1] for x in args['curves'].images.keys()]
 	if args['fit_prior'] is not None:
+		if args['fit_prior']==True:
+			args['fit_prior']=args['curves']
 		ref=args['fit_prior'].parallel.fitOrder[0]
 		refnum=ref[-1]
 	else:
@@ -1393,6 +1395,8 @@ def _fitseries(all_args):
 
 	imnums=[x[-1] for x in args['curves'].images.keys()]
 	if args['fit_prior'] is not None:
+		if args['fit_prior']==True:
+			args['fit_prior']=args['curves']
 		ref=args['fit_prior'].parallel.fitOrder[0]
 		refnum=ref[-1]
 	else:
