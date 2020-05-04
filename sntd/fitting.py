@@ -477,7 +477,7 @@ def fit_data(curves=None, snType='Ia',bands=None, models=None, params=None, boun
 							temp_args[par_key]=args[par_key][i]
 					par_arg_vals.append([args['curves'][i],temp_args])
 
-				curves=pyParz.foreach(par_arg_vals,_fitparallel,[args],numThreads=npar_cores)
+				curves=pyParz.foreach(par_arg_vals,_fitparallel,[args],numThreads=min(npar_cores,len(par_arg_vals)))
 			else:
 				total_jobs=math.ceil(len(args['curves'])/n_per_node)
 				if n_cores_per_node>1:
@@ -609,7 +609,7 @@ def fit_data(curves=None, snType='Ia',bands=None, models=None, params=None, boun
 						if isinstance(args[par_key],(list,tuple,np.ndarray)) and np.any([isinstance(x,(list,tuple,np.ndarray)) for x in args[par_key]]):
 							temp_args[par_key]=args[par_key][i]
 					par_arg_vals.append([args['curves'][i],temp_args])
-				curves=pyParz.foreach(par_arg_vals,_fitseries,[args],numThreads=npar_cores)
+				curves=pyParz.foreach(par_arg_vals,_fitseries,[args],numThreads=min(npar_cores,len(par_arg_vals)))
 			else:
 				total_jobs=math.ceil(len(args['curves'])/n_per_node)
 				if n_cores_per_node>1:
@@ -735,7 +735,7 @@ def fit_data(curves=None, snType='Ia',bands=None, models=None, params=None, boun
 						if isinstance(args[par_key],(list,tuple,np.ndarray)) and np.any([isinstance(x,(list,tuple,np.ndarray)) for x in args[par_key]]):
 							temp_args[par_key]=args[par_key][i]
 					par_arg_vals.append([args['curves'][i],temp_args])
-				curves=pyParz.foreach(par_arg_vals,_fitColor,[args],numThreads=npar_cores)
+				curves=pyParz.foreach(par_arg_vals,_fitColor,[args],numThreads=min(npar_cores,len(par_arg_vals)))
 			else:
 				total_jobs=math.ceil(len(args['curves'])/n_per_node)
 				if n_cores_per_node>1:
