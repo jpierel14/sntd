@@ -36,7 +36,7 @@ try:
 except Exception as e:
     print('Failed')
     print(traceback.format_exc())
-    fitCurves=None
+    fitCurves=traceback.format_exc()
 
 filename=os.path.join(os.path.abspath(os.path.dirname(__file__)),'sntd_fit%s.pkl'%sys.argv[1])
 pickle.dump(fitCurves,open(filename,'wb'))

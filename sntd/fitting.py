@@ -61,7 +61,7 @@ def fit_data(curves=None, snType='Ia',bands=None, models=None, params=None, boun
 			 dust=None,microlensing=None,fitOrder=None,color_bands=None,color_param_ignore=[],min_points_per_band=3,identify_micro=False,
 			 max_n_bands=None,n_cores_per_node=1,npar_cores=4,
 			 fit_prior=None,par_or_batch='parallel',batch_partition=None,nbatch_jobs=None,batch_python_path=None,n_per_node=1,fast_model_selection=True,
-			 wait_for_batch=False,band_order=None,set_from_simMeta=None,guess_amplitude=True,trial_fit=True,clip_data=False,
+			 wait_for_batch=False,band_order=None,set_from_simMeta={},guess_amplitude=True,trial_fit=True,clip_data=False,
 			 kernel='RBF',refImage='image_1',nMicroSamples=100,color_curve=None,warning_supress=True,
 			 verbose=True,**kwargs):
 
@@ -941,6 +941,7 @@ def _fitColor(all_args):
 	else:
 		ref=args['refImage']
 		refnum=ref[-1]
+	inds=np.arange(0,len(args['curves'].images[ref].table),1).astype(int)
 	nimage=len(imnums)
 	snParams=['dt_%s'%i for i in imnums if i!=refnum]
 	all_vparam_names=np.append(args['params'],
@@ -998,10 +999,71 @@ def _fitColor(all_args):
 	if not isinstance(effect_frames,(list,tuple)):
 		effects=[effect_frames]
 
+	if 'ignore_models' in args['set_from_simMeta'].keys():
+		to_ignore=args['curves'].images[args['fitOrder'][0]].simMeta[args['set_from_simMeta']['ignore_models']]
+		if isinstance(to_ignore,str):
+			to_ignore=[to_ignore]
+		args['models']=[x for x in np.array(args['models']).flatten() if x not in to_ignore]
+
 	if args['fit_prior'] is not None and args['fit_prior'].images[args['fit_prior'].parallel.fitOrder[0]].fits.model._source.name not in args['models']:
 		print('Wanted to use a fit prior but do not have the same model as an option.')
 		raise RuntimeError
+	elif args['fit_prior'] is not None:
+		args['models']=args['fit_prior'].images[args['fit_prior'].parallel.fitOrder[0]].fits.model._source.name
 
+	
+	all_fit_dict={}
+	if args['fast_model_selection'] and len(np.array(args['models']).flatten())>1:
+		for b in args['force_positive_param']:
+			if b in args['bounds'].keys():
+				args['bounds'][b]=np.array([max([args['bounds'][b][0],0]),max([args['bounds'][b][1],0])])
+			else:
+				args['bounds'][b]=np.array([0,np.inf])
+		
+		minchisq=np.inf
+		init_inds=deepcopy(inds)
+		for mod in np.array(args['models']).flatten():
+			inds=deepcopy(init_inds)
+			if isinstance(mod,str):
+				if mod.upper() in ['BAZIN','BAZINSOURCE']:
+					mod='BAZINSOURCE'
+					if len(np.unique(args['curves'].images[ref].table['band']))>1 and args['color_curve'] is None:
+						best_band=band_SNR[args['fitOrder'][0]][0]
+						inds=np.where(args['curves'].images[ref].table['band']==best_band)[0]
+						
+
+					source=BazinSource(data=args['curves'].images[ref].table[inds],colorCurve=args['color_curve'])
+				else:
+					source=sncosmo.get_source(mod)
+				tempMod = sncosmo.Model(source=source,effects=effects,effect_names=effect_names,effect_frames=effect_frames)
+			else:
+				tempMod=copy(mod)
+			
+			tempMod.set(**{k:args['constants'][k] for k in args['constants'].keys() if k in tempMod.param_names})
+			tempMod.set(**{k:args['curves'].images[args['refImage']].simMeta[args['set_from_simMeta'][k]] for k in args['set_from_simMeta'].keys() if k in tempMod.param_names})
+
+			if mod=='BAZINSOURCE':
+				tempMod.set(z=0)
+			try:
+				res,fit=sncosmo.fit_lc(args['curves'].images[ref].table[inds],tempMod,[x for x in args['params'] if x in tempMod.param_names],
+										bounds={b:args['bounds'][b] for b in args['bounds'] if b not in ['t0',tempMod.param_names[2]]},
+										minsnr=args.get('minsnr',0))
+			except:
+				if args['verbose']:
+					print('Issue with %s, skipping...'%mod)
+				continue
+			tempchisq=res.chisq/(len(inds)+len([x for x in args['params'] if x in tempMod.param_names])-1)
+			if tempchisq<minchisq:
+				minchisq=tempchisq
+				bestres=copy(res)
+				bestfit=copy(fit)
+				bestmodname=copy(mod)
+			all_fit_dict[mod]=[copy(fit),copy(res)]
+		try:
+			args['models']=[bestmodname]
+		except:
+			print('Every model had an error.')
+			sys.exit(1)
 	finallogz=-np.inf
 	for mod in np.array(args['models']).flatten():
 
@@ -1012,8 +1074,7 @@ def _fitColor(all_args):
 		else:
 			tempMod=copy(mod)
 		tempMod.set(**{k:args['constants'][k] for k in args['constants'].keys() if k in tempMod.param_names})
-		if args['set_from_simMeta'] is not None:
-			tempMod.set(**{k:args['curves'].images[args['refImage']].simMeta[args['set_from_simMeta'][k]] for k in args['set_from_simMeta'].keys() if k in tempMod.param_names})
+		tempMod.set(**{k:args['curves'].images[args['refImage']].simMeta[args['set_from_simMeta'][k]] for k in args['set_from_simMeta'].keys() if k in tempMod.param_names})
 
 		if args['fit_prior'] is not None:
 			par_ref=args['fit_prior'].parallel.fitOrder[0]
@@ -1476,6 +1537,78 @@ def _fitseries(all_args):
 	if args['fit_prior'] is not None and args['fit_prior'].images[args['fit_prior'].parallel.fitOrder[0]].fits.model._source.name not in args['models']:
 		print('Wanted to use a fit prior but do not have the same model as an option.')
 		raise RuntimeError
+	elif args['fit_prior'] is not None:
+		args['models']=args['fit_prior'].images[args['fit_prior'].parallel.fitOrder[0]].fits.model._source.name
+
+
+	if args['max_n_bands'] is not None:
+		best_bands=band_SNR[args['fitOrder'][0]][:min(len(band_SNR[ref]),args['max_n_bands'])]
+		temp_bands=[]
+		for b in best_bands:
+			temp_bands=np.append(temp_bands,np.where(args['curves'].images[ref].table['band']==b)[0])
+		inds=temp_bands.astype(int)
+	else:
+		inds=np.arange(0,len(args['curves'].images[ref].table),1).astype(int)
+
+	if 'ignore_models' in args['set_from_simMeta'].keys():
+		to_ignore=args['curves'].images[ref].simMeta[args['set_from_simMeta']['ignore_models']]
+		if isinstance(to_ignore,str):
+			to_ignore=[to_ignore]
+		args['models']=[x for x in np.array(args['models']).flatten() if x not in to_ignore]
+	all_fit_dict={}
+	if args['fast_model_selection'] and len(np.array(args['models']).flatten())>1:
+		for b in args['force_positive_param']:
+			if b in args['bounds'].keys():
+				args['bounds'][b]=np.array([max([args['bounds'][b][0],0]),max([args['bounds'][b][1],0])])
+			else:
+				args['bounds'][b]=np.array([0,np.inf])
+		
+		minchisq=np.inf
+		init_inds=deepcopy(inds)
+		for mod in np.array(args['models']).flatten():
+			inds=deepcopy(init_inds)
+			if isinstance(mod,str):
+				if mod.upper() in ['BAZIN','BAZINSOURCE']:
+					mod='BAZINSOURCE'
+					if len(np.unique(args['curves'].images[ref].table['band']))>1 and args['color_curve'] is None:
+						best_band=band_SNR[args['fitOrder'][0]][0]
+						inds=np.where(args['curves'].images[ref].table['band']==best_band)[0]
+						
+
+					source=BazinSource(data=args['curves'].images[ref].table[inds],colorCurve=args['color_curve'])
+				else:
+					source=sncosmo.get_source(mod)
+				tempMod = sncosmo.Model(source=source,effects=effects,effect_names=effect_names,effect_frames=effect_frames)
+			else:
+				tempMod=copy(mod)
+			
+			tempMod.set(**{k:args['constants'][k] for k in args['constants'].keys() if k in tempMod.param_names})
+			tempMod.set(**{k:args['curves'].images[args['refImage']].simMeta[args['set_from_simMeta'][k]] for k in args['set_from_simMeta'].keys() if k in tempMod.param_names})
+
+			if mod=='BAZINSOURCE':
+				tempMod.set(z=0)
+			try:
+				res,fit=sncosmo.fit_lc(args['curves'].images[ref].table[inds],tempMod,[x for x in args['params'] if x in tempMod.param_names],
+										bounds={b:args['bounds'][b] for b in args['bounds'] if b not in ['t0',tempMod.param_names[2]]},
+										minsnr=args.get('minsnr',0))
+			except:
+				if args['verbose']:
+					print('Issue with %s, skipping...'%mod)
+				continue
+			tempchisq=res.chisq/(len(inds)+len([x for x in args['params'] if x in tempMod.param_names])-1)
+			if tempchisq<minchisq:
+				minchisq=tempchisq
+				bestres=copy(res)
+				bestfit=copy(fit)
+				bestmodname=copy(mod)
+			all_fit_dict[mod]=[copy(fit),copy(res)]
+		try:
+			args['models']=[bestmodname]
+		except:
+			print('Every model had an error.')
+			sys.exit(1)
+
+
 	for mod in np.array(args['models']).flatten():
 
 
@@ -1490,8 +1623,7 @@ def _fitseries(all_args):
 		else:
 			tempMod=copy(mod)
 		tempMod.set(**args['constants'])
-		if args['set_from_simMeta'] is not None:
-			tempMod.set(**{k:args['curves'].images[args['refImage']].simMeta[args['set_from_simMeta'][k]] for k in args['set_from_simMeta'].keys()})
+		tempMod.set(**{k:args['curves'].images[args['refImage']].simMeta[args['set_from_simMeta'][k]] for k in args['set_from_simMeta'].keys()})
 		
 
 		if args['fit_prior'] is not None:
@@ -2027,8 +2159,7 @@ def _fitparallel(all_args):
 				tempMod=copy(mod)
 			
 			tempMod.set(**{k:args['constants'][k] for k in args['constants'].keys() if k in tempMod.param_names})
-			if args['set_from_simMeta'] is not None:
-				tempMod.set(**{k:args['curves'].images[args['refImage']].simMeta[args['set_from_simMeta'][k]] for k in args['set_from_simMeta'].keys() if k in tempMod.param_names})
+			tempMod.set(**{k:args['curves'].images[args['refImage']].simMeta[args['set_from_simMeta'][k]] for k in args['set_from_simMeta'].keys() if k in tempMod.param_names})
 
 			if mod=='BAZINSOURCE':
 				tempMod.set(z=0)
