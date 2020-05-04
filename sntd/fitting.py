@@ -304,7 +304,7 @@ def fit_data(curves=None, snType='Ia',bands=None, models=None, params=None, boun
 						for par,val in locs.items():
 							if par =='curves':
 								if i==0:
-									if not par:
+									if parallelize is None:
 										sntd_command+='curves=all_dat[i],'
 									else:
 										sntd_command+='curves=all_input,'
@@ -514,7 +514,10 @@ def fit_data(curves=None, snType='Ia',bands=None, models=None, params=None, boun
 					for par,val in locs.items():
 
 						if par =='curves':
-							sntd_command+='curves=all_dat[i],'
+							if parallelize is None:
+								sntd_command+='curves=all_dat[i],'
+							else:
+								sntd_command+='curves=all_input,'
 						elif par=='batch_init':
 							sntd_command+='batch_init=None,'
 						elif par=='constants':
@@ -643,7 +646,10 @@ def fit_data(curves=None, snType='Ia',bands=None, models=None, params=None, boun
 					sntd_command='sntd.fit_data('
 					for par,val in locs.items():
 						if par =='curves':
-							sntd_command+='curves=all_dat[i],'
+							if parallelize is None:
+								sntd_command+='curves=all_dat[i],'
+							else:
+								sntd_command+='curves=all_input,'
 						elif par=='batch_init':
 							sntd_command+='batch_init=None,'
 						elif par=='constants':
@@ -769,7 +775,10 @@ def fit_data(curves=None, snType='Ia',bands=None, models=None, params=None, boun
 					sntd_command='sntd.fit_data('
 					for par,val in locs.items():
 						if par =='curves':
-							sntd_command+='curves=all_dat[i],'
+							if parallelize is None:
+								sntd_command+='curves=all_dat[i],'
+							else:
+								sntd_command+='curves=all_input,'
 						elif par=='batch_init':
 							sntd_command+='batch_init=None,'
 						elif par=='constants':
