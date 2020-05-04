@@ -266,11 +266,13 @@ def fit_data(curves=None, snType='Ia',bands=None, models=None, params=None, boun
 				print('Have not yet set up parallelized multi-fit processing')
 				sys.exit(1)
 			else:
-				total_jobs=math.ceil(len(args['curves'])/n_per_node)
+				
 				if n_cores_per_node>1:
 					parallelize=n_cores_per_node
+					n_per_node=max(n_per_node,n_cores_per_node)
 				else:
 					parallelize=None
+				total_jobs=math.ceil(len(args['curves'])/n_per_node)
 				script_name_init,folder_name=run_sbatch(partition=batch_partition,
 												   njobs=nbatch_jobs,python_path=batch_python_path,init=True,parallelize=parallelize)
 				script_name,folder_name=run_sbatch(partition=batch_partition,folder=folder_name,
@@ -482,11 +484,12 @@ def fit_data(curves=None, snType='Ia',bands=None, models=None, params=None, boun
 
 				curves=pyParz.foreach(par_arg_vals,_fitparallel,[args],numThreads=min(npar_cores,len(par_arg_vals)))
 			else:
-				total_jobs=math.ceil(len(args['curves'])/n_per_node)
 				if n_cores_per_node>1:
 					parallelize=n_cores_per_node
+					n_per_node=max(n_per_node,n_cores_per_node)
 				else:
 					parallelize=None
+				total_jobs=math.ceil(len(args['curves'])/n_per_node)
 				script_name_init,folder_name=run_sbatch(partition=batch_partition,
 												   njobs=nbatch_jobs,python_path=batch_python_path,init=True,parallelize=parallelize)
 				script_name,folder_name=run_sbatch(partition=batch_partition,folder=folder_name,
@@ -620,11 +623,12 @@ def fit_data(curves=None, snType='Ia',bands=None, models=None, params=None, boun
 					par_arg_vals.append([args['curves'][i],temp_args])
 				curves=pyParz.foreach(par_arg_vals,_fitseries,[args],numThreads=min(npar_cores,len(par_arg_vals)))
 			else:
-				total_jobs=math.ceil(len(args['curves'])/n_per_node)
 				if n_cores_per_node>1:
 					parallelize=n_cores_per_node
+					n_per_node=max(n_per_node,n_cores_per_node)
 				else:
 					parallelize=None
+				total_jobs=math.ceil(len(args['curves'])/n_per_node)
 				script_name_init,folder_name=run_sbatch(partition=batch_partition,
 												   njobs=nbatch_jobs,python_path=batch_python_path,init=True,parallelize=parallelize)
 				script_name,folder_name=run_sbatch(partition=batch_partition,folder=folder_name,
@@ -752,11 +756,12 @@ def fit_data(curves=None, snType='Ia',bands=None, models=None, params=None, boun
 					par_arg_vals.append([args['curves'][i],temp_args])
 				curves=pyParz.foreach(par_arg_vals,_fitColor,[args],numThreads=min(npar_cores,len(par_arg_vals)))
 			else:
-				total_jobs=math.ceil(len(args['curves'])/n_per_node)
 				if n_cores_per_node>1:
 					parallelize=n_cores_per_node
+					n_per_node=max(n_per_node,n_cores_per_node)
 				else:
 					parallelize=None
+				total_jobs=math.ceil(len(args['curves'])/n_per_node)
 				script_name_init,folder_name=run_sbatch(partition=batch_partition,
 												   njobs=nbatch_jobs,python_path=batch_python_path,init=True,parallelize=parallelize)
 				script_name,folder_name=run_sbatch(partition=batch_partition,folder=folder_name,
