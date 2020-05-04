@@ -268,7 +268,6 @@ def fit_data(curves=None, snType='Ia',bands=None, models=None, params=None, boun
 			else:
 				total_jobs=math.ceil(len(args['curves'])/n_per_node)
 				if n_cores_per_node>1:
-					n_per_node=1
 					parallelize=n_cores_per_node
 				else:
 					parallelize=None
@@ -482,7 +481,6 @@ def fit_data(curves=None, snType='Ia',bands=None, models=None, params=None, boun
 			else:
 				total_jobs=math.ceil(len(args['curves'])/n_per_node)
 				if n_cores_per_node>1:
-					n_per_node=1
 					parallelize=n_cores_per_node
 				else:
 					parallelize=None
@@ -615,7 +613,6 @@ def fit_data(curves=None, snType='Ia',bands=None, models=None, params=None, boun
 			else:
 				total_jobs=math.ceil(len(args['curves'])/n_per_node)
 				if n_cores_per_node>1:
-					n_per_node=1
 					parallelize=n_cores_per_node
 				else:
 					parallelize=None
@@ -742,7 +739,6 @@ def fit_data(curves=None, snType='Ia',bands=None, models=None, params=None, boun
 			else:
 				total_jobs=math.ceil(len(args['curves'])/n_per_node)
 				if n_cores_per_node>1:
-					n_per_node=1
 					parallelize=n_cores_per_node
 				else:
 					parallelize=None
