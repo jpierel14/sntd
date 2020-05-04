@@ -128,7 +128,7 @@ def load_batch_fit(folder_name,fit_name):
         return dat
 
 
-def run_sbatch(partition=None,njobs=None,python_path=None,init=False,folder=None):
+def run_sbatch(partition=None,njobs=None,python_path=None,init=False,folder=None,parallelize=False):
     if njobs is None:
         print("Batch mode requires a number of jobs!")
         sys.exit(1)
@@ -156,11 +156,17 @@ def run_sbatch(partition=None,njobs=None,python_path=None,init=False,folder=None
     if not init:
         with open(os.path.join(__filedir__,'batch','sbatch_job.BATCH')) as f:
             sbatch=f.read()
-        pyfile='run_sntd.py'
+        if parallelize is None:
+            pyfile='run_sntd.py'
+        else:
+            pyfile='run_sntd_par.py'
     else:
         with open(os.path.join(__filedir__,'batch','sbatch_job_init.BATCH')) as f:
             sbatch=f.read()
-        pyfile='run_sntd_init.py'
+        if parallelize is None:
+            pyfile='run_sntd_init.py'
+        else:
+            pyfile='run_sntd_init_par.py'
 
 
     sbatch=sbatch.replace('pyjob%j.out',os.path.join(folder_name,'pyjob%j.out'))
@@ -172,6 +178,8 @@ def run_sbatch(partition=None,njobs=None,python_path=None,init=False,folder=None
     sbatch=sbatch.replace('run_sntd.py',os.path.join(os.path.abspath(folder_name),pyfile))
     if init:
         sbatch=sbatch.replace('njobs','0-%i'%(njobs-1))
+    if parallelize is not None:
+        sbatch=sbatch.replace('ncores',str(parallelize))
 
     if not init:
         with open(os.path.join(folder_name,'sbatch_job.BATCH'),'w') as f:

@@ -19,7 +19,7 @@ all_const=pickle.load(open(os.path.join(os.path.abspath(os.path.dirname(__file__
 inds=[int(nlcs/njobs)*int(sys.argv[1]),int(nlcs/njobs)*int(sys.argv[1])+int(nlcs/njobs)]
 inds[1]=min(inds[-1],len(all_dat))
 
-all_res=[]
+all_input=[]
 for i in range(inds[0],inds[1]):
     if isinstance(all_dat[i],str):
         all_dat[i]=pickle.load(open(all_dat[i],'rb'))
@@ -30,15 +30,15 @@ for i in range(inds[0],inds[1]):
                 all_dat[i].constants[c]=all_const[c][i]
             else:
                 all_dat[i].constants[c]=all_const[c]
-    try:
-        fitCurves=sntdcommandreplace
-        all_res.append(copy(fitCurves))
-    except Exception as e:
-        print('Failed')
-        print(traceback.format_exc())
-        all_res.append(None)
+    all_input.append(all_dat[i])
+try:
+    fitCurves=sntdcommandreplace
+except Exception as e:
+    print('Failed')
+    print(traceback.format_exc())
+    fitCurves=None
 
 filename=os.path.join(os.path.abspath(os.path.dirname(__file__)),'sntd_fit%s.pkl'%sys.argv[1])
-pickle.dump(all_res,open(filename,'wb'))
+pickle.dump(fitCurves,open(filename,'wb'))
 
 

@@ -2,11 +2,10 @@
 partition
 #SBATCH --job-name=SNTD
 #SBATCH --output=/dev/null
-
+#SBATCH --cpus-per-task=ncores
 
 echo -e '\n submitted Python job'
 echo 'hostname'
 hostname
 
-# creates a python virtual environment
 myPython run_sntd.py $1

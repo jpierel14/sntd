@@ -59,7 +59,7 @@ class newDict(dict):
 def fit_data(curves=None, snType='Ia',bands=None, models=None, params=None, bounds={}, ignore=None, constants={},ignore_models=[],
 			 method='parallel',t0_guess=None,effect_names=[],effect_frames=[],batch_init=None,cut_time=None,force_positive_param=[],
 			 dust=None,microlensing=None,fitOrder=None,color_bands=None,color_param_ignore=[],min_points_per_band=3,identify_micro=False,
-			 max_n_bands=None,
+			 max_n_bands=None,n_cores_per_node=1,npar_cores=4,
 			 fit_prior=None,par_or_batch='parallel',batch_partition=None,nbatch_jobs=None,batch_python_path=None,n_per_node=1,fast_model_selection=True,
 			 wait_for_batch=False,band_order=None,set_from_simMeta=None,guess_amplitude=True,trial_fit=True,clip_data=False,
 			 kernel='RBF',refImage='image_1',nMicroSamples=100,color_curve=None,warning_supress=True,
@@ -117,8 +117,12 @@ def fit_data(curves=None, snType='Ia',bands=None, models=None, params=None, boun
 		Only accept bands to fit with this number of points fitting other criterion (e.g. minsnr)
 	identify_micro: bool
 		If True, function is run to attempt to identify bands where microlensing is least problematic.
-	max_n_bands: 
+	max_n_bands: int
 		The best n bands are chosen from the data. 
+	n_cores_per_node: int
+		The number of cores to run parallelization on per node
+	npar_cores: int
+		The number of cores to devote to parallelization
 	fit_prior: :class:`~sntd.curve_io.curveDict` or bool
 		if implementing parallel method alongside others and fit_prior is True, will use output of parallel as prior
 		for series/color. If SNTD curveDict object, used as prior for series or color.
@@ -263,14 +267,20 @@ def fit_data(curves=None, snType='Ia',bands=None, models=None, params=None, boun
 				sys.exit(1)
 			else:
 				total_jobs=math.ceil(len(args['curves'])/n_per_node)
+				if n_cores_per_node>1:
+					n_per_node=1
+					parallelize=n_cores_per_node
+				else:
+					parallelize=None
 				script_name_init,folder_name=run_sbatch(partition=batch_partition,
-												   njobs=nbatch_jobs,python_path=batch_python_path,init=True)
+												   njobs=nbatch_jobs,python_path=batch_python_path,init=True,parallelize=parallelize)
 				script_name,folder_name=run_sbatch(partition=batch_partition,folder=folder_name,
-												  njobs=nbatch_jobs,python_path=batch_python_path,init=False)
+												  njobs=nbatch_jobs,python_path=batch_python_path,init=False,parallelize=parallelize)
 
 				pickle.dump(constants,open(os.path.join(folder_name,'sntd_constants.pkl'),'wb'))
 				pickle.dump(args['curves'],open(os.path.join(folder_name,'sntd_data.pkl'),'wb'))
-				for pyfile in ['run_sntd_init.py','run_sntd.py']:
+				pyfiles=['run_sntd_init.py','run_sntd.py'] if parallelize is None else ['run_sntd_init_par.py','run_sntd_par.py']
+				for pyfile in pyfiles:
 					with open(os.path.join(__filedir__,'batch',pyfile)) as f:
 						batch_py=f.read()
 					if 'init' in pyfile:
@@ -282,6 +292,7 @@ def fit_data(curves=None, snType='Ia',bands=None, models=None, params=None, boun
 						batch_py=batch_py.replace('batchinitreplace','print("Nothing to initialize...")')
 					else:
 						batch_py=batch_py.replace('batchinitreplace',batch_init)
+					batch_py=batch_py.replace('ncores',str(n_cores_per_node))
 
 					indent1=batch_py.find('fitCurves=')
 					indent=batch_py.find('try:')+len('try:')+1
@@ -294,11 +305,17 @@ def fit_data(curves=None, snType='Ia',bands=None, models=None, params=None, boun
 						for par,val in locs.items():
 							if par =='curves':
 								if i==0:
-									sntd_command+='curves=all_dat[i],'
+									if not par:
+										sntd_command+='curves=all_dat[i],'
+									else:
+										sntd_command+='curves=all_input,'
 								else:
 									sntd_command+='curves=fitCurves,'
 							elif par=='constants':
-								sntd_command+='constants=all_dat[i].constants,'
+								if parallelize is None:
+									sntd_command+='constants=all_dat[i].constants,'
+								else:
+									sntd_command+='constants={'+'},'
 							elif par=='batch_init':
 								sntd_command+='batch_init=None,'
 
@@ -309,10 +326,15 @@ def fit_data(curves=None, snType='Ia',bands=None, models=None, params=None, boun
 									sntd_command+='identify_micro=True,'
 							elif par=='bands' and identify_micro:
 								if i>0:
-									if fit_method!='color':
-										sntd_command+='bands=fitCurves.micro_bands,'
+									if parallelize is None:
+										if fit_method!='color':
+											sntd_command+='bands=fitCurves.micro_bands,'
+										else:
+											sntd_command+='bands=fitCurves.micro_color_bands,'
 									else:
-										sntd_command+='bands=fitCurves.micro_color_bands,'
+										print('Have not implemented this yet.')
+										sys.exit(1)
+
 								else:
 									sntd_command+='bands=None,'
 							elif fit_method=='color' and par=='bands':
@@ -325,7 +347,14 @@ def fit_data(curves=None, snType='Ia',bands=None, models=None, params=None, boun
 							elif par=='method':
 								sntd_command+='method="'+fit_method+'",'
 							elif par=='fit_prior' and fit_method!='parallel' and (fit_prior is not None and fit_prior is not False):
-								sntd_command+='fit_prior=fitCurves,'
+								if parallelize is None:
+									sntd_command+='fit_prior=fitCurves,'
+								else:
+									sntd_command+='fit_prior=True,'
+							elif par=='par_or_batch' and parallelize is not None:
+								sntd_command+='par_or_batch="parallel",'
+							elif par=='npar_cores' and parallelize is not None:
+								sntd_command+='npar_cores=%i,'%n_cores_per_node
 							elif isinstance(val,str):
 								sntd_command+=str(par)+'="'+str(val)+'",'
 							elif par=='kwargs':
@@ -341,6 +370,9 @@ def fit_data(curves=None, snType='Ia',bands=None, models=None, params=None, boun
 						sntd_command=sntd_command[:-1]+')\n'
 						if i<len(method)-1:
 							sntd_command+=' '*(indent1-indent)+'fitCurves='
+				
+
+
 
 					batch_py=batch_py.replace('sntdcommandreplace',sntd_command)
 
@@ -349,7 +381,6 @@ def fit_data(curves=None, snType='Ia',bands=None, models=None, params=None, boun
 
 				
 
-				
 				fits_output=tarfile.open(os.path.join(os.path.abspath(folder_name),'sntd_fits.tar.gz'),mode='w')
 				
 				result=subprocess.call(['sbatch',os.path.join(os.path.abspath(folder_name),
@@ -366,7 +397,7 @@ def fit_data(curves=None, snType='Ia',bands=None, models=None, params=None, boun
 					output=glob.glob(os.path.join(os.path.abspath(folder_name),'sntd_fit*.pkl'))
 					nfit=len(output)+saved_fits
 					if nfit!=ndone:
-						if saved_fits>0 and saved_fits%50000==0:
+						if saved_fits>0 and int(saved_fits*n_per_node)%50000==0:
 							fits_output.close()
 							fits_output=tarfile.open(os.path.join(os.path.abspath(folder_name),'sntd_fits_%i.tar.gz'%tarfit_ind),mode='w')
 							tarfit_ind+=1
@@ -446,17 +477,24 @@ def fit_data(curves=None, snType='Ia',bands=None, models=None, params=None, boun
 						if isinstance(args[par_key],(list,tuple,np.ndarray)) and np.any([isinstance(x,(list,tuple,np.ndarray)) for x in args[par_key]]):
 							temp_args[par_key]=args[par_key][i]
 					par_arg_vals.append([args['curves'][i],temp_args])
-				curves=pyParz.foreach(par_arg_vals,_fitparallel,[args])
+
+				curves=pyParz.foreach(par_arg_vals,_fitparallel,[args],numThreads=npar_cores)
 			else:
 				total_jobs=math.ceil(len(args['curves'])/n_per_node)
+				if n_cores_per_node>1:
+					n_per_node=1
+					parallelize=n_cores_per_node
+				else:
+					parallelize=None
 				script_name_init,folder_name=run_sbatch(partition=batch_partition,
-												   njobs=nbatch_jobs,python_path=batch_python_path,init=True)
+												   njobs=nbatch_jobs,python_path=batch_python_path,init=True,parallelize=parallelize)
 				script_name,folder_name=run_sbatch(partition=batch_partition,folder=folder_name,
-												  njobs=nbatch_jobs,python_path=batch_python_path,init=False)
+												  njobs=nbatch_jobs,python_path=batch_python_path,init=False,parallelize=parallelize)
 
 				pickle.dump(constants,open(os.path.join(folder_name,'sntd_constants.pkl'),'wb'))
 				pickle.dump(args['curves'],open(os.path.join(folder_name,'sntd_data.pkl'),'wb'))
-				for pyfile in ['run_sntd_init.py','run_sntd.py']:
+				pyfiles=['run_sntd_init.py','run_sntd.py'] if parallelize is None else ['run_sntd_init_par.py','run_sntd_par.py']
+				for pyfile in pyfiles:
 					with open(os.path.join(__filedir__,'batch',pyfile)) as f:
 						batch_py=f.read()
 					if 'init' in pyfile:
@@ -468,6 +506,7 @@ def fit_data(curves=None, snType='Ia',bands=None, models=None, params=None, boun
 						batch_py=batch_py.replace('batchinitreplace','print("Nothing to initialize...")')
 					else:
 						batch_py=batch_py.replace('batchinitreplace',batch_init)
+					batch_py=batch_py.replace('ncores',str(n_cores_per_node))
 
 					indent1=batch_py.find('fitCurves=')
 					indent=batch_py.find('try:')+len('try:')+1
@@ -484,6 +523,10 @@ def fit_data(curves=None, snType='Ia',bands=None, models=None, params=None, boun
 							sntd_command+='constants=all_dat[i].constants,'
 						elif par=='method':
 							sntd_command+='method="parallel",'
+						elif par=='par_or_batch' and parallelize is not None:
+								sntd_command+='par_or_batch="parallel",'
+						elif par=='npar_cores' and parallelize is not None:
+							sntd_command+='npar_cores=%i,'%n_cores_per_node
 						elif isinstance(val,str):
 							sntd_command+=str(par)+'="'+str(val)+'",'
 						elif par=='kwargs':
@@ -523,7 +566,7 @@ def fit_data(curves=None, snType='Ia',bands=None, models=None, params=None, boun
 					output=glob.glob(os.path.join(os.path.abspath(folder_name),'sntd_fit*.pkl'))
 					nfit=len(output)+saved_fits
 					if nfit!=ndone:
-						if saved_fits>0 and saved_fits%50000==0:
+						if saved_fits>0 and int(saved_fits*n_per_node)%50000==0:
 							fits_output.close()
 							fits_output=tarfile.open(os.path.join(os.path.abspath(folder_name),'sntd_fits_%i.tar.gz'%tarfit_ind),mode='w')
 							tarfit_ind+=1
@@ -568,17 +611,23 @@ def fit_data(curves=None, snType='Ia',bands=None, models=None, params=None, boun
 						if isinstance(args[par_key],(list,tuple,np.ndarray)) and np.any([isinstance(x,(list,tuple,np.ndarray)) for x in args[par_key]]):
 							temp_args[par_key]=args[par_key][i]
 					par_arg_vals.append([args['curves'][i],temp_args])
-				curves=pyParz.foreach(par_arg_vals,_fitseries,[args])
+				curves=pyParz.foreach(par_arg_vals,_fitseries,[args],numThreads=npar_cores)
 			else:
 				total_jobs=math.ceil(len(args['curves'])/n_per_node)
+				if n_cores_per_node>1:
+					n_per_node=1
+					parallelize=n_cores_per_node
+				else:
+					parallelize=None
 				script_name_init,folder_name=run_sbatch(partition=batch_partition,
-												   njobs=nbatch_jobs,python_path=batch_python_path,init=True)
+												   njobs=nbatch_jobs,python_path=batch_python_path,init=True,parallelize=parallelize)
 				script_name,folder_name=run_sbatch(partition=batch_partition,folder=folder_name,
-												  njobs=nbatch_jobs,python_path=batch_python_path,init=False)
+												  njobs=nbatch_jobs,python_path=batch_python_path,init=False,parallelize=parallelize)
 
 				pickle.dump(constants,open(os.path.join(folder_name,'sntd_constants.pkl'),'wb'))
 				pickle.dump(args['curves'],open(os.path.join(folder_name,'sntd_data.pkl'),'wb'))
-				for pyfile in ['run_sntd_init.py','run_sntd.py']:
+				pyfiles=['run_sntd_init.py','run_sntd.py'] if parallelize is None else ['run_sntd_init_par.py','run_sntd_par.py']
+				for pyfile in pyfiles:
 					with open(os.path.join(__filedir__,'batch',pyfile)) as f:
 						batch_py=f.read()
 					if 'init' in pyfile:
@@ -590,6 +639,7 @@ def fit_data(curves=None, snType='Ia',bands=None, models=None, params=None, boun
 						batch_py=batch_py.replace('batchinitreplace','print("Nothing to initialize...")')
 					else:
 						batch_py=batch_py.replace('batchinitreplace',batch_init)
+					batch_py=batch_py.replace('ncores',str(n_cores_per_node))
 
 					indent1=batch_py.find('fitCurves=')
 					indent=batch_py.find('try:')+len('try:')+1
@@ -603,6 +653,10 @@ def fit_data(curves=None, snType='Ia',bands=None, models=None, params=None, boun
 							sntd_command+='constants=all_dat[i].constants,'
 						elif par=='method':
 							sntd_command+='method="series",'
+						elif par=='par_or_batch' and parallelize is not None:
+								sntd_command+='par_or_batch="parallel",'
+						elif par=='npar_cores' and parallelize is not None:
+							sntd_command+='npar_cores=%i,'%n_cores_per_node
 						elif isinstance(val,str):
 							sntd_command+=str(par)+'="'+str(val)+'",'
 						elif par=='kwargs':
@@ -641,7 +695,7 @@ def fit_data(curves=None, snType='Ia',bands=None, models=None, params=None, boun
 					output=glob.glob(os.path.join(os.path.abspath(folder_name),'sntd_fit*.pkl'))
 					nfit=len(output)+saved_fits
 					if nfit!=ndone:
-						if saved_fits>0 and saved_fits%50000==0:
+						if saved_fits>0 and int(saved_fits*n_per_node)%50000==0:
 							fits_output.close()
 							fits_output=tarfile.open(os.path.join(os.path.abspath(folder_name),'sntd_fits_%i.tar.gz'%tarfit_ind),mode='w')
 							tarfit_ind+=1
@@ -684,17 +738,23 @@ def fit_data(curves=None, snType='Ia',bands=None, models=None, params=None, boun
 						if isinstance(args[par_key],(list,tuple,np.ndarray)) and np.any([isinstance(x,(list,tuple,np.ndarray)) for x in args[par_key]]):
 							temp_args[par_key]=args[par_key][i]
 					par_arg_vals.append([args['curves'][i],temp_args])
-				curves=pyParz.foreach(par_arg_vals,_fitColor,[args])
+				curves=pyParz.foreach(par_arg_vals,_fitColor,[args],numThreads=npar_cores)
 			else:
 				total_jobs=math.ceil(len(args['curves'])/n_per_node)
+				if n_cores_per_node>1:
+					n_per_node=1
+					parallelize=n_cores_per_node
+				else:
+					parallelize=None
 				script_name_init,folder_name=run_sbatch(partition=batch_partition,
-												   njobs=nbatch_jobs,python_path=batch_python_path,init=True)
+												   njobs=nbatch_jobs,python_path=batch_python_path,init=True,parallelize=parallelize)
 				script_name,folder_name=run_sbatch(partition=batch_partition,folder=folder_name,
-												  njobs=nbatch_jobs,python_path=batch_python_path,init=False)
+												  njobs=nbatch_jobs,python_path=batch_python_path,init=False,parallelize=parallelize)
 
 				pickle.dump(constants,open(os.path.join(folder_name,'sntd_constants.pkl'),'wb'))
 				pickle.dump(args['curves'],open(os.path.join(folder_name,'sntd_data.pkl'),'wb'))
-				for pyfile in ['run_sntd_init.py','run_sntd.py']:
+				pyfiles=['run_sntd_init.py','run_sntd.py'] if parallelize is None else ['run_sntd_init_par.py','run_sntd_par.py']
+				for pyfile in pyfiles:
 					with open(os.path.join(__filedir__,'batch',pyfile)) as f:
 						batch_py=f.read()
 					if 'init' in pyfile:
@@ -706,6 +766,7 @@ def fit_data(curves=None, snType='Ia',bands=None, models=None, params=None, boun
 						batch_py=batch_py.replace('batchinitreplace','print("Nothing to initialize...")')
 					else:
 						batch_py=batch_py.replace('batchinitreplace',batch_init)
+					batch_py=batch_py.replace('ncores',str(n_cores_per_node))
 
 					indent1=batch_py.find('fitCurves=')
 					indent=batch_py.find('try:')+len('try:')+1
@@ -719,6 +780,10 @@ def fit_data(curves=None, snType='Ia',bands=None, models=None, params=None, boun
 							sntd_command+='constants=all_dat[i].constants,'
 						elif par=='method':
 							sntd_command+='method="color",'
+						elif par=='par_or_batch' and parallelize is not None:
+								sntd_command+='par_or_batch="parallel",'
+						elif par=='npar_cores' and parallelize is not None:
+							sntd_command+='npar_cores=%i,'%n_cores_per_node
 						elif isinstance(val,str):
 							sntd_command+=str(par)+'="'+str(val)+'",'
 						elif par=='kwargs':
@@ -756,7 +821,7 @@ def fit_data(curves=None, snType='Ia',bands=None, models=None, params=None, boun
 					output=glob.glob(os.path.join(os.path.abspath(folder_name),'sntd_fit*.pkl'))
 					nfit=len(output)+saved_fits
 					if nfit!=ndone:
-						if saved_fits>0 and saved_fits%50000==0:
+						if saved_fits>0 and int(saved_fits*n_per_node)%50000==0:
 							fits_output.close()
 							fits_output=tarfile.open(os.path.join(os.path.abspath(folder_name),'sntd_fits_%i.tar.gz'%tarfit_ind),mode='w')
 							tarfit_ind+=1
@@ -807,6 +872,10 @@ def _fitColor(all_args):
 			print('Fitting MISN number %i...'%curves.nsn)
 	else:
 		args=all_args
+
+	for p in args['curves'].constants.keys():
+		if p not in args['constants'].keys():
+			args['constants'][p]=args['curves'].constants[p]
 
 	if args['clip_data']:
 		for im in args['curves'].images.keys():
@@ -1288,6 +1357,11 @@ def _fitseries(all_args):
 			print('Fitting MISN number %i...'%curves.nsn)
 	else:
 		args=all_args
+
+
+	for p in args['curves'].constants.keys():
+		if p not in args['constants'].keys():
+			args['constants'][p]=args['curves'].constants[p]
 
 	if args['clip_data']:
 		for im in args['curves'].images.keys():
@@ -1829,6 +1903,11 @@ def _fitparallel(all_args):
 	else:
 		args=all_args
 	
+
+	for p in args['curves'].constants.keys():
+		if p not in args['constants'].keys():
+			args['constants'][p]=args['curves'].constants[p]
+
 	if 't0' in args['bounds']:
 		t0Bounds=copy(args['bounds']['t0'])
 

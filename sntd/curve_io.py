@@ -147,7 +147,7 @@ class curveDict(dict):
         self.parallel=curve()
         self.series=curve()
         self.color=curve()
-
+        self.constants={}
 
 
     #these three functions allow you to access the curveDict via "dot" notation

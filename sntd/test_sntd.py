@@ -31,6 +31,13 @@ def test_sntd():
 		print(traceback.format_exc())
 		failed+=1
 	
+	fitCurves=sntd.fit_data([myMISN]*10,snType='Ia', models='salt2-extended',bands=['bessellb','bessellr'],
+				params=['x0','x1','t0','c'],bounds={'t0':(-15,15),'x1':(-2,2),'c':(-1,1),'td':(-15,15),'mu':(.5,2)},
+				color_param_ignore=['x1'],par_or_batch='batch',n_cores_per_node=5,nbatch_jobs=2,
+				method=['parallel','series','color'],microlensing=None,maxcall=5,minsnr=0,
+				set_from_simMeta={'z':'z'},t0_guess={'image_1':10,'image_2':70})
+
+
 	for method in ['parallel','series','color']:
 		try:
 			total+=1
