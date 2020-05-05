@@ -569,6 +569,7 @@ def fit_data(curves=None, snType='Ia',bands=None, models=None, params=None, boun
 				nadded=nbatch_jobs
 				saved_fits=0
 				tarfit_ind=0
+				nsavedfiles=1
 				while True:
 					time.sleep(10) #update every 10 seconds
 					output=glob.glob(os.path.join(os.path.abspath(folder_name),'sntd_fit*.pkl'))
@@ -704,6 +705,7 @@ def fit_data(curves=None, snType='Ia',bands=None, models=None, params=None, boun
 				nadded=nbatch_jobs
 				saved_fits=0
 				tarfit_ind=0
+				nsavedfiles=1
 				while True:
 					time.sleep(10) #update every 10 seconds
 					output=glob.glob(os.path.join(os.path.abspath(folder_name),'sntd_fit*.pkl'))
@@ -836,6 +838,7 @@ def fit_data(curves=None, snType='Ia',bands=None, models=None, params=None, boun
 				nadded=nbatch_jobs
 				saved_fits=0
 				tarfit_ind=0
+				nsavedfiles=1
 				while True:
 					time.sleep(10) #update every 10 seconds
 					output=glob.glob(os.path.join(os.path.abspath(folder_name),'sntd_fit*.pkl'))
