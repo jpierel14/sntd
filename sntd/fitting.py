@@ -530,8 +530,8 @@ def fit_data(curves=None, snType='Ia',bands=None, models=None, params=None, boun
 						elif par=='constants':
 							if parallelize is None:
 									sntd_command+='constants=all_dat[i].constants,'
-								else:
-									sntd_command+='constants={'+'},'
+							else:
+								sntd_command+='constants={'+'},'
 						elif par=='method':
 							sntd_command+='method="parallel",'
 						elif par=='par_or_batch' and parallelize is not None:
@@ -670,8 +670,8 @@ def fit_data(curves=None, snType='Ia',bands=None, models=None, params=None, boun
 						elif par=='constants':
 							if parallelize is None:
 									sntd_command+='constants=all_dat[i].constants,'
-								else:
-									sntd_command+='constants={'+'},'
+							else:
+								sntd_command+='constants={'+'},'
 						elif par=='method':
 							sntd_command+='method="series",'
 						elif par=='par_or_batch' and parallelize is not None:
@@ -807,8 +807,8 @@ def fit_data(curves=None, snType='Ia',bands=None, models=None, params=None, boun
 						elif par=='constants':
 							if parallelize is None:
 									sntd_command+='constants=all_dat[i].constants,'
-								else:
-									sntd_command+='constants={'+'},'
+							else:
+								sntd_command+='constants={'+'},'
 						elif par=='method':
 							sntd_command+='method="color",'
 						elif par=='par_or_batch' and parallelize is not None:
