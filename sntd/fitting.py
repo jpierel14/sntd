@@ -2085,6 +2085,8 @@ def _fitparallel(all_args):
 
 	args['bands'],band_SNR,band_dict=getBandSNR(args['curves'],args['bands'],args['min_points_per_band'])
 	args['curves'].bands=args['bands']
+	if len(args['bands'])==0:
+		return(None)
 	
 	for d in args['curves'].images.keys():
 		for b in [x for x in np.unique(args['curves'].images[d].table['band']) if x not in band_dict[d]]:
