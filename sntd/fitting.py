@@ -571,12 +571,17 @@ def fit_data(curves=None, snType='Ia',bands=None, models=None, params=None, boun
 				nadded=nbatch_jobs
 				saved_fits=0
 				tarfit_ind=0
+				if parallelize is not None:
+					n_per_file=1
+				else:
+					n_per_file=n_per_node
+				
 				while True:
 					time.sleep(10) #update every 10 seconds
 					output=glob.glob(os.path.join(os.path.abspath(folder_name),'sntd_fit*.pkl'))
 					nfit=len(output)+saved_fits
 					if nfit!=ndone:
-						if int(saved_fits*n_per_node)>=50000*(tarfit_ind+1):
+						if int(saved_fits*n_per_file)>=50000*(tarfit_ind+1):
 							fits_output.close()
 							fits_output=tarfile.open(os.path.join(os.path.abspath(folder_name),'sntd_fits_%i.tar.gz'%tarfit_ind),mode='w')
 							tarfit_ind+=1
@@ -586,7 +591,7 @@ def fit_data(curves=None, snType='Ia',bands=None, models=None, params=None, boun
 							saved_fits+=1
 						if nadded<total_jobs:
 							ind=nadded
-							for i in range(nfit-ndone):
+							for i in range(int((nfit-ndone)/(n_per_node/n_per_file))):
 								if ind>total_jobs-1:
 									continue
 								result=subprocess.call(['sbatch',os.path.join(os.path.abspath(folder_name),
@@ -597,7 +602,7 @@ def fit_data(curves=None, snType='Ia',bands=None, models=None, params=None, boun
 
 						if wait_for_batch:
 							printProgressBar(ndone,total_jobs)
-					if nfit>=total_jobs:
+					if nfit/(n_per_node/n_per_file)>=total_jobs:
 						break
 				fits_output.close()
 				if verbose:
