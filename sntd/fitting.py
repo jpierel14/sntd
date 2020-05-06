@@ -598,11 +598,11 @@ def fit_data(curves=None, snType='Ia',bands=None, models=None, params=None, boun
 																		 script_name),str(ind)],stdout=subprocess.DEVNULL)
 								ind+=1
 								nadded+=1
-						ndone=nfit
+						ndone=copy(nfit)
 
 						if wait_for_batch:
-							printProgressBar(ndone,total_jobs)
-					if nfit/(n_per_node/n_per_file)>=total_jobs:
+							printProgressBar(ndone/(n_per_node/n_per_file),total_jobs)
+					if ndone/(n_per_node/n_per_file)>=total_jobs:
 						break
 				fits_output.close()
 				if verbose:
