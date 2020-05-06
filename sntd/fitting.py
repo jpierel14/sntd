@@ -393,13 +393,12 @@ def fit_data(curves=None, snType='Ia',bands=None, models=None, params=None, boun
 				nadded=nbatch_jobs
 				saved_fits=0
 				tarfit_ind=0
-				nsavedfiles=1
 				while True:
 					time.sleep(10) #update every 10 seconds
 					output=glob.glob(os.path.join(os.path.abspath(folder_name),'sntd_fit*.pkl'))
 					nfit=len(output)+saved_fits
 					if nfit!=ndone:
-						if int(saved_fits*n_per_node)>=50000*nsavedfiles:
+						if int(saved_fits*n_per_node)>=50000*(tarfit_ind+1):
 							fits_output.close()
 							fits_output=tarfile.open(os.path.join(os.path.abspath(folder_name),'sntd_fits_%i.tar.gz'%tarfit_ind),mode='w')
 							tarfit_ind+=1
@@ -572,13 +571,12 @@ def fit_data(curves=None, snType='Ia',bands=None, models=None, params=None, boun
 				nadded=nbatch_jobs
 				saved_fits=0
 				tarfit_ind=0
-				nsavedfiles=1
 				while True:
 					time.sleep(10) #update every 10 seconds
 					output=glob.glob(os.path.join(os.path.abspath(folder_name),'sntd_fit*.pkl'))
 					nfit=len(output)+saved_fits
 					if nfit!=ndone:
-						if int(saved_fits*n_per_node)>=50000*nsavedfiles:
+						if int(saved_fits*n_per_node)>=50000*(tarfit_ind+1):
 							fits_output.close()
 							fits_output=tarfile.open(os.path.join(os.path.abspath(folder_name),'sntd_fits_%i.tar.gz'%tarfit_ind),mode='w')
 							tarfit_ind+=1
@@ -711,13 +709,12 @@ def fit_data(curves=None, snType='Ia',bands=None, models=None, params=None, boun
 				nadded=nbatch_jobs
 				saved_fits=0
 				tarfit_ind=0
-				nsavedfiles=1
 				while True:
 					time.sleep(10) #update every 10 seconds
 					output=glob.glob(os.path.join(os.path.abspath(folder_name),'sntd_fit*.pkl'))
 					nfit=len(output)+saved_fits
 					if nfit!=ndone:
-						if int(saved_fits*n_per_node)>=50000*nsavedfiles:
+						if int(saved_fits*n_per_node)>=50000*(tarfit_ind+1):
 							fits_output.close()
 							fits_output=tarfile.open(os.path.join(os.path.abspath(folder_name),'sntd_fits_%i.tar.gz'%tarfit_ind),mode='w')
 							tarfit_ind+=1
@@ -847,13 +844,12 @@ def fit_data(curves=None, snType='Ia',bands=None, models=None, params=None, boun
 				nadded=nbatch_jobs
 				saved_fits=0
 				tarfit_ind=0
-				nsavedfiles=1
 				while True:
 					time.sleep(10) #update every 10 seconds
 					output=glob.glob(os.path.join(os.path.abspath(folder_name),'sntd_fit*.pkl'))
 					nfit=len(output)+saved_fits
 					if nfit!=ndone:
-						if int(saved_fits*n_per_node)>=50000*nsavedfiles:
+						if int(saved_fits*n_per_node)>=50000*(tarfit_ind+1):
 							fits_output.close()
 							fits_output=tarfile.open(os.path.join(os.path.abspath(folder_name),'sntd_fits_%i.tar.gz'%tarfit_ind),mode='w')
 							tarfit_ind+=1

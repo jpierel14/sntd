@@ -36,5 +36,6 @@ except Exception as e:
     print(traceback.format_exc())
     fitCurves=traceback.format_exc()
     
-filename=os.path.join(os.path.abspath(os.path.dirname(__file__)),'sntd_fit%s.pkl'%sys.argv[1])
-pickle.dump(fitCurves,open(filename,'wb'))
+for i in range(len(all_input)):
+    filename=os.path.join(os.path.abspath(os.path.dirname(__file__)),'sntd_fit%s_%i.pkl'%(sys.argv[1],i))
+    pickle.dump(fitCurves[i],open(filename,'wb'))
