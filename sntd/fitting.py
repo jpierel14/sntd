@@ -2426,7 +2426,7 @@ def _fitparallel(all_args):
 								{p:args['curves'].images[k].param_quantiles[p][[0,2]]\
 								 for p in args['curves'].images[k].fits.res.vparam_names if p != \
 								 args['curves'].images[k].fits.model.param_names[2]},None,
-								args.get('minsnr',0),args.get('maxcall',None)])
+								args.get('minsnr',0),args.get('maxcall',None)],args['npar_cores'])
 			else:
 				return args['curves']
 			mu,sigma=scipy.stats.norm.fit(t0s)

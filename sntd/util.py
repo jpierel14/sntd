@@ -180,6 +180,8 @@ def run_sbatch(partition=None,njobs=None,python_path=None,init=False,folder=None
         sbatch=sbatch.replace('njobs','0-%i'%(njobs-1))
     if parallelize is not None:
         sbatch=sbatch.replace('ncores',str(parallelize))
+    else:
+        sbatch=sbatch.replace('ncores',str(1))
 
     if not init:
         with open(os.path.join(folder_name,'sbatch_job.BATCH'),'w') as f:
