@@ -128,7 +128,7 @@ def load_batch_fit(folder_name,fit_name):
         return dat
 
 
-def run_sbatch(partition=None,njobs=None,python_path=None,init=False,folder=None,parallelize=False):
+def run_sbatch(partition=None,njobs=None,python_path=None,init=False,folder=None,parallelize=None,microlensing_cores=None):
     if njobs is None:
         print("Batch mode requires a number of jobs!")
         sys.exit(1)
@@ -180,6 +180,8 @@ def run_sbatch(partition=None,njobs=None,python_path=None,init=False,folder=None
         sbatch=sbatch.replace('njobs','0-%i'%(njobs-1))
     if parallelize is not None:
         sbatch=sbatch.replace('ncores',str(parallelize))
+    elif microlensing_cores is not None:
+        sbatch=sbatch.replace('ncores',str(microlensing_cores))
     else:
         sbatch=sbatch.replace('ncores',str(1))
 
