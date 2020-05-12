@@ -2437,7 +2437,7 @@ def _fitparallel(all_args):
 														micro_type=args['microlensing'],kernel=args['kernel'])
 
 
-			if args['par_or_batch']=='parallel':
+			try:
 
 					
 				t0s=pyParz.foreach(samples.T,_micro_uncertainty,
@@ -2447,7 +2447,9 @@ def _fitparallel(all_args):
 								 for p in args['curves'].images[k].fits.res.vparam_names if p != \
 								 args['curves'].images[k].fits.model.param_names[2]},None,
 								args.get('minsnr',0),args.get('maxcall',None)],numThreads=args['npar_cores'])
-			else:
+			except:
+				if args['verbose']:
+					print('Issue with microlensing identification, skipping...')
 				return args['curves']
 			mu,sigma=scipy.stats.norm.fit(t0s)
 			args['curves'].images[k].param_quantiles['micro']=np.sqrt((args['curves'].images[k].fits.model.get('t0')-mu)**2\
