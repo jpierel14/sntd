@@ -429,7 +429,7 @@ def fit_data(curves=None, snType='Ia',bands=None, models=None, params=None, boun
 
 						if wait_for_batch:
 							printProgressBar(ndone/(n_per_node/n_per_file),total_jobs)
-					if ndone/(n_per_node/n_per_file)>=total_jobs:
+					if ndone>=len(args['curves']):
 						break
 				fits_output.close()
 				if verbose:
@@ -617,7 +617,7 @@ def fit_data(curves=None, snType='Ia',bands=None, models=None, params=None, boun
 
 						if wait_for_batch:
 							printProgressBar(ndone/(n_per_node/n_per_file),total_jobs)
-					if ndone/(n_per_node/n_per_file)>=total_jobs:
+					if ndone>=len(args['curves']):
 						break
 				fits_output.close()
 				if verbose:
@@ -765,7 +765,7 @@ def fit_data(curves=None, snType='Ia',bands=None, models=None, params=None, boun
 
 						if wait_for_batch:
 							printProgressBar(ndone/(n_per_node/n_per_file),total_jobs)
-					if ndone/(n_per_node/n_per_file)>=total_jobs:
+					if ndone>=len(args['curves']):
 						break
 				fits_output.close()
 				if verbose:
@@ -910,7 +910,7 @@ def fit_data(curves=None, snType='Ia',bands=None, models=None, params=None, boun
 
 						if wait_for_batch:
 							printProgressBar(ndone/(n_per_node/n_per_file),total_jobs)
-					if ndone/(n_per_node/n_per_file)>=total_jobs:
+					if ndone>=len(args['curves']):
 						break
 				fits_output.close()
 				if verbose:
