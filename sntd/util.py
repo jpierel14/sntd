@@ -127,7 +127,7 @@ def load_batch_fit(fit_name,folder=None,tar_dict=None):
         tar_dict=load_batch_fit_names(folder)
     to_return=None
     for tar_fname in tar_dict.keys():
-        if fit_name not in tar_dict[tar_fname]:
+        if fit_name not in tar_dict[tar_fname] and fit_name not in [os.path.basename(x) for x in tar_dict[tar_fname]]:
             continue
         tar=tarfile.open(tar_fname,'r')
         f=tar.extractfile(fit_name).read()
