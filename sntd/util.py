@@ -110,21 +110,29 @@ def load_example_misn():
     return(pickle.load(open(example_file[0],'rb')))
 
 def load_batch_fit_names(folder_name,verbose=True):
-    tar=tarfile.open(os.path.join(folder_name,'sntd_fits.tar.gz'),'r')
-    all_fits=tar.getmembers()
-    if verbose:
-        print('Found %i fits, loading...'%len(all_fits))
-    tar.close()
-    return [x.name for x in all_fits]
+    tars=glob.glob(os.path.join(folder_name,'sntd_fits*.tar.gz'))
+    all_names={}
+    for tar_fname in tars:
+        tar=tarfile.open(tar_fname,'r')
+        all_fits=tar.getmembers()
+        if verbose:
+            print('Found %i fits, loading...'%len(all_fits))
+        tar.close()
+        all_names[tar_fname]=[x.name for x in all_fits]
+    return all_names
 
-def load_batch_fit(folder_name,fit_name):
-    tar=tarfile.open(os.path.join(folder_name,'sntd_fits.tar.gz'),'r')
-    f=tar.extractfile(fit_name).read()
-    dat=pickle.loads(f)
-    tar.close()
-    if len(dat)==1:
-        return(dat[0])
-    else:
+def load_batch_fit(fit_name,folder=None,tar_dict=None):
+    if tar_dict is None:
+        folder='.' if folder is None else folder
+        tar_dict=load_batch_fit_names(folder)
+    to_return=None
+    for tar_fname in tar_dict.keys():
+        if fit_name not in tar_dict[tar_fname]:
+            continue
+        tar=tarfile.open(tar_fname,'r')
+        f=tar.extractfile(fit_name).read()
+        dat=pickle.loads(f)
+        tar.close()
         return dat
 
 
