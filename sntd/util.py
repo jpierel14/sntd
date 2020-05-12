@@ -134,6 +134,8 @@ def load_batch_fit(fit_name,folder=None,tar_dict=None):
         dat=pickle.loads(f)
         tar.close()
         return dat
+    print('Did not find your file')
+    return
 
 
 def run_sbatch(partition=None,njobs=None,python_path=None,init=False,folder=None,parallelize=None,microlensing_cores=None):
