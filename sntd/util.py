@@ -109,7 +109,7 @@ def load_example_misn():
     example_file=glob.glob(os.path.join(__filedir__,'data','examples','*.pkl'))
     return(pickle.load(open(example_file[0],'rb')))
 
-def load_batch_fit_names(folder_name,verbose=True):
+def load_batch_fit_names(folder_name='.',verbose=True):
     tars=glob.glob(os.path.join(folder_name,'sntd_fits*.tar.gz'))
     all_names={}
     for tar_fname in tars:
