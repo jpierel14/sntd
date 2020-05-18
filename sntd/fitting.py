@@ -1893,8 +1893,8 @@ def _fitseries(all_args):
 		temp_vparam_names=args['curves'].series.fits.res.vparam_names+[finalmodel.param_names[2]]+['t0']
 		for im in args['curves'].images.keys():
 			try:
-				temp_vparam_names.remove('t_'+str(im[-1]))
-				temp_vparam_names.remove('a_'+str(im[-1]))
+				temp_vparam_names.remove('dt_'+str(im[-1]))
+				temp_vparam_names.remove('mu_'+str(im[-1]))
 			except:
 				pass
 		temp_bounds={p:args['curves'].series.param_quantiles[p][[0,2]] \
@@ -1902,11 +1902,15 @@ def _fitseries(all_args):
 
 		temp_bounds['t0']=args['bounds']['td']+args['curves'].series.t_peaks[args['refImage']]
 		temp_bounds={b:temp_bounds[b] for b in temp_bounds.keys() if b!=args['curves'].series.fits.model.param_names[2]}
-		if args['par_or_batch']=='parallel':
+		try:
 			t0s=pyParz.foreach(samples.T,_micro_uncertainty,
 						   [args['curves'].series.fits.model,np.array(tempTable),tempTable.colnames,
 							x_pred,temp_vparam_names,
 							temp_bounds,None,args.get('minsnr',0),args.get('maxcall',None)])
+		except:
+				if args['verbose']:
+					print('Issue with microlensing identification, skipping...')
+				return args['curves']
 		else:
 			return args['curves']
 		mu,sigma=scipy.stats.norm.fit(t0s)
