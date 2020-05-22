@@ -257,8 +257,8 @@ def fit_data(curves=None, snType='Ia',bands=None, models=None, params=None, boun
 	if fit_prior is False:
 		args['fit_prior']=None
 	
-	if args['parlist'] and n_per_node is None:
-		n_per_node = math.ceil(len(args['curves'])/njobs)
+	if args['parlist'] and n_per_node is None and par_or_batch=='batch':
+		n_per_node = math.ceil(len(args['curves'])/nbatch_jobs)
 
 	if isinstance(method,(list,np.ndarray,tuple)):
 		if len(method)==1:
@@ -1064,7 +1064,8 @@ def _fitColor(all_args):
 	elif args['fit_prior'] is not None:
 		args['models']=args['fit_prior'].images[args['fit_prior'].parallel.fitOrder[0]].fits.model._source.name
 
-	if not quality_check(self,min_n_bands=args['min_n_bands'],min_n_points_per_band=args['min_points_per_band'],clip=args['clip_data'],method='color'):
+	if not args['curves'].quality_check(min_n_bands=2,
+						min_n_points_per_band=args['min_points_per_band'],clip=False,method='parallel'):
 		return
 	all_fit_dict={}
 	if args['fast_model_selection'] and len(np.array(args['models']).flatten())>1:
@@ -1236,6 +1237,9 @@ def _fitColor(all_args):
 				args['bounds'][b]=np.array([max([args['bounds'][b][0],0]),max([args['bounds'][b][1],0])])
 			else:
 				args['bounds'][b]=np.array([0,np.inf])
+		if not args['curves'].quality_check(min_n_bands=args['min_n_bands'],
+						min_n_points_per_band=args['min_points_per_band'],clip=args['clip_data'],method='color'):
+			return
 		params,res,model=nest_color_lc(args['curves'].color.table,tempMod,nimage,color=args['bands'],
 											bounds=args['bounds'],
 											 vparam_names=[x for x in all_vparam_names if x in tempMod.param_names or x in snParams],ref=par_ref,
@@ -1610,7 +1614,8 @@ def _fitseries(all_args):
 			to_ignore=[to_ignore]
 		args['models']=[x for x in np.array(args['models']).flatten() if x not in to_ignore]
 	all_fit_dict={}
-	if not quality_check(self,min_n_bands=args['min_n_bands'],min_n_points_per_band=args['min_points_per_band'],clip=args['clip_data'],method='series'):
+	if not args['curves'].quality_check(min_n_bands=args['min_n_bands'],
+							min_n_points_per_band=args['min_points_per_band'],clip=False,method='parallel'):
 		return
 	if args['fast_model_selection'] and len(np.array(args['models']).flatten())>1:
 		for b in args['force_positive_param']:
@@ -1792,6 +1797,9 @@ def _fitseries(all_args):
 				args['bounds'][b]=np.array([0,np.inf])
 		for b in [x for x in np.unique(args['curves'].series.table['band']) if x not in args['curves'].series.bands]:
 			args['curves'].series.table=args['curves'].series.table[args['curves'].series.table['band']!=b]
+		if not args['curves'].quality_check(min_n_bands=args['min_n_bands'],
+							min_n_points_per_band=args['min_points_per_band'],clip=args['clip_data'],method='series'):
+			return
 		params,res,model=nest_series_lc(args['curves'].series.table,tempMod,nimage,bounds=args['bounds'],
 									  vparam_names=[x for x in all_vparam_names if x in tempMod.param_names or x in np.array(snParams).flatten()],ref=par_ref,
 									  minsnr=args.get('minsnr',5.),priors=args.get('priors',None),ppfs=args.get('ppfs',None),
@@ -2193,7 +2201,8 @@ def _fitparallel(all_args):
 		if isinstance(to_ignore,str):
 			to_ignore=[to_ignore]
 		args['models']=[x for x in np.array(args['models']).flatten() if x not in to_ignore]
-	if not quality_check(self,min_n_bands=args['min_n_bands'],min_n_points_per_band=args['min_points_per_band'],clip=args['clip_data']):
+	if not args['curves'].quality_check(min_n_bands=args['min_n_bands'],
+								min_n_points_per_band=args['min_points_per_band'],clip=args['clip_data']):
 		return
 	all_fit_dict={}
 	if args['fast_model_selection'] and len(np.array(args['models']).flatten())>1:
@@ -2391,15 +2400,16 @@ def _fitparallel(all_args):
 			fit_table=deepcopy(args['curves'].images[d].table)
 			fit_table=fit_table[minds]
 		
-		params,args['curves'].images[d].fits['model'],args['curves'].images[d].fits['res']\
-			=nest_parallel_lc(fit_table,first_res[1],first_res[2],initial_bounds,min_n_bands=args['min_n_bands'],
+		par_output=nest_parallel_lc(fit_table,first_res[1],first_res[2],initial_bounds,min_n_bands=args['min_n_bands'],
 						min_n_points_per_band=args['min_points_per_band'],
 						guess_amplitude_bound=True,priors=args.get('priors',None), ppfs=args.get('None'),
 						method=args.get('nest_method','single'),cut_time=args['cut_time'],snr_band_inds=inds,
 						maxcall=args.get('maxcall',None), modelcov=args.get('modelcov',False),
 						rstate=args.get('rstate',None),minsnr=args.get('minsnr',5),
 						maxiter=args.get('maxiter',None),npoints=args.get('npoints',1000))
-
+		if par_output is None:
+			return
+		params,args['curves'].images[d].fits['model'],args['curves'].images[d].fits['res']=par_output
 
 	sample_dict={args['fitOrder'][0]:[first_res[2].samples[:,t0ind],first_res[2].samples[:,ampind]]}
 	for k in args['fitOrder'][1:]:
@@ -2508,8 +2518,9 @@ def nest_parallel_lc(data,model,prev_res,bounds,guess_amplitude_bound=False,cut_
 		data=data[data['time']>=cut_time[0]*(1+model.get('z'))+guess_t0]
 		data=data[data['time']<=cut_time[1]*(1+model.get('z'))+guess_t0]
 
-	data=check_table_quality(data,min_n_bands=min_n_bands,min_n_points_per_band=min_n_points_per_band,clip=True)
-
+	data,quality=check_table_quality(data,min_n_bands=min_n_bands,min_n_points_per_band=min_n_points_per_band,clip=True)
+	if not quality:
+		return
 	# Convert bounds/priors combinations into ppfs
 	if bounds is not None:
 		for key, val in bounds.items():
