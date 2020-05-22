@@ -7,6 +7,7 @@ from astropy.table import Table,vstack,Column
 from scipy.stats import mode
 from copy import deepcopy,copy
 import matplotlib.pyplot as plt
+from sncosmo.snanaio import read_snana_fits
 from mpl_toolkits.axes_grid1.axes_divider import make_axes_locatable
 try:
     import pickle
@@ -314,17 +315,6 @@ class curveDict(dict):
 
         return(self)
 
-    def clip_data(self,im,minsnr=0,mintime=-np.inf,maxtime=np.inf,peak=0,remove_bands=[]):
-        
-        self.images[im].table=self.images[im].table[self.images[im].table['flux']/\
-                                                    self.images[im].table['fluxerr']>minsnr]
-        
-        self.images[im].table=self.images[im].table[self.images[im].table['time']>mintime+peak]
-        self.images[im].table=self.images[im].table[self.images[im].table['time']<maxtime+peak]
-        
-
-        for b in remove_bands:
-            self.images[im].table=self.images[im].table[self.images[im].table['band']!=b]
 
     def color_table(self,band1,band2,time_delays=None,referenceImage='image_1',ignore_images=[],
                     static=False,model=None,minsnr=0.0):
@@ -432,6 +422,67 @@ class curveDict(dict):
 
         return(self)
 
+    def clip_data(self,im,minsnr=0,mintime=-np.inf,maxtime=np.inf,peak=0,remove_bands=[]):
+        
+        self.images[im].table=self.images[im].table[self.images[im].table['flux']/\
+                                                    self.images[im].table['fluxerr']>minsnr]
+        
+        self.images[im].table=self.images[im].table[self.images[im].table['time']>mintime+peak]
+        self.images[im].table=self.images[im].table[self.images[im].table['time']<maxtime+peak]
+        
+
+        for b in remove_bands:
+            self.images[im].table=self.images[im].table[self.images[im].table['band']!=b]
+
+    def quality_check(self,min_n_bands=1,min_n_points_per_band=1,clip=False,method='parallel'):
+        """
+        Checks the images of a SN to make sure they pass minimum thresholds for fitting.
+
+        Parameters
+        ----------
+        min_n_bands: int
+            The minimum number of bands needed to pass
+        min_n_points_per_band: int
+            The minimum number of bands in a given band to pass
+        clip: bool
+            If True, "bad" bands are clipped in place
+        method: str
+            Should be parallel, series, or color. Checks all images (parallel), or the series
+            table (series), or the color table (color)
+        Returns
+        -------
+        self: :class:`sntd.curve_io.curveDict`
+        """
+        if method=='parallel':
+            for im in self.images.keys():
+                ngood_bands=0
+                for b in np.unique(self.images[im].table['band']):
+                    temp_n_for_b=len(self.images[im].table[self.images[im].table['band']==b])
+                    if temp_n_for_b<min_n_points_per_band:
+                        if clip:
+                            self.images[im].table=self.images[im].table[self.images[im].table['band']!=b]
+                    else:
+                        ngood_bands+=1
+                if ngood_bands<min_n_bands:
+                    return False
+        elif method=='series':
+            ngood_bands=0
+            for b in np.unique(self.series.table['band']):
+                temp_n_for_b=len(self.series.table[self.series.table['band']==b])
+                if temp_n_for_b<min_n_points_per_band:
+                    if clip:
+                        self.series.table=self.series.table[self.series.table['band']!=b]
+                else:
+                    ngood_bands+=1
+            if ngood_bands<min_n_bands:
+                return False
+        elif method=='color':
+            if len(self.color.table)<min_n_points_per_band:
+                return False
+        else:
+            print('method unknown for quality_check')
+            sys.exit(1)
+        return True
 
     def plot_fit(self,method='parallel',par_image=None):
         """
@@ -1002,13 +1053,6 @@ class curveDict(dict):
             if savefig:
                 plt.savefig(filename+'.pdf',format='pdf',overwrite=True)
         return fig
-
-
-
-
-
-
-
 
 
 def table_factory(tables,telescopename="Unknown",object_name=None):

@@ -138,6 +138,18 @@ def load_batch_fit(fit_name,folder=None,tar_dict=None):
     print('Did not find your file')
     return
 
+def check_table_quality(table,min_n_bands=1,min_n_points_per_band=1,clip=False):
+    ngood_bands=0
+    for b in np.unique(table['band']):
+        temp_n_for_b=len(table[table['band']==b])
+        if temp_n_for_b<min_n_points_per_band:
+            if clip:
+                table=table[table['band']!=b]
+        else:
+            ngood_bands+=1
+    if ngood_bands<min_n_bands:
+        return table,False
+    return table,True
 
 def run_sbatch(partition=None,njobs=None,python_path=None,init=False,folder=None,parallelize=None,microlensing_cores=None):
     if njobs is None:

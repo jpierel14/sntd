@@ -59,8 +59,8 @@ class newDict(dict):
 def fit_data(curves=None, snType='Ia',bands=None, models=None, params=None, bounds={}, ignore=None, constants={},ignore_models=[],
 			 method='parallel',t0_guess=None,effect_names=[],effect_frames=[],batch_init=None,cut_time=None,force_positive_param=[],
 			 dust=None,microlensing=None,fitOrder=None,color_bands=None,color_param_ignore=[],min_points_per_band=3,identify_micro=False,
-			 max_n_bands=None,n_cores_per_node=1,npar_cores=4,
-			 fit_prior=None,par_or_batch='parallel',batch_partition=None,nbatch_jobs=None,batch_python_path=None,n_per_node=1,fast_model_selection=True,
+			 min_n_bands=0,max_n_bands=None,n_cores_per_node=1,npar_cores=4,
+			 fit_prior=None,par_or_batch='parallel',batch_partition=None,nbatch_jobs=None,batch_python_path=None,n_per_node=None,fast_model_selection=True,
 			 wait_for_batch=False,band_order=None,set_from_simMeta={},guess_amplitude=True,trial_fit=True,clip_data=False,
 			 kernel='RBF',refImage='image_1',nMicroSamples=100,color_curve=None,warning_supress=True,
 			 verbose=True,**kwargs):
@@ -117,6 +117,8 @@ def fit_data(curves=None, snType='Ia',bands=None, models=None, params=None, boun
 		Only accept bands to fit with this number of points fitting other criterion (e.g. minsnr)
 	identify_micro: bool
 		If True, function is run to attempt to identify bands where microlensing is least problematic.
+	min_n_bands: int
+		Checks the SN to make sure it has this number of bands (with min_points_per_band in each)
 	max_n_bands: int
 		The best n bands are chosen from the data. 
 	n_cores_per_node: int
@@ -136,7 +138,8 @@ def fit_data(curves=None, snType='Ia',bands=None, models=None, params=None, boun
 	batch_python_path: str
 		path to python you want to use for batch mode (if different from current)
 	n_per_node: int
-		Number of SNe to fit per node (in series) in batch mode.
+		Number of SNe to fit per node (in series) in batch mode. If none, just distributes all SNe across the number
+		of jobs you have by default. 
 	fast_model_selection: bool
 		If you are providing a list of models and want the best fit, turning this on will make the fitter choose based
 		on a simple minuit fit before moving to the full sntd fitting. If false, each model will be fitted with the full
@@ -254,7 +257,8 @@ def fit_data(curves=None, snType='Ia',bands=None, models=None, params=None, boun
 	if fit_prior is False:
 		args['fit_prior']=None
 	
-
+	if args['parlist'] and n_per_node is None:
+		n_per_node = math.ceil(len(args['curves'])/njobs)
 
 	if isinstance(method,(list,np.ndarray,tuple)):
 		if len(method)==1:
@@ -1060,7 +1064,8 @@ def _fitColor(all_args):
 	elif args['fit_prior'] is not None:
 		args['models']=args['fit_prior'].images[args['fit_prior'].parallel.fitOrder[0]].fits.model._source.name
 
-	
+	if not quality_check(self,min_n_bands=args['min_n_bands'],min_n_points_per_band=args['min_points_per_band'],clip=args['clip_data'],method='color'):
+		return
 	all_fit_dict={}
 	if args['fast_model_selection'] and len(np.array(args['models']).flatten())>1:
 		for b in args['force_positive_param']:
@@ -1605,6 +1610,8 @@ def _fitseries(all_args):
 			to_ignore=[to_ignore]
 		args['models']=[x for x in np.array(args['models']).flatten() if x not in to_ignore]
 	all_fit_dict={}
+	if not quality_check(self,min_n_bands=args['min_n_bands'],min_n_points_per_band=args['min_points_per_band'],clip=args['clip_data'],method='series'):
+		return
 	if args['fast_model_selection'] and len(np.array(args['models']).flatten())>1:
 		for b in args['force_positive_param']:
 			if b in args['bounds'].keys():
@@ -2186,6 +2193,8 @@ def _fitparallel(all_args):
 		if isinstance(to_ignore,str):
 			to_ignore=[to_ignore]
 		args['models']=[x for x in np.array(args['models']).flatten() if x not in to_ignore]
+	if not quality_check(self,min_n_bands=args['min_n_bands'],min_n_points_per_band=args['min_points_per_band'],clip=args['clip_data']):
+		return
 	all_fit_dict={}
 	if args['fast_model_selection'] and len(np.array(args['models']).flatten())>1:
 		for b in args['force_positive_param']:
@@ -2237,7 +2246,7 @@ def _fitparallel(all_args):
 			args['models']=[bestmodname]
 		except:
 			print('Every model had an error.')
-			sys.exit(1)
+			return None
 	for mod in np.array(args['models']).flatten():
 		if isinstance(mod,str):
 			if mod.upper() in ['BAZIN','BAZINSOURCE']:
@@ -2381,13 +2390,15 @@ def _fitparallel(all_args):
 		else:
 			fit_table=deepcopy(args['curves'].images[d].table)
 			fit_table=fit_table[minds]
+		
 		params,args['curves'].images[d].fits['model'],args['curves'].images[d].fits['res']\
-			=nest_parallel_lc(fit_table,first_res[1],first_res[2],initial_bounds,
-							guess_amplitude_bound=True,priors=args.get('priors',None), ppfs=args.get('None'),
-						 method=args.get('nest_method','single'),cut_time=args['cut_time'],snr_band_inds=inds,
-						 maxcall=args.get('maxcall',None), modelcov=args.get('modelcov',False),
-						 rstate=args.get('rstate',None),minsnr=args.get('minsnr',5),
-						 maxiter=args.get('maxiter',None),npoints=args.get('npoints',1000))
+			=nest_parallel_lc(fit_table,first_res[1],first_res[2],initial_bounds,min_n_bands=args['min_n_bands'],
+						min_n_points_per_band=args['min_points_per_band'],
+						guess_amplitude_bound=True,priors=args.get('priors',None), ppfs=args.get('None'),
+						method=args.get('nest_method','single'),cut_time=args['cut_time'],snr_band_inds=inds,
+						maxcall=args.get('maxcall',None), modelcov=args.get('modelcov',False),
+						rstate=args.get('rstate',None),minsnr=args.get('minsnr',5),
+						maxiter=args.get('maxiter',None),npoints=args.get('npoints',1000))
 
 
 	sample_dict={args['fitOrder'][0]:[first_res[2].samples[:,t0ind],first_res[2].samples[:,ampind]]}
@@ -2463,6 +2474,7 @@ def _fitparallel(all_args):
 	return args['curves']
 
 def nest_parallel_lc(data,model,prev_res,bounds,guess_amplitude_bound=False,cut_time=None,snr_band_inds=None,
+				   min_n_bands=1,min_n_points_per_band=3,
 				   minsnr=5., priors=None, ppfs=None, npoints=100, method='single',
 				   maxiter=None, maxcall=None, modelcov=False, rstate=None,
 				   verbose=False, warn=True,**kwargs):
@@ -2495,6 +2507,8 @@ def nest_parallel_lc(data,model,prev_res,bounds,guess_amplitude_bound=False,cut_
 	if cut_time is not None and guess_amplitude_bound:
 		data=data[data['time']>=cut_time[0]*(1+model.get('z'))+guess_t0]
 		data=data[data['time']<=cut_time[1]*(1+model.get('z'))+guess_t0]
+
+	data=check_table_quality(data,min_n_bands=min_n_bands,min_n_points_per_band=min_n_points_per_band,clip=True)
 
 	# Convert bounds/priors combinations into ppfs
 	if bounds is not None:
