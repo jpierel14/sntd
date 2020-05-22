@@ -454,6 +454,7 @@ class curveDict(dict):
         self: :class:`sntd.curve_io.curveDict`
         """
         if method=='parallel':
+            good_bands=[]
             for im in self.images.keys():
                 ngood_bands=0
                 for b in np.unique(self.images[im].table['band']):
@@ -463,8 +464,10 @@ class curveDict(dict):
                             self.images[im].table=self.images[im].table[self.images[im].table['band']!=b]
                     else:
                         ngood_bands+=1
+                        good_bands.append(b)
                 if ngood_bands<min_n_bands:
                     return False
+            self.bands=np.unique(good_bands)
         elif method=='series':
             ngood_bands=0
             for b in np.unique(self.series.table['band']):
@@ -482,6 +485,7 @@ class curveDict(dict):
         else:
             print('method unknown for quality_check')
             sys.exit(1)
+
         return True
 
     def plot_fit(self,method='parallel',par_image=None):
