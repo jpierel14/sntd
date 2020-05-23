@@ -196,6 +196,7 @@ class curveDict(dict):
                 print('\n'.join('   {}:{}'.format(*t) for t in zip(self.images[c].simMeta.keys(),self.images[c].simMeta.values()) if isinstance(t[1],(str,float,int))))
         return '------------------'
 
+
     def add_curve(self,myCurve,key=None):
         """Adds a curve object to the existing curveDict (i.e. adds
         an image to a MISN)

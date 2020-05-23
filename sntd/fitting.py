@@ -212,7 +212,7 @@ def fit_data(curves=None, snType='Ia',bands=None, models=None, params=None, boun
 		args['bands'] = list(set(bands)) if bands is not None else None
 		#sets the bands to user's if defined (set, so that they're unique), otherwise to all the bands that exist in curves
 		if args['bands']is None:
-			args['bands'] = list(curves.bands) if not isinstance(curves,(list,tuple,np.ndarray)) and not isinstance(args['curves'][0],str) else None
+			args['bands'] = list(curves.bands) if not isinstance(curves,(list,tuple,np.ndarray)) and not isinstance(args['curves'][0],str) and else None
 	
 
 	models=[models] if models is not None and not isinstance(models,(tuple,list,np.ndarray)) else models
@@ -1606,6 +1606,7 @@ def _fitseries(all_args):
 			temp_bands=np.append(temp_bands,np.where(args['curves'].images[ref].table['band']==b)[0])
 		inds=temp_bands.astype(int)
 	else:
+		best_bands=args['bands']
 		inds=np.arange(0,len(args['curves'].images[ref].table),1).astype(int)
 
 	if 'ignore_models' in args['set_from_simMeta'].keys():
@@ -1645,7 +1646,10 @@ def _fitseries(all_args):
 			
 			tempMod.set(**{k:args['constants'][k] for k in args['constants'].keys() if k in tempMod.param_names})
 			tempMod.set(**{k:args['curves'].images[args['refImage']].simMeta[args['set_from_simMeta'][k]] for k in args['set_from_simMeta'].keys() if k in tempMod.param_names})
-
+			if not np.all([tempMod.bandoverlap(x) for x in best_bands]):
+				if verbose:
+					print('Skipping %s because it does not cover the bands...')
+				continue
 			if mod=='BAZINSOURCE':
 				tempMod.set(z=0)
 			try:
@@ -2175,6 +2179,7 @@ def _fitparallel(all_args):
 			temp_bands=np.append(temp_bands,np.where(args['curves'].images[args['fitOrder'][0]].table['band']==b)[0])
 		inds=temp_bands.astype(int)
 	else:
+		best_bands=args['bands']
 		inds=np.arange(0,len(args['curves'].images[args['fitOrder'][0]].table),1).astype(int)
 	initial_bounds=deepcopy(args['bounds'])
 	finallogz=-np.inf
@@ -2233,7 +2238,10 @@ def _fitparallel(all_args):
 			
 			tempMod.set(**{k:args['constants'][k] for k in args['constants'].keys() if k in tempMod.param_names})
 			tempMod.set(**{k:args['curves'].images[args['refImage']].simMeta[args['set_from_simMeta'][k]] for k in args['set_from_simMeta'].keys() if k in tempMod.param_names})
-
+			if not np.all([tempMod.bandoverlap(x) for x in best_bands]):
+				if verbose:
+					print('Skipping %s because it does not cover the bands...')
+				continue
 			if mod=='BAZINSOURCE':
 				tempMod.set(z=0)
 			try:
