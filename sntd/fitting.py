@@ -1647,7 +1647,7 @@ def _fitseries(all_args):
 			tempMod.set(**{k:args['constants'][k] for k in args['constants'].keys() if k in tempMod.param_names})
 			tempMod.set(**{k:args['curves'].images[args['refImage']].simMeta[args['set_from_simMeta'][k]] for k in args['set_from_simMeta'].keys() if k in tempMod.param_names})
 			if not np.all([tempMod.bandoverlap(x) for x in best_bands]):
-				if verbose:
+				if args['verbose']:
 					print('Skipping %s because it does not cover the bands...')
 				continue
 			if mod=='BAZINSOURCE':
@@ -2239,7 +2239,7 @@ def _fitparallel(all_args):
 			tempMod.set(**{k:args['constants'][k] for k in args['constants'].keys() if k in tempMod.param_names})
 			tempMod.set(**{k:args['curves'].images[args['refImage']].simMeta[args['set_from_simMeta'][k]] for k in args['set_from_simMeta'].keys() if k in tempMod.param_names})
 			if not np.all([tempMod.bandoverlap(x) for x in best_bands]):
-				if verbose:
+				if args['verbose']:
 					print('Skipping %s because it does not cover the bands...')
 				continue
 			if mod=='BAZINSOURCE':
