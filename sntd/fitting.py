@@ -421,13 +421,11 @@ def fit_data(curves=None, snType='Ia',bands=None, models=None, params=None, boun
 							os.remove(filename)
 							saved_fits+=1
 						if nadded<total_jobs:
-							ind=nadded
-							for i in range(int((nfit-ndone)/(n_per_node/n_per_file))):
-								if ind>total_jobs-1:
+							for i in range(math.ceil(len(output)/(n_per_node/n_per_file))):
+								if nadded>total_jobs-1:
 									continue
 								result=subprocess.call(['sbatch',os.path.join(os.path.abspath(folder_name),
-																		 script_name),str(ind)],stdout=subprocess.DEVNULL)
-								ind+=1
+																		 script_name),str(nadded)],stdout=subprocess.DEVNULL)
 								nadded+=1
 						ndone=copy(nfit)
 
@@ -609,13 +607,11 @@ def fit_data(curves=None, snType='Ia',bands=None, models=None, params=None, boun
 							os.remove(filename)
 							saved_fits+=1
 						if nadded<total_jobs:
-							ind=nadded
-							for i in range(int((nfit-ndone)/(n_per_node/n_per_file))):
-								if ind>total_jobs-1:
+							for i in range(math.ceil(len(output)/(n_per_node/n_per_file))):
+								if nadded>total_jobs-1:
 									continue
 								result=subprocess.call(['sbatch',os.path.join(os.path.abspath(folder_name),
-																		 script_name),str(ind)],stdout=subprocess.DEVNULL)
-								ind+=1
+																		 script_name),str(nadded)],stdout=subprocess.DEVNULL)
 								nadded+=1
 						ndone=copy(nfit)
 
@@ -757,13 +753,11 @@ def fit_data(curves=None, snType='Ia',bands=None, models=None, params=None, boun
 							os.remove(filename)
 							saved_fits+=1
 						if nadded<total_jobs:
-							ind=nadded
-							for i in range(int((nfit-ndone)/(n_per_node/n_per_file))):
-								if ind>total_jobs-1:
+							for i in range(math.ceil(len(output)/(n_per_node/n_per_file))):
+								if nadded>total_jobs-1:
 									continue
 								result=subprocess.call(['sbatch',os.path.join(os.path.abspath(folder_name),
-																		 script_name),str(ind)],stdout=subprocess.DEVNULL)
-								ind+=1
+																		 script_name),str(nadded)],stdout=subprocess.DEVNULL)
 								nadded+=1
 						ndone=copy(nfit)
 
@@ -902,13 +896,11 @@ def fit_data(curves=None, snType='Ia',bands=None, models=None, params=None, boun
 							os.remove(filename)
 							saved_fits+=1
 						if nadded<total_jobs:
-							ind=nadded
-							for i in range(int((nfit-ndone)/(n_per_node/n_per_file))):
-								if ind>total_jobs-1:
+							for i in range(math.ceil(len(output)/(n_per_node/n_per_file))):
+								if nadded>total_jobs-1:
 									continue
 								result=subprocess.call(['sbatch',os.path.join(os.path.abspath(folder_name),
-																		 script_name),str(ind)],stdout=subprocess.DEVNULL)
-								ind+=1
+																		 script_name),str(nadded)],stdout=subprocess.DEVNULL)
 								nadded+=1
 						ndone=copy(nfit)
 
