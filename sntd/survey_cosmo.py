@@ -8,7 +8,7 @@ import sncosmo
 import nestle
 import corner
 
-from util import weighted_quantile
+from .util import weighted_quantile
 
 def EA(z1, z2, Om0, w0, wa,iszero=False):
 	"""The integral of the inverse of the normalized 
@@ -227,23 +227,7 @@ class Survey(object):
 			no_fill_contours=True,fill_contours=False,levels=[.5])
 
 	
-requiem = {
-	'N':1,   # number of Lensed SNe Ia with good time delays
-	'dTL':2,  # % lens modeling uncertainty for each
-	'dTT':.1,  # % time delay measurement uncertainty for each
-	'zl':.338,'zs':1.95#np.linspace(0.3,1,26), 'zs':np.linspace(1.2,3,26) # lens and source redshift
-}
-wfirst = {
-	'N':26,   # number of Lensed SNe Ia with good time delays
-	'dTL':5,  # % lens modeling uncertainty for each
-	'dTT':3,  # % time delay measurement uncertainty for each
-	'zl':np.linspace(0.3,1,26), 'zs':np.linspace(1.2,3,26) # lens and source redshift
-}
-WFIRST = Survey(**wfirst)
-res=WFIRST.survey_nestle(['w0','wa'],{'w0':[-1.3,-.3],'wa':[-3,3]},npoints=500) #lens_z=[.3,.7],source_z=[1,1.5])
-WFIRST.plot_survey_contour()
-plt.savefig('test_corner.pdf',format='pdf')
-plt.show()
+
 
 
 
