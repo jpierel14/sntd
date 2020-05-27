@@ -949,8 +949,8 @@ def _fitColor(all_args):
 		else:
 			args['curves']=curves
 
-		if args['verbose']:
-			print('Fitting MISN number %i...'%curves.nsn)
+			if args['verbose']:
+				print('Fitting MISN number %i...'%curves.nsn)
 	else:
 		args=all_args
 
@@ -1505,8 +1505,8 @@ def _fitseries(all_args):
 			args['curves']=pickle.load(open(curves,'rb'))
 		else:
 			args['curves']=curves
-		if args['verbose']:
-			print('Fitting MISN number %i...'%curves.nsn)
+			if args['verbose']:
+				print('Fitting MISN number %i...'%curves.nsn)
 	else:
 		args=all_args
 
@@ -2140,8 +2140,8 @@ def _fitparallel(all_args):
 			args['curves']=pickle.load(open(curves,'rb'))
 		else:
 			args['curves']=curves
-		if args['verbose']:
-			print('Fitting MISN number %i...'%curves.nsn)
+			if args['verbose']:
+				print('Fitting MISN number %i...'%curves.nsn)
 	else:
 		args=all_args
 	
