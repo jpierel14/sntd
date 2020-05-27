@@ -9,7 +9,7 @@ import sncosmo
 import nestle
 import corner
 
-from util import weighted_quantile,plot
+from .util import weighted_quantile,plot
 
 def EA(z1, z2, cosmo):
 	"""The integral of the inverse of the normalized 
