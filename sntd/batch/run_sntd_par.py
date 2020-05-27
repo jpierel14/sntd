@@ -21,7 +21,6 @@ all_input=[]
 const_list=[]
 for i in range(inds[0],inds[1]):
     temp_const={}
-    all_dat[i].constants={}
     if all_const is not None:
         for c in all_const.keys():
             if isinstance(all_const[c],(list,tuple,np.ndarray)):
