@@ -560,7 +560,7 @@ def fit_data(curves=None, snType='Ia',bands=None, models=None, params=None, boun
 							if parallelize is None:
 									sntd_command+='constants=all_dat[i].constants,'
 							else:
-								sntd_command+='constants={'+'},'
+								sntd_command+='constants=const_list,'
 						elif par=='method':
 							sntd_command+='method="parallel",'
 						elif par=='par_or_batch' and parallelize is not None:

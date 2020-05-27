@@ -18,16 +18,20 @@ inds=[int(int(sys.argv[1])*nlcs_per),(int(sys.argv[1])+1)*int(nlcs_per)]
 inds[1]=min(inds[-1],len(all_dat))
 
 all_input=[]
+const_list=[]
 for i in range(inds[0],inds[1]):
-    if isinstance(all_dat[i],str):
-        all_dat[i]=pickle.load(open(all_dat[i],'rb'))
+    temp_const={}
     all_dat[i].constants={}
     if all_const is not None:
         for c in all_const.keys():
             if isinstance(all_const[c],(list,tuple,np.ndarray)):
-                all_dat[i].constants[c]=all_const[c][i]
+            	temp_const[c]=all_const[c][i]
             else:
-                all_dat[i].constants[c]=all_const[c]
+            	temp_const[c]=all_const[c]
+        if isinstance(all_dat[i],str):
+        	const_list.append(copy(temp_const))
+        else:
+        	all_dat[i].constants=copy(temp_const)
     all_input.append(all_dat[i])
 try:
     fitCurves=sntdcommandreplace
