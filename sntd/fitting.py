@@ -609,7 +609,7 @@ def fit_data(curves=None, snType='Ia',bands=None, models=None, params=None, boun
 					time.sleep(10) #update every 10 seconds
 					output=glob.glob(os.path.join(os.path.abspath(folder_name),'sntd_fit*.pkl'))
 					nfit=len(output)+saved_fits
-					if nfit!=ndone:
+					if len(output)>0:
 						if int(saved_fits*n_per_file)>=50000*(tarfit_ind+1):
 							fits_output.close()
 							fits_output=tarfile.open(os.path.join(os.path.abspath(folder_name),'sntd_fits_%i.tar.gz'%tarfit_ind),mode='w')
@@ -628,6 +628,7 @@ def fit_data(curves=None, snType='Ia',bands=None, models=None, params=None, boun
 						ndone=copy(nfit)
 
 						if wait_for_batch:
+							print(ndone,n_per_node,n_per_file,total_jobs)
 							printProgressBar(ndone/(n_per_node/n_per_file),total_jobs)
 					if ndone>=len(args['curves']):
 						break
