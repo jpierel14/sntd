@@ -59,7 +59,7 @@ class newDict(dict):
 def fit_data(curves=None, snType='Ia',bands=None, models=None, params=None, bounds={}, ignore=None, constants={},ignore_models=[],
 			 method='parallel',t0_guess=None,effect_names=[],effect_frames=[],batch_init=None,cut_time=None,force_positive_param=[],
 			 dust=None,microlensing=None,fitOrder=None,color_bands=None,color_param_ignore=[],min_points_per_band=3,identify_micro=False,
-			 min_n_bands=1,max_n_bands=None,n_cores_per_node=1,npar_cores=4,
+			 min_n_bands=1,max_n_bands=None,n_cores_per_node=1,npar_cores=4,max_batch_jobs=199,
 			 fit_prior=None,par_or_batch='parallel',batch_partition=None,nbatch_jobs=None,batch_python_path=None,n_per_node=None,fast_model_selection=True,
 			 wait_for_batch=False,band_order=None,set_from_simMeta={},guess_amplitude=True,trial_fit=True,clip_data=False,
 			 kernel='RBF',refImage='image_1',nMicroSamples=100,color_curve=None,warning_supress=True,
@@ -125,6 +125,8 @@ def fit_data(curves=None, snType='Ia',bands=None, models=None, params=None, boun
 		The number of cores to run parallelization on per node
 	npar_cores: int
 		The number of cores to devote to parallelization
+	max_batch_jobs: int 
+		The maximum number of jobs allowed by your slurm task manager. 
 	fit_prior: :class:`~sntd.curve_io.curveDict` or bool
 		if implementing parallel method alongside others and fit_prior is True, will use output of parallel as prior
 		for series/color. If SNTD curveDict object, used as prior for series or color.
@@ -258,7 +260,11 @@ def fit_data(curves=None, snType='Ia',bands=None, models=None, params=None, boun
 		args['fit_prior']=None
 	
 	if args['parlist'] and n_per_node is None and par_or_batch=='batch':
+		if nbatch_jobs is None:
+			print('Must set n_per_node node and/or nbatch_jobs')
 		n_per_node = math.ceil(len(args['curves'])/nbatch_jobs)
+
+
 
 	if isinstance(method,(list,np.ndarray,tuple)):
 		if len(method)==1:
@@ -282,8 +288,10 @@ def fit_data(curves=None, snType='Ia',bands=None, models=None, params=None, boun
 					parallelize=None
 					micro_par=None
 				total_jobs=math.ceil(len(args['curves'])/n_per_node)
+				if nbatch_jobs is None:
+					nbatch_jobs=min(total_jobs,max_batch_jobs)
 				script_name_init,folder_name=run_sbatch(partition=batch_partition,
-												   njobs=nbatch_jobs,python_path=batch_python_path,init=True,parallelize=parallelize,microlensing_cores=micro_par)
+												   njobs=nbatch_jobs,njobstotal=min(total_jobs,max_batch_jobs),python_path=batch_python_path,init=True,parallelize=parallelize,microlensing_cores=micro_par)
 				script_name,folder_name=run_sbatch(partition=batch_partition,folder=folder_name,
 												  njobs=nbatch_jobs,python_path=batch_python_path,init=False,parallelize=parallelize,microlensing_cores=micro_par)
 
@@ -398,8 +406,7 @@ def fit_data(curves=None, snType='Ia',bands=None, models=None, params=None, boun
 				if wait_for_batch:
 					printProgressBar(0,total_jobs)
 				ndone=0
-				nactive=nbatch_jobs
-				nadded=nbatch_jobs
+				nadded=min(total_jobs,max_batch_jobs)
 				saved_fits=0
 				tarfit_ind=0
 				if parallelize is not None:
@@ -483,15 +490,19 @@ def fit_data(curves=None, snType='Ia',bands=None, models=None, params=None, boun
 				par_arg_vals=[]
 				for i in range(len(args['curves'])):
 					temp_args={}
-					try:
-						for par_key in ['snType','bounds','constants','t0_guess']:
-							if isinstance(args[par_key],(list,tuple,np.ndarray)):
+					
+					for par_key in ['snType','bounds','constants','t0_guess']:
+						if isinstance(args[par_key],(list,tuple,np.ndarray)):
+							try:
 								temp_args[par_key]=args[par_key][i]
-						for par_key in ['bands','models','ignore','params']:
-							if isinstance(args[par_key],(list,tuple,np.ndarray)) and np.any([isinstance(x,(list,tuple,np.ndarray)) for x in args[par_key]]):
+							except RuntimeError:
+								pass
+					for par_key in ['bands','models','ignore','params']:
+						if isinstance(args[par_key],(list,tuple,np.ndarray)) and np.any([isinstance(x,(list,tuple,np.ndarray)) for x in args[par_key]]):
+							try:
 								temp_args[par_key]=args[par_key][i]
-					except:
-						pass
+							except:
+								pass
 					par_arg_vals.append([args['curves'][i],temp_args])
 
 				curves=pyParz.foreach(par_arg_vals,_fitparallel,[args],numThreads=min(npar_cores,len(par_arg_vals)))
@@ -507,8 +518,10 @@ def fit_data(curves=None, snType='Ia',bands=None, models=None, params=None, boun
 					parallelize=None
 					micro_par=None
 				total_jobs=math.ceil(len(args['curves'])/n_per_node)
+				if nbatch_jobs is None:
+					nbatch_jobs=min(total_jobs,max_batch_jobs)
 				script_name_init,folder_name=run_sbatch(partition=batch_partition,
-												   njobs=nbatch_jobs,python_path=batch_python_path,init=True,parallelize=parallelize,microlensing_cores=micro_par)
+												   njobs=nbatch_jobs,njobstotal=min(total_jobs,max_batch_jobs),python_path=batch_python_path,init=True,parallelize=parallelize,microlensing_cores=micro_par)
 				script_name,folder_name=run_sbatch(partition=batch_partition,folder=folder_name,
 												  njobs=nbatch_jobs,python_path=batch_python_path,init=False,parallelize=parallelize,microlensing_cores=micro_par)
 
@@ -584,8 +597,7 @@ def fit_data(curves=None, snType='Ia',bands=None, models=None, params=None, boun
 				if wait_for_batch:
 					printProgressBar(0,total_jobs)
 				ndone=0
-				nactive=nbatch_jobs
-				nadded=nbatch_jobs
+				nadded=min(total_jobs,max_batch_jobs)
 				saved_fits=0
 				tarfit_ind=0
 				if parallelize is not None:
@@ -657,8 +669,10 @@ def fit_data(curves=None, snType='Ia',bands=None, models=None, params=None, boun
 					parallelize=None
 					micro_par=None
 				total_jobs=math.ceil(len(args['curves'])/n_per_node)
+				if nbatch_jobs is None:
+					nbatch_jobs=min(total_jobs,max_batch_jobs)
 				script_name_init,folder_name=run_sbatch(partition=batch_partition,
-												   njobs=nbatch_jobs,python_path=batch_python_path,init=True,parallelize=parallelize,microlensing_cores=micro_par)
+												   njobs=nbatch_jobs,njobstotal=min(total_jobs,max_batch_jobs),python_path=batch_python_path,init=True,parallelize=parallelize,microlensing_cores=micro_par)
 				script_name,folder_name=run_sbatch(partition=batch_partition,folder=folder_name,
 												  njobs=nbatch_jobs,python_path=batch_python_path,init=False,parallelize=parallelize,microlensing_cores=micro_par)
 
@@ -730,8 +744,7 @@ def fit_data(curves=None, snType='Ia',bands=None, models=None, params=None, boun
 				if wait_for_batch:
 					printProgressBar(0,total_jobs)
 				ndone=0
-				nactive=nbatch_jobs
-				nadded=nbatch_jobs
+				nadded=min(total_jobs,max_batch_jobs)
 				saved_fits=0
 				tarfit_ind=0
 				if parallelize is not None:
@@ -801,8 +814,10 @@ def fit_data(curves=None, snType='Ia',bands=None, models=None, params=None, boun
 					parallelize=None
 					micro_par=None
 				total_jobs=math.ceil(len(args['curves'])/n_per_node)
+				if nbatch_jobs is None:
+					nbatch_jobs=min(total_jobs,max_batch_jobs)
 				script_name_init,folder_name=run_sbatch(partition=batch_partition,
-												   njobs=nbatch_jobs,python_path=batch_python_path,init=True,parallelize=parallelize,microlensing_cores=micro_par)
+												   njobs=nbatch_jobs,njobstotal=min(total_jobs,max_batch_jobs),python_path=batch_python_path,init=True,parallelize=parallelize,microlensing_cores=micro_par)
 				script_name,folder_name=run_sbatch(partition=batch_partition,folder=folder_name,
 												  njobs=nbatch_jobs,python_path=batch_python_path,init=False,parallelize=parallelize,microlensing_cores=micro_par)
 
@@ -873,8 +888,7 @@ def fit_data(curves=None, snType='Ia',bands=None, models=None, params=None, boun
 				if wait_for_batch:
 					printProgressBar(0,total_jobs)
 				ndone=0
-				nactive=nbatch_jobs
-				nadded=nbatch_jobs
+				nadded=min(total_jobs,max_batch_jobs)
 				saved_fits=0
 				tarfit_ind=0
 				if parallelize is not None:
@@ -930,8 +944,11 @@ def _fitColor(all_args):
 			curves,single_par_vars=curves
 			for key in single_par_vars:
 				args[key]=single_par_vars[key]
+		if isinstance(curves,str):
+			args['curves']=pickle.load(open(curves,'rb'))
+		else:
+			args['curves']=curves
 
-		args['curves']=curves
 		if args['verbose']:
 			print('Fitting MISN number %i...'%curves.nsn)
 	else:
@@ -1484,7 +1501,10 @@ def _fitseries(all_args):
 			for key in single_par_vars:
 				args[key]=single_par_vars[key]
 
-		args['curves']=curves
+		if isinstance(curves,str):
+			args['curves']=pickle.load(open(curves,'rb'))
+		else:
+			args['curves']=curves
 		if args['verbose']:
 			print('Fitting MISN number %i...'%curves.nsn)
 	else:
@@ -2116,7 +2136,10 @@ def _fitparallel(all_args):
 			for key in single_par_vars:
 				args[key]=single_par_vars[key]
 
-		args['curves']=curves
+		if isinstance(curves,str):
+			args['curves']=pickle.load(open(curves,'rb'))
+		else:
+			args['curves']=curves
 		if args['verbose']:
 			print('Fitting MISN number %i...'%curves.nsn)
 	else:

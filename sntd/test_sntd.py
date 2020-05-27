@@ -128,11 +128,15 @@ def test_sntd():
 			'N':1,   # number of Lensed SNe Ia with good time delays
 			'dTL':2,  # % lens modeling uncertainty for each
 			'dTT':.1,  # % time delay measurement uncertainty for each
-			'zl':.338,'zs':1.95
+			'zl':.5,'zs':2
 		}
 		
 		TEST = sntd.Survey(**test)
-		res=TEST.survey_nestle(['w0','wa'],{'w0':[-1.3,-.3],'wa':[-3,3]},npoints=10)
+		#TEST.survey_nestle(['w0','wa'],{'w0':[-1.3,-.3],'wa':[-3,3]},npoints=3000,dTc=.64)
+		TEST.survey_nestle(['w','Ode0'],{'w':[-1.5,-.5],'Ode0':[0,1]},npoints=10,dTc=.64)
+		TEST.plot_survey_contour()
+		import matplotlib.pyplot as plt
+		plt.savefig('coe_mou2.pdf',format='pdf')
 		print('Passed!')
 	except Exception as e:
 		print('Failed')
@@ -144,7 +148,7 @@ def test_sntd():
 		n_optional_tests+=1
 		print('Testing parallelization...',end='')
 		fitCurves=sntd.fit_data([myMISN]*2,snType='Ia', models='salt2-extended',bands=['bessellb','bessellr'],
-				params=['x0','x1','t0','c'],constants={'z':.5},bounds={'t0':(-15,15),'x1':(-2,2),'c':(-1,1),'td':(-15,15),'mu':(.5,2)},
+				params=['x0','x1','t0','c'],constants=[{'z':.5},{'z':.5}],bounds={'t0':(-15,15),'x1':(-2,2),'c':(-1,1),'td':(-15,15),'mu':(.5,2)},
 				method='parallel',microlensing=None,maxcall=5,minsnr=0,t0_guess={'image_1':10,'image_2':70},verbose=False)
 		print('Passed!')
 	except Exception as e:
@@ -163,6 +167,7 @@ def test_sntd():
 		print('Failed')
 		print(traceback.format_exc())
 		n_optional_failed+=1	
+
 	try:
 		shutil.rmtree('batch_output')
 	except RuntimeError:

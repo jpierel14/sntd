@@ -5,6 +5,8 @@ from astropy.io import ascii
 import numpy as np
 from collections import OrderedDict as odict
 import scipy
+import matplotlib.pyplot as plt
+
 
 from scipy.interpolate import splrep,splev
 from copy import copy
@@ -151,11 +153,13 @@ def check_table_quality(table,min_n_bands=1,min_n_points_per_band=1,clip=False):
         return table,False
     return table,True
 
-def run_sbatch(partition=None,njobs=None,python_path=None,init=False,folder=None,parallelize=None,microlensing_cores=None):
+def run_sbatch(partition=None,njobs=None,njobstotal=None,python_path=None,init=False,folder=None,parallelize=None,microlensing_cores=None):
     if njobs is None:
         print("Batch mode requires a number of jobs!")
         sys.exit(1)
     if init:
+        if njobstotal is None:
+            print("Batch mode requires a total number of jobs!")
         n=0
         add=''
         done=False
@@ -200,7 +204,8 @@ def run_sbatch(partition=None,njobs=None,python_path=None,init=False,folder=None
     sbatch=sbatch.replace('myPython',python_path)
     sbatch=sbatch.replace('run_sntd.py',os.path.join(os.path.abspath(folder_name),pyfile))
     if init:
-        sbatch=sbatch.replace('njobs','0-%i'%(njobs-1))
+        sbatch=sbatch.replace('njobstotal','0-%i'%(njobstotal-1))
+        sbatch=sbatch.replace('njobs','%i'%njobs)
     if parallelize is not None:
         sbatch=sbatch.replace('ncores',str(parallelize))
     elif microlensing_cores is not None:
@@ -217,6 +222,34 @@ def run_sbatch(partition=None,njobs=None,python_path=None,init=False,folder=None
             f.write(sbatch)
         return('sbatch_job_init.BATCH',folder_name)
 
+def plot(plot_type,x,y=None,yerr=None,xerr=None,ax=None,x_lab='',y_lab='',fontsize=18,figsize=(12,12),
+         x_name=None,y_name=None,label_name=None,**kwargs):
+    if ax is None and plot_type != 'joint':
+        fig=plt.figure(figsize=figsize)
+        ax=fig.gca()
+
+    if plot_type=='scatter':
+        ax.scatter(x,y,**kwargs)
+    elif plot_type=='plot':
+        ax.plot(x,y,**kwargs)
+    elif plot_type=='errorbar':
+        ax.errorbar(x,y,xerr=xerr,yerr=yerr,**kwargs)
+    elif plot_type=='hist':
+        ax.hist(x,**kwargs)
+    elif plot_type=='joint':
+        g=multivariateGrid(x_name, y_name, label_name, df=x)
+        fig=g.ax_joint.__dict__['figure']
+        ax=fig.gca()
+        fig.set_size_inches(figsize[0],figsize[1])
+    else:
+        raise RuntimeError('What plot are you trying to do.')
+    for tick in ax.xaxis.get_major_ticks():
+        tick.label.set_fontsize(16)
+    for tick in ax.yaxis.get_major_ticks():
+        tick.label.set_fontsize(16)
+    ax.set_xlabel(x_lab,fontsize=fontsize)
+    ax.set_ylabel(y_lab,fontsize=fontsize)
+    return(ax)
 
 def printProgressBar (iteration, total, prefix = '', suffix = '', decimals = 1, length = 100, fill = '█', printEnd = "\r"):
     """

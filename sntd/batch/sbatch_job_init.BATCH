@@ -1,7 +1,7 @@
 #!/bin/bash
 partition
 #SBATCH --job-name=SNTD
-#SBATCH --array=njobs
+#SBATCH --array=njobstotal%njobs
 #SBATCH --output=/dev/null
 #SBATCH --cpus-per-task=ncores
 
