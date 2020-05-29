@@ -495,7 +495,7 @@ def fit_data(curves=None, snType='Ia',bands=None, models=None, params=None, boun
 						if isinstance(args[par_key],(list,tuple,np.ndarray)):
 							try:
 								temp_args[par_key]=args[par_key][i]
-							except RuntimeError:
+							except:
 								pass
 					for par_key in ['bands','models','ignore','params']:
 						if isinstance(args[par_key],(list,tuple,np.ndarray)) and np.any([isinstance(x,(list,tuple,np.ndarray)) for x in args[par_key]]):

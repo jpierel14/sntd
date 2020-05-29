@@ -371,21 +371,5 @@ class Survey(object):
 			plt.setp(ax.yaxis.get_ticklabels(), fontsize='large')
 			plt.tight_layout()
 
-# test = {
-# 			'N':1,   # number of Lensed SNe Ia with good time delays
-# 			'dTL':2,  # % lens modeling uncertainty for each
-# 			'dTT':.1,  # % time delay measurement uncertainty for each
-# 			'zl':.5,'zs':2
-# }
 
-# TEST = Survey(**test)
-# #TEST.survey_nestle(['w0','wa'],{'w0':[-1.3,-.3],'wa':[-3,3]},npoints=3000,dTc=.64)
-# #TEST.survey_nestle(['h','Ode0'],{'h':[.6,.75],'w':[-1.5,-.5],'Ode0':[0,1]},npoints=3000,dTc=.64)
-# TEST.survey_grid(['w0','wa'],{'w0':[-1.5,0],'wa':[-3,3]},grad_param='h',grad_param_bounds=[.65,.75],ngrad=10,dTc=.64)
-# TEST.plot_survey_gradient()
-# #TEST.survey_grid(['h','Ode0'],{'h':[.6,.75],'w':[-1.5,-.5],'Ode0':[0,1]},dTc=.64)
-# #TEST.plot_survey_contour()
-# import matplotlib.pyplot as plt
-# #plt.savefig('coe_mou2.pdf',format='pdf')
-# plt.show()
 
