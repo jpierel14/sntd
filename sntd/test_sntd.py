@@ -20,7 +20,6 @@ def test_sntd():
 		print(traceback.format_exc())
 		
 		failed+=1
-
 	try:    
 		total+=1
 		print('Testing microlensing realization...',end='')
@@ -134,9 +133,9 @@ def test_sntd():
 		TEST = sntd.Survey(**test)
 		#TEST.survey_nestle(['w0','wa'],{'w0':[-1.3,-.3],'wa':[-3,3]},npoints=3000,dTc=.64)
 		TEST.survey_nestle(['w','Ode0'],{'w':[-1.5,-.5],'Ode0':[0,1]},npoints=10,dTc=.64)
-		TEST.plot_survey_contour()
-		import matplotlib.pyplot as plt
-		plt.savefig('coe_mou2.pdf',format='pdf')
+		#TEST.plot_survey_contour(['w','Ode0'])
+		#import matplotlib.pyplot as plt
+		#plt.savefig('coe_mou2.pdf',format='pdf')
 		print('Passed!')
 	except Exception as e:
 		print('Failed')

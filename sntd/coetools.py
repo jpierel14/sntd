@@ -689,6 +689,6 @@ def sex2bpzmags(f,ef,zp=0.,sn_min=1.):
 # coeio ALSO IMPORTS FROM coetools (THIS MODULE)
 # SO TO AVOID AN INFINITE LOOP, coeio ONLY LOADS FROM coetools
 #  THOSE FUNCTIONS DEFINED BEFORE coeio IS LOADED
-from coeio import *
+from .coeio import *
 #from smooth import *
 import string  # LOAD THIS AFTER numpy, BECAUSE numpy HAS ITS OWN string

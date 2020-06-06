@@ -153,7 +153,52 @@ def check_table_quality(table,min_n_bands=1,min_n_points_per_band=1,clip=False):
         return table,False
     return table,True
 
-def run_sbatch(partition=None,njobs=None,njobstotal=None,python_path=None,init=False,folder=None,parallelize=None,microlensing_cores=None):
+def run_sbatch(folder_name,script_name_init,script_name,total_jobs,max_batch_jobs,n_per_node):
+    fits_output=tarfile.open(os.path.join(os.path.abspath(folder_name),'sntd_fits.tar.gz'),mode='w')
+                
+    result=subprocess.call(['sbatch',os.path.join(os.path.abspath(folder_name),
+                                                           script_name_init)])
+    if wait_for_batch:
+        printProgressBar(0,total_jobs)
+    ndone=0
+    nadded=min(total_jobs,max_batch_jobs)
+    saved_fits=0
+    tarfit_ind=0
+    if parallelize is not None:
+        n_per_file=1
+    else:
+        n_per_file=n_per_node
+    
+    while True:
+        time.sleep(10) #update every 10 seconds
+        output=glob.glob(os.path.join(os.path.abspath(folder_name),'sntd_fit*.pkl'))
+        saved_fits+=len(output)
+        if len(output)>0:
+            if int(saved_fits*n_per_file)>=50000*(tarfit_ind+1):
+                fits_output.close()
+                fits_output=tarfile.open(os.path.join(os.path.abspath(folder_name),'sntd_fits_%i.tar.gz'%tarfit_ind),mode='w')
+                tarfit_ind+=1
+            for filename in output:
+                fits_output.add(filename)
+                os.remove(filename)
+            if nadded<total_jobs:
+                for i in range(math.ceil(len(output)/(n_per_node/n_per_file))):
+                    if nadded>total_jobs-1:
+                        continue
+                    result=subprocess.call(['sbatch',os.path.join(os.path.abspath(folder_name),
+                                                             script_name),str(nadded)],stdout=subprocess.DEVNULL)
+                    nadded+=1
+
+            if wait_for_batch:
+                printProgressBar(saved_fits/(n_per_node/n_per_file),total_jobs)
+        if saved_fits>=len(args['curves']):
+            break
+    fits_output.close()
+    if verbose:
+        print('Done!')
+    return 
+
+def make_sbatch(partition=None,njobs=None,njobstotal=None,python_path=None,init=False,folder=None,parallelize=None,microlensing_cores=None):
     if njobs is None:
         print("Batch mode requires a number of jobs!")
         sys.exit(1)

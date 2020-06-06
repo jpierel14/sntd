@@ -423,7 +423,7 @@ class curveDict(dict):
 
         return(self)
 
-    def clip_data(self,im,minsnr=0,mintime=-np.inf,maxtime=np.inf,peak=0,remove_bands=[]):
+    def clip_data(self,im,minsnr=0,mintime=-np.inf,maxtime=np.inf,peak=0,remove_bands=[],max_cadence=None):
         
         self.images[im].table=self.images[im].table[self.images[im].table['flux']/\
                                                     self.images[im].table['fluxerr']>minsnr]
@@ -434,6 +434,18 @@ class curveDict(dict):
 
         for b in remove_bands:
             self.images[im].table=self.images[im].table[self.images[im].table['band']!=b]
+
+        if max_cadence is not None and isinstance(max_cadence,(int,float)):
+            to_remove=[]
+            for b in np.unique(self.images[im].table['band']):
+                binds=np.where(self.images[im].table['band']==b)[0]
+                t=self.images[im].table['time'][binds[0]]
+                for i in range(1,len(binds)):
+                    if self.images[im].table[binds[i]]['time']<t+max_cadence:
+                        to_remove.append(binds[i])
+                    else:
+                        t=self.images[im].table[binds[i]]['time']
+            self.images[im].table.remove_rows(to_remove)
 
     def quality_check(self,min_n_bands=1,min_n_points_per_band=1,clip=False,method='parallel'):
         """

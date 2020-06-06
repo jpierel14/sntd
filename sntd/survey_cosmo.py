@@ -126,7 +126,7 @@ def Evariance(Erat, dTc):
 
 
 def loglikelihoodE(testVars,testPoint, zl, zs, dTc=2, set_cosmo={},Eratio_true=None,
-				   Om0true=0.3,Oktrue=0, Ode0true=.7,w0true=-1., watrue=0.,htrue=.7): 
+				   Om0true=0.3,Oktrue=0, Ode0true=.7,w0true=-1., watrue=0.,htrue=.7,return_ratios=False): 
 	"""log10(likelihood) for a time delay distance 
 	ratio constraint, comparing 
 	a given test point in w0,wa space to the true (w0,wa) position. 
@@ -173,9 +173,12 @@ def loglikelihoodE(testVars,testPoint, zl, zs, dTc=2, set_cosmo={},Eratio_true=N
 		Eratio_true = Eratio(zl, zs,true_cosmo )
 	Eratio_test = Eratio(zl, zs, cosmo)
 
+	
 	#if np.isfinite(Eratio_w0wa):
 	loglike = -0.5 * np.sum( (Eratio_true-Eratio_test)**2 / 
 					  Evariance(Eratio_test, dTc))
+	if return_ratios:
+		return(Eratio_true,Eratio_test,loglike)
 	#else:
 	#    loglike = -np.inf
 	return(loglike)
@@ -213,6 +216,35 @@ def deriv_like(p1,p2,names,zl,zs,dTc,Om0,Ok,Ode0,w0true,watrue,htrue):
 	else:
 		return -2*loglikelihoodE(names,[p1],zl,zs,dTc=dTc,Om0true=Om0,Oktrue=Ok,
 					Ode0true=Ode0,w0true=w0true,watrue=watrue,htrue=htrue)
+# def deriv_like(p1,names,zl,zs,dTc,Om0,Ok,Ode0,w0true,watrue,htrue,dx,ydy):
+# 	true,test,loglike=loglikelihoodE(names,[p1+dx,ydy],zl,zs,dTc=dTc,Om0true=Om0,Oktrue=Ok,Ode0true=Ode0,
+# 				w0true=w0true,watrue=watrue,htrue=htrue,return_ratios=True)
+# 	deltax=np.sum(np.abs(test-true))
+# 	return -1*(np.sum(loglike)-np.sum(loglikelihoodE(names,[p1-dx,ydy],zl,zs,dTc=dTc,Om0true=Om0,Oktrue=Ok,Ode0true=Ode0,
+# 				w0true=w0true,watrue=watrue,htrue=htrue)))/deltax
+
+# def deriv_like2(p1,names,zl,zs,dTc,Om0,Ok,Ode0,w0true,watrue,htrue,dx):
+# 	true,test,loglike=loglikelihoodE(names,[p1+dx],zl,zs,dTc=dTc,Om0true=Om0,Oktrue=Ok,Ode0true=Ode0,
+# 				w0true=w0true,watrue=watrue,htrue=htrue,return_ratios=True)
+# 	deltax=np.sum(np.abs(test-true))
+# 	#-2*np.sum(loglikelihoodE(names,[p1],zl,zs,dTc=dTc,Om0true=Om0,Oktrue=Ok,Ode0true=Ode0,
+# 				#w0true=w0true,watrue=watrue,htrue=htrue))\
+# 	return -1*(np.sum(loglike)
+# 			+np.sum(loglikelihoodE(names,[p1-dx],zl,zs,dTc=dTc,Om0true=Om0,Oktrue=Ok,Ode0true=Ode0,
+# 				w0true=w0true,watrue=watrue,htrue=htrue)))/deltax**2
+
+# def deriv_like12(p1,p2,names,zl,zs,dTc,Om0,Ok,Ode0,w0true,watrue,htrue,dx,dy):
+# 	true,test,loglike=loglikelihoodE(names,[p1,p2+dy],zl,zs,dTc=dTc,Om0true=Om0,Oktrue=Ok,Ode0true=Ode0,
+# 				w0true=w0true,watrue=watrue,htrue=htrue,return_ratios=True)
+# 	deltay=np.sum(np.abs(test-true))
+
+# 	d1=deriv_like(p1,names,zl,zs,dTc,Om0,Ok,Ode0,
+# 				w0true,watrue,htrue,dx,p2+dy)
+# 	d2=deriv_like(p1,names,zl,zs,dTc,Om0,Ok,Ode0,
+# 				w0true,watrue,htrue,dx,p2-dy)
+# 	print(d1,d2)
+# 	return (d1-d2)/deltay
+	
 
 class Survey(object):
 	"""
@@ -400,32 +432,41 @@ class Survey(object):
 		
 	
 
-	def survey_fisher(self,params):
+	def survey_fisher(self,params,dx=1e-6):
 		def take_deriv(p2,p2name,p1,p1name):
-			return deriv(deriv_like,p1,dx=1e-6,
+			return deriv(deriv_like,p1,dx=dx,
 					args=(p2,[p1name,p2name], self.zl, self.zs, .64,#self.dTc,
 				   self.cosmo_truths['Om0'],self.cosmo_truths['Ok'],
 				   self.cosmo_truths['Ode0'], self.cosmo_truths['w0'], self.cosmo_truths['wa'],
 								self.cosmo_truths['h']))
-
+		
 		fisher_matrix=np.zeros((len(params),len(params)))
 		for i in range(len(params)):
 			for j in range(len(params)):
 				if i==j:
-					fisher_matrix[i][j]=.5*np.abs(deriv(deriv_like,self.cosmo_truths[params[i]],dx=1e-6,
+					# fisher_matrix[i][j]=deriv_like2(self.cosmo_truths[params[i]],[params[i]], self.zl, self.zs, .64,#self.dTc,
+					#    self.cosmo_truths['Om0'],self.cosmo_truths['Ok'],self.cosmo_truths['Ode0'],
+					#    self.cosmo_truths['w0'], self.cosmo_truths['wa'],
+					# 				self.cosmo_truths['h'],dx)
+					fisher_matrix[i][j]=.5*np.abs(deriv(deriv_like,self.cosmo_truths[params[i]],dx=dx,
 						args=(None,[params[i]], self.zl, self.zs, .64,#self.dTc,
 					   self.cosmo_truths['Om0'],self.cosmo_truths['Ok'],self.cosmo_truths['Ode0'],
 					   self.cosmo_truths['w0'], self.cosmo_truths['wa'],
 									self.cosmo_truths['h']),n=2))
 				else:
-					fisher_matrix[i][j]=.5*deriv(take_deriv,self.cosmo_truths[params[i]],dx=1e-6,
+					fisher_matrix[i][j]=.5*deriv(take_deriv,self.cosmo_truths[params[i]],dx=dx,
 						args=(params[i],self.cosmo_truths[params[j]],params[j]))
+					# fisher_matrix[i][j] = deriv_like12(self.cosmo_truths[params[i]],
+					# self.cosmo_truths[params[j]],[params[i],params[j]], self.zl, self.zs, .64,#self.dTc,
+					#    self.cosmo_truths['Om0'],self.cosmo_truths['Ok'],self.cosmo_truths['Ode0'],
+					#    self.cosmo_truths['w0'], self.cosmo_truths['wa'],
+					# 				self.cosmo_truths['h'],dx,dx)
 		
-		fisher_matrix=np.array([[49824.9224,-1829.7018,-4434.2995,4546.8899,122.5319],
-								[-1829.7018, 88.3760, 200.9795, -189.2658, -8.4386],
-								[-4434.2995, 200.9795, 463.5732, -445.5690, -17.9694],
-								[4546.8899, -189.2658, -445.5690, 441.9725, 15.2981],
-								[122.5319, -8.4386, -17.9694, 15.2981, 1.0394]])
+		#fisher_matrix=np.array([[49824.9224,-1829.7018,-4434.2995,4546.8899,122.5319],
+		#						[-1829.7018, 88.3760, 200.9795, -189.2658, -8.4386],
+		#						[-4434.2995, 200.9795, 463.5732, -445.5690, -17.9694],
+		#						[4546.8899, -189.2658, -445.5690, 441.9725, 15.2981],
+		#						[122.5319, -8.4386, -17.9694, 15.2981, 1.0394]])
 		self.fisher_matrix=Fisher(data=fisher_matrix,params=params,name=self.name,cosmo_truths=self.cosmo_truths)
 		print(self.fisher_matrix.pretty_fish)
 
@@ -807,36 +848,43 @@ class Fisher:
 
 		plt.figlegend(handles=patches,fontsize=14,bbox_to_anchor=(.75,.85))
 
-# xvar, yvar = strspl('w_0 w_a')
-# xo, yo = -1, 0  # Best fit w0, wa
-# alpha = 0.9
-# fish=Fisher(inroot='SN-IVS-o')
-# fish.load('/Users/jpierel/rodney/Fisher/data/')
-# print('xvar',fish.xvar)
-# print('yvar',fish.yvar)
-# print(fish.params)
-# dx, dy, p = fish.dxdyp(xvar, yvar)
-# print(dx,dy,p)
-# print(fish.data)
-# plotellsp(xo, yo, dx, dy, p,  alpha=alpha)
-# plt.xlim((-2,0))
-# plt.ylim((-5,5))
-# plt.show()
-# sys.exit()
+def main():
+	# xvar, yvar = strspl('w_0 w_a')
+	# xo, yo = -1, 0  # Best fit w0, wa
+	# alpha = 0.9
+	# fish=Fisher(inroot='SN-IVS-o')
+	# fish.load('/Users/jpierel/rodney/Fisher/data/')
+	# print('xvar',fish.xvar)
+	# print('yvar',fish.yvar)
+	# print(fish.params)
+	# dx, dy, p = fish.dxdyp(xvar, yvar)
+	# print(dx,dy,p)
+	# print(fish.data)
+	# plotellsp(xo, yo, dx, dy, p,  alpha=alpha)
+	# plt.xlim((-2,0))
+	# plt.ylim((-5,5))
+	# plt.show()
+	# sys.exit()
 
-# zl=np.random.normal(.5,.15,size=5000)
-# zs=np.random.normal(2,.75,size=5000)
-# goods=np.where(zs>zl)[0]
-# wfirst_dict = {
-# 			'N':10,   # number of Lensed SNe Ia with good time delays
-# 			'dTL':5,  # % lens modeling uncertainty for each
-# 			'dTT':1,  # % time delay measurement uncertainty for each
-# 			'zl':zl[goods][:5],'zs':zs[goods][:5]
-# 		}
-# wfirst = Survey(**wfirst_dict)
-# #wfirst.survey_grid(['Om0','Ode0'],{'w':[-1.5,-.8],'w0':[-1.5,-.5],'wa':[-3,3],
-# 	#'h':[.62,.74],'Om0':[0,1],'Ode0':[0,1]},constants={'w':-1},dTc=.64,npoints=100)
-# #wfirst.plot_survey_contour()
-# wfirst.survey_fisher(['h','Ode0','Ok','w0','wa'])
-# wfirst.fisher_matrix.plot('w0','wa',x_limits=(-4,0),y_limits=(-4,4))
-# plt.show()
+	zl=np.random.normal(.5,.15,size=5000)
+	zs=np.random.normal(2,.75,size=5000)
+	goods=np.where(zs>zl)[0]
+	wfirst_dict = {
+	 			'N':10,   # number of Lensed SNe Ia with good time delays
+	 			'dTL':5,  # % lens modeling uncertainty for each
+	 			'dTT':1,  # % time delay measurement uncertainty for each
+	 			'zl':zl[goods][:4000],'zs':zs[goods][:4000]
+	 		}
+	wfirst = Survey(**wfirst_dict)
+	# #wfirst.survey_grid(['Om0','Ode0'],{'w':[-1.5,-.8],'w0':[-1.5,-.5],'wa':[-3,3],
+	# 	#'h':[.62,.74],'Om0':[0,1],'Ode0':[0,1]},constants={'w':-1},dTc=.64,npoints=100)
+	# #wfirst.plot_survey_contour()
+	wfirst.survey_fisher(['h','Ode0','Ok','w0','wa'])
+	wfirst.fisher_matrix.prior('Ode0',.00001)
+	wfirst.fisher_matrix.prior('Ok',.00001)
+	wfirst.fisher_matrix.prior('h',.00001)
+	wfirst.fisher_matrix.plot('w0','wa',x_limits=(-1.6,-.4),y_limits=(-4,4))
+	plt.show()
+
+if __name__=='__main__':
+	main()

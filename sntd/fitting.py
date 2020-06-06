@@ -59,7 +59,7 @@ class newDict(dict):
 def fit_data(curves=None, snType='Ia',bands=None, models=None, params=None, bounds={}, ignore=None, constants={},ignore_models=[],
 			 method='parallel',t0_guess=None,effect_names=[],effect_frames=[],batch_init=None,cut_time=None,force_positive_param=[],
 			 dust=None,microlensing=None,fitOrder=None,color_bands=None,color_param_ignore=[],min_points_per_band=3,identify_micro=False,
-			 min_n_bands=1,max_n_bands=None,n_cores_per_node=1,npar_cores=4,max_batch_jobs=199,
+			 min_n_bands=1,max_n_bands=None,n_cores_per_node=1,npar_cores=4,max_batch_jobs=199,max_cadence=None,
 			 fit_prior=None,par_or_batch='parallel',batch_partition=None,nbatch_jobs=None,batch_python_path=None,n_per_node=None,fast_model_selection=True,
 			 wait_for_batch=False,band_order=None,set_from_simMeta={},guess_amplitude=True,trial_fit=True,clip_data=False,
 			 kernel='RBF',refImage='image_1',nMicroSamples=100,color_curve=None,warning_supress=True,
@@ -127,6 +127,8 @@ def fit_data(curves=None, snType='Ia',bands=None, models=None, params=None, boun
 		The number of cores to devote to parallelization
 	max_batch_jobs: int 
 		The maximum number of jobs allowed by your slurm task manager. 
+	max_cadence: int
+		To clip each image of a MISN to this cadence
 	fit_prior: :class:`~sntd.curve_io.curveDict` or bool
 		if implementing parallel method alongside others and fit_prior is True, will use output of parallel as prior
 		for series/color. If SNTD curveDict object, used as prior for series or color.
@@ -290,9 +292,9 @@ def fit_data(curves=None, snType='Ia',bands=None, models=None, params=None, boun
 				total_jobs=math.ceil(len(args['curves'])/n_per_node)
 				if nbatch_jobs is None:
 					nbatch_jobs=min(total_jobs,max_batch_jobs)
-				script_name_init,folder_name=run_sbatch(partition=batch_partition,
+				script_name_init,folder_name=make_sbatch(partition=batch_partition,
 												   njobs=nbatch_jobs,njobstotal=min(total_jobs,max_batch_jobs),python_path=batch_python_path,init=True,parallelize=parallelize,microlensing_cores=micro_par)
-				script_name,folder_name=run_sbatch(partition=batch_partition,folder=folder_name,
+				script_name,folder_name=make_sbatch(partition=batch_partition,folder=folder_name,
 												  njobs=nbatch_jobs,python_path=batch_python_path,init=False,parallelize=parallelize,microlensing_cores=micro_par)
 
 				pickle.dump(constants,open(os.path.join(folder_name,'sntd_constants.pkl'),'wb'))
@@ -397,54 +399,7 @@ def fit_data(curves=None, snType='Ia',bands=None, models=None, params=None, boun
 					with open(os.path.join(os.path.abspath(folder_name),pyfile),'w') as f:
 						f.write(batch_py)
 
-				
-
-				fits_output=tarfile.open(os.path.join(os.path.abspath(folder_name),'sntd_fits.tar.gz'),mode='w')
-				
-				result=subprocess.call(['sbatch',os.path.join(os.path.abspath(folder_name),
-																	   script_name_init)])
-				if wait_for_batch:
-					printProgressBar(0,total_jobs)
-				ndone=0
-				nadded=min(total_jobs,max_batch_jobs)
-				saved_fits=0
-				tarfit_ind=0
-				if parallelize is not None:
-					n_per_file=1
-				else:
-					n_per_file=n_per_node
-				
-				while True:
-					time.sleep(10) #update every 10 seconds
-					output=glob.glob(os.path.join(os.path.abspath(folder_name),'sntd_fit*.pkl'))
-					nfit=len(output)+saved_fits
-					if nfit!=ndone:
-						if int(saved_fits*n_per_file)>=50000*(tarfit_ind+1):
-							fits_output.close()
-							fits_output=tarfile.open(os.path.join(os.path.abspath(folder_name),'sntd_fits_%i.tar.gz'%tarfit_ind),mode='w')
-							tarfit_ind+=1
-						for filename in output:
-							fits_output.add(filename)
-							os.remove(filename)
-							saved_fits+=1
-						if nadded<total_jobs:
-							for i in range(math.ceil(len(output)/(n_per_node/n_per_file))):
-								if nadded>total_jobs-1:
-									continue
-								result=subprocess.call(['sbatch',os.path.join(os.path.abspath(folder_name),
-																		 script_name),str(nadded)],stdout=subprocess.DEVNULL)
-								nadded+=1
-						ndone=copy(nfit)
-
-						if wait_for_batch:
-							printProgressBar(ndone/(n_per_node/n_per_file),total_jobs)
-					if ndone>=len(args['curves']):
-						break
-				fits_output.close()
-				if verbose:
-					print('Done!')
-				return
-					
+				return run_sbatch(folder_name,script_name_init,script_name,total_jobs,max_batch_jobs,n_per_node)
 
 
 		else:
@@ -520,9 +475,9 @@ def fit_data(curves=None, snType='Ia',bands=None, models=None, params=None, boun
 				total_jobs=math.ceil(len(args['curves'])/n_per_node)
 				if nbatch_jobs is None:
 					nbatch_jobs=min(total_jobs,max_batch_jobs)
-				script_name_init,folder_name=run_sbatch(partition=batch_partition,
+				script_name_init,folder_name=make_sbatch(partition=batch_partition,
 												   njobs=nbatch_jobs,njobstotal=min(total_jobs,max_batch_jobs),python_path=batch_python_path,init=True,parallelize=parallelize,microlensing_cores=micro_par)
-				script_name,folder_name=run_sbatch(partition=batch_partition,folder=folder_name,
+				script_name,folder_name=make_sbatch(partition=batch_partition,folder=folder_name,
 												  njobs=nbatch_jobs,python_path=batch_python_path,init=False,parallelize=parallelize,microlensing_cores=micro_par)
 
 				pickle.dump(constants,open(os.path.join(folder_name,'sntd_constants.pkl'),'wb'))
@@ -590,51 +545,7 @@ def fit_data(curves=None, snType='Ia',bands=None, models=None, params=None, boun
 				
 
 				
-				fits_output=tarfile.open(os.path.join(os.path.abspath(folder_name),'sntd_fits.tar.gz'),mode='w')
-				
-				result=subprocess.call(['sbatch',os.path.join(os.path.abspath(folder_name),
-																	   script_name_init)])
-				if wait_for_batch:
-					printProgressBar(0,total_jobs)
-				ndone=0
-				nadded=min(total_jobs,max_batch_jobs)
-				saved_fits=0
-				tarfit_ind=0
-				if parallelize is not None:
-					n_per_file=1
-				else:
-					n_per_file=n_per_node
-				
-				while True:
-					time.sleep(10) #update every 10 seconds
-					output=glob.glob(os.path.join(os.path.abspath(folder_name),'sntd_fit*.pkl'))
-					nfit=len(output)+saved_fits
-					if len(output)>0:
-						if int(saved_fits*n_per_file)>=50000*(tarfit_ind+1):
-							fits_output.close()
-							fits_output=tarfile.open(os.path.join(os.path.abspath(folder_name),'sntd_fits_%i.tar.gz'%tarfit_ind),mode='w')
-							tarfit_ind+=1
-						for filename in output:
-							fits_output.add(filename)
-							os.remove(filename)
-							saved_fits+=1
-						if nadded<total_jobs:
-							for i in range(math.ceil(len(output)/(n_per_node/n_per_file))):
-								if nadded>total_jobs-1:
-									continue
-								result=subprocess.call(['sbatch',os.path.join(os.path.abspath(folder_name),
-																		 script_name),str(nadded)],stdout=subprocess.DEVNULL)
-								nadded+=1
-						ndone=copy(nfit)
-
-						if wait_for_batch:
-							printProgressBar(ndone/(n_per_node/n_per_file),total_jobs)
-					if ndone>=len(args['curves']):
-						break
-				fits_output.close()
-				if verbose:
-					print('Done!')
-				return
+				return run_sbatch(folder_name,script_name_init,script_name,total_jobs,max_batch_jobs,n_per_node)
 
 
 
@@ -671,9 +582,9 @@ def fit_data(curves=None, snType='Ia',bands=None, models=None, params=None, boun
 				total_jobs=math.ceil(len(args['curves'])/n_per_node)
 				if nbatch_jobs is None:
 					nbatch_jobs=min(total_jobs,max_batch_jobs)
-				script_name_init,folder_name=run_sbatch(partition=batch_partition,
+				script_name_init,folder_name=make_sbatch(partition=batch_partition,
 												   njobs=nbatch_jobs,njobstotal=min(total_jobs,max_batch_jobs),python_path=batch_python_path,init=True,parallelize=parallelize,microlensing_cores=micro_par)
-				script_name,folder_name=run_sbatch(partition=batch_partition,folder=folder_name,
+				script_name,folder_name=make_sbatch(partition=batch_partition,folder=folder_name,
 												  njobs=nbatch_jobs,python_path=batch_python_path,init=False,parallelize=parallelize,microlensing_cores=micro_par)
 
 				pickle.dump(constants,open(os.path.join(folder_name,'sntd_constants.pkl'),'wb'))
@@ -733,55 +644,8 @@ def fit_data(curves=None, snType='Ia',bands=None, models=None, params=None, boun
 
 					with open(os.path.join(os.path.abspath(folder_name),pyfile),'w') as f:
 						f.write(batch_py)
-
 				
-
-				
-				fits_output=tarfile.open(os.path.join(os.path.abspath(folder_name),'sntd_fits.tar.gz'),mode='w')
-				
-				result=subprocess.call(['sbatch',os.path.join(os.path.abspath(folder_name),
-																	   script_name_init)])
-				if wait_for_batch:
-					printProgressBar(0,total_jobs)
-				ndone=0
-				nadded=min(total_jobs,max_batch_jobs)
-				saved_fits=0
-				tarfit_ind=0
-				if parallelize is not None:
-					n_per_file=1
-				else:
-					n_per_file=n_per_node
-				
-				while True:
-					time.sleep(10) #update every 10 seconds
-					output=glob.glob(os.path.join(os.path.abspath(folder_name),'sntd_fit*.pkl'))
-					nfit=len(output)+saved_fits
-					if nfit!=ndone:
-						if int(saved_fits*n_per_file)>=50000*(tarfit_ind+1):
-							fits_output.close()
-							fits_output=tarfile.open(os.path.join(os.path.abspath(folder_name),'sntd_fits_%i.tar.gz'%tarfit_ind),mode='w')
-							tarfit_ind+=1
-						for filename in output:
-							fits_output.add(filename)
-							os.remove(filename)
-							saved_fits+=1
-						if nadded<total_jobs:
-							for i in range(math.ceil(len(output)/(n_per_node/n_per_file))):
-								if nadded>total_jobs-1:
-									continue
-								result=subprocess.call(['sbatch',os.path.join(os.path.abspath(folder_name),
-																		 script_name),str(nadded)],stdout=subprocess.DEVNULL)
-								nadded+=1
-						ndone=copy(nfit)
-
-						if wait_for_batch:
-							printProgressBar(ndone/(n_per_node/n_per_file),total_jobs)
-					if ndone>=len(args['curves']):
-						break
-				fits_output.close()
-				if verbose:
-					print('Done!')
-				return
+				return run_sbatch(folder_name,script_name_init,script_name,total_jobs,max_batch_jobs,n_per_node)
 		else:
 			curves=_fitseries(args)
 
@@ -816,9 +680,9 @@ def fit_data(curves=None, snType='Ia',bands=None, models=None, params=None, boun
 				total_jobs=math.ceil(len(args['curves'])/n_per_node)
 				if nbatch_jobs is None:
 					nbatch_jobs=min(total_jobs,max_batch_jobs)
-				script_name_init,folder_name=run_sbatch(partition=batch_partition,
+				script_name_init,folder_name=make_sbatch(partition=batch_partition,
 												   njobs=nbatch_jobs,njobstotal=min(total_jobs,max_batch_jobs),python_path=batch_python_path,init=True,parallelize=parallelize,microlensing_cores=micro_par)
-				script_name,folder_name=run_sbatch(partition=batch_partition,folder=folder_name,
+				script_name,folder_name=make_sbatch(partition=batch_partition,folder=folder_name,
 												  njobs=nbatch_jobs,python_path=batch_python_path,init=False,parallelize=parallelize,microlensing_cores=micro_par)
 
 				pickle.dump(constants,open(os.path.join(folder_name,'sntd_constants.pkl'),'wb'))
@@ -881,51 +745,7 @@ def fit_data(curves=None, snType='Ia',bands=None, models=None, params=None, boun
 
 				
 
-				fits_output=tarfile.open(os.path.join(os.path.abspath(folder_name),'sntd_fits.tar.gz'),mode='w')
-				
-				result=subprocess.call(['sbatch',os.path.join(os.path.abspath(folder_name),
-																	   script_name_init)])
-				if wait_for_batch:
-					printProgressBar(0,total_jobs)
-				ndone=0
-				nadded=min(total_jobs,max_batch_jobs)
-				saved_fits=0
-				tarfit_ind=0
-				if parallelize is not None:
-					n_per_file=1
-				else:
-					n_per_file=n_per_node
-				
-				while True:
-					time.sleep(10) #update every 10 seconds
-					output=glob.glob(os.path.join(os.path.abspath(folder_name),'sntd_fit*.pkl'))
-					nfit=len(output)+saved_fits
-					if nfit!=ndone:
-						if int(saved_fits*n_per_file)>=50000*(tarfit_ind+1):
-							fits_output.close()
-							fits_output=tarfile.open(os.path.join(os.path.abspath(folder_name),'sntd_fits_%i.tar.gz'%tarfit_ind),mode='w')
-							tarfit_ind+=1
-						for filename in output:
-							fits_output.add(filename)
-							os.remove(filename)
-							saved_fits+=1
-						if nadded<total_jobs:
-							for i in range(math.ceil(len(output)/(n_per_node/n_per_file))):
-								if nadded>total_jobs-1:
-									continue
-								result=subprocess.call(['sbatch',os.path.join(os.path.abspath(folder_name),
-																		 script_name),str(nadded)],stdout=subprocess.DEVNULL)
-								nadded+=1
-						ndone=copy(nfit)
-
-						if wait_for_batch:
-							printProgressBar(ndone/(n_per_node/n_per_file),total_jobs)
-					if ndone>=len(args['curves']):
-						break
-				fits_output.close()
-				if verbose:
-					print('Done!')
-				return
+				return run_sbatch(folder_name,script_name_init,script_name,total_jobs,max_batch_jobs,n_per_node)
 		else:
 			if args['color_bands'] is not None:
 				args['bands']=args['color_bands']
@@ -960,7 +780,7 @@ def _fitColor(all_args):
 
 	if args['clip_data']:
 		for im in args['curves'].images.keys():
-			args['curves'].clip_data(im=im,minsnr=args.get('minsnr',0))
+			args['curves'].clip_data(im=im,minsnr=args.get('minsnr',0),max_cadence=args['max_cadence'])
 
 	args['bands']=list(args['bands'])
 	_,band_SNR,_=getBandSNR(args['curves'],args['bands'],args['min_points_per_band'])
@@ -1517,7 +1337,7 @@ def _fitseries(all_args):
 
 	if args['clip_data']:
 		for im in args['curves'].images.keys():
-			args['curves'].clip_data(im=im,minsnr=args.get('minsnr',0))
+			args['curves'].clip_data(im=im,minsnr=args.get('minsnr',0),max_cadence=args['max_cadence'])
 
 	args['bands'],band_SNR,_=getBandSNR(args['curves'],args['bands'],args['min_points_per_band'])
 	args['curves'].series.bands=args['bands'][:args['max_n_bands']]if args['max_n_bands'] is not None else args['bands']
@@ -2155,7 +1975,7 @@ def _fitparallel(all_args):
 
 	if args['clip_data']:
 		for im in args['curves'].images.keys():
-			args['curves'].clip_data(im=im,minsnr=args.get('minsnr',0))
+			args['curves'].clip_data(im=im,minsnr=args.get('minsnr',0),max_cadence=args['max_cadence'])
 
 	args['bands'],band_SNR,band_dict=getBandSNR(args['curves'],args['bands'],args['min_points_per_band'])
 	args['curves'].bands=args['bands']
