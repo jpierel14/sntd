@@ -12,16 +12,11 @@ import sncosmo
 import nestle
 import corner
 
-from .CLtools import *
-from .coetools import *
-from .util import weighted_quantile,plot
 
-def matrix_multiply(MM):
-	"""Multiplies a list of matrices: M[0] * M[1] * M[2]..."""
-	P = MM[0]
-	for M in MM[1:]:
-		P = dot(P, M)
-	return P
+from .coetools import *
+from .util import *
+
+
 
 def EA1(z1, z2, cosmo):
 	"""The integral of the inverse of the normalized 
@@ -701,8 +696,8 @@ class Fisher:
 		C = self.cov()
 		C = C.take((self.ix,self.iy),0)
 		C = C.take((self.ix,self.iy),1)
-		dx = sqrt(C[0,0])
-		dy = sqrt(C[1,1])
+		dx = np.sqrt(C[0,0])
+		dy = np.sqrt(C[1,1])
 		dxy = C[0,1]
 		p = dxy / (dx * dy)
 		self.C = C
@@ -721,7 +716,7 @@ class Fisher:
 
 	def addpar(self, param):
 		npar = len(self.params)
-		data = zeros((npar+1, npar+1))
+		data = np.zeros((npar+1, npar+1))
 		data[:npar,:npar] = self.data
 		self.data = data
 		self.params.append(param)
@@ -760,7 +755,7 @@ class Fisher:
 			i = pl.index(p)
 			ii.append(i)
 
-		FF1 = zeros((n,n))
+		FF1 = np.zeros((n,n))
 		for i1, i in enumerate(ii):
 			FF1[i].put(ii, F1[i1])
 
@@ -770,7 +765,7 @@ class Fisher:
 			i = pl.index(p)
 			ii.append(i)
 
-		FF2 = zeros((n,n))
+		FF2 = np.zeros((n,n))
 		for i2, i in enumerate(ii):
 			FF2[i].put(ii, F2[i2])
 		# Add
