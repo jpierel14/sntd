@@ -21,14 +21,8 @@ from .util import *
 def EA1(z1, z2, cosmo):
 	"""The integral of the inverse of the normalized 
 	Hubble parameter, from z1 to z2:  int_z1^z2{1/E(z')dz}
-	Eq 8 of Coe & Moustakas 2009.
-	Assuming a flat universe."""
+	Eq 8 of Coe & Moustakas 2009 (for non-flat)"""
 	
-	#if w0>-0.3 or w0<-2:
-	#    result = -np.inf
-	#elif np.abs(wa)>5:
-	#    result = -np.inf
-	#else:
 	if 'w' in cosmo.keys():
 		Ez2 = lambda z: ( cosmo['Om0']*(1+z)**3 + cosmo['Ok']*(1+z)**2+
 					 cosmo['Ode0']*(1+z)**(3*(1+cosmo['w'])))
@@ -37,7 +31,6 @@ def EA1(z1, z2, cosmo):
 					 cosmo['Ode0']*(1+z)**(3*(1+cosmo['w0']+cosmo['wa'])) * 
 					 np.exp(-3*cosmo['wa']*z/(1+z)) )
 	Ezinv = lambda z: 1 / np.sqrt(Ez2(z))
-	# if Ez2(z1)>0 and Ez2(z2)>0:
 	allz=np.append(z1,z2)
 	sort=np.argsort(allz)
 	n1=len(z1)
@@ -53,23 +46,13 @@ def EA1(z1, z2, cosmo):
 		result[sort[i]]=last+temp
 		last+=temp
 		
-	
-	#result, precision = quad(Ezinv, z1, z2)
-	#else:
-	#    result = -np.inf
+
 	return(result[:n1],result[n1:])
 
 def EA2(z1, z2, cosmo):
 	"""The integral of the inverse of the normalized 
 	Hubble parameter, from z1 to z2:  int_z1^z2{1/E(z')dz}
-	Eq 8 of Coe & Moustakas 2009.
-	Assuming a flat universe."""
-	
-	#if w0>-0.3 or w0<-2:
-	#    result = -np.inf
-	#elif np.abs(wa)>5:
-	#    result = -np.inf
-	#else:
+	Eq 8 of Coe & Moustakas 2009. Assumes flat universe. """
 
 	if 'w' in cosmo.keys():
 		Ez2 = lambda z: ( cosmo['Om0']*(1+z)**3 + cosmo['Ok']*(1+z)**2+
@@ -86,8 +69,7 @@ def EA2(z1, z2, cosmo):
 
 def Eratio(zl, zs, cosmo):
 	"""The time delay expansion function ratio 
-	(script E, eq 12 in Coe & Moustakas 2009).
-	Assuming a flat universe."""
+	(script E, eq 12 in Coe & Moustakas 2009)."""
 
 	EL,ES = EA1(zl,zs, cosmo)
 	if cosmo['Ok']<-.0001:
@@ -101,12 +83,10 @@ def Eratio(zl, zs, cosmo):
 		ES=np.sinh(np.sqrt(np.abs(cosmo['Ok']))*ES)/np.sqrt(np.abs(cosmo['Ok']))
 		ELS=np.sinh(np.sqrt(np.abs(cosmo['Ok']))*ELS)/np.sqrt(np.abs(cosmo['Ok']))
 	else:# np.abs(cosmo['Ok'])<.001:
-		ELS = ES-EL#EA(zl, zs, Om0, w0, wa)
+		ELS = ES-EL
 	
 	
-	#if EL<=0 or ES<=0 or ELS<=0:
-	#    Erat = -np.inf
-	#else:
+
 	Erat = EL * ES / ELS
 	return(Erat/(cosmo['h']*100))
 
@@ -121,19 +101,30 @@ def Evariance(Erat, dTc):
 
 
 def loglikelihoodE(testVars,testPoint, zl, zs, dTc=2, set_cosmo={},Eratio_true=None,
-				   Om0true=0.3,Oktrue=0, Ode0true=.7,w0true=-1., watrue=0.,htrue=.7,return_ratios=False): 
-	"""log10(likelihood) for a time delay distance 
+				   Om0true=0.3,Oktrue=0, Ode0true=.7,w0true=-1., watrue=0.,htrue=.7,
+				   return_ratios=False,P=1): 
+	"""log(likelihood) for a time delay distance 
 	ratio constraint, comparing 
-	a given test point in w0,wa space to the true (w0,wa) position. 
+	a given test point to the true position. 
 	
-	w0wa: [w0,wa], the test point
-	zl : lens redshift
-	zs : source redshift
+	testVars: the test variables
+	testPOint: the test point
+	zl : lens redshift(s)
+	zs : source redshift(s)
 	dTc : percent precision on cosmological distance ratio, combining
 	   uncertainty from the time delay measurement + lens modeling
-	Om0, w0true, watrue : the true cosmology
+	set_cosmo: dictionary of constants to set (if not defaults)
+	Eratio_true: The true ratio if computed beforehand for speed
+	Om0true: True value of Om0
+	Oktrue: True value of Ok
+	Ode0true: True value of Ode0
+	w0true: True value of w0
+	watrue: True value of wa
+	htrue: True value of h
+	return_ratios: if true, return the actual ratios in additon to the likelihood
+	P: The probability of each source/lens redshift combo (see C&M 2009 equation 17)
 	"""
-	#Note: the Eratio function assumes a flat universe
+
 	cosmo={testVars[i]:testPoint[i] for i in range(len(testVars))}
 	if 'w' not in testVars:
 		if 'w0' not in cosmo.keys():
@@ -170,7 +161,7 @@ def loglikelihoodE(testVars,testPoint, zl, zs, dTc=2, set_cosmo={},Eratio_true=N
 
 	
 	#if np.isfinite(Eratio_w0wa):
-	loglike = -0.5 * np.sum( (Eratio_true-Eratio_test)**2 / 
+	loglike = -0.5 * np.sum( P*(Eratio_true-Eratio_test)**2 / 
 					  Evariance(Eratio_test, dTc))
 	if return_ratios:
 		return(Eratio_true,Eratio_test,loglike)
@@ -204,42 +195,17 @@ def rescale_likelihood( a ):
 	# Now unravel back into shape of original array and return
 	return( sumabove.reshape( a.shape ) )
 
-def deriv_like(p1,p2,names,zl,zs,dTc,Om0,Ok,Ode0,w0true,watrue,htrue):
+def deriv_like(p1,p2,names,zl,zs,dTc,Om0,Ok,Ode0,w0true,watrue,htrue,P):
+	"""
+	helper to calculate fisher matrix
+	"""
 	if p2 is not None:
 		return -2*loglikelihoodE(names,[p1,p2],zl,zs,dTc=dTc,Om0true=Om0,Oktrue=Ok,Ode0true=Ode0,
-					w0true=w0true,watrue=watrue,htrue=htrue)
+					w0true=w0true,watrue=watrue,htrue=htrue,P=P)
 	else:
 		return -2*loglikelihoodE(names,[p1],zl,zs,dTc=dTc,Om0true=Om0,Oktrue=Ok,
-					Ode0true=Ode0,w0true=w0true,watrue=watrue,htrue=htrue)
-# def deriv_like(p1,names,zl,zs,dTc,Om0,Ok,Ode0,w0true,watrue,htrue,dx,ydy):
-# 	true,test,loglike=loglikelihoodE(names,[p1+dx,ydy],zl,zs,dTc=dTc,Om0true=Om0,Oktrue=Ok,Ode0true=Ode0,
-# 				w0true=w0true,watrue=watrue,htrue=htrue,return_ratios=True)
-# 	deltax=np.sum(np.abs(test-true))
-# 	return -1*(np.sum(loglike)-np.sum(loglikelihoodE(names,[p1-dx,ydy],zl,zs,dTc=dTc,Om0true=Om0,Oktrue=Ok,Ode0true=Ode0,
-# 				w0true=w0true,watrue=watrue,htrue=htrue)))/deltax
+					Ode0true=Ode0,w0true=w0true,watrue=watrue,htrue=htrue,P=P)
 
-# def deriv_like2(p1,names,zl,zs,dTc,Om0,Ok,Ode0,w0true,watrue,htrue,dx):
-# 	true,test,loglike=loglikelihoodE(names,[p1+dx],zl,zs,dTc=dTc,Om0true=Om0,Oktrue=Ok,Ode0true=Ode0,
-# 				w0true=w0true,watrue=watrue,htrue=htrue,return_ratios=True)
-# 	deltax=np.sum(np.abs(test-true))
-# 	#-2*np.sum(loglikelihoodE(names,[p1],zl,zs,dTc=dTc,Om0true=Om0,Oktrue=Ok,Ode0true=Ode0,
-# 				#w0true=w0true,watrue=watrue,htrue=htrue))\
-# 	return -1*(np.sum(loglike)
-# 			+np.sum(loglikelihoodE(names,[p1-dx],zl,zs,dTc=dTc,Om0true=Om0,Oktrue=Ok,Ode0true=Ode0,
-# 				w0true=w0true,watrue=watrue,htrue=htrue)))/deltax**2
-
-# def deriv_like12(p1,p2,names,zl,zs,dTc,Om0,Ok,Ode0,w0true,watrue,htrue,dx,dy):
-# 	true,test,loglike=loglikelihoodE(names,[p1,p2+dy],zl,zs,dTc=dTc,Om0true=Om0,Oktrue=Ok,Ode0true=Ode0,
-# 				w0true=w0true,watrue=watrue,htrue=htrue,return_ratios=True)
-# 	deltay=np.sum(np.abs(test-true))
-
-# 	d1=deriv_like(p1,names,zl,zs,dTc,Om0,Ok,Ode0,
-# 				w0true,watrue,htrue,dx,p2+dy)
-# 	d2=deriv_like(p1,names,zl,zs,dTc,Om0,Ok,Ode0,
-# 				w0true,watrue,htrue,dx,p2-dy)
-# 	print(d1,d2)
-# 	return (d1-d2)/deltay
-	
 
 class Survey(object):
 	"""
@@ -258,11 +224,14 @@ class Survey(object):
 		Redshift(s) of the lens(es). If a float, assumes you want N identical SN.
 	zs: float or list
 		Redshift(s) of the source(s). If a float, assumes you want N identical SN.
+	P: float or list
+		The probability of each source/lens redshift combo, defaults to calculating
+		assuming gaussian redshift distributions
 	name: str
 		Name of your survey
 
 	"""
-	def __init__(self, N=10,dTL=5, dTT=5, zl=0.3, zs=0.8, name='mySurvey', **kwargs):
+	def __init__(self, N=10,dTL=5, dTT=5, zl=0.3, zs=0.8,P=None, name='mySurvey', **kwargs):
 		if not isinstance(zl,(list,tuple,np.ndarray)):
 			zl=[zl]
 		if not isinstance(zs,(list,tuple,np.ndarray)):
@@ -277,6 +246,15 @@ class Survey(object):
 		self.dTT = dTT
 		self.zl = zl
 		self.zs = zs
+		if P is not None:
+			self.P=P if isinstance(P,(list,tuple,np.ndarray)) else [P]*len(zl)
+		else:
+			zl_p=scipy.stats.norm(np.mean(zl),np.std(zl))
+			zs_p=scipy.stats.norm(np.mean(zs),np.std(zs))			
+
+			
+			self.P = np.array([scipy.integrate.simps(zl_p.pdf([z-.01,z+.01]),[z-.01,z+.01]) for z in zl])*\
+						np.array([scipy.integrate.simps(zs_p.pdf([z-.01,z+.01]),[z-.01,z+.01]) for z in zs])
 		
 		self.grid_likelihood = None
 		self.nestle_result = None
@@ -293,10 +271,38 @@ class Survey(object):
 
 	@property
 	def dTc(self):
+		"""
+		Returns the combined lens/delay uncertainty assuming statistical uncertainties
+		"""
 		return np.sqrt(self.dTL**2 + self.dTT**2) / np.sqrt(self.N)   
 
 	def survey_grid(self,vparam_names,bounds,npoints=100,grad_param=None,constants={},
 			grad_param_bounds=None,ngrad=10,**kwargs):
+		"""Calculate cosmological contours by varying 2 parameters in a grid.
+
+		Parameters
+		-------
+		vparam_names: list
+			The names of parameters to vary
+		bounds: dict
+			Dictionary with param names as keys and list/tuple/array of bounds as values
+		npoints: int
+			The number of sample points
+		grad_param: str
+			Parameter to assume we're to have measured wrong (see C&M 2009 Figure 4)
+		constants: dict
+			Constants that are not the defaults
+		grad_param_bounds: dict
+			Bounds for grad_param, same format as bounds
+		ngrad: int
+			Number of grid points to vary grad_param
+
+		Returns
+		-------
+		Adds to class attribute "grid" (a dictionary), with a comma-separated list of 
+		the vparam_names as the key and grid values as the value. 
+		"""
+
 		if len(vparam_names)!=2:
 			print('For grid mode, must provide exactly 2 parameters.')
 			return
@@ -369,13 +375,31 @@ class Survey(object):
 		self.grid_samples[','.join(vparam_names)] = [p1grid,p2grid]
 		
 
-	def survey_nestle(self,vparam_names,bounds,constants={},npoints=100, method='single',
-			maxiter=None, maxcall=None, modelcov=False, rstate=None,
-			verbose=False, warn=True, **kwargs):
+	def survey_nestle(self,vparam_names,bounds,constants={},npoints=100, **kwargs):
 		
-		"""
-		MCMC-like measurement of precision on cosmological parameters
-		based on your survey ensemble of glSN and precsions.
+		"""Calculate cosmological contours in an MCMC-like fashion.
+
+		Parameters
+		-------
+		vparam_names: list
+			The names of parameters to vary
+		bounds: dict
+			Dictionary with param names as keys and list/tuple/array of bounds as values
+		npoints: int
+			The number of sample points
+		grad_param: str
+			Parameter to assume we're to have measured wrong (see C&M 2009 Figure 4)
+		constants: dict
+			Constants that are not the defaults
+		grad_param_bounds: dict
+			Bounds for grad_param, same format as bounds
+		ngrad: int
+			Number of grid points to vary grad_param
+
+		Returns
+		-------
+		Adds to class attribute "grid" (a dictionary), with a comma-separated list of 
+		the vparam_names as the key and grid values as the value. 
 		"""
 		ppfs={}
 		if bounds is not None:
@@ -402,7 +426,6 @@ class Survey(object):
 				v[i] = d[key]
 			return v
 
-		
 		def likelihood(parameters):
 			newParams={}
 			newParams={iparam_names[i]:parameters[i] for i in range(len(parameters))}
@@ -415,9 +438,9 @@ class Survey(object):
 						Ode0true=self.cosmo_truths['Ode0'], w0true=self.cosmo_truths['w0'], 
 					   watrue=self.cosmo_truths['wa'],htrue=self.cosmo_truths['h']))
 		res = nestle.sample(likelihood, prior_transform, ndim, npdim=npdim,
-						npoints=npoints, method=method, maxiter=maxiter,
-						maxcall=maxcall, rstate=rstate,#decline_factor=.5,
-						callback=(nestle.print_progress if verbose else None))
+						npoints=npoints, method=kwargs.get('method'), maxiter=kwargs.get('maxiter',None),
+						maxcall=kwargs.get('maxcall',None), rstate=kwargs.get('rstate',None),
+						callback=(nestle.print_progress if kwargs.get('verbose',False) else None),**kwargs)
 		if self.nestle_result is None:
 			self.nestle_result = {}
 			self.nestle_cosmology_fit = {}
@@ -430,32 +453,24 @@ class Survey(object):
 	def survey_fisher(self,params,dx=1e-6):
 		def take_deriv(p2,p2name,p1,p1name):
 			return deriv(deriv_like,p1,dx=dx,
-					args=(p2,[p1name,p2name], self.zl, self.zs, .64,#self.dTc,
+					args=(p2,[p1name,p2name], self.zl, self.zs,self.dTc,
 				   self.cosmo_truths['Om0'],self.cosmo_truths['Ok'],
 				   self.cosmo_truths['Ode0'], self.cosmo_truths['w0'], self.cosmo_truths['wa'],
-								self.cosmo_truths['h']))
+								self.cosmo_truths['h'],self.P))
 		
 		fisher_matrix=np.zeros((len(params),len(params)))
 		for i in range(len(params)):
 			for j in range(len(params)):
 				if i==j:
-					# fisher_matrix[i][j]=deriv_like2(self.cosmo_truths[params[i]],[params[i]], self.zl, self.zs, .64,#self.dTc,
-					#    self.cosmo_truths['Om0'],self.cosmo_truths['Ok'],self.cosmo_truths['Ode0'],
-					#    self.cosmo_truths['w0'], self.cosmo_truths['wa'],
-					# 				self.cosmo_truths['h'],dx)
 					fisher_matrix[i][j]=.5*np.abs(deriv(deriv_like,self.cosmo_truths[params[i]],dx=dx,
-						args=(None,[params[i]], self.zl, self.zs, .64,#self.dTc,
+						args=(None,[params[i]], self.zl, self.zs, self.dTc,
 					   self.cosmo_truths['Om0'],self.cosmo_truths['Ok'],self.cosmo_truths['Ode0'],
 					   self.cosmo_truths['w0'], self.cosmo_truths['wa'],
-									self.cosmo_truths['h']),n=2))
+									self.cosmo_truths['h'],self.P),n=2))
 				else:
 					fisher_matrix[i][j]=.5*deriv(take_deriv,self.cosmo_truths[params[i]],dx=dx,
 						args=(params[i],self.cosmo_truths[params[j]],params[j]))
-					# fisher_matrix[i][j] = deriv_like12(self.cosmo_truths[params[i]],
-					# self.cosmo_truths[params[j]],[params[i],params[j]], self.zl, self.zs, .64,#self.dTc,
-					#    self.cosmo_truths['Om0'],self.cosmo_truths['Ok'],self.cosmo_truths['Ode0'],
-					#    self.cosmo_truths['w0'], self.cosmo_truths['wa'],
-					# 				self.cosmo_truths['h'],dx,dx)
+					
 		
 		#fisher_matrix=np.array([[49824.9224,-1829.7018,-4434.2995,4546.8899,122.5319],
 		#						[-1829.7018, 88.3760, 200.9795, -189.2658, -8.4386],

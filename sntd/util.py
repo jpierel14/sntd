@@ -153,7 +153,7 @@ def check_table_quality(table,min_n_bands=1,min_n_points_per_band=1,clip=False):
         return table,False
     return table,True
 
-def run_sbatch(folder_name,script_name_init,script_name,total_jobs,max_batch_jobs,n_per_node):
+def run_sbatch(folder_name,script_name_init,script_name,total_jobs,max_batch_jobs,n_per_node,wait_for_batch):
     fits_output=tarfile.open(os.path.join(os.path.abspath(folder_name),'sntd_fits.tar.gz'),mode='w')
                 
     result=subprocess.call(['sbatch',os.path.join(os.path.abspath(folder_name),
