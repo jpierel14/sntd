@@ -399,7 +399,7 @@ def fit_data(curves=None, snType='Ia',bands=None, models=None, params=None, boun
 					with open(os.path.join(os.path.abspath(folder_name),pyfile),'w') as f:
 						f.write(batch_py)
 
-				return run_sbatch(folder_name,script_name_init,script_name,total_jobs,max_batch_jobs,n_per_node,wait_for_batch)
+				return run_sbatch(folder_name,script_name_init,script_name,total_jobs,max_batch_jobs,n_per_node,wait_for_batch,parallelize,len(args['curves']))
 
 
 		else:
@@ -545,7 +545,7 @@ def fit_data(curves=None, snType='Ia',bands=None, models=None, params=None, boun
 				
 
 				
-				return run_sbatch(folder_name,script_name_init,script_name,total_jobs,max_batch_jobs,n_per_node,wait_for_batch)
+				return run_sbatch(folder_name,script_name_init,script_name,total_jobs,max_batch_jobs,n_per_node,wait_for_batch,parallelize,len(args['curves']))
 
 
 
@@ -645,7 +645,7 @@ def fit_data(curves=None, snType='Ia',bands=None, models=None, params=None, boun
 					with open(os.path.join(os.path.abspath(folder_name),pyfile),'w') as f:
 						f.write(batch_py)
 				
-				return run_sbatch(folder_name,script_name_init,script_name,total_jobs,max_batch_jobs,n_per_node,wait_for_batch)
+				return run_sbatch(folder_name,script_name_init,script_name,total_jobs,max_batch_jobs,n_per_node,wait_for_batch,parallelize,len(args['curves']))
 		else:
 			curves=_fitseries(args)
 
@@ -745,7 +745,7 @@ def fit_data(curves=None, snType='Ia',bands=None, models=None, params=None, boun
 
 				
 
-				return run_sbatch(folder_name,script_name_init,script_name,total_jobs,max_batch_jobs,n_per_node,wait_for_batch)
+				return run_sbatch(folder_name,script_name_init,script_name,total_jobs,max_batch_jobs,n_per_node,wait_for_batch,parallelize,len(args['curves']))
 		else:
 			if args['color_bands'] is not None:
 				args['bands']=args['color_bands']
