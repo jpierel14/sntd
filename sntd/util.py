@@ -1,6 +1,6 @@
 #!/Users/jpierel/anaconda3/envs/astro2/bin python2
 
-import os,sncosmo,glob,sys,subprocess
+import os,sncosmo,glob,sys,subprocess,time
 from astropy.io import ascii
 import numpy as np
 from collections import OrderedDict as odict
