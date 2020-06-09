@@ -11,8 +11,8 @@ def test_sntd():
 	try:   
 		total+=1 
 		print('Testing simulation without microlensing...',end='')
-		myMISN = sntd.createMultiplyImagedSN(sourcename='salt2-extended', snType='Ia', redshift=.5,z_lens=.2, bands=['bessellb','bessellr'],
-			  zp=[25,25], cadence=5., epochs=35.,time_delays=[10., 70.], magnifications=[20,20],
+		myMISN = sntd.createMultiplyImagedSN(sourcename='salt2-extended', snType='Ia', redshift=.5,z_lens=.2, bands=['bessellv','bessellr','besselli'],
+			  zp=[25,25,25], cadence=5., epochs=35.,time_delays=[10., 70.], magnifications=[20,20],
 			  objectName='My Type Ia SN',telescopename='HST')
 		print('Passed!')
 	except Exception as e:
@@ -35,7 +35,7 @@ def test_sntd():
 		try:
 			total+=1
 			print('Testing failing quality check using %s method...'%method,end='')
-			fitCurves=sntd.fit_data(myMISN,snType='Ia', models='salt2-extended',bands=['bessellb','bessellr'],
+			fitCurves=sntd.fit_data(myMISN,snType='Ia', models='salt2-extended',bands=['bessellb','bessellv','bessellr'],
 				params=['x0','x1','t0','c'],bounds={'t0':(-15,15),'x1':(-2,2),'c':(-1,1),'td':(-15,15),'mu':(.5,2)},
 				color_param_ignore=['x1'],min_n_bands=1000,min_points_per_band=10000,
 				method=method,microlensing=None,maxcall=5,minsnr=0,set_from_simMeta={'z':'z'},t0_guess={'image_1':10,'image_2':70})
@@ -54,7 +54,7 @@ def test_sntd():
 			print('Testing fitting MISN without microlensing using %s method...'%method,end='')
 			fitCurves=sntd.fit_data(myMISN,snType='Ia', models='salt2-extended',bands=['bessellb','bessellr'],
 				params=['x0','x1','t0','c'],bounds={'t0':(-15,15),'x1':(-2,2),'c':(-1,1),'td':(-15,15),'mu':(.5,2)},
-				color_param_ignore=['x1'],
+				color_param_ignore=['x1'],#fit_colors=['bessellb-bessellv','bessellb-bessellr'],
 				method=method,microlensing=None,maxcall=5,minsnr=0,set_from_simMeta={'z':'z'},t0_guess={'image_1':10,'image_2':70})
 			print('Passed!')
 		except Exception as e:
@@ -131,11 +131,8 @@ def test_sntd():
 		}
 		
 		TEST = sntd.Survey(**test)
-		#TEST.survey_nestle(['w0','wa'],{'w0':[-1.3,-.3],'wa':[-3,3]},npoints=3000,dTc=.64)
-		TEST.survey_nestle(['w','Ode0'],{'w':[-1.5,-.5],'Ode0':[0,1]},npoints=10,dTc=.64)
-		#TEST.plot_survey_contour(['w','Ode0'])
-		#import matplotlib.pyplot as plt
-		#plt.savefig('coe_mou2.pdf',format='pdf')
+		TEST.survey_grid(['w','Ode0'],{'w':[-1.5,-.5],'Ode0':[0,1]},npoints=2)
+
 		print('Passed!')
 	except Exception as e:
 		print('Failed')

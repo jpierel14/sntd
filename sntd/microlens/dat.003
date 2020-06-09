@@ -1,7 +1,7 @@
                    3 jobnu:   number of job
-                    date and time of start:   6. 6.2020    14:22:18
-                    date and time of stop:    6. 6.2020    14:22:20
-CPU-time:         1.37 sec =       0.02 min =     0.00 h
+                    date and time of start:   9. 6.2020    17:27:49
+                    date and time of stop:    9. 6.2020    17:27:50
+CPU-time:         1.23 sec =       0.02 min =     0.00 h
 
  important parameters:
                 1730 nlens:      total number of lenses within rstars
@@ -9,7 +9,7 @@ CPU-time:         1.37 sec =       0.02 min =     0.00 h
                73.99% ncell/nlens: ratio in percent
               17.079 avlens:     average number of lenses used per ray
               75.978 avcell:     average number of cells  used per ray
-         0.000000173 CPU-time/ray: shooting time (CPU-sec) per ray
+         0.000000155 CPU-time/ray: shooting time (CPU-sec) per ray
                2.139 rayperpi:   average number of rays per pixel
                   44 pixhigh:    highest number of rays per pixel
                    0 pixlow:     lowest number of rays per pixel
@@ -70,7 +70,7 @@ CPU-time:         1.37 sec =       0.02 min =     0.00 h
              4669023 indlens(nlens) number of highest lens
 
  CPU time used for different parts of the program:
-               0.005 times(1):   time in CPU-sec for subroutine setstar
+               0.004 times(1):   time in CPU-sec for subroutine setstar
                          0.002 times(11): CPU-sec for subroutine rands
                0.001 times(2):   time in CPU-sec for subroutine numstar
                0.003 times(3):   time in CPU-sec for subroutine setcell
@@ -78,11 +78,11 @@ CPU-time:         1.37 sec =       0.02 min =     0.00 h
                          0.000 times(13): CPU-sec for     setup    
                          0.000 times(14): CPU-sec for sorting lenses
                          0.000 times(15): CPU-sec for sorting cells
-               1.347 times(7):   time in CPU-sec for    shooting
-                         0.011 times(4): CPU-sec for shootcl  ( 0.79%)
-                         0.336 times(5): CPU-sec for shootfix (24.97%)
-                         0.824 times(6): CPU-sec for shotayco (61.13%)
-               1.370 times(8):   time in CPU-sec whole run
+               1.213 times(7):   time in CPU-sec for    shooting
+                         0.009 times(4): CPU-sec for shootcl  ( 0.72%)
+                         0.304 times(5): CPU-sec for shootfix (25.09%)
+                         0.731 times(6): CPU-sec for shotayco (60.25%)
+               1.234 times(8):   time in CPU-sec whole run
 
 
       1730 lenses   after sorting: 

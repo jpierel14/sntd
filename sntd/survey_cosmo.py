@@ -16,7 +16,7 @@ import corner
 from .coetools import *
 from .util import *
 
-
+__all__=['Survey','Fisher']
 
 def EA1(z1, z2, cosmo):
 	"""The integral of the inverse of the normalized 
@@ -139,9 +139,13 @@ def loglikelihoodE(testVars,testPoint, zl, zs, dTc=2, set_cosmo={},Eratio_true=N
 			cosmo[k]=set_cosmo[k]
 
 	if 'Om0' not in cosmo.keys():
-		if 'Ode0' in cosmo.keys() and 'Ok' in cosmo.keys():
-			cosmo['Om0']=1-cosmo['Ode0']-cosmo['Ok']
-			#cosmo.pop('Ode0')
+		if 'Ode0' in cosmo.keys():
+			if 'Ok' in cosmo.keys():
+				cosmo['Om0']=1-cosmo['Ode0']-cosmo['Ok']
+			else:
+				cosmo['Om0']=1-cosmo['Ode0']-Oktrue
+		elif 'Ok' in cosmo.keys():
+			cosmo['Om0']=1-Ode0true-cosmo['Ok']
 		else:
 			cosmo['Om0']=Om0true	
 	if 'Ode0' not in cosmo.keys():
@@ -225,13 +229,14 @@ class Survey(object):
 	zs: float or list
 		Redshift(s) of the source(s). If a float, assumes you want N identical SN.
 	P: float or list
-		The probability of each source/lens redshift combo, defaults to calculating
-		assuming gaussian redshift distributions
+		The probability of each source/lens redshift combo, defaults to 1 (i.e. equal weight)
+	calc_ensemble_P: bool
+		If True, probabilities are calculated based on gaussian distributions
 	name: str
 		Name of your survey
 
 	"""
-	def __init__(self, N=10,dTL=5, dTT=5, zl=0.3, zs=0.8,P=None, name='mySurvey', **kwargs):
+	def __init__(self, N=10,dTL=5, dTT=5, zl=0.3, zs=0.8,P=1,calc_ensemble_P=False, name='mySurvey', **kwargs):
 		if not isinstance(zl,(list,tuple,np.ndarray)):
 			zl=[zl]
 		if not isinstance(zs,(list,tuple,np.ndarray)):
@@ -246,16 +251,15 @@ class Survey(object):
 		self.dTT = dTT
 		self.zl = zl
 		self.zs = zs
-		if P is not None:
-			self.P=P if isinstance(P,(list,tuple,np.ndarray)) else [P]*len(zl)
-		else:
+
+		if calc_ensemble_P:
 			zl_p=scipy.stats.norm(np.mean(zl),np.std(zl))
 			zs_p=scipy.stats.norm(np.mean(zs),np.std(zs))			
 
-			
 			self.P = np.array([scipy.integrate.simps(zl_p.pdf([z-.01,z+.01]),[z-.01,z+.01]) for z in zl])*\
 						np.array([scipy.integrate.simps(zs_p.pdf([z-.01,z+.01]),[z-.01,z+.01]) for z in zs])
-		
+		else:
+			self.P = P
 		self.grid_likelihood = None
 		self.nestle_result = None
 		self.w0 = -1
@@ -451,7 +455,17 @@ class Survey(object):
 	
 
 	def survey_fisher(self,params,dx=1e-6):
-		def take_deriv(p2,p2name,p1,p1name):
+		"""
+		Create a fisher matrix using params, based on the overarching survey parameters.
+
+		Parameters
+		----------
+		params: list
+			List of parameters names to be included in fisher matrix
+		dx: float
+			The dx used for calculating numerical derivatives
+		"""
+		def _take_deriv(p2,p2name,p1,p1name):
 			return deriv(deriv_like,p1,dx=dx,
 					args=(p2,[p1name,p2name], self.zl, self.zs,self.dTc,
 				   self.cosmo_truths['Om0'],self.cosmo_truths['Ok'],
@@ -468,19 +482,23 @@ class Survey(object):
 					   self.cosmo_truths['w0'], self.cosmo_truths['wa'],
 									self.cosmo_truths['h'],self.P),n=2))
 				else:
-					fisher_matrix[i][j]=.5*deriv(take_deriv,self.cosmo_truths[params[i]],dx=dx,
+					fisher_matrix[i][j]=.5*deriv(_take_deriv,self.cosmo_truths[params[i]],dx=dx,
 						args=(params[i],self.cosmo_truths[params[j]],params[j]))
 					
-		
-		#fisher_matrix=np.array([[49824.9224,-1829.7018,-4434.2995,4546.8899,122.5319],
-		#						[-1829.7018, 88.3760, 200.9795, -189.2658, -8.4386],
-		#						[-4434.2995, 200.9795, 463.5732, -445.5690, -17.9694],
-		#						[4546.8899, -189.2658, -445.5690, 441.9725, 15.2981],
-		#						[122.5319, -8.4386, -17.9694, 15.2981, 1.0394]])
 		self.fisher_matrix=Fisher(data=fisher_matrix,params=params,name=self.name,cosmo_truths=self.cosmo_truths)
-		print(self.fisher_matrix.pretty_fish)
 
 	def plot_survey_gradient(self,params, math_labels=None):
+		"""
+		Plots the gradient survey grid, where one parameter is assumed to be
+		systematically biased
+
+		Parameters
+		----------
+		params: list
+			2 parameters to plot that have been included in a survey grid
+		math_labels: list
+			list of latex labels for params (for labeling plot)
+		"""
 		if self.grid_likelihood is None or (','.join(params) not in self.grid_likelihood.keys() and ','.join([params[1],params[0]]) not in self.grid_likelihood.keys()):
 			print('Cannot plot survey gradient without running grid first.')
 			return	
@@ -512,6 +530,31 @@ class Survey(object):
 			
 	def plot_survey_contour(self,params,math_labels=None,color='#1f77b4',filled=True,confidence=[.68,.95],
 				fom=False,ax=None,alphas=[.9,.3],**kwargs):
+		"""
+		Plots the contours of a nestle or gridded survey
+
+		Parameters
+		----------
+		params: list
+			2 parameters to plot that have been included in a survey grid or nestle survey
+		math_labels: list
+			list of latex labels for params (for labeling plot)
+		color: str or tuple
+			color for plotting in matplotlib
+		filled: bool
+			filled vs. outlined (if false) contours
+		confidence: list or float
+			confidence interval(s) to plot
+		fom: bool
+			if True, FOM is calculated. MAJOR WARNING: This will be enormously
+			biased if the full contour is not being drawn, set limits accordingly
+		ax: :class:'~plt.axes'
+			If you want the contours drawn onto existing axes
+		alphas: list or float
+			draws confidence intervals with this alpha, must match up with "confidence" parameter
+
+
+		"""
 		if self.nestle_result is None and self.grid_likelihood is None \
 			or (self.nestle_result is not None and (','.join(params) not in self.nestle_result.keys() and ','.join([params[1],params[0]]) not in self.nestle_result.keys()) and\
 			 (self.grid_likelihood is not None and ','.join(params) not in self.grid_likelihood.keys() and ','.join([params[1],params[0]]) not in self.grid_likelihood.keys())):
@@ -582,7 +625,37 @@ class Survey(object):
 			return(ax,lines,line_name)
 
 class Fisher:
-	def __init__(self, inroot='',xvar='', yvar='', fixes=[], margs=[],
+	"""
+	Fisher class is more or less copied from Dan Coe's arxiv paper about Fisher matrices:
+	https://arxiv.org/pdf/0906.4123.pdf
+
+	Only some minor adjustment from me.
+
+	Parameters
+	---------
+	inroot: str
+		base directory to read fisher matrices from if using "load" function
+	xvar: str
+		can optionally set an x variable as the "default for other functions"
+	yvar: str
+		can optionally set a y variable as the "default for other functions"
+	fixes: str
+		comma-separated str of parameters to fix (if fix is called)
+	margs: list
+		list of parameters to marginalize over (if marg is called)
+	data: np.ndarray
+		an input fisher matrix (NxN where N is the length of your params)
+	params: list
+		Parameter names
+	silent: bool
+		verbosity flag for some functions
+	name: str
+		Name to plot in legend for figures
+	cosmo_trues: dict
+		True parameters to plot as dashed lines in plots
+
+	"""
+	def __init__(self, inroot='',xvar='', yvar='', fixes='', margs=[],
 				 data=[], params=[], silent=False,name='my_fisher',cosmo_truths={'h':.7,'w':0,'Ode0':.7,
 					'w0':0,'wa':-1,'Om0':.3}):
 		self.name=name
@@ -606,6 +679,14 @@ class Fisher:
 
 		self.fish_list=[self]
 	def load(self,fishdir=''):  # DETFast join
+		"""
+		Loads existing Fisher matrix
+
+		Parameters
+		----------
+		fishdir: str
+			The directory (default inroot)
+		"""
 		txt = loadfile(self.inroot+'.fisher', dir=fishdir, silent=self.silent)
 		nparam = int(txt[0].split()[1])
 		self.params = []
@@ -615,7 +696,7 @@ class Fisher:
 
 		self.data = loaddata(self.inroot+'.fisher+', dir=fishdir, headlines=4+nparam, silent=1)
 
-	def ii(self):
+	def _ii(self):
 		self.ix = None
 		self.iy = None
 		if self.xvar:
@@ -634,21 +715,50 @@ class Fisher:
 				self.imargs.append(i)
 
 	def pindex(self, param):
+		"""
+		Index of parameter
+
+		Parameters
+		----------
+		param: str
+			Parameter you want the index of
+
+		Returns
+		-------
+		index: int
+			The index of param
+		"""
 		return self.params.index(param)
 
-	def take(self, iparams):
-		self.data = self.data.take(iparams, 0)
-		self.data = self.data.take(iparams, 1)
-		self.params = list(take(self.params, iparams))
+	def _take(self, iparams):
+		self.data = self.data._take(iparams, 0)
+		self.data = self.data._take(iparams, 1)
+		self.params = list(_take(self.params, iparams))
 
 	def reorder(self, params):
-		"""Matrix with params in new order"""
-		self.repar(params)
+		"""
+		Matrix with params in new order
+
+		Parameters
+		----------
+		params: list
+			new list of parameters
+
+		"""
+		self._repar(params)
 		iparams = list(map(self.pindex, params))
-		self.take(iparams)
+		self._take(iparams)
 
 	def rename(self, pdict1=None):
-		"""Rename parameters given a dictionary of names & nicknames"""
+		"""
+		Rename parameters given a dictionary of names & nicknames
+		
+		Parameters
+		----------
+		pdict1: dict
+			Dictionary containing old parameters as keys and new as vals
+
+		"""
 		pdict1 = pdict1 or pdict
 
 		for i, param in enumerate(self.params):
@@ -657,22 +767,36 @@ class Fisher:
 													 orient='index',columns=self.params)
 
 	def fix(self, fixes=[]):
-		"""Fix parameters constant <==> Remove them from the Fisher matrix"""
+		"""
+		Fix parameters constant <==> Remove them from the Fisher matrix
+		
+		Parameters
+		----------
+		fixes: list
+			List of parameters to fix, otherwise uses fixes attribute
+		"""
 		self.fixes = fixes or self.fixes
 		self.fixes = strspl(self.fixes)
 
-		self.ii()
+		self._ii()
 
 		iall = arange(len(self.params))
 		ikeep = set(iall) - set(self.ifixes)  # Sorts result
 		ikeep = list(ikeep)
 
-		self.take(ikeep)
+		self._take(ikeep)
 
 	def marg(self, margs=[]):
-		"""Marginalize over variables: Remove them from the covariance matrix"""
+		"""
+		Marginalize over variables: Remove them from the covariance matrix
+		
+		Parameters
+		----------
+		margs: list
+			List of parameters to marginalize over, otherwise uses margs attribute
+		"""
 		self.margs = margs or self.margs
-		self.ii()
+		self._ii()
 
 		#ikeep = invertselection(arange(len(self.params)), self.fixes)
 		iall = arange(len(self.params))
@@ -680,14 +804,24 @@ class Fisher:
 		ikeep = list(ikeep)
 
 		C = self.cov()
-		C = C.take(ikeep, 0)
-		C = C.take(ikeep, 1)
+		C = C._take(ikeep, 0)
+		C = C._take(ikeep, 1)
 		self.data = inv(C)
 
-		self.params = list(take(self.params, ikeep))
+		self.params = list(_take(self.params, ikeep))
 
 	def transform(self, params, M):
-		"""Transform to new set of parameters using matrix provided"""
+		"""
+		Transform to new set of parameters using matrix provided (see Coe 2009 above)
+
+		Parameters
+		----------
+		params: list
+			New list of parameters
+		M: :class:`~numpy.ndarray`
+			The new matrix
+
+		"""
 		self.data = matrix_multiply([transpose(M), self.data, M])
 		self.params = params
 
@@ -698,19 +832,37 @@ class Fisher:
 
 
 	def cov(self):
-		"""Covariance matrix"""
+		"""
+		Covariance matrix, by definition the inverse of the Fisher matrix
+
+		"""
 		return inv(self.data)
 
 	def dxdyp(self, xvar='', yvar=''):  # , fixes=None
-		"""Return uncertainty in two parameters and their correlation"""
+		"""
+		Return uncertainty in two parameters and their correlation
+
+		xvar: str
+			x variable 
+		yvar: str
+			y variable
+		
+		Returns
+		-------
+		dx: float
+			x uncertainty
+		dy: float
+			y uncertainty
+		p: float
+			rho (correlation parameter)
+		"""
 		self.xvar = xvar or self.xvar
 		self.yvar = yvar or self.yvar
-		#self.fixes = strspl(fixes or self.fixes)
-		self.ii()
+		self._ii()
 
 		C = self.cov()
-		C = C.take((self.ix,self.iy),0)
-		C = C.take((self.ix,self.iy),1)
+		C = C._take((self.ix,self.iy),0)
+		C = C._take((self.ix,self.iy),1)
 		dx = np.sqrt(C[0,0])
 		dy = np.sqrt(C[1,1])
 		dxy = C[0,1]
@@ -719,10 +871,11 @@ class Fisher:
 		return dx, dy, p
 
 	def dx(self, xvar=''): # , fixes=None
-		"""Return uncertainty in parameter (if marginalizing over others)"""
+		"""
+		Return uncertainty in parameter (if marginalizing over others)"""
 		self.xvar = xvar or self.xvar
 		#self.fixes = strspl(fixes or self.fixes)
-		self.ii()
+		self._ii()
 
 		#dx = 1 / sqrt(self.data[self.ix,self.ix])
 		self.C = C = self.cov()
@@ -730,24 +883,53 @@ class Fisher:
 		return dx
 
 	def addpar(self, param):
+		"""
+		Add a parameter to the list of parameters
+
+		Parameters
+		----------
+		param: str
+			The parameter to add
+		"""
 		npar = len(self.params)
 		data = np.zeros((npar+1, npar+1))
 		data[:npar,:npar] = self.data
 		self.data = data
 		self.params.append(param)
 
-	def repar(self, params):
+	def _repar(self, params):
 		for param in params:
 			if param not in self.params:
 				self.addpar(param)
 
 	def pr(self):
-		"""Print contents"""
+		"""
+		Print contents
+		"""
+
 		print(self.params)
-		pint(self.data)
+		if self.pretty_fish is not None:
+			print(self.pretty_fish)
+		else:
+			pint(self.data)
+
 
 	def __add__(self, sel2):
-		"""Add Fisher matrices"""
+		"""
+		Add Fisher matrices together, combining constraints (lets you use "+")
+
+		Parameters
+		----------
+		sel2:
+			The second fisher matrix to add
+
+		Returns
+		-------
+		:class:~sntd.survey_cosmo.Fisher
+			A new fisher matrix class, with constraints from self and sel2 (still
+			holds old matrices in "fish_list")
+
+		"""
 		pl1 = self.params
 		pl2 = sel2.params
 		n1 = len(pl1)
@@ -765,26 +947,26 @@ class Fisher:
 		n = len(pl)
 
 		# Put F1 in merged F join
-		ii = []
+		_ii = []
 		for p in pl1:
 			i = pl.index(p)
-			ii.append(i)
+			_ii.append(i)
 
 		FF1 = np.zeros((n,n))
-		for i1, i in enumerate(ii):
-			FF1[i].put(ii, F1[i1])
+		for i1, i in enumerate(_ii):
+			FF1[i].put(_ii, F1[i1])
 
 		# Put F2 in merged F join
-		ii = []
+		_ii = []
 		for p in pl2:
 			i = pl.index(p)
-			ii.append(i)
+			_ii.append(i)
 
 		FF2 = np.zeros((n,n))
-		for i2, i in enumerate(ii):
-			FF2[i].put(ii, F2[i2])
+		for i2, i in enumerate(_ii):
+			FF2[i].put(_ii, F2[i2])
 		# Add
-		new = Fisher()
+		new = deepcopy(self)
 		new.data = FF1 + FF2
 		new.params = pl
 		new.xvar = self.xvar
@@ -800,7 +982,19 @@ class Fisher:
 		return new
 
 	def __mul__(self, fac):
-		"""Multiply Fisher matrix by some factor"""
+		"""
+		Multiply Fisher matrix by some factor (lets you use "*")
+
+		Parameters
+		----------
+		fac: float
+			The multiplicative factor
+
+		Returns
+		-------
+		:class:~sntd.survey_cosmo.Fisher
+			A new fisher matrix class multiplied by fac
+		"""
 		new = Fisher()
 		new.data = self.data * fac
 		new.params = self.params
@@ -812,24 +1006,63 @@ class Fisher:
 		return new
 
 	def __str__(self):
-		print(self.pretty_fish)
+		"""
+		Replacement for print function
+		"""
+
+		if self.pretty_fish is not None:
+			print(self.pretty_fish)
+		else:
+			print(self.data)
 		return('')
 
 	def merit(self,param1,param2):
+		"""
+		Calculates the figure of merit for a pair of 
+		parameters.
 
-		# cov_matrix=self.cov()
-		# ind1=self.pindex(param1)
-		# ind2=self.pindex(param2)
-		# sigma_x=np.sqrt(cov_matrix[ind1][ind1])
-		# sigma_y=np.sqrt(cov_matrix[ind2][ind2])
-		# rho=cov_matrix[ind1][ind2]
-		# return(1./(sigma_x*sigma_y*np.sqrt(1-rho**2)))
+		Parameters
+		----------
+		param1: str
+			Parameter 1 to use
+		param2: str
+			Parameter 2 to use
+
+		Returns
+		-------
+		FOM: float
+			The Figure of Merit
+		"""
 		dx,dy,p=self.dxdyp(param1,param2)
 		a,b,_=setell(dx,dy,p)
 		return(1./(6.17*a*b))
 
 
 	def plot(self,param1,param2,x_limits,y_limits,bestfit1=None,bestfit2=None,alpha = 0.9,color_list=None):
+		"""
+		Plot contours from fisher matrix. This will plot all contours from matrices 
+		that have been added together make this matrix.
+
+		Parameters
+		----------
+		param1: str
+			Parameter 1 to plot
+		param2: str
+			Parameter 2 to plot
+		xlimits: list or tuple or :class:`~numpy.ndarray`
+			The x parameter limits for plotting
+		ylimits: list or tuple or :class:`~numpy.ndarray`
+			The y parameter limits for plotting
+		bestfit1: float
+			The true/best fit value for parameter 1 (default self.cosmo_truths)
+		bestfit2: float
+			The true/best fit value for parameter 2 (default self.cosmo_truths)
+		alpha: float
+			The alpha for plotting
+		color_list: list 
+			List of colors to use for plotting
+		"""
+
 		xo=bestfit1 if bestfit1 is not None else self.cosmo_truths[param1]
 		yo=bestfit2 if bestfit2 is not None else self.cosmo_truths[param2]
 		if color_list is not None and not isinstance(color_list,(tuple,list)):
@@ -845,7 +1078,6 @@ class Fisher:
 
 		for fish in np.array(self.fish_list)[np.argsort(merits)]:
 			dx,dy,p=fish.dxdyp(param1,param2)
-			print(dx,dy,p)
 			plotellsp(xo, yo, dx, dy, p, colors=color_list[i], alpha=alpha)
 			patches.append(plt.plot([],[],'s',ms=10,label=fish.name+': FOM=%.1f'%np.sort(merits)[i],color=color_list[i][0])[0])
 			i+=1
@@ -858,43 +1090,3 @@ class Fisher:
 
 		plt.figlegend(handles=patches,fontsize=14,bbox_to_anchor=(.75,.85))
 
-def main():
-	# xvar, yvar = strspl('w_0 w_a')
-	# xo, yo = -1, 0  # Best fit w0, wa
-	# alpha = 0.9
-	# fish=Fisher(inroot='SN-IVS-o')
-	# fish.load('/Users/jpierel/rodney/Fisher/data/')
-	# print('xvar',fish.xvar)
-	# print('yvar',fish.yvar)
-	# print(fish.params)
-	# dx, dy, p = fish.dxdyp(xvar, yvar)
-	# print(dx,dy,p)
-	# print(fish.data)
-	# plotellsp(xo, yo, dx, dy, p,  alpha=alpha)
-	# plt.xlim((-2,0))
-	# plt.ylim((-5,5))
-	# plt.show()
-	# sys.exit()
-
-	zl=np.random.normal(.5,.15,size=5000)
-	zs=np.random.normal(2,.75,size=5000)
-	goods=np.where(zs>zl)[0]
-	wfirst_dict = {
-	 			'N':10,   # number of Lensed SNe Ia with good time delays
-	 			'dTL':5,  # % lens modeling uncertainty for each
-	 			'dTT':1,  # % time delay measurement uncertainty for each
-	 			'zl':zl[goods][:4000],'zs':zs[goods][:4000]
-	 		}
-	wfirst = Survey(**wfirst_dict)
-	# #wfirst.survey_grid(['Om0','Ode0'],{'w':[-1.5,-.8],'w0':[-1.5,-.5],'wa':[-3,3],
-	# 	#'h':[.62,.74],'Om0':[0,1],'Ode0':[0,1]},constants={'w':-1},dTc=.64,npoints=100)
-	# #wfirst.plot_survey_contour()
-	wfirst.survey_fisher(['h','Ode0','Ok','w0','wa'])
-	wfirst.fisher_matrix.prior('Ode0',.00001)
-	wfirst.fisher_matrix.prior('Ok',.00001)
-	wfirst.fisher_matrix.prior('h',.00001)
-	wfirst.fisher_matrix.plot('w0','wa',x_limits=(-1.6,-.4),y_limits=(-4,4))
-	plt.show()
-
-if __name__=='__main__':
-	main()
