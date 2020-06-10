@@ -9,9 +9,9 @@
     .. _sphx_glr_examples_plot_sim.py:
 
 
-=====================
-Simulating Supernovae
-=====================
+===================
+Simulate Supernovae
+===================
 
 Simulating a multiply-imaged supernova.
 
@@ -56,16 +56,16 @@ supernova. The function being used in these examples is
 
     ------------------
     Image: image_1:
-    Bands: ['F110W', 'F160W']
+    Bands: ['F160W', 'F110W']
     Date Range: 0.00000->138.97059
     Number of points: 56
 
     Metadata:
        z:1.4
        t0:20.0
-       x0:1.0368421721011424e-05
-       x1:0.4214279347770911
-       c:-0.011696491168508232
+       x0:1.7969533573240614e-05
+       x1:0.6203919068068094
+       c:-0.011851268615079891
        sourcez:1.4
        hostebv:0
        lensebv:0
@@ -74,16 +74,16 @@ supernova. The function being used in these examples is
        td:20.0
     ------------------
     Image: image_2:
-    Bands: ['F110W', 'F160W']
+    Bands: ['F160W', 'F110W']
     Date Range: 25.73529->175.00000
-    Number of points: 60
+    Number of points: 59
 
     Metadata:
        z:1.4
        t0:70.0
-       x0:5.184210860505712e-06
-       x1:0.4214279347770911
-       c:-0.011696491168508232
+       x0:8.984766786620307e-06
+       x1:0.6203919068068094
+       c:-0.011851268615079891
        sourcez:1.4
        hostebv:0
        lensebv:0
@@ -135,16 +135,16 @@ in any way you want.
 
     ------------------
     Image: image_1:
-    Bands: ['F110W', 'F125W']
+    Bands: ['F125W', 'F110W']
     Date Range: 0.00000->123.52941
     Number of points: 50
 
     Metadata:
        z:1.33
        t0:10.0
-       x0:5.555959369647584e-06
-       x1:0.2688938197352908
-       c:-0.031138735493622886
+       x0:9.94791215897092e-06
+       x1:1.81029512623779
+       c:-0.07206919528332736
        sourcez:1.33
        hostebv:0.0967741935483871
        lensebv:0
@@ -153,16 +153,16 @@ in any way you want.
        td:10.0
     ------------------
     Image: image_2:
-    Bands: ['F110W', 'F125W']
-    Date Range: 25.73529->175.00000
+    Bands: ['F125W', 'F110W']
+    Date Range: 30.88235->175.00000
     Number of points: 58
 
     Metadata:
        z:1.33
        t0:70.0
-       x0:2.777979684823792e-06
-       x1:0.2688938197352908
-       c:-0.031138735493622886
+       x0:4.97395607948546e-06
+       x1:1.81029512623779
+       c:-0.07206919528332736
        sourcez:1.33
        hostebv:0.0967741935483871
        lensebv:0
@@ -212,37 +212,37 @@ in any way you want.
 
     ------------------
     Image: image_1:
-    Bands: ['F110W', 'F125W']
+    Bands: ['F125W', 'F110W']
     Date Range: 0.00000->123.52941
     Number of points: 50
 
     Metadata:
        z:1.33
        t0:10.0
-       x0:6.7746133902127535e-06
-       x1:0.5352852855765434
-       c:0.12515971013078872
+       x0:1.2450561395597121e-05
+       x1:0.5580252637967957
+       c:-0.058742878991890374
        sourcez:1.33
-       hostebv:0.16705200476002818
-       lensebv:0.1892715853442064
+       hostebv:0.1757641361541573
+       lensebv:0.16625178323248557
        lensz:0.53
        mu:7
        td:10.0
     ------------------
     Image: image_2:
-    Bands: ['F110W', 'F125W']
+    Bands: ['F125W', 'F110W']
     Date Range: 25.73529->175.00000
-    Number of points: 60
+    Number of points: 58
 
     Metadata:
        z:1.33
        t0:70.0
-       x0:3.3873066951063767e-06
-       x1:0.5352852855765434
-       c:0.12515971013078872
+       x0:6.225280697798561e-06
+       x1:0.5580252637967957
+       c:-0.058742878991890374
        sourcez:1.33
-       hostebv:0.16705200476002818
-       lensebv:0.1892715853442064
+       hostebv:0.1757641361541573
+       lensebv:0.16625178323248557
        lensz:0.53
        mu:3.5
        td:70.0
@@ -255,7 +255,7 @@ in any way you want.
 
 .. rst-class:: sphx-glr-timing
 
-   **Total running time of the script:** ( 0 minutes  6.422 seconds)
+   **Total running time of the script:** ( 0 minutes  1.144 seconds)
 
 
 .. _sphx_glr_download_examples_plot_sim.py:

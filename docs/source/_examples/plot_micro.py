@@ -1,7 +1,7 @@
 """
-=======================
-Simulating Microlensing
-=======================
+=====================
+Simulate Microlensing
+=====================
 
 Simulate a microlensing microcaustic.
 """

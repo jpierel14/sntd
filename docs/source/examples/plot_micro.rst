@@ -9,9 +9,9 @@
     .. _sphx_glr_examples_plot_micro.py:
 
 
-=======================
-Simulating Microlensing
-=======================
+=====================
+Simulate Microlensing
+=====================
 
 Simulate a microlensing microcaustic.
 
@@ -72,7 +72,7 @@ examples.
 
 .. rst-class:: sphx-glr-timing
 
-   **Total running time of the script:** ( 0 minutes  39.498 seconds)
+   **Total running time of the script:** ( 0 minutes  41.227 seconds)
 
 
 .. _sphx_glr_download_examples_plot_micro.py:

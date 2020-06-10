@@ -1,7 +1,7 @@
 """
-=====================
-Simulating Supernovae
-=====================
+===================
+Simulate Supernovae
+===================
 
 Simulating a multiply-imaged supernova.
 """

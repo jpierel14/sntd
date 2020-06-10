@@ -9,9 +9,9 @@
     .. _sphx_glr_examples_plot_survey.py:
 
 
-===================================
-Simulating Cosmological Constraints
-===================================
+===================
+Constrain Cosmology
+===================
 
 Using lens modeling and time delay precision to 
 simulate the cosmological constraints possible
@@ -65,7 +65,7 @@ This will make a smooth contour plot for 2 parameters.
     my_survey.survey_grid(vparam_names=['h','Ode0'],
                           bounds={'h':[.65,.75],'Ode0':[0,1]},npoints=50)
 
-    my_survey.plot_survey_contour(['h','Ode0'],math_labels=[r'$h$',r'$\Omega_\lambda$'],confidence=[.68,.95],alphas=[.9,.4])
+    my_survey.plot_survey_contour(['h','Ode0'],math_labels=[r'$h$',r'$\Omega_\lambda$'],confidence=[.68,.95],alphas=[.9,.4],show_legend=True)
 
 
 
@@ -80,8 +80,9 @@ This will make a smooth contour plot for 2 parameters.
 
  .. code-block:: none
 
+    No handles with labels found to put in legend.
 
-    (<matplotlib.axes._subplots.AxesSubplot object at 0x1a1d6e1fd0>, <matplotlib.lines.Line2D object at 0x1a1d76df98>, 'Test Survey')
+    <matplotlib.axes._subplots.AxesSubplot object at 0x1a1744d748>
 
 
 
@@ -156,7 +157,7 @@ Add a prior that assumes perfect knowledge of all other parameters
 
 .. rst-class:: sphx-glr-timing
 
-   **Total running time of the script:** ( 0 minutes  35.653 seconds)
+   **Total running time of the script:** ( 0 minutes  35.800 seconds)
 
 
 .. _sphx_glr_download_examples_plot_survey.py:

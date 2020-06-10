@@ -623,7 +623,7 @@ class Survey(object):
 			ax.set_ylabel(math_labels[1], fontsize=20)
 			
 			if show_legend:
-				ax.legend(fonsize=14)
+				ax.legend(fontsize=14)
 				return ax
 			
 			return(ax,lines,line_name)

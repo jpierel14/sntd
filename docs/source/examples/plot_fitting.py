@@ -1,7 +1,7 @@
 """
-=====================
-Measuring Time Delays
-=====================
+===================
+Measure Time Delays
+===================
 
 A series of examples demonstrating various fitting options 
 with SNTD.

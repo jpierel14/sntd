@@ -9,9 +9,9 @@
     .. _sphx_glr_examples_plot_fitting.py:
 
 
-=====================
-Measuring Time Delays
-=====================
+===================
+Measure Time Delays
+===================
 
 A series of examples demonstrating various fitting options 
 with SNTD.
@@ -74,10 +74,10 @@ You can batch process using any or all of these methods as well
 
  .. code-block:: none
 
-    {'image_1': 0, 'image_2': 49.854969111056754}
-    {'image_1': array([0, 0]), 'image_2': array([-0.12854314,  0.16173495])}
-    {'image_1': 1, 'image_2': 0.5023747744422541}
-    {'image_1': array([0, 0]), 'image_2': array([-0.00465005,  0.00500184])}
+    {'image_1': 0, 'image_2': 49.85157867276823}
+    {'image_1': array([0, 0]), 'image_2': array([-0.14876104,  0.15856045])}
+    {'image_1': 1, 'image_2': 0.5026550239797724}
+    {'image_1': array([0, 0]), 'image_2': array([-0.00463476,  0.00569706])}
 
     <Figure size 970x970 with 16 Axes>
 
@@ -131,10 +131,10 @@ Other methods are called in a similar fashion, with a couple of extra arguments:
 
  .. code-block:: none
 
-    {'image_1': 0, 'image_2': 49.83613297360276}
-    {'image_1': array([0, 0]), 'image_2': array([-0.06703687,  0.0715602 ])}
-    {'image_1': 1, 'image_2': 0.5041408656872552}
-    {'image_1': array([0, 0]), 'image_2': array([-0.00157187,  0.00175444])}
+    {'image_1': 0, 'image_2': 49.841785794834834}
+    {'image_1': array([0, 0]), 'image_2': array([-0.07516144,  0.08541643])}
+    {'image_1': 1, 'image_2': 0.5042602367917445}
+    {'image_1': array([0, 0]), 'image_2': array([-0.00168644,  0.00175662])}
 
     <Figure size 1390x1390 with 36 Axes>
 
@@ -184,8 +184,8 @@ argument.
 
  .. code-block:: none
 
-    {'image_1': 0, 'image_2': 51.61621819406176}
-    {'image_1': array([0, 0]), 'image_2': array([-1.26134974,  1.26426157])}
+    {'image_1': 0, 'image_2': 51.569492764373166}
+    {'image_1': array([0, 0]), 'image_2': array([-1.17305869,  1.34980142])}
 
     <Figure size 760x760 with 9 Axes>
 
@@ -224,10 +224,10 @@ You can include your fit from the parallel method as a prior on light curve and 
 
  .. code-block:: none
 
-    {'image_1': 0, 'image_2': 49.84078103271407}
-    {'image_1': array([0, 0]), 'image_2': array([-0.12923156,  0.1628502 ])}
-    {'image_1': 0, 'image_2': 49.74208734215417}
-    {'image_1': array([0, 0]), 'image_2': array([-0.27193565,  0.31925649])}
+    {'image_1': 0, 'image_2': 49.84883627277922}
+    {'image_1': array([0, 0]), 'image_2': array([-0.16183423,  0.16044441])}
+    {'image_1': 0, 'image_2': 49.81198577173508}
+    {'image_1': array([0, 0]), 'image_2': array([-0.31871531,  0.35213228])}
 
 
 
@@ -262,7 +262,7 @@ extreme dust in the source and lens frames (your final simulations may look slig
 
  .. code-block:: none
 
-    lensebv: 0.48387096774193544 hostebv: 0.3225806451612903 c: 0.037759760003294084
+    lensebv: 0.48387096774193544 hostebv: 0.3225806451612903 c: 0.060732400001427815
 
 
 
@@ -296,9 +296,9 @@ Okay, now we can fit the MISN first without taking these effects into account:
 
  .. code-block:: none
 
-    {'image_1': 0, 'image_2': 63.05031395797751}
-    {'image_1': array([0, 0]), 'image_2': array([-1.21127484,  1.45546909])}
-    c: 0.4455130085655017
+    {'image_1': 0, 'image_2': 57.221950994393794}
+    {'image_1': array([0, 0]), 'image_2': array([-1.14387136,  1.43070062])}
+    c: 0.44505679401082343
 
     <Figure size 1000x1000 with 2 Axes>
 
@@ -339,9 +339,9 @@ as it attempts to compensate for extinction without a propagation effect. Now le
 
  .. code-block:: none
 
-    {'image_1': 0, 'image_2': 61.87636730093747}
-    {'image_1': array([0, 0]), 'image_2': array([-1.69002301,  1.45487689])}
-    c: 0.2704221731595711 lensebv: 0.5583417662594593 hostebv: 0.11423234075617322
+    {'image_1': 0, 'image_2': 59.31723548143942}
+    {'image_1': array([0, 0]), 'image_2': array([-1.21555549,  1.56002922])}
+    c: 0.26716942663285076 lensebv: 0.4017104967376445 hostebv: 0.2256947517442909
 
     <Figure size 1000x1000 with 2 Axes>
 
@@ -353,7 +353,7 @@ more accurate.
 
 .. rst-class:: sphx-glr-timing
 
-   **Total running time of the script:** ( 6 minutes  36.517 seconds)
+   **Total running time of the script:** ( 6 minutes  28.110 seconds)
 
 
 .. _sphx_glr_download_examples_plot_fitting.py:

@@ -1,7 +1,7 @@
 """
-===================================
-Simulating Cosmological Constraints
-===================================
+===================
+Constrain Cosmology
+===================
 
 Using lens modeling and time delay precision to 
 simulate the cosmological constraints possible
@@ -33,7 +33,7 @@ my_survey=sntd.Survey(dTl=5,dTT=2,zl=np.random.normal(.5,.1,size=10),zs=np.rando
 my_survey.survey_grid(vparam_names=['h','Ode0'],
                       bounds={'h':[.65,.75],'Ode0':[0,1]},npoints=50)
 
-my_survey.plot_survey_contour(['h','Ode0'],math_labels=[r'$h$',r'$\Omega_\lambda$'],confidence=[.68,.95],alphas=[.9,.4])
+my_survey.plot_survey_contour(['h','Ode0'],math_labels=[r'$h$',r'$\Omega_\lambda$'],confidence=[.68,.95],alphas=[.9,.4],show_legend=True)
 
 #####################################################################
 # **MCMC-Like Parameter Search**
