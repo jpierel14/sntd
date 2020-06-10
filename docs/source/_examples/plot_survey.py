@@ -1,7 +1,7 @@
 """
-===================================
-Simulating Cosmological Constraints
-===================================
+========================
+Cosmological Constraints
+========================
 
 Using lens modeling and time delay precision to 
 simulate the cosmological constraints possible
