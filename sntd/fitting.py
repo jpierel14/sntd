@@ -1001,9 +1001,9 @@ def _fitColor(all_args):
 					temp_bands=[]
 					for b in best_bands:
 						temp_bands=np.append(temp_bands,np.where(args['curves'].images[im].table['band']==b)[0])
-					inds=temp_bands.astype(int)
+					temp_inds=temp_bands.astype(int)
 					
-					res,fit=sncosmo.fit_lc(deepcopy(args['curves'].images[im].table[inds]),tempMod,
+					res,fit=sncosmo.fit_lc(deepcopy(args['curves'].images[im].table[temp_inds]),tempMod,
 											[x for x in args['params'] if x in tempMod.param_names]+[tempMod.param_names[2]]+\
 											[x for x in tempMod.param_names if x in args['bounds'].keys()],
 											bounds={b:args['bounds'][b] for b in args['bounds'].keys() if b not in ['t0',tempMod.param_names[2]]},
@@ -1607,9 +1607,9 @@ def _fitseries(all_args):
 					temp_bands=[]
 					for b in best_bands:
 						temp_bands=np.append(temp_bands,np.where(args['curves'].images[im].table['band']==b)[0])
-					inds=temp_bands.astype(int)
+					temp_inds=temp_bands.astype(int)
 					
-					res,fit=sncosmo.fit_lc(deepcopy(args['curves'].images[im].table[inds]),tempMod,[x for x in args['params'] if x in tempMod.param_names],
+					res,fit=sncosmo.fit_lc(deepcopy(args['curves'].images[im].table[temp_inds]),tempMod,[x for x in args['params'] if x in tempMod.param_names],
 											bounds={b:args['bounds'][b] for b in args['bounds'].keys() if b not in ['t0',tempMod.param_names[2]]},
 											minsnr=args.get('minsnr',0))
 					temp_delays[im]=fit.get('t0')
@@ -2186,8 +2186,8 @@ def _fitparallel(all_args):
 				temp_bands=[]
 				for b in best_bands:
 					temp_bands=np.append(temp_bands,np.where(args['curves'].images[args['fitOrder'][0]].table['band']==b)[0])
-				inds=temp_bands.astype(int)
-			res,fit=sncosmo.fit_lc(args['curves'].images[args['fitOrder'][0]].table[inds],tempMod,[x for x in args['params'] if x in tempMod.param_names],
+				temp_inds=temp_bands.astype(int)
+			res,fit=sncosmo.fit_lc(args['curves'].images[args['fitOrder'][0]].table[temp_inds],tempMod,[x for x in args['params'] if x in tempMod.param_names],
 									bounds={b:args['bounds'][b]+(args['bounds'][b]-np.median(args['bounds'][b]))*2 if b=='t0' else args['bounds'][b] for b in args['bounds'] if b!= tempMod.param_names[2]},
 									minsnr=args.get('minsnr',0))
 
@@ -2213,10 +2213,11 @@ def _fitparallel(all_args):
 			fit_table=args['curves'].images[args['fitOrder'][0]].table
 		elif args['cut_time'] is not None:
 			fit_table=deepcopy(args['curves'].images[args['fitOrder'][0]].table)
+			fit_table=fit_table[inds]
 			fit_table=fit_table[fit_table['time']>=guess_t0+(args['cut_time'][0]*(1+tempMod.get('z')))]
 			fit_table=fit_table[fit_table['time']<=guess_t0+(args['cut_time'][1]*(1+tempMod.get('z')))]
 			fit_table=fit_table[fit_table['flux']/fit_table['fluxerr']>=args.get('minsnr',0)]
-			fit_table=fit_table[inds]
+			
 		else:
 			fit_table=deepcopy(args['curves'].images[args['fitOrder'][0]].table)
 			fit_table=fit_table[inds]

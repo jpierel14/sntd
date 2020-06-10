@@ -442,7 +442,7 @@ class Survey(object):
 						Ode0true=self.cosmo_truths['Ode0'], w0true=self.cosmo_truths['w0'], 
 					   watrue=self.cosmo_truths['wa'],htrue=self.cosmo_truths['h']))
 		res = nestle.sample(likelihood, prior_transform, ndim, npdim=npdim,
-						npoints=npoints, method=kwargs.get('method'), maxiter=kwargs.get('maxiter',None),
+						npoints=npoints, method=kwargs.get('method','single'), maxiter=kwargs.get('maxiter',None),
 						maxcall=kwargs.get('maxcall',None), rstate=kwargs.get('rstate',None),
 						callback=(nestle.print_progress if kwargs.get('verbose',False) else None),**kwargs)
 		if self.nestle_result is None:
@@ -529,7 +529,7 @@ class Survey(object):
 			
 			
 	def plot_survey_contour(self,params,math_labels=None,color='#1f77b4',filled=True,confidence=[.68,.95],
-				fom=False,ax=None,alphas=[.9,.3],**kwargs):
+				fom=False,ax=None,alphas=[.9,.3],show_legend=False,show_nestle=True,**kwargs):
 		"""
 		Plots the contours of a nestle or gridded survey
 
@@ -552,8 +552,10 @@ class Survey(object):
 			If you want the contours drawn onto existing axes
 		alphas: list or float
 			draws confidence intervals with this alpha, must match up with "confidence" parameter
-
-
+		show_legend: bool
+			If True, a legend is shown
+		show_nestle: bool
+			If both nestle and grid have been completed, choose nestle if true to show
 		"""
 		if self.nestle_result is None and self.grid_likelihood is None \
 			or (self.nestle_result is not None and (','.join(params) not in self.nestle_result.keys() and ','.join([params[1],params[0]]) not in self.nestle_result.keys()) and\
@@ -576,10 +578,9 @@ class Survey(object):
 
 			if ax is None:
 				fig = plt.figure(figsize=[9,6])
-				ax = fig.gca()#add_subplot(1,1,1)
+				ax = fig.gca()
 				plt.setp(ax.xaxis.get_ticklabels(), fontsize='large')
 				plt.setp(ax.yaxis.get_ticklabels(), fontsize='large')
-				#plt.tight_layout()
 			if ','.join(params) not in self.grid_likelihood.keys():
 				params=[params[1],params[0]]
 			if math_labels is None:
@@ -593,11 +594,11 @@ class Survey(object):
 				if filled:
 					CS=ax.contourf(self.grid_samples[','.join(params)][0], self.grid_samples[','.join(params)][1], self.grid_likelihood[','.join(params)], colors=color,
 						levels=[0,np.sort(confidence)[i]], alpha=alphas[i], zorder=10,**kwargs)
-					lines=Line2D([0],[0],color=color,alpha=alphas[0],linewidth=10)
+					lines=Line2D([0],[0],color=color,alpha=alphas[0],linewidth=10,label=self.name)
 				else:
 					CS=ax.contour(self.grid_samples[','.join(params)][0], self.grid_samples[','.join(params)][1], self.grid_likelihood[','.join(params)], colors=color,
 						levels=[0,np.sort(confidence)[i]],**kwargs)
-					lines=Line2D([0],[0],color=color,alpha=alphas[0],linewidth=10,marker='.')
+					lines=Line2D([0],[0],color=color,alpha=alphas[0],linewidth=10,marker='.',label=self.name)
 
 			if fom:
 				CS954=ax.contour(self.grid_samples[','.join(params)][0], self.grid_samples[','.join(params)][1], self.grid_likelihood[','.join(params)],alpha=0,
@@ -621,7 +622,10 @@ class Survey(object):
 			ax.set_xlabel(math_labels[0], fontsize=20)
 			ax.set_ylabel(math_labels[1], fontsize=20)
 			
-
+			if show_legend:
+				ax.legend(fonsize=14)
+				return ax
+			
 			return(ax,lines,line_name)
 
 class Fisher:
@@ -861,8 +865,8 @@ class Fisher:
 		self._ii()
 
 		C = self.cov()
-		C = C._take((self.ix,self.iy),0)
-		C = C._take((self.ix,self.iy),1)
+		C = C.take((self.ix,self.iy),0)
+		C = C.take((self.ix,self.iy),1)
 		dx = np.sqrt(C[0,0])
 		dy = np.sqrt(C[1,1])
 		dxy = C[0,1]

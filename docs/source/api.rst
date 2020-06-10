@@ -22,6 +22,15 @@ Simulation
 
 |
 
+*********
+Cosmology
+*********
+
+.. automodule:: sntd.survey_cosmo
+   :members:
+
+|
+
 ***
 I/O
 ***

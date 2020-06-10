@@ -18,7 +18,6 @@ with SNTD.
 # (see :ref:`examples:Batch Processing Time Delay Measurements`)
 # 
 # **Parallel:**
-
 import sntd
 
 myMISN=sntd.load_example_misn()
@@ -59,6 +58,9 @@ fitCurves.plot_fit(method='series')
 
 ############################################################### 
 # **Color:**
+# By default, this will attempt to fit every combination of colors possible from
+# the bands present in the data. You can define specific colors using the "fit_colors"
+# argument.
 
 
     
@@ -90,6 +92,8 @@ print(fitCurves_parallel.parallel.time_delays)
 print(fitCurves_parallel.parallel.time_delay_errors)
 print(fitCurves_color.color.time_delays)
 print(fitCurves_color.color.time_delay_errors)
+
+
 ###################################################################################################################################
 # **Fitting Using Extra Propagation Effects**
 # 
