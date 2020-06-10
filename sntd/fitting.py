@@ -10,6 +10,7 @@ from sklearn.gaussian_process.kernels import RBF
 import scipy
 import itertools
 from sncosmo import nest_lc
+from itertools import combinations
 
 
 from .util import *
@@ -59,8 +60,8 @@ class newDict(dict):
 def fit_data(curves=None, snType='Ia',bands=None, models=None, params=None, bounds={}, ignore=None, constants={},ignore_models=[],
 			 method='parallel',t0_guess=None,effect_names=[],effect_frames=[],batch_init=None,cut_time=None,force_positive_param=[],
 			 dust=None,microlensing=None,fitOrder=None,color_bands=None,color_param_ignore=[],min_points_per_band=3,identify_micro=False,
-			 max_n_bands=None,n_cores_per_node=1,npar_cores=4,
-			 fit_prior=None,par_or_batch='parallel',batch_partition=None,nbatch_jobs=None,batch_python_path=None,n_per_node=1,fast_model_selection=True,
+			 min_n_bands=1,max_n_bands=None,n_cores_per_node=1,npar_cores=4,max_batch_jobs=199,max_cadence=None,fit_colors=None,
+			 fit_prior=None,par_or_batch='parallel',batch_partition=None,nbatch_jobs=None,batch_python_path=None,n_per_node=None,fast_model_selection=True,
 			 wait_for_batch=False,band_order=None,set_from_simMeta={},guess_amplitude=True,trial_fit=True,clip_data=False,
 			 kernel='RBF',refImage='image_1',nMicroSamples=100,color_curve=None,warning_supress=True,
 			 verbose=True,**kwargs):
@@ -117,12 +118,20 @@ def fit_data(curves=None, snType='Ia',bands=None, models=None, params=None, boun
 		Only accept bands to fit with this number of points fitting other criterion (e.g. minsnr)
 	identify_micro: bool
 		If True, function is run to attempt to identify bands where microlensing is least problematic.
+	min_n_bands: int
+		Checks the SN to make sure it has this number of bands (with min_points_per_band in each)
 	max_n_bands: int
 		The best n bands are chosen from the data. 
 	n_cores_per_node: int
 		The number of cores to run parallelization on per node
 	npar_cores: int
 		The number of cores to devote to parallelization
+	max_batch_jobs: int 
+		The maximum number of jobs allowed by your slurm task manager. 
+	max_cadence: int
+		To clip each image of a MISN to this cadence
+	fit_colors: list
+		List of colors to use in color fitting (e.g. ['bessellb-bessellv','bessellb-bessellr'])
 	fit_prior: :class:`~sntd.curve_io.curveDict` or bool
 		if implementing parallel method alongside others and fit_prior is True, will use output of parallel as prior
 		for series/color. If SNTD curveDict object, used as prior for series or color.
@@ -136,7 +145,8 @@ def fit_data(curves=None, snType='Ia',bands=None, models=None, params=None, boun
 	batch_python_path: str
 		path to python you want to use for batch mode (if different from current)
 	n_per_node: int
-		Number of SNe to fit per node (in series) in batch mode.
+		Number of SNe to fit per node (in series) in batch mode. If none, just distributes all SNe across the number
+		of jobs you have by default. 
 	fast_model_selection: bool
 		If you are providing a list of models and want the best fit, turning this on will make the fitter choose based
 		on a simple minuit fit before moving to the full sntd fitting. If false, each model will be fitted with the full
@@ -254,6 +264,11 @@ def fit_data(curves=None, snType='Ia',bands=None, models=None, params=None, boun
 	if fit_prior is False:
 		args['fit_prior']=None
 	
+	if args['parlist'] and n_per_node is None and par_or_batch=='batch':
+		if nbatch_jobs is None:
+			print('Must set n_per_node node and/or nbatch_jobs')
+		n_per_node = math.ceil(len(args['curves'])/nbatch_jobs)
+
 
 
 	if isinstance(method,(list,np.ndarray,tuple)):
@@ -278,9 +293,11 @@ def fit_data(curves=None, snType='Ia',bands=None, models=None, params=None, boun
 					parallelize=None
 					micro_par=None
 				total_jobs=math.ceil(len(args['curves'])/n_per_node)
-				script_name_init,folder_name=run_sbatch(partition=batch_partition,
-												   njobs=nbatch_jobs,python_path=batch_python_path,init=True,parallelize=parallelize,microlensing_cores=micro_par)
-				script_name,folder_name=run_sbatch(partition=batch_partition,folder=folder_name,
+				if nbatch_jobs is None:
+					nbatch_jobs=min(total_jobs,max_batch_jobs)
+				script_name_init,folder_name=make_sbatch(partition=batch_partition,
+												   njobs=nbatch_jobs,njobstotal=min(total_jobs,max_batch_jobs),python_path=batch_python_path,init=True,parallelize=parallelize,microlensing_cores=micro_par)
+				script_name,folder_name=make_sbatch(partition=batch_partition,folder=folder_name,
 												  njobs=nbatch_jobs,python_path=batch_python_path,init=False,parallelize=parallelize,microlensing_cores=micro_par)
 
 				pickle.dump(constants,open(os.path.join(folder_name,'sntd_constants.pkl'),'wb'))
@@ -385,57 +402,7 @@ def fit_data(curves=None, snType='Ia',bands=None, models=None, params=None, boun
 					with open(os.path.join(os.path.abspath(folder_name),pyfile),'w') as f:
 						f.write(batch_py)
 
-				
-
-				fits_output=tarfile.open(os.path.join(os.path.abspath(folder_name),'sntd_fits.tar.gz'),mode='w')
-				
-				result=subprocess.call(['sbatch',os.path.join(os.path.abspath(folder_name),
-																	   script_name_init)])
-				if wait_for_batch:
-					printProgressBar(0,total_jobs)
-				ndone=0
-				nactive=nbatch_jobs
-				nadded=nbatch_jobs
-				saved_fits=0
-				tarfit_ind=0
-				if parallelize is not None:
-					n_per_file=1
-				else:
-					n_per_file=n_per_node
-				
-				while True:
-					time.sleep(10) #update every 10 seconds
-					output=glob.glob(os.path.join(os.path.abspath(folder_name),'sntd_fit*.pkl'))
-					nfit=len(output)+saved_fits
-					if nfit!=ndone:
-						if int(saved_fits*n_per_file)>=50000*(tarfit_ind+1):
-							fits_output.close()
-							fits_output=tarfile.open(os.path.join(os.path.abspath(folder_name),'sntd_fits_%i.tar.gz'%tarfit_ind),mode='w')
-							tarfit_ind+=1
-						for filename in output:
-							fits_output.add(filename)
-							os.remove(filename)
-							saved_fits+=1
-						if nadded<total_jobs:
-							ind=nadded
-							for i in range(int((nfit-ndone)/(n_per_node/n_per_file))):
-								if ind>total_jobs-1:
-									continue
-								result=subprocess.call(['sbatch',os.path.join(os.path.abspath(folder_name),
-																		 script_name),str(ind)],stdout=subprocess.DEVNULL)
-								ind+=1
-								nadded+=1
-						ndone=copy(nfit)
-
-						if wait_for_batch:
-							printProgressBar(ndone/(n_per_node/n_per_file),total_jobs)
-					if ndone>=len(args['curves']):
-						break
-				fits_output.close()
-				if verbose:
-					print('Done!')
-				return
-					
+				return run_sbatch(folder_name,script_name_init,script_name,total_jobs,max_batch_jobs,n_per_node,wait_for_batch,parallelize,len(args['curves']))
 
 
 		else:
@@ -481,15 +448,19 @@ def fit_data(curves=None, snType='Ia',bands=None, models=None, params=None, boun
 				par_arg_vals=[]
 				for i in range(len(args['curves'])):
 					temp_args={}
-					try:
-						for par_key in ['snType','bounds','constants','t0_guess']:
-							if isinstance(args[par_key],(list,tuple,np.ndarray)):
+					
+					for par_key in ['snType','bounds','constants','t0_guess']:
+						if isinstance(args[par_key],(list,tuple,np.ndarray)):
+							try:
 								temp_args[par_key]=args[par_key][i]
-						for par_key in ['bands','models','ignore','params']:
-							if isinstance(args[par_key],(list,tuple,np.ndarray)) and np.any([isinstance(x,(list,tuple,np.ndarray)) for x in args[par_key]]):
+							except:
+								pass
+					for par_key in ['bands','models','ignore','params']:
+						if isinstance(args[par_key],(list,tuple,np.ndarray)) and np.any([isinstance(x,(list,tuple,np.ndarray)) for x in args[par_key]]):
+							try:
 								temp_args[par_key]=args[par_key][i]
-					except:
-						pass
+							except:
+								pass
 					par_arg_vals.append([args['curves'][i],temp_args])
 
 				curves=pyParz.foreach(par_arg_vals,_fitparallel,[args],numThreads=min(npar_cores,len(par_arg_vals)))
@@ -505,9 +476,11 @@ def fit_data(curves=None, snType='Ia',bands=None, models=None, params=None, boun
 					parallelize=None
 					micro_par=None
 				total_jobs=math.ceil(len(args['curves'])/n_per_node)
-				script_name_init,folder_name=run_sbatch(partition=batch_partition,
-												   njobs=nbatch_jobs,python_path=batch_python_path,init=True,parallelize=parallelize,microlensing_cores=micro_par)
-				script_name,folder_name=run_sbatch(partition=batch_partition,folder=folder_name,
+				if nbatch_jobs is None:
+					nbatch_jobs=min(total_jobs,max_batch_jobs)
+				script_name_init,folder_name=make_sbatch(partition=batch_partition,
+												   njobs=nbatch_jobs,njobstotal=min(total_jobs,max_batch_jobs),python_path=batch_python_path,init=True,parallelize=parallelize,microlensing_cores=micro_par)
+				script_name,folder_name=make_sbatch(partition=batch_partition,folder=folder_name,
 												  njobs=nbatch_jobs,python_path=batch_python_path,init=False,parallelize=parallelize,microlensing_cores=micro_par)
 
 				pickle.dump(constants,open(os.path.join(folder_name,'sntd_constants.pkl'),'wb'))
@@ -545,7 +518,7 @@ def fit_data(curves=None, snType='Ia',bands=None, models=None, params=None, boun
 							if parallelize is None:
 									sntd_command+='constants=all_dat[i].constants,'
 							else:
-								sntd_command+='constants={'+'},'
+								sntd_command+='constants=const_list,'
 						elif par=='method':
 							sntd_command+='method="parallel",'
 						elif par=='par_or_batch' and parallelize is not None:
@@ -575,54 +548,7 @@ def fit_data(curves=None, snType='Ia',bands=None, models=None, params=None, boun
 				
 
 				
-				fits_output=tarfile.open(os.path.join(os.path.abspath(folder_name),'sntd_fits.tar.gz'),mode='w')
-				
-				result=subprocess.call(['sbatch',os.path.join(os.path.abspath(folder_name),
-																	   script_name_init)])
-				if wait_for_batch:
-					printProgressBar(0,total_jobs)
-				ndone=0
-				nactive=nbatch_jobs
-				nadded=nbatch_jobs
-				saved_fits=0
-				tarfit_ind=0
-				if parallelize is not None:
-					n_per_file=1
-				else:
-					n_per_file=n_per_node
-				
-				while True:
-					time.sleep(10) #update every 10 seconds
-					output=glob.glob(os.path.join(os.path.abspath(folder_name),'sntd_fit*.pkl'))
-					nfit=len(output)+saved_fits
-					if nfit!=ndone:
-						if int(saved_fits*n_per_file)>=50000*(tarfit_ind+1):
-							fits_output.close()
-							fits_output=tarfile.open(os.path.join(os.path.abspath(folder_name),'sntd_fits_%i.tar.gz'%tarfit_ind),mode='w')
-							tarfit_ind+=1
-						for filename in output:
-							fits_output.add(filename)
-							os.remove(filename)
-							saved_fits+=1
-						if nadded<total_jobs:
-							ind=nadded
-							for i in range(int((nfit-ndone)/(n_per_node/n_per_file))):
-								if ind>total_jobs-1:
-									continue
-								result=subprocess.call(['sbatch',os.path.join(os.path.abspath(folder_name),
-																		 script_name),str(ind)],stdout=subprocess.DEVNULL)
-								ind+=1
-								nadded+=1
-						ndone=copy(nfit)
-
-						if wait_for_batch:
-							printProgressBar(ndone/(n_per_node/n_per_file),total_jobs)
-					if ndone>=len(args['curves']):
-						break
-				fits_output.close()
-				if verbose:
-					print('Done!')
-				return
+				return run_sbatch(folder_name,script_name_init,script_name,total_jobs,max_batch_jobs,n_per_node,wait_for_batch,parallelize,len(args['curves']))
 
 
 
@@ -657,9 +583,11 @@ def fit_data(curves=None, snType='Ia',bands=None, models=None, params=None, boun
 					parallelize=None
 					micro_par=None
 				total_jobs=math.ceil(len(args['curves'])/n_per_node)
-				script_name_init,folder_name=run_sbatch(partition=batch_partition,
-												   njobs=nbatch_jobs,python_path=batch_python_path,init=True,parallelize=parallelize,microlensing_cores=micro_par)
-				script_name,folder_name=run_sbatch(partition=batch_partition,folder=folder_name,
+				if nbatch_jobs is None:
+					nbatch_jobs=min(total_jobs,max_batch_jobs)
+				script_name_init,folder_name=make_sbatch(partition=batch_partition,
+												   njobs=nbatch_jobs,njobstotal=min(total_jobs,max_batch_jobs),python_path=batch_python_path,init=True,parallelize=parallelize,microlensing_cores=micro_par)
+				script_name,folder_name=make_sbatch(partition=batch_partition,folder=folder_name,
 												  njobs=nbatch_jobs,python_path=batch_python_path,init=False,parallelize=parallelize,microlensing_cores=micro_par)
 
 				pickle.dump(constants,open(os.path.join(folder_name,'sntd_constants.pkl'),'wb'))
@@ -719,58 +647,8 @@ def fit_data(curves=None, snType='Ia',bands=None, models=None, params=None, boun
 
 					with open(os.path.join(os.path.abspath(folder_name),pyfile),'w') as f:
 						f.write(batch_py)
-
 				
-
-				
-				fits_output=tarfile.open(os.path.join(os.path.abspath(folder_name),'sntd_fits.tar.gz'),mode='w')
-				
-				result=subprocess.call(['sbatch',os.path.join(os.path.abspath(folder_name),
-																	   script_name_init)])
-				if wait_for_batch:
-					printProgressBar(0,total_jobs)
-				ndone=0
-				nactive=nbatch_jobs
-				nadded=nbatch_jobs
-				saved_fits=0
-				tarfit_ind=0
-				if parallelize is not None:
-					n_per_file=1
-				else:
-					n_per_file=n_per_node
-				
-				while True:
-					time.sleep(10) #update every 10 seconds
-					output=glob.glob(os.path.join(os.path.abspath(folder_name),'sntd_fit*.pkl'))
-					nfit=len(output)+saved_fits
-					if nfit!=ndone:
-						if int(saved_fits*n_per_file)>=50000*(tarfit_ind+1):
-							fits_output.close()
-							fits_output=tarfile.open(os.path.join(os.path.abspath(folder_name),'sntd_fits_%i.tar.gz'%tarfit_ind),mode='w')
-							tarfit_ind+=1
-						for filename in output:
-							fits_output.add(filename)
-							os.remove(filename)
-							saved_fits+=1
-						if nadded<total_jobs:
-							ind=nadded
-							for i in range(int((nfit-ndone)/(n_per_node/n_per_file))):
-								if ind>total_jobs-1:
-									continue
-								result=subprocess.call(['sbatch',os.path.join(os.path.abspath(folder_name),
-																		 script_name),str(ind)],stdout=subprocess.DEVNULL)
-								ind+=1
-								nadded+=1
-						ndone=copy(nfit)
-
-						if wait_for_batch:
-							printProgressBar(ndone/(n_per_node/n_per_file),total_jobs)
-					if ndone>=len(args['curves']):
-						break
-				fits_output.close()
-				if verbose:
-					print('Done!')
-				return
+				return run_sbatch(folder_name,script_name_init,script_name,total_jobs,max_batch_jobs,n_per_node,wait_for_batch,parallelize,len(args['curves']))
 		else:
 			curves=_fitseries(args)
 
@@ -803,9 +681,11 @@ def fit_data(curves=None, snType='Ia',bands=None, models=None, params=None, boun
 					parallelize=None
 					micro_par=None
 				total_jobs=math.ceil(len(args['curves'])/n_per_node)
-				script_name_init,folder_name=run_sbatch(partition=batch_partition,
-												   njobs=nbatch_jobs,python_path=batch_python_path,init=True,parallelize=parallelize,microlensing_cores=micro_par)
-				script_name,folder_name=run_sbatch(partition=batch_partition,folder=folder_name,
+				if nbatch_jobs is None:
+					nbatch_jobs=min(total_jobs,max_batch_jobs)
+				script_name_init,folder_name=make_sbatch(partition=batch_partition,
+												   njobs=nbatch_jobs,njobstotal=min(total_jobs,max_batch_jobs),python_path=batch_python_path,init=True,parallelize=parallelize,microlensing_cores=micro_par)
+				script_name,folder_name=make_sbatch(partition=batch_partition,folder=folder_name,
 												  njobs=nbatch_jobs,python_path=batch_python_path,init=False,parallelize=parallelize,microlensing_cores=micro_par)
 
 				pickle.dump(constants,open(os.path.join(folder_name,'sntd_constants.pkl'),'wb'))
@@ -868,54 +748,7 @@ def fit_data(curves=None, snType='Ia',bands=None, models=None, params=None, boun
 
 				
 
-				fits_output=tarfile.open(os.path.join(os.path.abspath(folder_name),'sntd_fits.tar.gz'),mode='w')
-				
-				result=subprocess.call(['sbatch',os.path.join(os.path.abspath(folder_name),
-																	   script_name_init)])
-				if wait_for_batch:
-					printProgressBar(0,total_jobs)
-				ndone=0
-				nactive=nbatch_jobs
-				nadded=nbatch_jobs
-				saved_fits=0
-				tarfit_ind=0
-				if parallelize is not None:
-					n_per_file=1
-				else:
-					n_per_file=n_per_node
-				
-				while True:
-					time.sleep(10) #update every 10 seconds
-					output=glob.glob(os.path.join(os.path.abspath(folder_name),'sntd_fit*.pkl'))
-					nfit=len(output)+saved_fits
-					if nfit!=ndone:
-						if int(saved_fits*n_per_file)>=50000*(tarfit_ind+1):
-							fits_output.close()
-							fits_output=tarfile.open(os.path.join(os.path.abspath(folder_name),'sntd_fits_%i.tar.gz'%tarfit_ind),mode='w')
-							tarfit_ind+=1
-						for filename in output:
-							fits_output.add(filename)
-							os.remove(filename)
-							saved_fits+=1
-						if nadded<total_jobs:
-							ind=nadded
-							for i in range(int((nfit-ndone)/(n_per_node/n_per_file))):
-								if ind>total_jobs-1:
-									continue
-								result=subprocess.call(['sbatch',os.path.join(os.path.abspath(folder_name),
-																		 script_name),str(ind)],stdout=subprocess.DEVNULL)
-								ind+=1
-								nadded+=1
-						ndone=copy(nfit)
-
-						if wait_for_batch:
-							printProgressBar(ndone/(n_per_node/n_per_file),total_jobs)
-					if ndone>=len(args['curves']):
-						break
-				fits_output.close()
-				if verbose:
-					print('Done!')
-				return
+				return run_sbatch(folder_name,script_name_init,script_name,total_jobs,max_batch_jobs,n_per_node,wait_for_batch,parallelize,len(args['curves']))
 		else:
 			if args['color_bands'] is not None:
 				args['bands']=args['color_bands']
@@ -934,10 +767,13 @@ def _fitColor(all_args):
 			curves,single_par_vars=curves
 			for key in single_par_vars:
 				args[key]=single_par_vars[key]
+		if isinstance(curves,str):
+			args['curves']=pickle.load(open(curves,'rb'))
+		else:
+			args['curves']=curves
 
-		args['curves']=curves
-		if args['verbose']:
-			print('Fitting MISN number %i...'%curves.nsn)
+			if args['verbose']:
+				print('Fitting MISN number %i...'%curves.nsn)
 	else:
 		args=all_args
 
@@ -947,7 +783,7 @@ def _fitColor(all_args):
 
 	if args['clip_data']:
 		for im in args['curves'].images.keys():
-			args['curves'].clip_data(im=im,minsnr=args.get('minsnr',0))
+			args['curves'].clip_data(im=im,minsnr=args.get('minsnr',0),max_cadence=args['max_cadence'])
 
 	args['bands']=list(args['bands'])
 	_,band_SNR,_=getBandSNR(args['curves'],args['bands'],args['min_points_per_band'])
@@ -955,30 +791,38 @@ def _fitColor(all_args):
 	if len(args['bands'])<2:
 		raise RuntimeError("If you want to analyze color curves, you need two bands!")
 	else:
-		final_bands=[]
-		for band in np.unique(args['curves'].images[args['refImage']].table['band']):
-			to_add=True
-			for im in args['curves'].images.keys():
-				if len(np.where(args['curves'].images[im].table['band']==band)[0])<args['min_points_per_band']:
-					to_add=False
-			if to_add:
-				final_bands.append(band)
-		if len(args['bands'])>2 or np.any([x not in final_bands for x in args['bands']]):
-			all_SNR=[]
-			for band in final_bands:
-				ims=[]
-				for d in args['curves'].images.keys():
-					inds=np.where(args['curves'].images[d].table['band']==band)[0]
-					if len(inds)==0:
-						ims.append(0)
-					else:
-						ims.append(np.sum(args['curves'].images[d].table['flux'][inds]/args['curves'].images[d].table['fluxerr'][inds])*\
-							 np.sqrt(len(inds)))
-				all_SNR.append(np.sum(ims))
-			sorted=np.flip(np.argsort(all_SNR))
-			args['bands']=np.array(final_bands)[sorted]
-			
-			args['bands']=args['bands'][:2]
+		if args['fit_colors'] is None:
+			final_bands=[]
+			for band in np.unique(args['curves'].images[args['refImage']].table['band']):
+				to_add=True
+				for im in args['curves'].images.keys():
+					if len(np.where(args['curves'].images[im].table['band']==band)[0])<args['min_points_per_band']:
+						to_add=False
+				if to_add:
+					final_bands.append(band)
+			if np.any([x not in final_bands for x in args['bands']]):
+				all_SNR=[]
+				for band in final_bands:
+					ims=[]
+					for d in args['curves'].images.keys():
+						inds=np.where(args['curves'].images[d].table['band']==band)[0]
+						if len(inds)==0:
+							ims.append(0)
+						else:
+							ims.append(np.sum(args['curves'].images[d].table['flux'][inds]/args['curves'].images[d].table['fluxerr'][inds])*\
+								 np.sqrt(len(inds)))
+					all_SNR.append(np.sum(ims))
+				sorted=np.flip(np.argsort(all_SNR))
+				args['bands']=np.array(final_bands)[sorted]
+				if args['max_n_bands'] is not None:
+					args['bands']=args['bands'][:args['max_n_bands']]
+			colors_to_fit=[x for x in combinations(args['bands'],2)]
+			if args['color_bands'] is not None:
+				for i in range(len(colors_to_fit)):
+					colors_to_fit[i]=[x for x in args['color_bands'] if x in colors_to_fit[i]]
+
+		else:
+			colors_to_fit=[x.split('-') for x in args['fit_colors']]
 
 
 	imnums=[x[-1] for x in args['curves'].images.keys()]
@@ -1060,7 +904,9 @@ def _fitColor(all_args):
 	elif args['fit_prior'] is not None:
 		args['models']=args['fit_prior'].images[args['fit_prior'].parallel.fitOrder[0]].fits.model._source.name
 
-	
+	if not args['curves'].quality_check(min_n_bands=2,
+						min_n_points_per_band=args['min_points_per_band'],clip=False,method='parallel'):
+		return
 	all_fit_dict={}
 	if args['fast_model_selection'] and len(np.array(args['models']).flatten())>1:
 		for b in args['force_positive_param']:
@@ -1133,7 +979,7 @@ def _fitColor(all_args):
 			temp_delays={k:args['fit_prior'].parallel.time_delays[k]-args['fit_prior'].parallel.time_delays[par_ref]\
 						 for k in args['fit_prior'].parallel.fitOrder}
 			
-			args['curves'].color_table(args['bands'][0],args['bands'][1],time_delays={im:0 for im in args['curves'].images.keys()},
+			args['curves'].color_table([x[0] for x in colors_to_fit],[x[1] for x in colors_to_fit],time_delays={im:0 for im in args['curves'].images.keys()},
 										minsnr=args.get('minsnr',0))
 			args['curves'].color.meta['reft0']=args['fit_prior'].images[par_ref].fits.model.get('t0')
 			args['curves'].color.meta['td']=temp_delays
@@ -1155,9 +1001,9 @@ def _fitColor(all_args):
 					temp_bands=[]
 					for b in best_bands:
 						temp_bands=np.append(temp_bands,np.where(args['curves'].images[im].table['band']==b)[0])
-					inds=temp_bands.astype(int)
+					temp_inds=temp_bands.astype(int)
 					
-					res,fit=sncosmo.fit_lc(deepcopy(args['curves'].images[im].table[inds]),tempMod,
+					res,fit=sncosmo.fit_lc(deepcopy(args['curves'].images[im].table[temp_inds]),tempMod,
 											[x for x in args['params'] if x in tempMod.param_names]+[tempMod.param_names[2]]+\
 											[x for x in tempMod.param_names if x in args['bounds'].keys()],
 											bounds={b:args['bounds'][b] for b in args['bounds'].keys() if b not in ['t0',tempMod.param_names[2]]},
@@ -1191,12 +1037,12 @@ def _fitColor(all_args):
 				if 't0' not in args['bounds'].keys():
 					args['bounds']['t0']=np.array(args['bounds']['td'])/2+args['curves'].color.meta['reft0']
 
-				args['curves'].color_table(args['bands'][0],args['bands'][1],time_delays={im:0 for im in args['curves'].images.keys()},
+				args['curves'].color_table([x[0] for x in colors_to_fit],[x[1] for x in colors_to_fit],time_delays={im:0 for im in args['curves'].images.keys()},
 												minsnr=args.get('minsnr',0))
 				args['curves'].color.meta['td']=temp_delays
 				
 			else:
-				args['curves'].color_table(args['bands'][0],args['bands'][1],referenceImage=args['refImage'],static=True,model=tempMod,
+				args['curves'].color_table([x[0] for x in colors_to_fit],[x[1] for x in colors_to_fit],referenceImage=args['refImage'],static=True,model=tempMod,
 																	minsnr=args.get('minsnr',0))
 				for b in args['bounds']:
 					if b.startswith('dt_'):
@@ -1231,7 +1077,10 @@ def _fitColor(all_args):
 				args['bounds'][b]=np.array([max([args['bounds'][b][0],0]),max([args['bounds'][b][1],0])])
 			else:
 				args['bounds'][b]=np.array([0,np.inf])
-		params,res,model=nest_color_lc(args['curves'].color.table,tempMod,nimage,color=args['bands'],
+		if not args['curves'].quality_check(min_n_bands=args['min_n_bands'],
+						min_n_points_per_band=args['min_points_per_band'],clip=args['clip_data'],method='color'):
+			return
+		params,res,model=nest_color_lc(args['curves'].color.table,tempMod,nimage,colors=colors_to_fit,
 											bounds=args['bounds'],
 											 vparam_names=[x for x in all_vparam_names if x in tempMod.param_names or x in snParams],ref=par_ref,
 											 minsnr=args.get('minsnr',5.),priors=args.get('priors',None),ppfs=args.get('ppfs',None),
@@ -1294,8 +1143,9 @@ def _fitColor(all_args):
 
 	finalmodel.set(t0=args['curves'].color.t_peaks[args['refImage']])
 
-	args['curves'].color_table(args['bands'][0],args['bands'][1],time_delays=args['curves'].color.time_delays,minsnr=args.get('minsnr',0))
+	args['curves'].color_table([x[0] for x in colors_to_fit],[x[1] for x in colors_to_fit],time_delays=args['curves'].color.time_delays,minsnr=args.get('minsnr',0))
 	args['curves'].color.meta['td']=time_delays
+	args['curves'].color.meta['fit_colors']=colors_to_fit
 	args['curves'].color.refImage=args['refImage']
 	args['curves'].color.priorImage=par_ref
 	args['curves'].color.bands=args['bands']
@@ -1306,7 +1156,7 @@ def _fitColor(all_args):
 
 	return args['curves']
 
-def nest_color_lc(data,model,nimage,color, vparam_names,bounds,ref='image_1',
+def nest_color_lc(data,model,nimage,colors, vparam_names,bounds,ref='image_1',
 				   minsnr=5., priors=None, ppfs=None, npoints=100, method='single',
 				   maxiter=None, maxcall=None, modelcov=False, rstate=None,
 				   verbose=False, warn=True,**kwargs):
@@ -1382,57 +1232,93 @@ def nest_color_lc(data,model,nimage,color, vparam_names,bounds,ref='image_1',
 	td_params=[x for x in vparam_names[len(vparam_names)-nimage:] if x.startswith('dt')]
 	td_idx=np.array([vparam_names.index(name) for name in td_params])
 
-	
+
 
 	im_indices=[np.where(data['image']==i)[0] for i in np.unique(data['image']) if i !=ref]
-	colzp1=data['zp_'+color[0]][0]
-	colzp2=data['zp_'+color[1]][0]
+	
+	nonan_dict={band:np.where(~np.isnan(data['flux_%s'%band]))[0] for band in np.unique(np.array(colors).flatten())}
+	color_ind_dict={color[0]+'-'+color[1]:np.where(~np.isnan(data[color[0]+'-'+color[1]]))[0] for color in colors}
 
-	obs=data['flux_%s'%color[0]]/data['flux_%s'%color[1]]
-	err=(data['flux_%s'%color[0]]/data['flux_%s'%color[1]])*np.sqrt((data['fluxerr_%s'%color[0]]/data['flux_%s'%color[0]])**2+\
-																				(data['fluxerr_%s'%color[1]]/data['flux_%s'%color[1]])**2)
-	cov = np.diag(err)
+	obs_dict={}
+	err_dict={}
+	zp_dict={}
+	for color in colors:
+		col_inds=color_ind_dict[color[0]+'-'+color[1]]
+		obs_dict[color[0]+'-'+color[1]]=data['flux_%s'%color[0]][col_inds]/data['flux_%s'%color[1]][col_inds]
+		err_dict[color[0]+'-'+color[1]]=(data['flux_%s'%color[0]][col_inds]/data['flux_%s'%color[1]][col_inds])*\
+							np.sqrt((data['fluxerr_%s'%color[0]][col_inds]/data['flux_%s'%color[0]][col_inds])**2+\
+																(data['fluxerr_%s'%color[1]][col_inds]/data['flux_%s'%color[1]][col_inds])**2)
+	
+
+	unique_bands=np.unique(np.array(colors).flatten())
+	zp_dict={b:data['zp_%s'%b][nonan_dict[b][0]] for b in unique_bands}
+	zpsys=data['zpsys'][0]
+
+	
 	def chisq_likelihood(parameters):
 		model.set(**{model_param_names[k]:parameters[model_idx[k]] for k in range(len(model_idx))})
 		all_data=deepcopy(data)
 
 		for i in range(len(im_indices)):
 			all_data['time'][im_indices[i]]-=parameters[td_idx[i]]
-		sort_inds=np.argsort(all_data['time'])
-		model_observations = 10**(-.4*(model.color(color[0],color[1],all_data['zpsys'][0],all_data['time'][sort_inds])+colzp2-colzp1))
 		
 		
-		if modelcov:
-			all_cov=None
+		mod_dict={}
+		cov_dict={}
+		for b in unique_bands:
+			time=all_data[nonan_dict[b]]['time']
+			mod_dict[b]=model.bandflux(b,time,zpsys=zpsys,zp=zp_dict[b])
+			if modelcov:
+				
+
+				_, mcov = model.bandfluxcov(b,
+											time,
+										zp=zp_dict[b],
+										zpsys=zpsys)
+
+				
+				cov_dict[b]=mcov
+
+		chisq=0
+		for color in colors:
+			col_inds=color_ind_dict[color[0]+'-'+color[1]]
+			mod_flux1=mod_dict[color[0]]
+			mod_flux2=mod_dict[color[1]]
+			color_inds1=[i for i in range(len(nonan_dict[color[0]])) if nonan_dict[color[0]][i] in col_inds]
+			color_inds2=[i for i in range(len(nonan_dict[color[1]])) if nonan_dict[color[1]][i] in col_inds]
+			model_observations=mod_flux1[color_inds1]/mod_flux2[color_inds2]
 			
-			for i in range(2):
 
-				_, mcov = model.bandfluxcov(color[i],
-											all_data['time'][sort_inds],
-										zp=all_data['zp_%s'%color[i]],
-										zpsys=all_data['zpsys'])
-
-
-				if all_cov is None:
-					all_cov=copy(mcov)**2
-				else:
-					all_cov+=copy(mcov)**2
-
-
-			all_cov=np.sqrt(all_cov)
-
-			cov = cov[sort_inds] + all_cov
-			invcov = np.linalg.pinv(cov)
-
-			diff = obs[sort_inds]-model_observations
-			chisq=np.dot(np.dot(diff, invcov), diff)
-
-		else:
 			
-	
+			obs=obs_dict[color[0]+'-'+color[1]]
+			err=err_dict[color[0]+'-'+color[1]]
 			
-			chisq=np.sum((obs[sort_inds]-model_observations)**2/\
-						 err[sort_inds]**2)
+			colzp1=data['zp_'+color[0]][col_inds[0]]
+			colzp2=data['zp_'+color[1]][col_inds[0]]
+			
+			good_obs=np.where(~np.isnan(model_observations))[0]
+			model_observations=model_observations[good_obs]
+			obs=obs[good_obs]
+			err=err[good_obs]
+			
+			if modelcov:
+				cov=np.diag(err)
+				
+				mcov1=cov_dict[color[0]][:,np.array(color_inds1)[good_obs]]
+				mcov1=mcov1[np.array(color_inds1)[good_obs],:]
+				mcov2=cov_dict[color[1]][:,np.array(color_inds2)[good_obs]]
+				mcov2=mcov2[np.array(color_inds2)[good_obs],:]
+
+				
+				cov = cov + np.sqrt(mcov1**2+mcov2**2)
+				invcov = np.linalg.pinv(cov)
+				diff = obs-model_observations
+				chisq+=np.dot(np.dot(diff, invcov), diff)
+
+			else:
+				chisq+=np.sum((obs-model_observations)**2/\
+							 err**2)
+
 		return chisq
 
 	def loglike(parameters):
@@ -1483,9 +1369,12 @@ def _fitseries(all_args):
 			for key in single_par_vars:
 				args[key]=single_par_vars[key]
 
-		args['curves']=curves
-		if args['verbose']:
-			print('Fitting MISN number %i...'%curves.nsn)
+		if isinstance(curves,str):
+			args['curves']=pickle.load(open(curves,'rb'))
+		else:
+			args['curves']=curves
+			if args['verbose']:
+				print('Fitting MISN number %i...'%curves.nsn)
 	else:
 		args=all_args
 
@@ -1496,7 +1385,7 @@ def _fitseries(all_args):
 
 	if args['clip_data']:
 		for im in args['curves'].images.keys():
-			args['curves'].clip_data(im=im,minsnr=args.get('minsnr',0))
+			args['curves'].clip_data(im=im,minsnr=args.get('minsnr',0),max_cadence=args['max_cadence'])
 
 	args['bands'],band_SNR,_=getBandSNR(args['curves'],args['bands'],args['min_points_per_band'])
 	args['curves'].series.bands=args['bands'][:args['max_n_bands']]if args['max_n_bands'] is not None else args['bands']
@@ -1597,6 +1486,7 @@ def _fitseries(all_args):
 			temp_bands=np.append(temp_bands,np.where(args['curves'].images[ref].table['band']==b)[0])
 		inds=temp_bands.astype(int)
 	else:
+		best_bands=args['bands']
 		inds=np.arange(0,len(args['curves'].images[ref].table),1).astype(int)
 
 	if 'ignore_models' in args['set_from_simMeta'].keys():
@@ -1605,6 +1495,9 @@ def _fitseries(all_args):
 			to_ignore=[to_ignore]
 		args['models']=[x for x in np.array(args['models']).flatten() if x not in to_ignore]
 	all_fit_dict={}
+	if not args['curves'].quality_check(min_n_bands=args['min_n_bands'],
+							min_n_points_per_band=args['min_points_per_band'],clip=False,method='parallel'):
+		return
 	if args['fast_model_selection'] and len(np.array(args['models']).flatten())>1:
 		for b in args['force_positive_param']:
 			if b in args['bounds'].keys():
@@ -1633,7 +1526,10 @@ def _fitseries(all_args):
 			
 			tempMod.set(**{k:args['constants'][k] for k in args['constants'].keys() if k in tempMod.param_names})
 			tempMod.set(**{k:args['curves'].images[args['refImage']].simMeta[args['set_from_simMeta'][k]] for k in args['set_from_simMeta'].keys() if k in tempMod.param_names})
-
+			if not np.all([tempMod.bandoverlap(x) for x in best_bands]):
+				if args['verbose']:
+					print('Skipping %s because it does not cover the bands...')
+				continue
 			if mod=='BAZINSOURCE':
 				tempMod.set(z=0)
 			try:
@@ -1711,9 +1607,9 @@ def _fitseries(all_args):
 					temp_bands=[]
 					for b in best_bands:
 						temp_bands=np.append(temp_bands,np.where(args['curves'].images[im].table['band']==b)[0])
-					inds=temp_bands.astype(int)
+					temp_inds=temp_bands.astype(int)
 					
-					res,fit=sncosmo.fit_lc(deepcopy(args['curves'].images[im].table[inds]),tempMod,[x for x in args['params'] if x in tempMod.param_names],
+					res,fit=sncosmo.fit_lc(deepcopy(args['curves'].images[im].table[temp_inds]),tempMod,[x for x in args['params'] if x in tempMod.param_names],
 											bounds={b:args['bounds'][b] for b in args['bounds'].keys() if b not in ['t0',tempMod.param_names[2]]},
 											minsnr=args.get('minsnr',0))
 					temp_delays[im]=fit.get('t0')
@@ -1785,6 +1681,9 @@ def _fitseries(all_args):
 				args['bounds'][b]=np.array([0,np.inf])
 		for b in [x for x in np.unique(args['curves'].series.table['band']) if x not in args['curves'].series.bands]:
 			args['curves'].series.table=args['curves'].series.table[args['curves'].series.table['band']!=b]
+		if not args['curves'].quality_check(min_n_bands=args['min_n_bands'],
+							min_n_points_per_band=args['min_points_per_band'],clip=args['clip_data'],method='series'):
+			return
 		params,res,model=nest_series_lc(args['curves'].series.table,tempMod,nimage,bounds=args['bounds'],
 									  vparam_names=[x for x in all_vparam_names if x in tempMod.param_names or x in np.array(snParams).flatten()],ref=par_ref,
 									  minsnr=args.get('minsnr',5.),priors=args.get('priors',None),ppfs=args.get('ppfs',None),
@@ -2105,9 +2004,12 @@ def _fitparallel(all_args):
 			for key in single_par_vars:
 				args[key]=single_par_vars[key]
 
-		args['curves']=curves
-		if args['verbose']:
-			print('Fitting MISN number %i...'%curves.nsn)
+		if isinstance(curves,str):
+			args['curves']=pickle.load(open(curves,'rb'))
+		else:
+			args['curves']=curves
+			if args['verbose']:
+				print('Fitting MISN number %i...'%curves.nsn)
 	else:
 		args=all_args
 	
@@ -2121,7 +2023,7 @@ def _fitparallel(all_args):
 
 	if args['clip_data']:
 		for im in args['curves'].images.keys():
-			args['curves'].clip_data(im=im,minsnr=args.get('minsnr',0))
+			args['curves'].clip_data(im=im,minsnr=args.get('minsnr',0),max_cadence=args['max_cadence'])
 
 	args['bands'],band_SNR,band_dict=getBandSNR(args['curves'],args['bands'],args['min_points_per_band'])
 	args['curves'].bands=args['bands']
@@ -2160,6 +2062,7 @@ def _fitparallel(all_args):
 			temp_bands=np.append(temp_bands,np.where(args['curves'].images[args['fitOrder'][0]].table['band']==b)[0])
 		inds=temp_bands.astype(int)
 	else:
+		best_bands=args['bands']
 		inds=np.arange(0,len(args['curves'].images[args['fitOrder'][0]].table),1).astype(int)
 	initial_bounds=deepcopy(args['bounds'])
 	finallogz=-np.inf
@@ -2186,6 +2089,9 @@ def _fitparallel(all_args):
 		if isinstance(to_ignore,str):
 			to_ignore=[to_ignore]
 		args['models']=[x for x in np.array(args['models']).flatten() if x not in to_ignore]
+	if not args['curves'].quality_check(min_n_bands=args['min_n_bands'],
+								min_n_points_per_band=args['min_points_per_band'],clip=args['clip_data']):
+		return
 	all_fit_dict={}
 	if args['fast_model_selection'] and len(np.array(args['models']).flatten())>1:
 		for b in args['force_positive_param']:
@@ -2215,7 +2121,10 @@ def _fitparallel(all_args):
 			
 			tempMod.set(**{k:args['constants'][k] for k in args['constants'].keys() if k in tempMod.param_names})
 			tempMod.set(**{k:args['curves'].images[args['refImage']].simMeta[args['set_from_simMeta'][k]] for k in args['set_from_simMeta'].keys() if k in tempMod.param_names})
-
+			if not np.all([tempMod.bandoverlap(x) for x in best_bands]):
+				if args['verbose']:
+					print('Skipping %s because it does not cover the bands...'%mod)
+				continue
 			if mod=='BAZINSOURCE':
 				tempMod.set(z=0)
 			try:
@@ -2237,7 +2146,7 @@ def _fitparallel(all_args):
 			args['models']=[bestmodname]
 		except:
 			print('Every model had an error.')
-			sys.exit(1)
+			return None
 	for mod in np.array(args['models']).flatten():
 		if isinstance(mod,str):
 			if mod.upper() in ['BAZIN','BAZINSOURCE']:
@@ -2277,8 +2186,8 @@ def _fitparallel(all_args):
 				temp_bands=[]
 				for b in best_bands:
 					temp_bands=np.append(temp_bands,np.where(args['curves'].images[args['fitOrder'][0]].table['band']==b)[0])
-				inds=temp_bands.astype(int)
-			res,fit=sncosmo.fit_lc(args['curves'].images[args['fitOrder'][0]].table[inds],tempMod,[x for x in args['params'] if x in tempMod.param_names],
+				temp_inds=temp_bands.astype(int)
+			res,fit=sncosmo.fit_lc(args['curves'].images[args['fitOrder'][0]].table[temp_inds],tempMod,[x for x in args['params'] if x in tempMod.param_names],
 									bounds={b:args['bounds'][b]+(args['bounds'][b]-np.median(args['bounds'][b]))*2 if b=='t0' else args['bounds'][b] for b in args['bounds'] if b!= tempMod.param_names[2]},
 									minsnr=args.get('minsnr',0))
 
@@ -2304,10 +2213,11 @@ def _fitparallel(all_args):
 			fit_table=args['curves'].images[args['fitOrder'][0]].table
 		elif args['cut_time'] is not None:
 			fit_table=deepcopy(args['curves'].images[args['fitOrder'][0]].table)
+			fit_table=fit_table[inds]
 			fit_table=fit_table[fit_table['time']>=guess_t0+(args['cut_time'][0]*(1+tempMod.get('z')))]
 			fit_table=fit_table[fit_table['time']<=guess_t0+(args['cut_time'][1]*(1+tempMod.get('z')))]
 			fit_table=fit_table[fit_table['flux']/fit_table['fluxerr']>=args.get('minsnr',0)]
-			fit_table=fit_table[inds]
+			
 		else:
 			fit_table=deepcopy(args['curves'].images[args['fitOrder'][0]].table)
 			fit_table=fit_table[inds]
@@ -2381,14 +2291,17 @@ def _fitparallel(all_args):
 		else:
 			fit_table=deepcopy(args['curves'].images[d].table)
 			fit_table=fit_table[minds]
-		params,args['curves'].images[d].fits['model'],args['curves'].images[d].fits['res']\
-			=nest_parallel_lc(fit_table,first_res[1],first_res[2],initial_bounds,
-							guess_amplitude_bound=True,priors=args.get('priors',None), ppfs=args.get('None'),
-						 method=args.get('nest_method','single'),cut_time=args['cut_time'],snr_band_inds=inds,
-						 maxcall=args.get('maxcall',None), modelcov=args.get('modelcov',False),
-						 rstate=args.get('rstate',None),minsnr=args.get('minsnr',5),
-						 maxiter=args.get('maxiter',None),npoints=args.get('npoints',1000))
-
+		
+		par_output=nest_parallel_lc(fit_table,first_res[1],first_res[2],initial_bounds,min_n_bands=args['min_n_bands'],
+						min_n_points_per_band=args['min_points_per_band'],
+						guess_amplitude_bound=True,priors=args.get('priors',None), ppfs=args.get('None'),
+						method=args.get('nest_method','single'),cut_time=args['cut_time'],snr_band_inds=inds,
+						maxcall=args.get('maxcall',None), modelcov=args.get('modelcov',False),
+						rstate=args.get('rstate',None),minsnr=args.get('minsnr',5),
+						maxiter=args.get('maxiter',None),npoints=args.get('npoints',1000))
+		if par_output is None:
+			return
+		params,args['curves'].images[d].fits['model'],args['curves'].images[d].fits['res']=par_output
 
 	sample_dict={args['fitOrder'][0]:[first_res[2].samples[:,t0ind],first_res[2].samples[:,ampind]]}
 	for k in args['fitOrder'][1:]:
@@ -2463,6 +2376,7 @@ def _fitparallel(all_args):
 	return args['curves']
 
 def nest_parallel_lc(data,model,prev_res,bounds,guess_amplitude_bound=False,cut_time=None,snr_band_inds=None,
+				   min_n_bands=1,min_n_points_per_band=3,
 				   minsnr=5., priors=None, ppfs=None, npoints=100, method='single',
 				   maxiter=None, maxcall=None, modelcov=False, rstate=None,
 				   verbose=False, warn=True,**kwargs):
@@ -2496,6 +2410,9 @@ def nest_parallel_lc(data,model,prev_res,bounds,guess_amplitude_bound=False,cut_
 		data=data[data['time']>=cut_time[0]*(1+model.get('z'))+guess_t0]
 		data=data[data['time']<=cut_time[1]*(1+model.get('z'))+guess_t0]
 
+	data,quality=check_table_quality(data,min_n_bands=min_n_bands,min_n_points_per_band=min_n_points_per_band,clip=True)
+	if not quality:
+		return
 	# Convert bounds/priors combinations into ppfs
 	if bounds is not None:
 		for key, val in bounds.items():

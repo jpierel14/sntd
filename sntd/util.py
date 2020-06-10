@@ -1,10 +1,12 @@
 #!/Users/jpierel/anaconda3/envs/astro2/bin python2
 
-import os,sncosmo,glob,sys,subprocess
+import os,sncosmo,glob,sys,subprocess,time
 from astropy.io import ascii
 import numpy as np
 from collections import OrderedDict as odict
 import scipy
+import matplotlib.pyplot as plt
+
 
 from scipy.interpolate import splrep,splev
 from copy import copy
@@ -138,12 +140,71 @@ def load_batch_fit(fit_name,folder=None,tar_dict=None):
     print('Did not find your file')
     return
 
+def check_table_quality(table,min_n_bands=1,min_n_points_per_band=1,clip=False):
+    ngood_bands=0
+    for b in np.unique(table['band']):
+        temp_n_for_b=len(table[table['band']==b])
+        if temp_n_for_b<min_n_points_per_band:
+            if clip:
+                table=table[table['band']!=b]
+        else:
+            ngood_bands+=1
+    if ngood_bands<min_n_bands:
+        return table,False
+    return table,True
 
-def run_sbatch(partition=None,njobs=None,python_path=None,init=False,folder=None,parallelize=None,microlensing_cores=None):
+def run_sbatch(folder_name,script_name_init,script_name,total_jobs,max_batch_jobs,n_per_node,wait_for_batch,parallelize,ncurves):
+    fits_output=tarfile.open(os.path.join(os.path.abspath(folder_name),'sntd_fits.tar.gz'),mode='w')
+                
+    result=subprocess.call(['sbatch',os.path.join(os.path.abspath(folder_name),
+                                                           script_name_init)])
+    if wait_for_batch:
+        printProgressBar(0,total_jobs)
+    ndone=0
+    nadded=min(total_jobs,max_batch_jobs)
+    saved_fits=0
+    tarfit_ind=0
+    if parallelize is not None:
+        n_per_file=1
+    else:
+        n_per_file=n_per_node
+    
+    while True:
+        time.sleep(10) #update every 10 seconds
+        output=glob.glob(os.path.join(os.path.abspath(folder_name),'sntd_fit*.pkl'))
+        saved_fits+=len(output)
+        if len(output)>0:
+            if int(saved_fits*n_per_file)>=50000*(tarfit_ind+1):
+                fits_output.close()
+                fits_output=tarfile.open(os.path.join(os.path.abspath(folder_name),'sntd_fits_%i.tar.gz'%tarfit_ind),mode='w')
+                tarfit_ind+=1
+            for filename in output:
+                fits_output.add(filename)
+                os.remove(filename)
+            if nadded<total_jobs:
+                for i in range(math.ceil(len(output)/(n_per_node/n_per_file))):
+                    if nadded>total_jobs-1:
+                        continue
+                    result=subprocess.call(['sbatch',os.path.join(os.path.abspath(folder_name),
+                                                             script_name),str(nadded)],stdout=subprocess.DEVNULL)
+                    nadded+=1
+
+            if wait_for_batch:
+                printProgressBar(saved_fits/(n_per_node/n_per_file),total_jobs)
+        if saved_fits>=ncurves:
+            break
+    fits_output.close()
+    if verbose:
+        print('Done!')
+    return 
+
+def make_sbatch(partition=None,njobs=None,njobstotal=None,python_path=None,init=False,folder=None,parallelize=None,microlensing_cores=None):
     if njobs is None:
         print("Batch mode requires a number of jobs!")
         sys.exit(1)
     if init:
+        if njobstotal is None:
+            print("Batch mode requires a total number of jobs!")
         n=0
         add=''
         done=False
@@ -188,7 +249,8 @@ def run_sbatch(partition=None,njobs=None,python_path=None,init=False,folder=None
     sbatch=sbatch.replace('myPython',python_path)
     sbatch=sbatch.replace('run_sntd.py',os.path.join(os.path.abspath(folder_name),pyfile))
     if init:
-        sbatch=sbatch.replace('njobs','0-%i'%(njobs-1))
+        sbatch=sbatch.replace('njobstotal','0-%i'%(njobstotal-1))
+        sbatch=sbatch.replace('njobs','%i'%njobs)
     if parallelize is not None:
         sbatch=sbatch.replace('ncores',str(parallelize))
     elif microlensing_cores is not None:
@@ -205,6 +267,34 @@ def run_sbatch(partition=None,njobs=None,python_path=None,init=False,folder=None
             f.write(sbatch)
         return('sbatch_job_init.BATCH',folder_name)
 
+def plot(plot_type,x,y=None,yerr=None,xerr=None,ax=None,x_lab='',y_lab='',fontsize=18,figsize=(12,12),
+         x_name=None,y_name=None,label_name=None,**kwargs):
+    if ax is None and plot_type != 'joint':
+        fig=plt.figure(figsize=figsize)
+        ax=fig.gca()
+
+    if plot_type=='scatter':
+        ax.scatter(x,y,**kwargs)
+    elif plot_type=='plot':
+        ax.plot(x,y,**kwargs)
+    elif plot_type=='errorbar':
+        ax.errorbar(x,y,xerr=xerr,yerr=yerr,**kwargs)
+    elif plot_type=='hist':
+        ax.hist(x,**kwargs)
+    elif plot_type=='joint':
+        g=multivariateGrid(x_name, y_name, label_name, df=x)
+        fig=g.ax_joint.__dict__['figure']
+        ax=fig.gca()
+        fig.set_size_inches(figsize[0],figsize[1])
+    else:
+        raise RuntimeError('What plot are you trying to do.')
+    for tick in ax.xaxis.get_major_ticks():
+        tick.label.set_fontsize(16)
+    for tick in ax.yaxis.get_major_ticks():
+        tick.label.set_fontsize(16)
+    ax.set_xlabel(x_lab,fontsize=fontsize)
+    ax.set_ylabel(y_lab,fontsize=fontsize)
+    return(ax)
 
 def printProgressBar (iteration, total, prefix = '', suffix = '', decimals = 1, length = 100, fill = '█', printEnd = "\r"):
     """

@@ -11,8 +11,8 @@ def test_sntd():
 	try:   
 		total+=1 
 		print('Testing simulation without microlensing...',end='')
-		myMISN = sntd.createMultiplyImagedSN(sourcename='salt2-extended', snType='Ia', redshift=.5,z_lens=.2, bands=['bessellb','bessellr'],
-			  zp=[25,25], cadence=5., epochs=35.,time_delays=[10., 70.], magnifications=[20,20],
+		myMISN = sntd.createMultiplyImagedSN(sourcename='salt2-extended', snType='Ia', redshift=.5,z_lens=.2, bands=['bessellv','bessellr','besselli'],
+			  zp=[25,25,25], cadence=5., epochs=35.,time_delays=[10., 70.], magnifications=[20,20],
 			  objectName='My Type Ia SN',telescopename='HST')
 		print('Passed!')
 	except Exception as e:
@@ -20,7 +20,6 @@ def test_sntd():
 		print(traceback.format_exc())
 		
 		failed+=1
-
 	try:    
 		total+=1
 		print('Testing microlensing realization...',end='')
@@ -30,6 +29,23 @@ def test_sntd():
 		print('Failed')
 		print(traceback.format_exc())
 		failed+=1
+
+	for method in ['parallel','series','color']:
+
+		try:
+			total+=1
+			print('Testing failing quality check using %s method...'%method,end='')
+			fitCurves=sntd.fit_data(myMISN,snType='Ia', models='salt2-extended',bands=['bessellb','bessellv','bessellr'],
+				params=['x0','x1','t0','c'],bounds={'t0':(-15,15),'x1':(-2,2),'c':(-1,1),'td':(-15,15),'mu':(.5,2)},
+				color_param_ignore=['x1'],min_n_bands=1000,min_points_per_band=10000,
+				method=method,microlensing=None,maxcall=5,minsnr=0,set_from_simMeta={'z':'z'},t0_guess={'image_1':10,'image_2':70})
+			if fitCurves is not None:
+				raise RuntimeError('Accidentally passed quality check?')
+			print('Passed!')
+		except Exception as e:
+			print('Failed')
+			print(traceback.format_exc())
+			failed+=1
 
 	for method in ['parallel','series','color']:
 
@@ -99,22 +115,44 @@ def test_sntd():
 		print(traceback.format_exc())
 		failed+=1
 
+	n_optional_tests=0
+	n_optional_failed=0
 	print('-----------------------------')
 	print('OPTIONAL TESTS')
 	print('-----------------------------')
 	try:
-		total+=1
-		print('Testing parallelization...',end='')
-		fitCurves=sntd.fit_data([myMISN]*2,snType='Ia', models='salt2-extended',bands=['bessellb','bessellr'],
-				params=['x0','x1','t0','c'],constants={'z':.5},bounds={'t0':(-15,15),'x1':(-2,2),'c':(-1,1),'td':(-15,15),'mu':(.5,2)},
-				method='parallel',microlensing=None,maxcall=5,minsnr=0,t0_guess={'image_1':10,'image_2':70})
+		n_optional_tests+=1
+		print('Testing survey cosmology...',end='')
+		test = {
+			'N':1,   # number of Lensed SNe Ia with good time delays
+			'dTL':2,  # % lens modeling uncertainty for each
+			'dTT':.1,  # % time delay measurement uncertainty for each
+			'zl':.5,'zs':2
+		}
+		
+		TEST = sntd.Survey(**test)
+		TEST.survey_grid(['w','Ode0'],{'w':[-1.5,-.5],'Ode0':[0,1]},npoints=2)
+
 		print('Passed!')
 	except Exception as e:
 		print('Failed')
 		print(traceback.format_exc())
-		failed+=1	
+		n_optional_failed+=1
+		
+
 	try:
-		total+=1
+		n_optional_tests+=1
+		print('Testing parallelization...',end='')
+		fitCurves=sntd.fit_data([myMISN]*2,snType='Ia', models='salt2-extended',bands=['bessellb','bessellr'],
+				params=['x0','x1','t0','c'],constants=[{'z':.5},{'z':.5}],bounds={'t0':(-15,15),'x1':(-2,2),'c':(-1,1),'td':(-15,15),'mu':(.5,2)},
+				method='parallel',microlensing=None,maxcall=5,minsnr=0,t0_guess={'image_1':10,'image_2':70},verbose=False)
+		print('Passed!')
+	except Exception as e:
+		print('Failed')
+		print(traceback.format_exc())
+		n_optional_failed+=1	
+	try:
+		n_optional_tests+=1
 		print('Testing batch mode...',end='')
 		fitCurves=sntd.fit_data([myMISN]*100,snType='Ia', models='salt2-extended',bands=['bessellb','bessellr'],
 				params=['x0','x1','t0','c'],constants={'z':.5},bounds={'t0':(-15,15),'x1':(-2,2),'c':(-1,1),'td':(-15,15),'mu':(.5,2)},
@@ -124,12 +162,13 @@ def test_sntd():
 	except Exception as e:
 		print('Failed')
 		print(traceback.format_exc())
-		failed+=1	
+		n_optional_failed+=1	
+
 	try:
 		shutil.rmtree('batch_output')
 	except RuntimeError:
 		pass
-	print('Passed %i/%i tests.'%(total-failed,total))
+	print('Passed %i/%i required tests. (%i/%i optional)'%(total-failed,total,n_optional_tests-n_optional_failed,n_optional_tests))
 
 	return
 

@@ -1,0 +1,22 @@
+
+
+Examples using ``sntd.Fisher.prior``
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+.. raw:: html
+
+    <div class="sphx-glr-thumbcontainer" tooltip="Using lens modeling and time delay precision to  simulate the cosmological constraints possible...">
+
+.. only:: html
+
+ .. figure:: /examples/images/thumb/sphx_glr_plot_survey_thumb.png
+
+     :ref:`sphx_glr_examples_plot_survey.py`
+
+.. raw:: html
+
+    </div>
+
+.. only:: not html
+
+ * :ref:`sphx_glr_examples_plot_survey.py`

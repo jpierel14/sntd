@@ -31,6 +31,26 @@ Examples
 
 .. raw:: html
 
+    <div class="sphx-glr-thumbcontainer" tooltip="Using lens modeling and time delay precision to  simulate the cosmological constraints possible...">
+
+.. only:: html
+
+ .. figure:: /examples/images/thumb/sphx_glr_plot_survey_thumb.png
+
+     :ref:`sphx_glr_examples_plot_survey.py`
+
+.. raw:: html
+
+    </div>
+
+
+.. toctree::
+   :hidden:
+
+   /examples/plot_survey
+
+.. raw:: html
+
     <div class="sphx-glr-thumbcontainer" tooltip="Simulating a multiply-imaged supernova. ">
 
 .. only:: html

@@ -7,6 +7,7 @@ from astropy.table import Table,vstack,Column
 from scipy.stats import mode
 from copy import deepcopy,copy
 import matplotlib.pyplot as plt
+from sncosmo.snanaio import read_snana_fits
 from mpl_toolkits.axes_grid1.axes_divider import make_axes_locatable
 try:
     import pickle
@@ -195,6 +196,7 @@ class curveDict(dict):
                 print('\n'.join('   {}:{}'.format(*t) for t in zip(self.images[c].simMeta.keys(),self.images[c].simMeta.values()) if isinstance(t[1],(str,float,int))))
         return '------------------'
 
+
     def add_curve(self,myCurve,key=None):
         """Adds a curve object to the existing curveDict (i.e. adds
         an image to a MISN)
@@ -314,19 +316,8 @@ class curveDict(dict):
 
         return(self)
 
-    def clip_data(self,im,minsnr=0,mintime=-np.inf,maxtime=np.inf,peak=0,remove_bands=[]):
-        
-        self.images[im].table=self.images[im].table[self.images[im].table['flux']/\
-                                                    self.images[im].table['fluxerr']>minsnr]
-        
-        self.images[im].table=self.images[im].table[self.images[im].table['time']>mintime+peak]
-        self.images[im].table=self.images[im].table[self.images[im].table['time']<maxtime+peak]
-        
 
-        for b in remove_bands:
-            self.images[im].table=self.images[im].table[self.images[im].table['band']!=b]
-
-    def color_table(self,band1,band2,time_delays=None,referenceImage='image_1',ignore_images=[],
+    def color_table(self,band1s,band2s,time_delays=None,referenceImage='image_1',ignore_images=[],
                     static=False,model=None,minsnr=0.0):
         """
         Takes the multiple images in self.images and combines
@@ -335,10 +326,10 @@ class curveDict(dict):
 
         Parameters
         ----------
-        band1: str
-            The first band for color curve
-        band2: str
-            The second band for color curve
+        band1s: str or list
+            The first band(s) for color curve(s)
+        band2s: str or list
+            The second band(s) for color curve(s)
         time_delays: :class:`dict`
             Dictionary with image names as keys and relative time
             delays as values (e.g. {'image_1':0,'image_2':20}). Guessed if None.
@@ -361,11 +352,12 @@ class curveDict(dict):
         ignore_images=list(ignore_images) if not isinstance(ignore_images,(list,tuple)) else ignore_images
         names=['time','image','zpsys']
         dtype=[self.table.dtype[x] for x in names]
-        names=np.append(names,[band1+'-'+band2,band1+'-'+band2+'_err','flux_%s'%band1,'fluxerr_%s'%band1,
-                               'flux_%s'%band2,'fluxerr_%s'%band2,'zp_%s'%band1,'zp_%s'%band2])
-        dtype=np.append(dtype,[dtype[0],dtype[0],dtype[0],
-                               dtype[0],dtype[0],dtype[0],dtype[0],dtype[0]])
+        names=np.append(names,np.append(np.array([[band1+'-'+band2,band1+'-'+band2+'_err'] for band1,band2 in zip(band1s,band2s)]).flatten(),
+                                    np.unique([['flux_%s'%band1,'fluxerr_%s'%band1,'flux_%s'%band2,'fluxerr_%s'%band2,'zp_%s'%band1,'zp_%s'%band2]\
+                                     for band1,band2 in zip(band1s,band2s)]).flatten()))
+        dtype=np.append(dtype,[dtype[0]]*(len(names)-len(dtype)))
         self.color.table=Table(names=names,dtype=dtype)
+        
 
         if time_delays is None:
             if model is not None:
@@ -387,51 +379,160 @@ class curveDict(dict):
         
         self.color.meta['td']=time_delays
         for im in [x for x in self.images.keys() if x not in ignore_images]:
-            temp2=deepcopy(self.images[im].table[self.images[im].table['band']==band2])
-            temp1=deepcopy(self.images[im].table[self.images[im].table['band']==band1])
-            temp1=temp1[temp1['flux']>0]
-            temp2=temp2[temp2['flux']>0]
-            temp1=temp1[temp1['flux']/temp1['fluxerr']>minsnr]
-            temp2=temp2[temp2['flux']/temp2['fluxerr']>minsnr]
-            if not static:
-                temp1['time']-=time_delays[im]
-                temp2['time']-=time_delays[im]
+            
+            for band1,band2 in zip(band1s,band2s):
+                to_add={}
+                temp2=deepcopy(self.images[im].table[self.images[im].table['band']==band2])
+                temp1=deepcopy(self.images[im].table[self.images[im].table['band']==band1])
+              
+              
+                temp1=temp1[temp1['flux']>0]
+                temp2=temp2[temp2['flux']>0]
+                temp1=temp1[temp1['flux']/temp1['fluxerr']>minsnr]
+                temp2=temp2[temp2['flux']/temp2['fluxerr']>minsnr]
+                if not static:
+                    temp1['time']-=time_delays[im]
+                    temp2['time']-=time_delays[im]
 
 
-            temp2['mag']=-2.5*np.log10(temp2['flux'])+temp2['zp']
-            temp2['magerr']=1.0857*temp2['fluxerr']/temp2['flux']
-            temp1['mag']=-2.5*np.log10(temp1['flux'])+temp1['zp']
-            temp1['magerr']=1.0857*temp1['fluxerr']/temp1['flux']
+                temp2['mag']=-2.5*np.log10(temp2['flux'])+temp2['zp']
+                temp2['magerr']=1.0857*temp2['fluxerr']/temp2['flux']
+                temp1['mag']=-2.5*np.log10(temp1['flux'])+temp1['zp']
+                temp1['magerr']=1.0857*temp1['fluxerr']/temp1['flux']
 
-            temp1_remove=[i for i in range(len(temp1)) if temp1['time'][i] not in temp2['time']]
-            temp1.remove_rows(temp1_remove)
-            temp2_remove=[i for i in range(len(temp2)) if temp2['time'][i] not in temp1['time']]
-            temp2.remove_rows(temp2_remove)
+                temp1_remove=[i for i in range(len(temp1)) if temp1['time'][i] not in temp2['time']]
+                temp1.remove_rows(temp1_remove)
+                temp2_remove=[i for i in range(len(temp2)) if temp2['time'][i] not in temp1['time']]
+                temp2.remove_rows(temp2_remove)
 
-            temp1['magerr']=np.sqrt(temp2['magerr']**2+temp1['magerr']**2)
-
-
-            temp1['mag']-=temp2['mag']
-
-            temp1.rename_column('mag',band1+'-'+band2)
-            temp1.rename_column('magerr',band1+'-'+band2+'_err')
-            temp1['flux_%s'%band1]=temp1['flux']
-            temp1['fluxerr_%s'%band1]=temp1['fluxerr']
-            temp1['flux_%s'%band2]=temp2['flux']
-            temp1['fluxerr_%s'%band2]=temp2['fluxerr']
-            temp1['zp_%s'%band1]=temp1['zp']
-            temp1['zp_%s'%band2]=temp2['zp']
-            to_remove=[x for x in temp1.colnames if x not in names]
-            temp1.remove_columns(to_remove)
+                temp1['magerr']=np.sqrt(temp2['magerr']**2+temp1['magerr']**2)
 
 
-            self.color.table=vstack([self.color.table,copy(temp1)])
-            self.color.table.meta={}
+                temp1['mag']-=temp2['mag']
+
+                
+                to_add['time']=temp1['time']
+                to_add['image']=[im]*len(temp1)
+                to_add['zpsys']=temp1['zpsys']
+                to_add[band1+'-'+band2]=temp1['mag']
+                to_add[band1+'-'+band2+'_err']=temp1['magerr']
+                to_add['flux_%s'%band1]=temp1['flux']
+                to_add['fluxerr_%s'%band1]=temp1['fluxerr']
+                to_add['flux_%s'%band2]=temp2['flux']
+                to_add['fluxerr_%s'%band2]=temp2['fluxerr']
+                to_add['zp_%s'%band1]=temp1['zp']
+                to_add['zp_%s'%band2]=temp2['zp']
+                for col in [x for x in names if x not in to_add.keys()]:
+                    to_add[col]=[np.nan]*len(temp1)
+                
+                
+
+
+                for i in range(len(temp1)):
+                    self.color.table.add_row({k:to_add[k][i] for k in to_add.keys()})
+        self.color.table.meta={}
 
         self.color.table.sort('time')
 
         return(self)
 
+    def clip_data(self,im,minsnr=0,mintime=-np.inf,maxtime=np.inf,peak=0,remove_bands=[],max_cadence=None):
+        """
+        Clips the data of an image based on various properties.
+
+        Parameters
+        ----------
+        im: str
+            The image to clip
+        minsnr: float
+            Clip based on a minimum SNR
+        mintime: float
+            Clip based on a minimum time (observer frame relative to peak)
+        maxtime: float
+            Clip based on a maximum time (observer frame relative to peak)
+        peak: float
+            Used in conjunction with min/max time
+        remove_bands: list
+            List of bands to remove from the light curve
+        max_cadence: float
+            Clips data so that points are spread by at least max_cadence
+        """
+        
+        self.images[im].table=self.images[im].table[self.images[im].table['flux']/\
+                                                    self.images[im].table['fluxerr']>minsnr]
+        
+        self.images[im].table=self.images[im].table[self.images[im].table['time']>mintime+peak]
+        self.images[im].table=self.images[im].table[self.images[im].table['time']<maxtime+peak]
+        
+
+        for b in remove_bands:
+            self.images[im].table=self.images[im].table[self.images[im].table['band']!=b]
+
+        if max_cadence is not None and isinstance(max_cadence,(int,float)):
+            to_remove=[]
+            for b in np.unique(self.images[im].table['band']):
+                binds=np.where(self.images[im].table['band']==b)[0]
+                t=self.images[im].table['time'][binds[0]]
+                for i in range(1,len(binds)):
+                    if self.images[im].table[binds[i]]['time']<t+max_cadence:
+                        to_remove.append(binds[i])
+                    else:
+                        t=self.images[im].table[binds[i]]['time']
+            self.images[im].table.remove_rows(to_remove)
+
+    def quality_check(self,min_n_bands=1,min_n_points_per_band=1,clip=False,method='parallel'):
+        """
+        Checks the images of a SN to make sure they pass minimum thresholds for fitting.
+
+        Parameters
+        ----------
+        min_n_bands: int
+            The minimum number of bands needed to pass
+        min_n_points_per_band: int
+            The minimum number of bands in a given band to pass
+        clip: bool
+            If True, "bad" bands are clipped in place
+        method: str
+            Should be parallel, series, or color. Checks all images (parallel), or the series
+            table (series), or the color table (color)
+        Returns
+        -------
+        self: :class:`sntd.curve_io.curveDict`
+        """
+        if method=='parallel':
+            good_bands=[]
+            for im in self.images.keys():
+                ngood_bands=0
+                for b in np.unique(self.images[im].table['band']):
+                    temp_n_for_b=len(self.images[im].table[self.images[im].table['band']==b])
+                    if temp_n_for_b<min_n_points_per_band:
+                        if clip:
+                            self.images[im].table=self.images[im].table[self.images[im].table['band']!=b]
+                    else:
+                        ngood_bands+=1
+                        good_bands.append(b)
+                if ngood_bands<min_n_bands:
+                    return False
+            self.bands=np.unique(good_bands)
+        elif method=='series':
+            ngood_bands=0
+            for b in np.unique(self.series.table['band']):
+                temp_n_for_b=len(self.series.table[self.series.table['band']==b])
+                if temp_n_for_b<min_n_points_per_band:
+                    if clip:
+                        self.series.table=self.series.table[self.series.table['band']!=b]
+                else:
+                    ngood_bands+=1
+            if ngood_bands<min_n_bands:
+                return False
+        elif method=='color':
+            if len(self.color.table)<min_n_points_per_band:
+                return False
+        else:
+            print('method unknown for quality_check')
+            sys.exit(1)
+
+        return True
 
     def plot_fit(self,method='parallel',par_image=None):
         """
@@ -1002,13 +1103,6 @@ class curveDict(dict):
             if savefig:
                 plt.savefig(filename+'.pdf',format='pdf',overwrite=True)
         return fig
-
-
-
-
-
-
-
 
 
 def table_factory(tables,telescopename="Unknown",object_name=None):

@@ -20,26 +20,35 @@ inds=[int(nlcs/njobs)*int(sys.argv[1]),int(nlcs/njobs)*int(sys.argv[1])+int(nlcs
 inds[1]=min(inds[-1],len(all_dat))
 
 all_input=[]
+const_list=[]
 for i in range(inds[0],inds[1]):
-    if isinstance(all_dat[i],str):
-        all_dat[i]=pickle.load(open(all_dat[i],'rb'))
-    all_dat[i].constants={}
+    temp_const={}
     if all_const is not None:
         for c in all_const.keys():
             if isinstance(all_const[c],(list,tuple,np.ndarray)):
-                all_dat[i].constants[c]=all_const[c][i]
+            	temp_const[c]=all_const[c][i]
             else:
-                all_dat[i].constants[c]=all_const[c]
+            	temp_const[c]=all_const[c]
+        if isinstance(all_dat[i],str):
+        	const_list.append(copy(temp_const))
+        else:
+        	all_dat[i].constants=copy(temp_const)
     all_input.append(all_dat[i])
+
 try:
     fitCurves=sntdcommandreplace
+    succeed=True
 except Exception as e:
     print('Failed')
     print(traceback.format_exc())
     fitCurves=traceback.format_exc()
-
+    succeed=False
+    
 for i in range(len(all_input)):
     filename=os.path.join(os.path.abspath(os.path.dirname(__file__)),'sntd_fit%s_%i.pkl'%(sys.argv[1],i))
-    pickle.dump(fitCurves[i],open(filename,'wb'))
+    if succeed:
+        pickle.dump(fitCurves[i],open(filename,'wb'))
+    else:
+        pickle.dump(fitCurves,open(filename,'wb'))
 
 
