@@ -3,8 +3,7 @@
 Constrain Cosmology
 ===================
 
-Using lens modeling and time delay precision to 
-simulate the cosmological constraints possible
+Simulate cosmological constraints
 from a sample of lensed SN.
 """
 		

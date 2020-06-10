@@ -13,8 +13,7 @@
 Constrain Cosmology
 ===================
 
-Using lens modeling and time delay precision to 
-simulate the cosmological constraints possible
+Simulate cosmological constraints
 from a sample of lensed SN.
 
 All of these cosmology tools are based on `Coe & Moustakas 2009 <https://arxiv.org/pdf/0906.4108.pdf>`_.
@@ -82,7 +81,7 @@ This will make a smooth contour plot for 2 parameters.
 
     No handles with labels found to put in legend.
 
-    <matplotlib.axes._subplots.AxesSubplot object at 0x1a1744d748>
+    <matplotlib.axes._subplots.AxesSubplot object at 0x1a1bd44710>
 
 
 
@@ -157,7 +156,7 @@ Add a prior that assumes perfect knowledge of all other parameters
 
 .. rst-class:: sphx-glr-timing
 
-   **Total running time of the script:** ( 0 minutes  35.800 seconds)
+   **Total running time of the script:** ( 0 minutes  34.477 seconds)
 
 
 .. _sphx_glr_download_examples_plot_survey.py:

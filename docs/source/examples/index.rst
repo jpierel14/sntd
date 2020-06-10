@@ -31,7 +31,7 @@ Examples
 
 .. raw:: html
 
-    <div class="sphx-glr-thumbcontainer" tooltip="Using lens modeling and time delay precision to  simulate the cosmological constraints possible...">
+    <div class="sphx-glr-thumbcontainer" tooltip="Simulate cosmological constraints from a sample of lensed SN. ">
 
 .. only:: html
 
