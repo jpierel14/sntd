@@ -582,9 +582,7 @@ def pintup(A, n=0):
     prints A.astype(int)"""
     pint(flipud(A), n)
 
-# UNLESS $NUMERIX IS SET TO numpy, pyfits(v1.1b) USES NumArray
-if numerix != 'numpy':
-    print('You probably should have done this first: setenv NUMERIX numpy')
+
 
 #pyfitsusesnumpy = (string.atof(pyfits.__version__[:3]) >= 1.1) and (numerix == 'numpy')
 #if not pyfitsusesnumpy and pyfitsloaded:
