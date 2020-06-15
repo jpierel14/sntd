@@ -12,7 +12,7 @@ def test_sntd():
 		total+=1 
 		print('Testing simulation without microlensing...',end='')
 		myMISN = sntd.createMultiplyImagedSN(sourcename='salt2-extended', snType='Ia', redshift=.5,z_lens=.2, bands=['bessellv','bessellr','besselli'],
-			  zp=[25,25,25], cadence=5., epochs=35.,time_delays=[10., 70.], magnifications=[20,20],
+			  zp=[25,25,25], cadence=5., epochs=35.,time_delays=[20., 70.], magnifications=[20,20],
 			  objectName='My Type Ia SN',telescopename='HST')
 		print('Passed!')
 	except Exception as e:
@@ -35,10 +35,10 @@ def test_sntd():
 		try:
 			total+=1
 			print('Testing failing quality check using %s method...'%method,end='')
-			fitCurves=sntd.fit_data(myMISN,snType='Ia', models='salt2-extended',bands=['bessellb','bessellv','bessellr'],
+			fitCurves=sntd.fit_data(myMISN,snType='Ia', models='salt2-extended',bands=['bessellv','bessellr'],
 				params=['x0','x1','t0','c'],bounds={'t0':(-15,15),'x1':(-2,2),'c':(-1,1),'td':(-15,15),'mu':(.5,2)},
 				color_param_ignore=['x1'],min_n_bands=1000,min_points_per_band=10000,
-				method=method,microlensing=None,maxcall=5,minsnr=0,set_from_simMeta={'z':'z'},t0_guess={'image_1':10,'image_2':70})
+				method=method,microlensing=None,maxcall=5,minsnr=0,set_from_simMeta={'z':'z'},t0_guess={'image_1':20,'image_2':70})
 			if fitCurves is not None:
 				raise RuntimeError('Accidentally passed quality check?')
 			print('Passed!')

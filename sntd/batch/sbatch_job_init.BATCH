@@ -10,4 +10,4 @@ echo 'hostname'
 hostname
 
 
-myPython run_sntd.py $SLURM_ARRAY_TASK_ID
+myPython run_sntd.py $SLURM_ARRAY_TASK_ID $SLURM_JOB_ID

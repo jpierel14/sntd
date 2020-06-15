@@ -8,4 +8,4 @@ echo -e '\n submitted Python job'
 echo 'hostname'
 hostname
 
-myPython run_sntd.py $1
+myPython run_sntd.py $1 $SLURM_JOB_ID

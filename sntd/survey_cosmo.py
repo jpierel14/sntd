@@ -280,8 +280,8 @@ class Survey(object):
 		"""
 		return np.sqrt(self.dTL**2 + self.dTT**2) / np.sqrt(self.N)   
 
-	def survey_grid(self,vparam_names,bounds,npoints=100,grad_param=None,constants={},
-			grad_param_bounds=None,ngrad=10,**kwargs):
+	def survey_grid(self,vparam_names,bounds={},npoints=100,grad_param=None,constants={},
+			grad_param_bounds=None,ngrad=10,grid_param1=None,grid_param2=None,**kwargs):
 		"""Calculate cosmological contours by varying 2 parameters in a grid.
 
 		Parameters
@@ -300,7 +300,10 @@ class Survey(object):
 			Bounds for grad_param, same format as bounds
 		ngrad: int
 			Number of grid points to vary grad_param
-
+		grid_param1: iterable
+			Optional choice of grid param 1 list (default uniform based on bounds)
+		grid_param2: iterable
+			Optional choice of grid param 2 list (default uniform based on bounds)
 		Returns
 		-------
 		Adds to class attribute "grid" (a dictionary), with a comma-separated list of 
@@ -310,13 +313,24 @@ class Survey(object):
 		if len(vparam_names)!=2:
 			print('For grid mode, must provide exactly 2 parameters.')
 			return
-		for p in vparam_names:
-			if p not in bounds.keys():
-				print('Must provide bounds for every parameter.')
-				return
+		
 
-		param1_list = np.linspace(bounds[vparam_names[0]][0], bounds[vparam_names[0]][1], npoints)
-		param2_list = np.linspace(bounds[vparam_names[1]][0], bounds[vparam_names[1]][1], npoints)
+		if grid_param1 is None:
+			if vparam_names[0] not in bounds.keys():
+				print('Must provide bounds for %s.'%vparam_names[0])
+				return
+			param1_list = np.linspace(bounds[vparam_names[0]][0], bounds[vparam_names[0]][1], npoints)
+		else:
+			param1_list = grid_param1
+		if grid_param2 is None:
+			if vparam_names[1] not in bounds.keys():
+				print('Must provide bounds for %s.'%vparam_names[1])
+				return
+			param2_list = np.linspace(bounds[vparam_names[1]][0], bounds[vparam_names[1]][1], npoints)
+		else:
+			param2_list=grid_param2
+
+		assert len(param1_list)==len(param2_list)
 
 		
 
@@ -330,17 +344,20 @@ class Survey(object):
 						Om0true=self.cosmo_truths['Om0'],Oktrue=self.cosmo_truths['Ok'],Eratio_true=true_ratio,
 						Ode0true=self.cosmo_truths['Ode0'], w0true=self.cosmo_truths['w0'], 
 						watrue=self.cosmo_truths['wa'],htrue=self.cosmo_truths['h']) for i in range(len(param1_list))] for j in range(len(param2_list))])[:,:]
+			
 			likelihood = np.exp(loglE)
 			likelihood[np.isnan(likelihood)]=0
 
 			like_rescaled = rescale_likelihood(likelihood)
 			if self.grid_likelihood is None:
 				self.grid_likelihood = {}
+				self.grid_loglikelihood = {}
 				self.grid_samples = {}
 				self.param1_list = {}
 				self.param2_list = {}
 
 			self.grid_likelihood[','.join(vparam_names)] = like_rescaled
+			self.grid_loglikelihood[','.join(vparam_names)] = loglE
 			
 		else:
 
@@ -529,7 +546,7 @@ class Survey(object):
 			
 			
 	def plot_survey_contour(self,params,math_labels=None,color='#1f77b4',filled=True,confidence=[.68,.95],
-				fom=False,ax=None,alphas=[.9,.3],show_legend=False,show_nestle=True,**kwargs):
+				fom=False,ax=None,alphas=[.9,.3],show_legend=False,show_nestle=True,use_H0=False,**kwargs):
 		"""
 		Plots the contours of a nestle or gridded survey
 
@@ -556,6 +573,8 @@ class Survey(object):
 			If True, a legend is shown
 		show_nestle: bool
 			If both nestle and grid have been completed, choose nestle if true to show
+		use_H0: bool
+			If true and one of the params is 'h', multiply by 100
 		"""
 		if self.nestle_result is None and self.grid_likelihood is None \
 			or (self.nestle_result is not None and (','.join(params) not in self.nestle_result.keys() and ','.join([params[1],params[0]]) not in self.nestle_result.keys()) and\
@@ -590,18 +609,28 @@ class Survey(object):
 			alphas=np.linspace(.9,.3,len(confidence)) if alphas is None else alphas
 			if len(alphas)!=len(confidence):
 				alphas=[alphas[0]]*len(confidence)
+			if params[0]=='h' and use_H0:
+				constx=100
+			else:
+				constx=1
+			if params[1]=='h' and use_H0:
+				consty=100
+			else:
+				consty=1
 			for i in range(len(confidence)):
 				if filled:
-					CS=ax.contourf(self.grid_samples[','.join(params)][0], self.grid_samples[','.join(params)][1], self.grid_likelihood[','.join(params)], colors=color,
+					CS=ax.contourf(self.grid_samples[','.join(params)][0]*constx, self.grid_samples[','.join(params)][1]*consty, 
+						self.grid_likelihood[','.join(params)], colors=color,
 						levels=[0,np.sort(confidence)[i]], alpha=alphas[i], zorder=10,**kwargs)
 					lines=Line2D([0],[0],color=color,alpha=alphas[0],linewidth=10,label=self.name)
 				else:
-					CS=ax.contour(self.grid_samples[','.join(params)][0], self.grid_samples[','.join(params)][1], self.grid_likelihood[','.join(params)], colors=color,
+					CS=ax.contour(self.grid_samples[','.join(params)][0]*constx, self.grid_samples[','.join(params)][1]*consty, 
+						self.grid_likelihood[','.join(params)], colors=color,
 						levels=[0,np.sort(confidence)[i]],**kwargs)
 					lines=Line2D([0],[0],color=color,alpha=alphas[0],linewidth=10,marker='.',label=self.name)
 
 			if fom:
-				CS954=ax.contour(self.grid_samples[','.join(params)][0], self.grid_samples[','.join(params)][1], self.grid_likelihood[','.join(params)],alpha=0,
+				CS954=ax.contour(self.grid_samples[','.join(params)][0]*constx, self.grid_samples[','.join(params)][1]*consty, self.grid_likelihood[','.join(params)],alpha=0,
 						levels=[.954])
 
 				contour = CS954.collections[0]
@@ -617,8 +646,8 @@ class Survey(object):
 		
 
 			ax.plot(self.cosmo_truths[params[0]],self.cosmo_truths[params[1]],marker='o', mec='k', mfc='w', ms=6)
-			ax.axhline(self.cosmo_truths[params[1]],ls='--', color='0.6', lw=0.8)
-			ax.axvline(self.cosmo_truths[params[0]],ls='--', color='0.6', lw=0.8)
+			ax.axhline(self.cosmo_truths[params[1]]*consty,ls='--', color='0.6', lw=0.8)
+			ax.axvline(self.cosmo_truths[params[0]]*constx,ls='--', color='0.6', lw=0.8)
 			ax.set_xlabel(math_labels[0], fontsize=20)
 			ax.set_ylabel(math_labels[1], fontsize=20)
 			
