@@ -1129,7 +1129,7 @@ class Fisher:
 			dx,dy,p=fish.dxdyp(param1,param2)
 			plotellsp(xo, yo, dx, dy, p, colors=color_list[i], alpha=alpha)
 			if print_merit:
-				m=+': FOM=%.1f'%np.sort(merits)[i]
+				m=': FOM=%.1f'%np.sort(merits)[i]
 			else:
 				m=''
 			patches.append(plt.plot([],[],'s',ms=10,label=fish.name+m,color=color_list[i][0])[0])
