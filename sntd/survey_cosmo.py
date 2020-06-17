@@ -645,6 +645,7 @@ class Survey(object):
 				y=vs[:,1]
 				def PolyArea(x,y):
 					return 0.5*np.abs(np.dot(x,np.roll(y,1))-np.dot(y,np.roll(x,1)))
+				ax.scatter(x,y)
 				#area=0.5*np.sum(y[:-1]*np.diff(x) - x[:-1]*np.diff(y))
 				area=np.abs(PolyArea(x,y))
 				line_name=self.name+': FOM=%.2f'%(np.pi/area)
