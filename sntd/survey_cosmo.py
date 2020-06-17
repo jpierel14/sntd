@@ -687,6 +687,8 @@ class Fisher:
 		list of parameters to marginalize over (if marg is called)
 	data: np.ndarray
 		an input fisher matrix (NxN where N is the length of your params)
+	data_is_cov: bool
+		If true, assumes that "data" is actually a covariance matrix
 	params: list
 		Parameter names
 	silent: bool
@@ -697,15 +699,18 @@ class Fisher:
 		True parameters to plot as dashed lines in plots
 
 	"""
-	def __init__(self, inroot='',xvar='', yvar='', fixes='', margs=[],
-				 data=[], params=[], silent=False,name='my_fisher',cosmo_truths={'h':.7,'w':0,'Ode0':.7,
+	def __init__(self, inroot='',xvar='', yvar='', fixes='', margs=[],data=[], 
+					data_is_cov=False, params=[], silent=False,name='my_fisher',cosmo_truths={'h':.7,'w':0,'Ode0':.7,
 					'w0':0,'wa':-1,'Om0':.3}):
 		self.name=name
 		self.xvar = xvar
 		self.yvar = yvar
 		self.fixes = fixes
 		self.margs = margs
-		self.data = data
+		if data_is_cov:
+			self.data = inv(data)
+		else:
+			self.data = data
 		self.params = params
 		self.silent = silent 
 		self.nFish=1

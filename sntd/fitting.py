@@ -2190,6 +2190,8 @@ def _fitparallel(all_args):
 				for b in best_bands:
 					temp_bands=np.append(temp_bands,np.where(args['curves'].images[args['fitOrder'][0]].table['band']==b)[0])
 				temp_inds=temp_bands.astype(int)
+			else:
+				temp_inds=deepcopy(inds)
 			res,fit=sncosmo.fit_lc(args['curves'].images[args['fitOrder'][0]].table[temp_inds],tempMod,[x for x in args['params'] if x in tempMod.param_names],
 									bounds={b:args['bounds'][b]+(args['bounds'][b]-np.median(args['bounds'][b]))*2 if b=='t0' else args['bounds'][b] for b in args['bounds'] if b!= tempMod.param_names[2]},
 									minsnr=args.get('minsnr',0))
@@ -2303,12 +2305,15 @@ def _fitparallel(all_args):
 		
 		if args['trial_fit'] and args['t0_guess'] is None:
 			if args['max_n_bands'] is None:
-				best_bands=band_SNR[args['fitOrder'][0]][:min(len(band_SNR[args['fitOrder'][0]]),2)]
+				best_bands=band_SNR[d][:min(len(band_SNR[d]),2)]
 				temp_bands=[]
 				for b in best_bands:
-					temp_bands=np.append(temp_bands,np.where(args['curves'].images[args['fitOrder'][0]].table['band']==b)[0])
+					temp_bands=np.append(temp_bands,np.where(args['curves'].images[d].table['band']==b)[0])
 				temp_inds=temp_bands.astype(int)
-			res,fit=sncosmo.fit_lc(args['curves'].images[d].table[temp_inds],tempMod,['t0', tempMod.param_names[2]],
+			else:
+				temp_inds=deepcopy(inds)
+			res,fit=sncosmo.fit_lc(args['curves'].images[d].table[temp_inds],args['curves'].images[args['fitOrder'][0]].fits['model'],
+				['t0', args['curves'].images[args['fitOrder'][0]].fits['model'].param_names[2]],
 									bounds={'t0':initial_bounds['t0']+(initial_bounds['t0']-np.median(initial_bounds['t0']))*2},
 									minsnr=args.get('minsnr',0))
 			image_bounds={b:initial_bounds[b] if b!='t0' else initial_bounds['t0']+fit.get('t0') for b in initial_bounds.keys()}
@@ -2434,7 +2439,7 @@ def nest_parallel_lc(data,model,prev_res,bounds,guess_amplitude_bound=False,gues
 		bounds[model.param_names[2]]=(0,10*guess_amp)
 		bounds['t0']=np.array(bounds['t0'])+guess_t0
 
-	if cut_time is not None and guess_amplitude_bound:
+	if cut_time is not None and (guess_amplitude_bound or not guess_t0_start):
 		data=data[data['time']>=cut_time[0]*(1+model.get('z'))+guess_t0]
 		data=data[data['time']<=cut_time[1]*(1+model.get('z'))+guess_t0]
 
