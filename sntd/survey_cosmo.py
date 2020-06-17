@@ -155,8 +155,12 @@ def loglikelihoodE(testVars,testPoint, zl, zs, dTc=2, set_cosmo={},Eratio_true=N
 			cosmo['Ode0']=Ode0true
 	if 'Ok' not in cosmo.keys():
 		cosmo['Ok']=1-cosmo['Om0']-cosmo['Ode0']
-	if 'h' not in cosmo.keys():
-		cosmo['h']=htrue
+	
+	if 'H0' in cosmo.keys():
+		cosmo['h']=cosmo['H0']/100.
+	else:
+		if 'h' not in cosmo.keys():
+			cosmo['h']=htrue
 
 
 	if Eratio_true is None:
@@ -269,6 +273,7 @@ class Survey(object):
 		self.Ode0 = 0.7
 		self.w = -1
 		self.h = .7
+		self.H0=70
 		self.cosmo_truths={'h':self.h,'w':self.w,'Ode0':self.Ode0,'Ok':self.Ok,
 					'w0':self.w0,'wa':self.wa,'Om0':self.Om0}
 		self.name=name
@@ -576,6 +581,7 @@ class Survey(object):
 		use_H0: bool
 			If true and one of the params is 'h', multiply by 100
 		"""
+
 		if self.nestle_result is None and self.grid_likelihood is None \
 			or (self.nestle_result is not None and (','.join(params) not in self.nestle_result.keys() and ','.join([params[1],params[0]]) not in self.nestle_result.keys()) and\
 			 (self.grid_likelihood is not None and ','.join(params) not in self.grid_likelihood.keys() and ','.join([params[1],params[0]]) not in self.grid_likelihood.keys())):
