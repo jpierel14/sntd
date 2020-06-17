@@ -2314,7 +2314,6 @@ def _fitparallel(all_args):
 				temp_inds=deepcopy(inds)
 			res,fit=sncosmo.fit_lc(args['curves'].images[d].table[temp_inds],args['curves'].images[args['fitOrder'][0]].fits['model'],
 				['t0', args['curves'].images[args['fitOrder'][0]].fits['model'].param_names[2]],
-									bounds={'t0':initial_bounds['t0']+(initial_bounds['t0']-np.median(initial_bounds['t0']))*2},
 									minsnr=args.get('minsnr',0))
 			image_bounds={b:initial_bounds[b] if b!='t0' else initial_bounds['t0']+fit.get('t0') for b in initial_bounds.keys()}
 			guess_t0_start=False
@@ -2432,12 +2431,13 @@ def nest_parallel_lc(data,model,prev_res,bounds,guess_amplitude_bound=False,gues
 																  model,minsnr)
 		if guess_t0_start:
 			model.set(t0=guess_t0)
+			bounds['t0']=np.array(bounds['t0'])+guess_t0
 		else:
 			model.set(t0=np.median(bounds['t0']))
 		model.parameters[2]=guess_amp
 
 		bounds[model.param_names[2]]=(0,10*guess_amp)
-		bounds['t0']=np.array(bounds['t0'])+guess_t0
+		
 
 	if cut_time is not None and (guess_amplitude_bound or not guess_t0_start):
 		data=data[data['time']>=cut_time[0]*(1+model.get('z'))+guess_t0]
