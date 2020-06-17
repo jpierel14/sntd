@@ -1085,7 +1085,7 @@ class Fisher:
 		return(1./(6.17*a*b))
 
 
-	def plot(self,param1,param2,x_limits,y_limits,bestfit1=None,bestfit2=None,alpha = 0.9,color_list=None):
+	def plot(self,param1,param2,x_limits,y_limits,bestfit1=None,bestfit2=None,alpha = 0.9,color_list=None,print_merit=True):
 		"""
 		Plot contours from fisher matrix. This will plot all contours from matrices 
 		that have been added together make this matrix.
@@ -1108,6 +1108,8 @@ class Fisher:
 			The alpha for plotting
 		color_list: list 
 			List of colors to use for plotting
+		print_merit: bool
+			if True, the figure of merit it calculated and added to the legend
 		"""
 
 		xo=bestfit1 if bestfit1 is not None else self.cosmo_truths[param1]
@@ -1126,7 +1128,11 @@ class Fisher:
 		for fish in np.array(self.fish_list)[np.argsort(merits)]:
 			dx,dy,p=fish.dxdyp(param1,param2)
 			plotellsp(xo, yo, dx, dy, p, colors=color_list[i], alpha=alpha)
-			patches.append(plt.plot([],[],'s',ms=10,label=fish.name+': FOM=%.1f'%np.sort(merits)[i],color=color_list[i][0])[0])
+			if print_merit:
+				m=+': FOM=%.1f'%np.sort(merits)[i]
+			else:
+				m=''
+			patches.append(plt.plot([],[],'s',ms=10,label=fish.name+m,color=color_list[i][0])[0])
 			i+=1
 		if x_limits is not None:
 			plt.xlim(x_limits)
