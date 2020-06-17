@@ -275,7 +275,7 @@ class Survey(object):
 		self.h = .7
 		self.H0=70
 		self.cosmo_truths={'h':self.h,'w':self.w,'Ode0':self.Ode0,'Ok':self.Ok,
-					'w0':self.w0,'wa':self.wa,'Om0':self.Om0}
+					'w0':self.w0,'wa':self.wa,'Om0':self.Om0,'H0':self.H0}
 		self.name=name
 
 	@property

@@ -1025,7 +1025,9 @@ def _fitColor(all_args):
 						if b not in all_vparam_names:
 							tempMod.set(**{b:fit.get(b)})
 						elif b !='t0':
-							args['bounds'][b]=(np.array(args['bounds'][b])-np.median(args['bounds'][b]))/2+fit.get(b)
+							args['bounds'][b]=np.array([np.max([args['bounds'][b][0],(args['bounds'][b][0]-np.median(args['bounds'][b]))/2+fit.get(b)]),
+								np.min([args['bounds'][b][1],(args['bounds'][b][1]-np.median(args['bounds'][b]))/2+fit.get(b)])])
+							
 						else:
 							args['bounds'][b]=(np.array(args['bounds'][b])-np.median(args['bounds'][b]))/2+args['curves'].color.meta['reft0']
 					 
@@ -1625,7 +1627,8 @@ def _fitseries(all_args):
 				for b in args['bounds']:
 					if b in list(res.errors.keys()):
 						if b not in ['t0',tempMod.param_names[2]]:
-							args['bounds'][b]=(np.array(args['bounds'][b])-np.median(args['bounds'][b]))/2+fit.get(b)
+							args['bounds'][b]=np.array([np.max([args['bounds'][b][0],(args['bounds'][b][0]-np.median(args['bounds'][b]))/2+fit.get(b)]),
+								np.min([args['bounds'][b][1],(args['bounds'][b][1]-np.median(args['bounds'][b]))/2+fit.get(b)])])
 						elif b=='t0':
 							args['bounds'][b]=(np.array(args['bounds'][b])-np.median(args['bounds'][b]))/2+args['curves'].series.meta['reft0']
 						else:
@@ -2191,7 +2194,12 @@ def _fitparallel(all_args):
 									bounds={b:args['bounds'][b]+(args['bounds'][b]-np.median(args['bounds'][b]))*2 if b=='t0' else args['bounds'][b] for b in args['bounds'] if b!= tempMod.param_names[2]},
 									minsnr=args.get('minsnr',0))
 
-			args['bounds']={b:(np.array(args['bounds'][b])-np.median(args['bounds'][b]))/2+fit.get(b) if b in res.param_names else args['bounds'][b] for b in args['bounds'].keys()}
+			for b in args['bounds'].keys():
+				if b in res.param_names:
+					
+					args['bounds'][b]=np.array([np.max([args['bounds'][b][0],(args['bounds'][b][0]-np.median(args['bounds'][b]))/2+fit.get(b)]),
+						np.min([args['bounds'][b][1],(args['bounds'][b][1]-np.median(args['bounds'][b]))/2+fit.get(b)])])
+
 			if tempMod.param_names[2] not in args['bounds'].keys():
 				args['bounds'][tempMod.param_names[2]]=np.array([.1,10])*fit.parameters[2]
 			
@@ -2226,7 +2234,6 @@ def _fitparallel(all_args):
 				args['bounds'][b]=np.array([max([args['bounds'][b][0],0]),max([args['bounds'][b][1],0])])
 			else:
 				args['bounds'][b]=np.array([0,np.inf])
-		print(args['bounds'])
 		res,fit=sncosmo.nest_lc(fit_table,tempMod,[x for x in args['params'] if x in tempMod.param_names],
 								bounds=args['bounds'],
 							  priors=args.get('priors',None), ppfs=args.get('ppfs',None),
@@ -2275,6 +2282,7 @@ def _fitparallel(all_args):
 		if args['t0_guess'] is not None:
 			if 't0' in args['bounds']:
 				initial_bounds['t0']=(t0Bounds[0]+args['t0_guess'][d],t0Bounds[1]+args['t0_guess'][d])
+			guess_t0_start=False
 		else:
 			best_bands=band_SNR[d][:min(len(band_SNR[d]),2)]
 			temp_bands=[]
@@ -2293,8 +2301,24 @@ def _fitparallel(all_args):
 			fit_table=deepcopy(args['curves'].images[d].table)
 			fit_table=fit_table[minds]
 		
-		par_output=nest_parallel_lc(fit_table,first_res[1],first_res[2],initial_bounds,min_n_bands=args['min_n_bands'],
-						min_n_points_per_band=args['min_points_per_band'],
+		if args['trial_fit'] and args['t0_guess'] is None:
+			if args['max_n_bands'] is None:
+				best_bands=band_SNR[args['fitOrder'][0]][:min(len(band_SNR[args['fitOrder'][0]]),2)]
+				temp_bands=[]
+				for b in best_bands:
+					temp_bands=np.append(temp_bands,np.where(args['curves'].images[args['fitOrder'][0]].table['band']==b)[0])
+				temp_inds=temp_bands.astype(int)
+			res,fit=sncosmo.fit_lc(args['curves'].images[d].table[temp_inds],tempMod,['t0', tempMod.param_names[2]],
+									bounds={'t0':initial_bounds['t0']+(initial_bounds['t0']-np.median(initial_bounds['t0']))*2},
+									minsnr=args.get('minsnr',0))
+			image_bounds={b:initial_bounds[b] if b!='t0' else initial_bounds['t0']+fit.get('t0') for b in initial_bounds.keys()}
+			guess_t0_start=False
+		else:
+			image_bounds=deepcopy(initial_bounds)
+			guess_t0_start=True
+
+		par_output=nest_parallel_lc(fit_table,first_res[1],first_res[2],image_bounds,min_n_bands=args['min_n_bands'],
+						min_n_points_per_band=args['min_points_per_band'],guess_t0_start=guess_t0_start,
 						guess_amplitude_bound=True,priors=args.get('priors',None), ppfs=args.get('None'),
 						method=args.get('nest_method','single'),cut_time=args['cut_time'],snr_band_inds=inds,
 						maxcall=args.get('maxcall',None), modelcov=args.get('modelcov',False),
@@ -2376,7 +2400,8 @@ def _fitparallel(all_args):
 
 	return args['curves']
 
-def nest_parallel_lc(data,model,prev_res,bounds,guess_amplitude_bound=False,cut_time=None,snr_band_inds=None,
+def nest_parallel_lc(data,model,prev_res,bounds,guess_amplitude_bound=False,guess_t0_start=True,
+				   cut_time=None,snr_band_inds=None,
 				   min_n_bands=1,min_n_points_per_band=3,
 				   minsnr=5., priors=None, ppfs=None, npoints=100, method='single',
 				   maxiter=None, maxcall=None, modelcov=False, rstate=None,
@@ -2400,8 +2425,10 @@ def nest_parallel_lc(data,model,prev_res,bounds,guess_amplitude_bound=False,cut_
 
 		guess_t0,guess_amp=sncosmo.fitting.guess_t0_and_amplitude(sncosmo.photdata.photometric_data(data[snr_band_inds]),
 																  model,minsnr)
-
-		model.set(t0=guess_t0)
+		if guess_t0_start:
+			model.set(t0=guess_t0)
+		else:
+			model.set(t0=np.median(bounds['t0']))
 		model.parameters[2]=guess_amp
 
 		bounds[model.param_names[2]]=(0,10*guess_amp)
