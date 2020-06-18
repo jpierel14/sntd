@@ -1126,7 +1126,6 @@ class Fisher:
 			color_list=[blues,reds,purples,yellows,oranges,darkoranges,greens,greys,lightblues,
 						lightreds,lightgreens,lightyellows,lightgreys]
 		
-		col_dict={i:color_list[i] for i in range(len())}
 		fig=plt.figure()
 		ax=fig.gca()
 		i=0
