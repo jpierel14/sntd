@@ -1150,12 +1150,12 @@ class Fisher:
 		if show_uncertainty:
 			
 
-			param1_prec = np.round(self.dx(param1),abs(int(np.round(math.log10(self.dx(param1))))))
-			param2_prec = np.round(self.dx(param2),abs(int(np.round(math.log10(self.dx(param2))))))
+			param1_prec = str(np.round(self.dx(param1),abs(int(np.round(math.log10(self.dx(param1)))))))
+			param2_prec = str(np.round(self.dx(param2),abs(int(np.round(math.log10(self.dx(param2)))))))
 
 			
-			ax.annotate(r'$\delta $'+'%s=%f'%(param1,param1_prec),(.05,.1),xycoords='axes fraction')
-			ax.annotate(r'$\delta $'+'%s=%f'%(param2,param2_prec),(.05,.05),xycoords='axes fraction')
+			ax.annotate(r'$\delta $'+'%s=%s'%(param1,param1_prec),(.05,.1),xycoords='axes fraction')
+			ax.annotate(r'$\delta $'+'%s=%s'%(param2,param2_prec),(.05,.05),xycoords='axes fraction')
 		if x_limits is not None:
 			plt.xlim(x_limits)
 		if y_limits is not None:
