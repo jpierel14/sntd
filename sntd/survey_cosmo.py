@@ -708,7 +708,7 @@ class Fisher:
 		self.fixes = fixes
 		self.margs = margs
 		if data_is_cov:
-			self.data = np.linalg.pinv(data)
+			self.data = np.linalg.inv(data)
 		else:
 			self.data = data
 		self.params = params
@@ -853,7 +853,7 @@ class Fisher:
 		C = self.cov()
 		C = C._take(ikeep, 0)
 		C = C._take(ikeep, 1)
-		self.data = np.linalg.pinv(C)
+		self.data = np.linalg.inv(C)
 
 		self.params = list(_take(self.params, ikeep))
 
@@ -883,7 +883,7 @@ class Fisher:
 		Covariance matrix, by definition the inverse of the Fisher matrix
 
 		"""
-		return np.linalg.pinv(self.data)
+		return np.linalg.inv(self.data)
 
 	def dxdyp(self, xvar='', yvar=''):  # , fixes=None
 		"""
