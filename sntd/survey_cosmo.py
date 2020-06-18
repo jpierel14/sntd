@@ -908,8 +908,10 @@ class Fisher:
 		self._ii()
 
 		C = self.cov()
+		print(self.xvar,self.yvar)
 		C = C.take((self.ix,self.iy),0)
 		C = C.take((self.ix,self.iy),1)
+		print(C)
 		dx = np.sqrt(C[0,0])
 		dy = np.sqrt(C[1,1])
 		dxy = C[0,1]
