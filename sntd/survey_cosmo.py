@@ -910,6 +910,7 @@ class Fisher:
 		C = self.cov()
 		C = C.take((self.ix,self.iy),0)
 		C = C.take((self.ix,self.iy),1)
+		print(C)
 		dx = np.sqrt(C[0,0])
 		dy = np.sqrt(C[1,1])
 		dxy = C[0,1]
@@ -1081,7 +1082,6 @@ class Fisher:
 			The Figure of Merit
 		"""
 		dx,dy,p=self.dxdyp(param1,param2)
-		print(dx,dy,p)
 		a,b,_=setell(dx,dy,p)
 		return(1./(6.17*a*b))
 
