@@ -1088,7 +1088,7 @@ class Fisher:
 		return(1./np.sqrt(np.linalg.det(self.C)))
 
 
-	def plot(self,param1,param2,x_limits,y_limits,bestfit1=None,bestfit2=None,alpha = 0.9,color_list=None,print_merit=True):
+	def plot(self,param1,param2,x_limits,y_limits,bestfit1=None,bestfit2=None,alpha = 0.9,color_list=None,print_merit=True,col_order=True):
 		"""
 		Plot contours from fisher matrix. This will plot all contours from matrices 
 		that have been added together make this matrix.
@@ -1123,22 +1123,24 @@ class Fisher:
 			print('Either your color_list is the wrong size or you did not define it, taking defaults...')
 			color_list=[blues,reds,purples,yellows,oranges,darkoranges,greens,greys,lightblues,
 						lightreds,lightgreens,lightyellows,lightgreys]
+		
 
 		i=0
 		patches=[]
-		if print_merit:
-			merits=[x.merit(param1,param2) for x in self.fish_list]
+		merits=[x.merit(param1,param2) for x in self.fish_list]
+		if col_order is not None:
+			original_order=np.arange(0,len(self.fish_list),1)
 		else:
-			merits=np.arange(0,len(self.fish_list),1)
+			original_order=np.argsort(merits)
 
 		for fish in np.array(self.fish_list)[np.argsort(merits)]:
 			dx,dy,p=fish.dxdyp(param1,param2)
-			plotellsp(xo, yo, dx, dy, p, colors=color_list[i], alpha=alpha)
+			plotellsp(xo, yo, dx, dy, p, colors=color_list[original_order[i]], alpha=alpha)
 			if print_merit:
 				m=': FOM=%.1f'%np.sort(merits)[i]
 			else:
 				m=''
-			patches.append(plt.plot([],[],'s',ms=10,label=fish.name+m,color=color_list[i][0])[0])
+			patches.append(plt.plot([],[],'s',ms=10,label=fish.name+m,color=color_list[original_order[i]][0])[0])
 			i+=1
 		if x_limits is not None:
 			plt.xlim(x_limits)
