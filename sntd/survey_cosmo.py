@@ -1126,7 +1126,10 @@ class Fisher:
 
 		i=0
 		patches=[]
-		merits=[x.merit(param1,param2) for x in self.fish_list]
+		if print_merit:
+			merits=[x.merit(param1,param2) for x in self.fish_list]
+		else:
+			merits=np.arange(0,len(self.fish_list),1)
 
 		for fish in np.array(self.fish_list)[np.argsort(merits)]:
 			dx,dy,p=fish.dxdyp(param1,param2)
