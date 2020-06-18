@@ -1,6 +1,7 @@
 from matplotlib import pyplot as plt
 import numpy as np
 import scipy
+import math
 from scipy.integrate import quad
 from matplotlib import ticker, rcParams
 from matplotlib.lines import Line2D
@@ -1147,8 +1148,22 @@ class Fisher:
 			patches.append(plt.plot([],[],'s',ms=10,label=fish.name+m,color=color_list[original_order[i]][0])[0])
 			i+=1
 		if show_uncertainty:
-			ax.annotate(r'$\delta $'+'%s=%.2f'%(param1,self.dx(param1)),(.05,.1),xycoords='axes fraction')
-			ax.annotate(r'$\delta $'+'%s=%.2f'%(param2,self.dx(param2)),(.05,.05),xycoords='axes fraction')
+			def myround(n):
+			    if n == 0:
+			        return 0
+			    sgn = -1 if n < 0 else 1
+			    scale = int(-math.floor(math.log10(abs(n))))
+			    if scale <= 0:
+			        scale = 1
+			    factor = 10**scale
+			    return sgn*math.floor(abs(n)*factor)/factor
+
+
+			param1_prec=myround(self.dx(param1))
+			param2_prec=myround(self.dx(param2))
+
+			ax.annotate(r'$\delta $'+'%s=%f'%(param1,param1_prec),(.05,.1),xycoords='axes fraction')
+			ax.annotate(r'$\delta $'+'%s=%f'%(param2,param2_prec),(.05,.05),xycoords='axes fraction')
 		if x_limits is not None:
 			plt.xlim(x_limits)
 		if y_limits is not None:
@@ -1157,4 +1172,4 @@ class Fisher:
 		plt.ylabel(param2,fontsize=14)
 
 		plt.figlegend(handles=patches,fontsize=14,bbox_to_anchor=(.75,.85))
-
+		return ax
