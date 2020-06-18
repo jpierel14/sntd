@@ -906,8 +906,9 @@ class Fisher:
 		self.xvar = xvar if len(xvar)>0 else self.xvar
 		self.yvar = yvar if len(yvar)>0 else self.yvar
 		self._ii()
-		print(self.xvar,self.yvar,self.params,self.ix,self.iy)
+		
 		C = self.cov()
+		print(self.xvar,self.yvar,self.params,self.ix,self.iy,C[0][0])
 		C = C.take((self.ix,self.iy),0)
 		C = C.take((self.ix,self.iy),1)
 		print(C)
