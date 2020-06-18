@@ -2171,12 +2171,8 @@ def _fitparallel(all_args):
 			tempMod.set(**{k:args['curves'].images[args['refImage']].simMeta[args['set_from_simMeta'][k]] for k in args['set_from_simMeta'].keys() if k in tempMod.param_names})
 		if mod=='BAZINSOURCE':
 			tempMod.set(z=0)
-		guess_t0,guess_amp=sncosmo.fitting.guess_t0_and_amplitude( \
-			sncosmo.photdata.photometric_data(args['curves'].images[args['fitOrder'][0]].table[inds]),
-			tempMod,args.get('minsnr',5.))
-		if 't0' in args['bounds'] and args['t0_guess'] is None:
-
-			args['bounds']['t0']=np.array(initial_bounds['t0'])+guess_t0
+		
+		
 		
 		if args['trial_fit'] and args['t0_guess'] is None:
 			for b in args['force_positive_param']:
@@ -2193,20 +2189,27 @@ def _fitparallel(all_args):
 			else:
 				temp_inds=deepcopy(inds)
 			res,fit=sncosmo.fit_lc(args['curves'].images[args['fitOrder'][0]].table[temp_inds],tempMod,[x for x in args['params'] if x in tempMod.param_names],
-									bounds={b:args['bounds'][b]+(args['bounds'][b]-np.median(args['bounds'][b]))*2 if b=='t0' else args['bounds'][b] for b in args['bounds'] if b!= tempMod.param_names[2]},
+									bounds={b:args['bounds'][b]+(args['bounds'][b]-np.median(args['bounds'][b]))*2 for b in args['bounds'].keys() if b not in ['t0',tempMod.param_names[2]]},
 									minsnr=args.get('minsnr',0))
 
 			for b in args['bounds'].keys():
 				if b in res.param_names:
-					
-					args['bounds'][b]=np.array([np.max([args['bounds'][b][0],(args['bounds'][b][0]-np.median(args['bounds'][b]))/2+fit.get(b)]),
-						np.min([args['bounds'][b][1],(args['bounds'][b][1]-np.median(args['bounds'][b]))/2+fit.get(b)])])
+					if b!='t0':
+						args['bounds'][b]=np.array([np.max([args['bounds'][b][0],(args['bounds'][b][0]-np.median(args['bounds'][b]))/2+fit.get(b)]),
+							np.min([args['bounds'][b][1],(args['bounds'][b][1]-np.median(args['bounds'][b]))/2+fit.get(b)])])
+					else:
+						args['bounds'][b]=args['bounds'][b]+fit.get('t0')
 
 			if tempMod.param_names[2] not in args['bounds'].keys():
 				args['bounds'][tempMod.param_names[2]]=np.array([.1,10])*fit.parameters[2]
 			
 			guess_t0=fit.get('t0')
 		elif args['guess_amplitude']:
+			guess_t0,guess_amp=sncosmo.fitting.guess_t0_and_amplitude( \
+				sncosmo.photdata.photometric_data(args['curves'].images[args['fitOrder'][0]].table[inds]),
+				tempMod,args.get('minsnr',5.))
+			if args['t0_guess'] is None:
+				args['bounds']['t0']=np.array(initial_bounds['t0'])+guess_t0
 			if tempMod.param_names[2] in args['bounds']:
 				args['bounds'][tempMod.param_names[2]]=np.array(args['bounds'][tempMod.param_names[2]])*\
 					guess_amp
@@ -2236,6 +2239,7 @@ def _fitparallel(all_args):
 				args['bounds'][b]=np.array([max([args['bounds'][b][0],0]),max([args['bounds'][b][1],0])])
 			else:
 				args['bounds'][b]=np.array([0,np.inf])
+		print(args['bounds'])
 		res,fit=sncosmo.nest_lc(fit_table,tempMod,[x for x in args['params'] if x in tempMod.param_names],
 								bounds=args['bounds'],
 							  priors=args.get('priors',None), ppfs=args.get('ppfs',None),

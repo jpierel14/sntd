@@ -1081,6 +1081,7 @@ class Fisher:
 			The Figure of Merit
 		"""
 		dx,dy,p=self.dxdyp(param1,param2)
+		print(dx,dy,p)
 		a,b,_=setell(dx,dy,p)
 		return(1./(6.17*a*b))
 
