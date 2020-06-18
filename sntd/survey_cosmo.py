@@ -1088,7 +1088,8 @@ class Fisher:
 		return(1./np.sqrt(np.linalg.det(self.C)))
 
 
-	def plot(self,param1,param2,x_limits,y_limits,bestfit1=None,bestfit2=None,alpha = 0.9,color_list=None,print_merit=True,col_order=True):
+	def plot(self,param1,param2,x_limits,y_limits,bestfit1=None,bestfit2=None,alpha = 0.9,color_list=None,
+			print_merit=True,col_order=True,show_uncertainty=False):
 		"""
 		Plot contours from fisher matrix. This will plot all contours from matrices 
 		that have been added together make this matrix.
@@ -1113,6 +1114,8 @@ class Fisher:
 			List of colors to use for plotting
 		print_merit: bool
 			if True, the figure of merit it calculated and added to the legend
+		show_uncertainty: bool
+			If true, the final uncertainty in each parameter is printed on the plot
 		"""
 
 		xo=bestfit1 if bestfit1 is not None else self.cosmo_truths[param1]
@@ -1120,18 +1123,20 @@ class Fisher:
 		if color_list is not None and not isinstance(color_list,(tuple,list)):
 			color_list=[color_list]
 		if color_list is None or len(color_list)!=len(self.fish_list):
-			print('Either your color_list is the wrong size or you did not define it, taking defaults...')
 			color_list=[blues,reds,purples,yellows,oranges,darkoranges,greens,greys,lightblues,
 						lightreds,lightgreens,lightyellows,lightgreys]
 		
-
+		col_dict={i:color_list[i] for i in range(len())}
+		fig=plt.figure()
+		ax=fig.gca()
 		i=0
 		patches=[]
 		merits=[x.merit(param1,param2) for x in self.fish_list]
-		if col_order is not None:
-			original_order=np.arange(0,len(self.fish_list),1)
-		else:
+		if col_order:
 			original_order=np.argsort(merits)
+		else:
+			original_order=np.arange(0,len(self.fish_list),1)
+			
 
 		for fish in np.array(self.fish_list)[np.argsort(merits)]:
 			dx,dy,p=fish.dxdyp(param1,param2)
@@ -1142,6 +1147,9 @@ class Fisher:
 				m=''
 			patches.append(plt.plot([],[],'s',ms=10,label=fish.name+m,color=color_list[original_order[i]][0])[0])
 			i+=1
+		if show_uncertainty:
+			ax.annotate(r'$\delta $'+'%s=%.2f'%(param1,self.dx(param1)),(.05,.1),xycoords='axes fraction')
+			ax.annotate(r'$\delta $'+'%s=%.2f'%(param2,self.dx(param2)),(.05,.05),xycoords='axes fraction')
 		if x_limits is not None:
 			plt.xlim(x_limits)
 		if y_limits is not None:
