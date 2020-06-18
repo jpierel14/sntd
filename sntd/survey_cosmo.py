@@ -1150,8 +1150,8 @@ class Fisher:
 		if show_uncertainty:
 			
 
-			param1_prec = np.round(self.dx(param1),abs(int(math.log10(self.dx(param1)))))
-			param2_prec = np.round(self.dx(param2),abs(int(math.log10(self.dx(param2)))))
+			param1_prec = np.round(self.dx(param1),abs(int(np.round(math.log10(self.dx(param1))))))
+			param2_prec = np.round(self.dx(param2),abs(int(np.round(math.log10(self.dx(param2))))))
 
 			
 			ax.annotate(r'$\delta $'+'%s=%f'%(param1,param1_prec),(.05,.1),xycoords='axes fraction')
