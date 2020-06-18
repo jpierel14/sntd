@@ -906,7 +906,7 @@ class Fisher:
 		self.xvar = xvar or self.xvar
 		self.yvar = yvar or self.yvar
 		self._ii()
-
+		print(self.xvar,self.yvar,self.ix,self.iy)
 		C = self.cov()
 		C = C.take((self.ix,self.iy),0)
 		C = C.take((self.ix,self.iy),1)
