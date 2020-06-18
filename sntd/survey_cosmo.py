@@ -1083,8 +1083,9 @@ class Fisher:
 			The Figure of Merit
 		"""
 		dx,dy,p=self.dxdyp(param1,param2)
-		a,b,_=setell(dx,dy,p)
-		return(1./(6.17*a*b))
+		#a,b,_=setell(dx,dy,p)
+		#return(1./(6.17*a*b))
+		return(1./np.sqrt(np.linalg.det(self.C)))
 
 
 	def plot(self,param1,param2,x_limits,y_limits,bestfit1=None,bestfit2=None,alpha = 0.9,color_list=None,print_merit=True):
