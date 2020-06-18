@@ -903,10 +903,10 @@ class Fisher:
 		p: float
 			rho (correlation parameter)
 		"""
-		self.xvar = xvar or self.xvar
-		self.yvar = yvar or self.yvar
+		self.xvar = xvar if len(xvar)>0 else self.xvar
+		self.yvar = yvar if len(yvar)>0 else self.yvar
 		self._ii()
-		print(self.xvar,self.yvar,self.ix,self.iy)
+		print(self.xvar,self.yvar,self.params,self.ix,self.iy)
 		C = self.cov()
 		C = C.take((self.ix,self.iy),0)
 		C = C.take((self.ix,self.iy),1)
