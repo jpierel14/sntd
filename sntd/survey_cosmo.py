@@ -1114,7 +1114,7 @@ class Fisher:
 		color_list: list 
 			List of colors to use for plotting
 		print_merit: bool
-			if True, the figure of merit it calculated and added to the legend
+			If set to True figure of merit it calculated and added to the legend
 		show_uncertainty: bool
 			If true, the final uncertainty in each parameter is printed on the plot
 		"""
