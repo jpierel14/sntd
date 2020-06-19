@@ -1163,5 +1163,5 @@ class Fisher:
 		plt.xlabel(param1,fontsize=14)
 		plt.ylabel(param2,fontsize=14)
 
-		plt.figlegend(handles=patches,fontsize=14,bbox_to_anchor=(.75,.85))
+		plt.figlegend(handles=patches,fontsize=14,bbox_to_anchor=(.8,.9))
 		return ax
