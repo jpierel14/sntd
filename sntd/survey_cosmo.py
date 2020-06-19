@@ -1165,8 +1165,14 @@ class Fisher:
 			plt.xlim(x_limits)
 		if y_limits is not None:
 			plt.ylim(y_limits)
-		plt.xlabel(param1,fontsize=14)
-		plt.ylabel(param2,fontsize=14)
+		if math_label1 is None:
+			plt.xlabel(param1,fontsize=16)
+		else:
+			plt.xlabel(math_label1,fontsize=16)
+		if math_label2 is None:
+			plt.ylabel(param2,fontsize=16)
+		else:
+			plt.ylabel(math_label2,fontsize=16)
 
 		plt.figlegend(handles=patches,fontsize=14,bbox_to_anchor=(.88,.88))
 		return ax
