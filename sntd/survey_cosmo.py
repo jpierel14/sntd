@@ -1089,7 +1089,8 @@ class Fisher:
 		return(1./np.sqrt(np.linalg.det(self.C)))
 
 
-	def plot(self,param1,param2,x_limits,y_limits,bestfit1=None,bestfit2=None,alpha = 0.9,color_list=None,
+	def plot(self,param1,param2,x_limits,y_limits,math_label1=None,math_label2=None,
+			bestfit1=None,bestfit2=None,alpha = 0.9,color_list=None,
 			print_merit=True,col_order=True,show_uncertainty=False):
 		"""
 		Plot contours from fisher matrix. This will plot all contours from matrices 
@@ -1105,6 +1106,10 @@ class Fisher:
 			The x parameter limits for plotting
 		ylimits: list or tuple or :class:`~numpy.ndarray`
 			The y parameter limits for plotting
+		math_label1: str
+			A latex label for axis 1
+		math_label2: str
+	 		A latex label for axis 2
 		bestfit1: float
 			The true/best fit value for parameter 1 (default self.cosmo_truths)
 		bestfit2: float
