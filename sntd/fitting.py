@@ -1818,7 +1818,7 @@ def _fitseries(all_args):
 		mu,sigma=scipy.stats.norm.fit(t0s)
 
 		args['curves'].series.param_quantiles['micro']=np.sqrt((args['curves'].series.fits.model.get('t0')-mu)**2 \
-																  +9*sigma**2)
+																  +sigma**2)
 
 	return args['curves']
 
@@ -2403,7 +2403,7 @@ def _fitparallel(all_args):
 				return args['curves']
 			mu,sigma=scipy.stats.norm.fit(t0s)
 			args['curves'].images[k].param_quantiles['micro']=np.sqrt((args['curves'].images[k].fits.model.get('t0')-mu)**2\
-																	  +9*sigma**2)
+																	  +sigma**2)
 
 
 	return args['curves']
