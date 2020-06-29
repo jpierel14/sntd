@@ -83,7 +83,7 @@ def realizeMicro(arand=.25,debug=0,kappas=.75,kappac=.15,gamma=.76,eps=.6,nray=3
 
 
 def microcaustic_field_to_curve(field,time,zl,zs,velocity=(10**4)*(u.kilometer/u.s),M=(1*u.solMass).to(u.kg),
-                                loc='Random',plot=False):
+                                loc='Random',plot=False,ax=None,showCurve=True):
     """
     Convolves an expanding photosphere (achromatic disc) with a microcaustic to generate a magnification curve.
 
@@ -105,6 +105,11 @@ def microcaustic_field_to_curve(field,time,zl,zs,velocity=(10**4)*(u.kilometer/u
         Random is defualt for location of the supernova, or pixel (x,y) coordiante can be specified
     plot: bool
         If true, plots the expanding photosphere on the microcaustic
+    ax: `~matplotlib.pyplot.axis`
+        An optional axis object to plot on. If you want to show the curve, this should be a list
+        like this: [main_ax,lower_ax]
+    showCurve: bool
+        If true, the microlensing curve is plotted below the microcaustic
 
     Returns
     -------
@@ -154,7 +159,7 @@ def microcaustic_field_to_curve(field,time,zl,zs,velocity=(10**4)*(u.kilometer/u
 
 
 
-    dmag=mu_from_image(field,loc,snSize,'disk',plot,time)
+    dmag=mu_from_image(field,loc,snSize,'disk',plot,time,ax,showCurve)
 
     return(time,dmag)
 
@@ -214,14 +219,15 @@ class MidpointNormalize(colors.Normalize):
         x, y = [self.vmin, self.midpoint, self.vmax], [0, 0.5, 1]
         return np.ma.masked_array(np.interp(value, x, y), np.isnan(value))
 
-def mu_from_image(image, center,sizes,brightness,plot,time):
+def mu_from_image(image, center,sizes,brightness,plot,time,ax,showCurve):
     h, w = image.shape
     mu = []
     if plot:
-        fig=plt.figure(figsize=(10,10))
+        if ax is None:
+            fig=plt.figure(figsize=(10,10))
 
-        ax=fig.gca()
-        plt.imshow(-(image-1024)/256., aspect='equal', interpolation='nearest', cmap=cm.bwr,
+            ax=fig.gca()
+        ax.imshow(-(image-1024)/256., aspect='equal', interpolation='nearest', cmap=cm.bwr,
                    norm=MidpointNormalize(vmin=-2,vmax=2,midpoint=0),
                   vmin=-2, vmax=2, origin='lower')
 
@@ -274,24 +280,25 @@ def mu_from_image(image, center,sizes,brightness,plot,time):
     mu/=np.mean(mu)
     dmag=-2.5*np.log10(mu)
     if plot:
-        cbaxes = fig.add_axes([.82, 0.33, 0.04, 0.55])
+        if ax is  None:
+            
+            cbaxes = fig.add_axes([.82, 0.33, 0.04, 0.55])
+            cb = plt.colorbar(cax = cbaxes)
+            cb.ax.set_ylabel('Magnification (Magnitudes)',fontsize=18,rotation=270,labelpad=25)
+            cb.ax.invert_yaxis()
+            cb.ax.tick_params(labelsize=14)
 
-        cb = plt.colorbar(cax = cbaxes)
-        cb.ax.set_ylabel('Magnification (Magnitudes)',fontsize=18,rotation=270,labelpad=25)
-        cb.ax.invert_yaxis()
-        cb.ax.tick_params(labelsize=14)
-
-
-        ax_divider = make_axes_locatable(ax)
-        ax_ml = ax_divider.append_axes("bottom", size="25%", pad=.7)
-        for tick in ax_ml.xaxis.get_major_ticks():
-            tick.label.set_fontsize(14)
-        for tick in ax_ml.yaxis.get_major_ticks():
-            tick.label.set_fontsize(14)
-        ax_ml.plot(time,dmag,ls='-',marker=' ', color='#004949')
-        ax_ml.set_ylabel(r'$\Delta m$ (mag)',fontsize=18)
-        ax_ml.set_xlabel('Time from Explosion (days)',fontsize=18)
-        ax_ml.invert_yaxis()
+        if showCurve:
+            ax_divider = make_axes_locatable(ax)
+            ax_ml = ax_divider.append_axes("bottom", size="25%", pad=.7)
+            for tick in ax_ml.xaxis.get_major_ticks():
+                tick.label.set_fontsize(14)
+            for tick in ax_ml.yaxis.get_major_ticks():
+                tick.label.set_fontsize(14)
+            ax_ml.plot(time,dmag,ls='-',marker=' ', color='#004949')
+            ax_ml.set_ylabel(r'$\Delta m$ (mag)',fontsize=18)
+            ax_ml.set_xlabel('Time from Explosion (days)',fontsize=18)
+            ax_ml.invert_yaxis()
         #ax.plot(sizes[10:-10],dmag[10:-10])
         #plt.savefig('sntd_microlensing.pdf',format='pdf',overwrite=True)
         #plt.show()
