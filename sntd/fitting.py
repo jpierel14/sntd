@@ -402,7 +402,7 @@ def fit_data(curves=None, snType='Ia',bands=None, models=None, params=None, boun
 					with open(os.path.join(os.path.abspath(folder_name),pyfile),'w') as f:
 						f.write(batch_py)
 
-				return run_sbatch(folder_name,script_name_init,script_name,total_jobs,max_batch_jobs,n_per_node,wait_for_batch,parallelize,len(args['curves']))
+				return run_sbatch(folder_name,script_name_init,script_name,total_jobs,max_batch_jobs,n_per_node,wait_for_batch,parallelize,len(args['curves']),verbose)
 
 
 		else:
@@ -463,7 +463,7 @@ def fit_data(curves=None, snType='Ia',bands=None, models=None, params=None, boun
 								pass
 					par_arg_vals.append([args['curves'][i],temp_args])
 
-				curves=pyParz.foreach(par_arg_vals,_fitparallel,[args],numThreads=min(npar_cores,len(par_arg_vals)))
+				curves=pyParz.foreach(par_arg_vals,_fitparallel,[args],numThreads=min(npar_cores,len(par_arg_vals)),simple=False)
 			else:
 				if n_cores_per_node>1:
 					parallelize=n_cores_per_node
@@ -548,7 +548,7 @@ def fit_data(curves=None, snType='Ia',bands=None, models=None, params=None, boun
 				
 
 				
-				return run_sbatch(folder_name,script_name_init,script_name,total_jobs,max_batch_jobs,n_per_node,wait_for_batch,parallelize,len(args['curves']))
+				return run_sbatch(folder_name,script_name_init,script_name,total_jobs,max_batch_jobs,n_per_node,wait_for_batch,parallelize,len(args['curves']),verbose)
 
 
 
@@ -570,7 +570,7 @@ def fit_data(curves=None, snType='Ia',bands=None, models=None, params=None, boun
 					except:
 						pass
 					par_arg_vals.append([args['curves'][i],temp_args])
-				curves=pyParz.foreach(par_arg_vals,_fitseries,[args],numThreads=min(npar_cores,len(par_arg_vals)))
+				curves=pyParz.foreach(par_arg_vals,_fitseries,[args],numThreads=min(npar_cores,len(par_arg_vals)),simple=False)
 			else:
 				if n_cores_per_node>1:
 					parallelize=n_cores_per_node
@@ -648,7 +648,7 @@ def fit_data(curves=None, snType='Ia',bands=None, models=None, params=None, boun
 					with open(os.path.join(os.path.abspath(folder_name),pyfile),'w') as f:
 						f.write(batch_py)
 				
-				return run_sbatch(folder_name,script_name_init,script_name,total_jobs,max_batch_jobs,n_per_node,wait_for_batch,parallelize,len(args['curves']))
+				return run_sbatch(folder_name,script_name_init,script_name,total_jobs,max_batch_jobs,n_per_node,wait_for_batch,parallelize,len(args['curves']),verbose)
 		else:
 			curves=_fitseries(args)
 
@@ -668,7 +668,7 @@ def fit_data(curves=None, snType='Ia',bands=None, models=None, params=None, boun
 					except:
 						pass
 					par_arg_vals.append([args['curves'][i],temp_args])
-				curves=pyParz.foreach(par_arg_vals,_fitColor,[args],numThreads=min(npar_cores,len(par_arg_vals)))
+				curves=pyParz.foreach(par_arg_vals,_fitColor,[args],numThreads=min(npar_cores,len(par_arg_vals)),simple=False)
 			else:
 				if n_cores_per_node>1:
 					parallelize=n_cores_per_node
@@ -748,7 +748,7 @@ def fit_data(curves=None, snType='Ia',bands=None, models=None, params=None, boun
 
 				
 
-				return run_sbatch(folder_name,script_name_init,script_name,total_jobs,max_batch_jobs,n_per_node,wait_for_batch,parallelize,len(args['curves']))
+				return run_sbatch(folder_name,script_name_init,script_name,total_jobs,max_batch_jobs,n_per_node,wait_for_batch,parallelize,len(args['curves']),verbose)
 		else:
 			if args['color_bands'] is not None:
 				args['bands']=args['color_bands']
@@ -1901,25 +1901,31 @@ def nest_series_lc(data,model,nimage,vparam_names,bounds,ref='image_1',
 	td_idx=np.array([vparam_names.index(name) for name in td_params])
 	amp_params=[x for x in vparam_names[len(vparam_names)-nimage*2:] if x.startswith('mu')]
 	amp_idx=np.array([vparam_names.index(name) for name in amp_params])
-	
+	model_param_index=[model.param_names.index(name) for name in model_param_names]
 	#mindat=model.mintime()
 	#maxdat=model.maxtime()
 	#data=data[np.where(np.logical_and(data['time']>=mindat,data['time']<=maxdat))]
 	im_indices=[np.where(data['image']==i)[0] for i in np.unique(data['image']) if i !=ref]
 	cov = np.diag(data['fluxerr']**2)
+	zp=data['zp']
+	zpsys=data['zpsys']
+	time=data['time']
+	flux=data['flux']
+
 	def chisq_likelihood(parameters):
-		model.set(**{model_param_names[k]:parameters[model_idx[k]] for k in range(len(model_idx))})
+		model.parameters[model_param_index]=parameters[model_idx]
 		all_data=deepcopy(data)
 		for i in range(len(im_indices)):
 			all_data['time'][im_indices[i]]-=parameters[td_idx[i]]
 			all_data['flux'][im_indices[i]]/=parameters[amp_idx[i]]
 		all_data.sort('time')
+
 		model_observations = model.bandflux(all_data['band'],all_data['time'],
-											zp=all_data['zp'],zpsys=all_data['zpsys'])
+											zp=zp,zpsys=zpsys)
 		if modelcov:
 			
 			_, mcov = model.bandfluxcov(all_data['band'], all_data['time'],
-										zp=all_data['zp'], zpsys=all_data['zpsys'])
+										zp=zp, zpsys=zpsys)
 
 			cov = cov + mcov
 			invcov = np.linalg.pinv(cov)
@@ -1928,7 +1934,8 @@ def nest_series_lc(data,model,nimage,vparam_names,bounds,ref='image_1',
 			chisq=np.dot(np.dot(diff, invcov), diff)
 
 		else:
-			chisq=np.sum((all_data['flux']-model_observations)**2/(all_data['fluxerr']**2))
+			chi=(np.array(all_data['flux'])-model_observations)/np.array(all_data['fluxerr'])
+			chisq=np.sum(np.dot(chi,chi))
 		return chisq
 
 	def loglike(parameters):
@@ -2240,6 +2247,7 @@ def _fitparallel(all_args):
 			else:
 				args['bounds'][b]=np.array([0,np.inf])
 
+
 		res,fit=sncosmo.nest_lc(fit_table,tempMod,[x for x in args['params'] if x in tempMod.param_names],
 								bounds=args['bounds'],
 							  priors=args.get('priors',None), ppfs=args.get('ppfs',None),
@@ -2248,6 +2256,7 @@ def _fitparallel(all_args):
 							  rstate=args.get('rstate',None),guess_amplitude_bound=False,
 							  zpsys=args['curves'].images[args['fitOrder'][0]].zpsys,
 							  maxiter=args.get('maxiter',None),npoints=args.get('npoints',100))
+		
 		all_fit_dict[mod]=[copy(fit),copy(res)]
 		
 		if finallogz<res.logz:
@@ -2323,8 +2332,11 @@ def _fitparallel(all_args):
 			guess_t0_start=False
 		else:
 			image_bounds=deepcopy(initial_bounds)
-			guess_t0_start=True
-
+			if args['t0_guess'] is None:
+				guess_t0_start=True
+			else:
+				guess_t0_start=False
+		
 		par_output=nest_parallel_lc(fit_table,first_res[1],first_res[2],image_bounds,min_n_bands=args['min_n_bands'],
 						min_n_points_per_band=args['min_points_per_band'],guess_t0_start=guess_t0_start,
 						guess_amplitude_bound=True,priors=args.get('priors',None), ppfs=args.get('None'),
@@ -2332,6 +2344,7 @@ def _fitparallel(all_args):
 						maxcall=args.get('maxcall',None), modelcov=args.get('modelcov',False),
 						rstate=args.get('rstate',None),minsnr=args.get('minsnr',5),
 						maxiter=args.get('maxiter',None),npoints=args.get('npoints',1000))
+
 		if par_output is None:
 			return
 		params,args['curves'].images[d].fits['model'],args['curves'].images[d].fits['res']=par_output
@@ -2409,7 +2422,7 @@ def _fitparallel(all_args):
 	return args['curves']
 
 def nest_parallel_lc(data,model,prev_res,bounds,guess_amplitude_bound=False,guess_t0_start=True,
-				   cut_time=None,snr_band_inds=None,
+				   cut_time=None,snr_band_inds=None,vparam_names=None,
 				   min_n_bands=1,min_n_points_per_band=3,
 				   minsnr=5., priors=None, ppfs=None, npoints=100, method='single',
 				   maxiter=None, maxcall=None, modelcov=False, rstate=None,
@@ -2418,8 +2431,8 @@ def nest_parallel_lc(data,model,prev_res,bounds,guess_amplitude_bound=False,gues
 	####Taken from SNCosmo nest_lc
 	# experimental parameters
 	tied = kwargs.get("tied", None)
-
-	vparam_names=list(prev_res.vparam_names)
+	if prev_res is not None:
+		vparam_names=list(prev_res.vparam_names)
 	if ppfs is None:
 		ppfs = {}
 	if tied is None:
@@ -2447,9 +2460,10 @@ def nest_parallel_lc(data,model,prev_res,bounds,guess_amplitude_bound=False,gues
 		data=data[data['time']>=cut_time[0]*(1+model.get('z'))+guess_t0]
 		data=data[data['time']<=cut_time[1]*(1+model.get('z'))+guess_t0]
 
-	data,quality=check_table_quality(data,min_n_bands=min_n_bands,min_n_points_per_band=min_n_points_per_band,clip=True)
-	if not quality:
-		return
+	if prev_res is not None:
+		data,quality=check_table_quality(data,min_n_bands=min_n_bands,min_n_points_per_band=min_n_points_per_band,clip=True)
+		if not quality:
+			return
 	# Convert bounds/priors combinations into ppfs
 	if bounds is not None:
 		for key, val in bounds.items():
@@ -2472,23 +2486,27 @@ def nest_parallel_lc(data,model,prev_res,bounds,guess_amplitude_bound=False,gues
 	# matched to u[i] below and u will be in a reproducible order,
 	# so iparam_names must also be.
 
+
 	final_priors=[]
-	for p in vparam_names:
-		if p in __thetaL__:
-			final_priors.append(lambda x:0)
-			continue
+	if prev_res is not None:
+		doPrior=True
+		for p in vparam_names:
+			if p in __thetaL__:
+				final_priors.append(lambda x:0)
+				continue
 
-		ind=prev_res.vparam_names.index(p)
-		temp=posterior('temp',np.min(prev_res.samples[:,ind]),np.max(prev_res.samples[:,ind]))
-		samples=np.linspace(np.min(prev_res.samples[:,ind]),
-							np.max(prev_res.samples[:,ind]),1000)
-		
+			ind=prev_res.vparam_names.index(p)
+			temp=posterior('temp',np.min(prev_res.samples[:,ind]),np.max(prev_res.samples[:,ind]))
+			samples=np.linspace(np.min(prev_res.samples[:,ind]),
+								np.max(prev_res.samples[:,ind]),1000)
+			
 
-		final_priors.append(scipy.interpolate.interp1d(samples,
-													   np.log(temp._pdf(samples,prev_res.samples[:,ind],
-																		prev_res.weights)),fill_value=-np.inf,
-													   bounds_error=False))
-
+			final_priors.append(scipy.interpolate.interp1d(samples,
+														   np.log(temp._pdf(samples,prev_res.samples[:,ind],
+																			prev_res.weights)),fill_value=-np.inf,
+														   bounds_error=False))
+	else:
+		doPrior=False
 	iparam_names = [key for key in vparam_names if key in ppfs]
 
 
@@ -2519,43 +2537,51 @@ def nest_parallel_lc(data,model,prev_res,bounds,guess_amplitude_bound=False,gues
 		return v
 
 
-
+	model_idx = np.array([model.param_names.index(name) for name in vparam_names])
+	flux=np.array(data['flux'])
+	fluxerr=np.array(data['fluxerr'])
+	zp=np.array(data['zp'])
+	zpsys=np.array(data['zpsys'])
+	chi1=flux/fluxerr
 	def chisq_likelihood(parameters):
 
 
-
-		model.set(**{vparam_names[k]:parameters[k] for k in range(len(vparam_names))})
+		model.parameters[model_idx]=parameters
 		model_observations = model.bandflux(data['band'],data['time'],
-											zp=data['zp'],zpsys=data['zpsys'])
+											zp=zp,zpsys=zpsys)
 
 		if modelcov:
-			cov = np.diag(data['fluxerr']**2)
+			cov = np.diag(data['fluxerr']*data['fluxerr'])
 			_, mcov = model.bandfluxcov(data['band'], data['time'],
-										zp=data['zp'], zpsys=data['zpsys'])
+										zp=zp, zpsys=zp)
 
 			cov = cov + mcov
 			invcov = np.linalg.pinv(cov)
 
-			diff = data['flux']-model_observations
+			diff = flux-model_observations
 			chisq=np.dot(np.dot(diff, invcov), diff)
 
 		else:
-			chisq=np.sum((data['flux']-model_observations)**2/(data['fluxerr']**2))
+			chi=chi1-model_observations/fluxerr
+			chisq=np.sum(np.dot(chi,chi))
 		return chisq
 
 	def loglike(parameters):
 		prior_val=0
-		for i in range(len(parameters)):
-			temp_prior=final_priors[i](parameters[i])
-			if not np.isfinite(temp_prior):
-				return -np.inf
-			prior_val+=temp_prior
+		if doPrior:
+			for i in range(len(parameters)):
+				temp_prior=final_priors[i](parameters[i])
+				if not np.isfinite(temp_prior):
+					return -np.inf
+				prior_val+=temp_prior
 
 		chisq=chisq_likelihood(parameters)
-		if not np.isfinite(chisq):
+		try:
+			return(prior_val-.5*chisq)	
+		except:
 			return -np.inf
 
-		return(prior_val-.5*chisq)
+		
 
 
 

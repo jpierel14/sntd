@@ -82,8 +82,8 @@ def realizeMicro(arand=.25,debug=0,kappas=.75,kappac=.15,gamma=.76,eps=.6,nray=3
 
 
 
-def microcaustic_field_to_curve(field,time,zl,zs,velocity=(10**4)*(u.kilometer/u.s),M=(1*u.solMass).to(u.kg),
-                                loc='Random',plot=False,ax=None,showCurve=True):
+def microcaustic_field_to_curve(field,time,zl,zs,velocity=(10**4)*(u.kilometer/u.s),M=(1*u.solMass).to(u.kg),width_in_einstein_radii=10,
+                                loc='Random',plot=False,ax=None,showCurve=True,rescale=True):
     """
     Convolves an expanding photosphere (achromatic disc) with a microcaustic to generate a magnification curve.
 
@@ -101,6 +101,8 @@ def microcaustic_field_to_curve(field,time,zl,zs,velocity=(10**4)*(u.kilometer/u
         The average velocity of the expanding photosphere
     M: float* :class:`~astropy.units.Unit`
         The mass of the deflector
+    width_in_einstein_radii: float
+        The width of your map in units of Einstein radii
     loc: str or tuple
         Random is defualt for location of the supernova, or pixel (x,y) coordiante can be specified
     plot: bool
@@ -110,7 +112,8 @@ def microcaustic_field_to_curve(field,time,zl,zs,velocity=(10**4)*(u.kilometer/u
         like this: [main_ax,lower_ax]
     showCurve: bool
         If true, the microlensing curve is plotted below the microcaustic
-
+    rescale: bool
+        If true, assumes image needs to be rescaled: (x-1024)/256
     Returns
     -------
     time: :class:`numpy.array`
@@ -135,8 +138,8 @@ def microcaustic_field_to_curve(field,time,zl,zs,velocity=(10**4)*(u.kilometer/u
 
     h,w=field.shape
 
-    height=10*einsteinRadius.value
-    width=10*einsteinRadius.value
+    height=width_in_einstein_radii*einsteinRadius.value
+    width=width_in_einstein_radii*einsteinRadius.value
 
     pixwidth=width/w
     pixheight=height/h
@@ -159,7 +162,7 @@ def microcaustic_field_to_curve(field,time,zl,zs,velocity=(10**4)*(u.kilometer/u
 
 
 
-    dmag=mu_from_image(field,loc,snSize,'disk',plot,time,ax,showCurve)
+    dmag=mu_from_image(field,loc,snSize,'disk',plot,time,ax,showCurve,rescale,width_in_einstein_radii)
 
     return(time,dmag)
 
@@ -219,24 +222,30 @@ class MidpointNormalize(colors.Normalize):
         x, y = [self.vmin, self.midpoint, self.vmax], [0, 0.5, 1]
         return np.ma.masked_array(np.interp(value, x, y), np.isnan(value))
 
-def mu_from_image(image, center,sizes,brightness,plot,time,ax,showCurve):
+def mu_from_image(image, center,sizes,brightness,plot,time,ax,showCurve,rescale,width_in_einstein_radii):
     h, w = image.shape
     mu = []
+    if rescale:
+        image=10**(.4*(image-1024)/256.)
     if plot:
         if ax is None:
             fig=plt.figure(figsize=(10,10))
 
             ax=fig.gca()
-        ax.imshow(-(image-1024)/256., aspect='equal', interpolation='nearest', cmap=cm.bwr,
+
+        ax.imshow(-2.5*np.log10(image), aspect='equal', interpolation='nearest', cmap=cm.bwr,
                    norm=MidpointNormalize(vmin=-2,vmax=2,midpoint=0),
                   vmin=-2, vmax=2, origin='lower')
-
-        ax.set_xticklabels([0,0,2,4,6,8,10],fontsize=14)
-        ax.set_yticklabels([0,0,2,4,6,8,10],fontsize=14)
+        
+        
+        ax.set_xticks(tuple(np.linspace(0,image.shape[0],5)))#,tuple(np.linspace(0,width_in_einstein_radii,5).astype(str)))
+        ax.set_yticks((np.linspace(0,image.shape[0],5)))#,tuple(np.linspace(0,width_in_einstein_radii,5)))
+        ax.set_xticklabels(np.linspace(0,width_in_einstein_radii,5),fontsize=14)
+        ax.set_yticklabels(np.linspace(0,width_in_einstein_radii,5),fontsize=14)
         ax.set_xlabel('$R_E$',fontsize=18,labelpad=0)
         ax.set_ylabel('$R_E$',fontsize=18)
 
-    image=10**(.4*(image-1024)/256.)
+    
     i=0
     alphas=[1,.5,.7]
     for r in sizes:
@@ -277,7 +286,7 @@ def mu_from_image(image, center,sizes,brightness,plot,time,ax,showCurve):
 
 
     mu = np.array(mu)
-    mu/=np.mean(mu)
+    mu/=np.median(mu)
     dmag=-2.5*np.log10(mu)
     if plot:
         if ax is  None:
