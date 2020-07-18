@@ -296,9 +296,9 @@ def fit_data(curves=None, snType='Ia',bands=None, models=None, params=None, boun
 				if nbatch_jobs is None:
 					nbatch_jobs=min(total_jobs,max_batch_jobs)
 				script_name_init,folder_name=make_sbatch(partition=batch_partition,
-												   njobs=total_jobs,njobstotal=min(total_jobs,max_batch_jobs),python_path=batch_python_path,init=True,parallelize=parallelize,microlensing_cores=micro_par)
+												   njobs=min(total_jobs,nbatch_jobs),njobstotal=min(total_jobs,max_batch_jobs),python_path=batch_python_path,init=True,parallelize=parallelize,microlensing_cores=micro_par)
 				script_name,folder_name=make_sbatch(partition=batch_partition,folder=folder_name,
-												  njobs=total_jobs,python_path=batch_python_path,init=False,parallelize=parallelize,microlensing_cores=micro_par)
+												  njobs=min(total_jobs,nbatch_jobs),python_path=batch_python_path,init=False,parallelize=parallelize,microlensing_cores=micro_par)
 
 				pickle.dump(constants,open(os.path.join(folder_name,'sntd_constants.pkl'),'wb'))
 				pickle.dump(args['curves'],open(os.path.join(folder_name,'sntd_data.pkl'),'wb'))
@@ -308,7 +308,7 @@ def fit_data(curves=None, snType='Ia',bands=None, models=None, params=None, boun
 						batch_py=f.read()
 					if 'init' in pyfile:
 						batch_py=batch_py.replace('nlcsreplace',str(min(int(n_per_node*nbatch_jobs),len(args['curves']))))
-						batch_py=batch_py.replace('njobsreplace',str(nbatch_jobs))
+						batch_py=batch_py.replace('njobsreplace',str(min(total_jobs,max_batch_jobs)))
 					else:
 						batch_py=batch_py.replace('nlcsreplace',str(n_per_node))
 					if batch_init is None:
@@ -479,9 +479,9 @@ def fit_data(curves=None, snType='Ia',bands=None, models=None, params=None, boun
 				if nbatch_jobs is None:
 					nbatch_jobs=min(total_jobs,max_batch_jobs)
 				script_name_init,folder_name=make_sbatch(partition=batch_partition,
-												   njobs=total_jobs,njobstotal=min(total_jobs,max_batch_jobs),python_path=batch_python_path,init=True,parallelize=parallelize,microlensing_cores=micro_par)
+												   njobs=min(total_jobs,nbatch_jobs),njobstotal=min(total_jobs,max_batch_jobs),python_path=batch_python_path,init=True,parallelize=parallelize,microlensing_cores=micro_par)
 				script_name,folder_name=make_sbatch(partition=batch_partition,folder=folder_name,
-												  njobs=total_jobs,python_path=batch_python_path,init=False,parallelize=parallelize,microlensing_cores=micro_par)
+												  njobs=min(total_jobs,nbatch_jobs),python_path=batch_python_path,init=False,parallelize=parallelize,microlensing_cores=micro_par)
 
 				pickle.dump(constants,open(os.path.join(folder_name,'sntd_constants.pkl'),'wb'))
 				pickle.dump(args['curves'],open(os.path.join(folder_name,'sntd_data.pkl'),'wb'))
@@ -586,9 +586,9 @@ def fit_data(curves=None, snType='Ia',bands=None, models=None, params=None, boun
 				if nbatch_jobs is None:
 					nbatch_jobs=min(total_jobs,max_batch_jobs)
 				script_name_init,folder_name=make_sbatch(partition=batch_partition,
-												   njobs=total_jobs,njobstotal=min(total_jobs,max_batch_jobs),python_path=batch_python_path,init=True,parallelize=parallelize,microlensing_cores=micro_par)
+												   njobs=min(total_jobs,nbatch_jobs),njobstotal=min(total_jobs,max_batch_jobs),python_path=batch_python_path,init=True,parallelize=parallelize,microlensing_cores=micro_par)
 				script_name,folder_name=make_sbatch(partition=batch_partition,folder=folder_name,
-												  njobs=total_jobs,python_path=batch_python_path,init=False,parallelize=parallelize,microlensing_cores=micro_par)
+												  njobs=min(total_jobs,nbatch_jobs),python_path=batch_python_path,init=False,parallelize=parallelize,microlensing_cores=micro_par)
 
 				pickle.dump(constants,open(os.path.join(folder_name,'sntd_constants.pkl'),'wb'))
 				pickle.dump(args['curves'],open(os.path.join(folder_name,'sntd_data.pkl'),'wb'))
@@ -684,9 +684,9 @@ def fit_data(curves=None, snType='Ia',bands=None, models=None, params=None, boun
 				if nbatch_jobs is None:
 					nbatch_jobs=min(total_jobs,max_batch_jobs)
 				script_name_init,folder_name=make_sbatch(partition=batch_partition,
-												   njobs=total_jobs,njobstotal=min(total_jobs,max_batch_jobs),python_path=batch_python_path,init=True,parallelize=parallelize,microlensing_cores=micro_par)
+												   njobs=min(total_jobs,nbatch_jobs),njobstotal=min(total_jobs,max_batch_jobs),python_path=batch_python_path,init=True,parallelize=parallelize,microlensing_cores=micro_par)
 				script_name,folder_name=make_sbatch(partition=batch_partition,folder=folder_name,
-												  njobs=total_jobs,python_path=batch_python_path,init=False,parallelize=parallelize,microlensing_cores=micro_par)
+												  njobs=min(total_jobs,nbatch_jobs),python_path=batch_python_path,init=False,parallelize=parallelize,microlensing_cores=micro_par)
 
 				pickle.dump(constants,open(os.path.join(folder_name,'sntd_constants.pkl'),'wb'))
 				pickle.dump(args['curves'],open(os.path.join(folder_name,'sntd_data.pkl'),'wb'))
