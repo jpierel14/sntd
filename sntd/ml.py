@@ -49,13 +49,17 @@ def realizeMicro(arand=.25,debug=0,kappas=.75,kappac=.15,gamma=.76,eps=.6,nray=3
     thefile.write(outFile[-1])
     thefile.close()
 
-    num=np.loadtxt(os.path.join(__filedir__,'microlens','jobnum'),dtype='str')
+    num='001'
     try:
         os.remove(os.path.join(__filedir__,'microlens','IRIS'+str(num)))
     except:
         pass
     try:
         os.remove(os.path.join(__filedir__,'microlens','IRIS'+str(num)+'.fits'))
+    except:
+        pass
+    try:
+        os.remove(os.path.join(__filedir__,'microlens','dat.'+str(num)))
     except:
         pass
     os.chdir(os.path.join(__filedir__,'microlens'))
@@ -67,8 +71,7 @@ def realizeMicro(arand=.25,debug=0,kappas=.75,kappac=.15,gamma=.76,eps=.6,nray=3
 
 
     np.savetxt(os.path.join(__filedir__,'microlens','jobnum'),[num],fmt='%s')
-    #print(num)
-    #sys.exit()
+
     try:
         fitsFile=fits.open(os.path.join(__filedir__,'microlens','IRIS'+str(num)+'.fits'))
         lensPlane=fitsFile[0].data

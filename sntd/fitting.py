@@ -463,7 +463,7 @@ def fit_data(curves=None, snType='Ia',bands=None, models=None, params=None, boun
 								pass
 					par_arg_vals.append([args['curves'][i],temp_args])
 
-				curves=pyParz.foreach(par_arg_vals,_fitparallel,[args],numThreads=min(npar_cores,len(par_arg_vals)),simple=False)
+				curves=pyParz.foreach(par_arg_vals,_fitparallel,[args],numThreads=min(npar_cores,len(par_arg_vals)))
 			else:
 				if n_cores_per_node>1:
 					parallelize=n_cores_per_node
@@ -570,7 +570,7 @@ def fit_data(curves=None, snType='Ia',bands=None, models=None, params=None, boun
 					except:
 						pass
 					par_arg_vals.append([args['curves'][i],temp_args])
-				curves=pyParz.foreach(par_arg_vals,_fitseries,[args],numThreads=min(npar_cores,len(par_arg_vals)),simple=False)
+				curves=pyParz.foreach(par_arg_vals,_fitseries,[args],numThreads=min(npar_cores,len(par_arg_vals)))
 			else:
 				if n_cores_per_node>1:
 					parallelize=n_cores_per_node
@@ -668,7 +668,7 @@ def fit_data(curves=None, snType='Ia',bands=None, models=None, params=None, boun
 					except:
 						pass
 					par_arg_vals.append([args['curves'][i],temp_args])
-				curves=pyParz.foreach(par_arg_vals,_fitColor,[args],numThreads=min(npar_cores,len(par_arg_vals)),simple=False)
+				curves=pyParz.foreach(par_arg_vals,_fitColor,[args],numThreads=min(npar_cores,len(par_arg_vals)))
 			else:
 				if n_cores_per_node>1:
 					parallelize=n_cores_per_node
@@ -1318,8 +1318,8 @@ def nest_color_lc(data,model,nimage,colors, vparam_names,bounds,ref='image_1',
 				chisq+=np.dot(np.dot(diff, invcov), diff)
 
 			else:
-				chisq+=np.sum((obs-model_observations)**2/\
-							 err**2)
+				chi = (obs-model_observations)/err
+				chisq+=np.dot(chi,chi)
 
 		return chisq
 
@@ -1935,7 +1935,7 @@ def nest_series_lc(data,model,nimage,vparam_names,bounds,ref='image_1',
 
 		else:
 			chi=(np.array(all_data['flux'])-model_observations)/np.array(all_data['fluxerr'])
-			chisq=np.sum(np.dot(chi,chi))
+			chisq=np.dot(chi,chi)
 		return chisq
 
 	def loglike(parameters):
@@ -2563,7 +2563,7 @@ def nest_parallel_lc(data,model,prev_res,bounds,guess_amplitude_bound=False,gues
 
 		else:
 			chi=chi1-model_observations/fluxerr
-			chisq=np.sum(np.dot(chi,chi))
+			chisq=np.dot(chi,chi)
 		return chisq
 
 	def loglike(parameters):

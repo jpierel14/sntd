@@ -34,9 +34,7 @@ def test_sntd():
 		print(traceback.format_exc())
 		failed+=1
 
-	print(myMISN.images['image_1'].simMeta)
 	for method in ['parallel','series','color']:
-
 		try:
 			total+=1
 			print('Testing failing quality check using %s method...'%method,end='')
@@ -60,7 +58,7 @@ def test_sntd():
 			fitCurves=sntd.fit_data(myMISN,snType='Ia', models='salt2-extended',bands=['bessellb','bessellr'],
 				params=['x0','x1','t0','c'],bounds={'t0':(-15,15),'x1':(-2,2),'c':(-1,1),'td':(-15,15),'mu':(.5,2)},
 				color_param_ignore=['x1'],
-				method=method,microlensing=None,maxcall=None,npoints=100,minsnr=0,set_from_simMeta={'z':'z'},t0_guess={'image_1':20,'image_2':70})
+				method=method,microlensing=None,maxcall=10,npoints=10,minsnr=0,set_from_simMeta={'z':'z'},t0_guess={'image_1':20,'image_2':70})
 			
 			print('Passed!')
 		except Exception as e:
