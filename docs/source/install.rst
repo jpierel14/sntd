@@ -9,6 +9,7 @@ following Python packages:
 - `scipy <http://www.scipy.org/>`_
 - `astropy <http://www.astropy.org>`_
 - `SNCosmo <http://sncosmo.readthedocs.io>`_
+- `cython <https://cython.org/>`_
 - `sklearn <https://scikit-learn.org/stable/tutorial/basic/tutorial.html>`_
 - `nestle <https://github.com/kbarbary/nestle>`_
 
@@ -71,14 +72,15 @@ Optional dependencies
 =====================
 
 Several additional packages are recommended for enabling optional
-functionality in SNCosmo.
+functionality in SNCosmo. These packages are all pip installable.
 
-- `matplotlib <http://www.matplotlib.org/>`_ for plotting
-  functions.
-- `pyParz <https://pypi.org/project/pyParz/>`_ for microlensing uncertainty estimation.
 
-These packages are all pip installable.
+- `matplotlib <http://www.matplotlib.org/>`_ for plotting functions.
 
-The `corner <https://github.com/dfm/corner.py>`_ package is also
-recommended for plotting results from the samplers `sncosmo.mcmc_lc`
-and `sncosmo.nest_lc`, but is not used by any part of sncosmo.
+- `pyParz <https://pypi.org/project/pyParz/>`_ for microlensing uncertainty estimation and fitting large numbers of lensed SN.
+
+- `corner <https://github.com/dfm/corner.py>`_ used for plotting joint and marginalized fitting posteriors
+
+- `iminuit <https://iminuit.readthedocs.io/>`_ used for finding the best model quickly when fitting a list of models
+
+
