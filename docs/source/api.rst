@@ -4,6 +4,10 @@ API Documentation
 
 |
 
+*******
+Summary
+*******
+
 .. autosummary::
 	sntd.fitting.fit_data
 	sntd.simulation.createMultiplyImagedSN
