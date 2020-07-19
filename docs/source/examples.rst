@@ -138,7 +138,7 @@ Batch Processing Time Delay Measurements
 Parallel processing and batch processing is built into SNTD in order to fit a large number of (likely simulated) MISN. To access this feature,
 simply provide a list of MISN instead of a single :py:class:`~sntd.curve_io.curveDict` object, specifying whether you want to use multiprocessing (split the list across multiple cores)
 or batch processing (splitting the list into multiple jobs with sbatch). If you specify batch mode, you need to provide
-the partition and number of jobs you want to implement. 
+the partition and number of jobs you want to implement or the number of lensed SN you want to fit per node. 
 
 .. code-block:: python
 
@@ -174,6 +174,15 @@ Out::
   {'image_1': 0, 'image_2': 60.32583528844834}
   {'image_1': 0, 'image_2': 40.22834982372733}
 
+
+You can also use batch processing and multiprocssing (using N cores per node across M cores using Slurm):
+
+.. code-block:: python
+
+	fitCurves=sntd.fit_data(curve_list,snType='Ia', models='salt2-extended',bands=['F110W','F125W'],
+                    params=['x0','t0','x1','c'],constants={'z':1.3},refImage='image_1',
+                    bounds={'t0':(-20,20),'x1':(-3,3),'c':(-1,1)},fitOrder=['image_2','image_1'],n_cores_per_node=2,
+                    method='parallel',npoints=1000,par_or_batch='batch', batch_partition='myPartition',nbatch_jobs=1)
 
 If you would like to run multiple methods in a row in batch mode, the recommended way is by providing a list of the methods to the :py:func:`~sntd.fitting.fit_data` function. You 
 can have it use the parallel fit as a prior on the subsequent fits by setting ``fit_prior`` to ``True`` instead of giving it a :py:class:`~sntd.curve_io.curveDict` object.
