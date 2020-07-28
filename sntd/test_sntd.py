@@ -51,15 +51,14 @@ def test_sntd():
 			failed+=1
 
 	for method in ['parallel','series','color']:
-
 		try:
 			total+=1
 			print('Testing fitting MISN without microlensing using %s method...'%method,end='')
-			fitCurves=sntd.fit_data(myMISN,snType='Ia', models='salt2-extended',bands=['bessellb','bessellr'],
-				params=['x0','x1','t0','c'],bounds={'t0':(-15,15),'x1':(-2,2),'c':(-1,1),'td':(-15,15),'mu':(.5,2)},
-				color_param_ignore=['x1'],
-				method=method,microlensing=None,maxcall=10,npoints=10,minsnr=0,set_from_simMeta={'z':'z'},t0_guess={'image_1':20,'image_2':70})
 			
+			fitCurves=sntd.fit_data(myMISN,snType='Ia', models='salt2-extended',bands=['bessellb','bessellr'],
+				params=['x0','x1','t0','c'],bounds={'t0':(-15,15),'x1':(-2,2),'c':(-1,1),'td':(-30,30),'mu':(.5,2)},
+				color_param_ignore=['x1'],use_MLE=False,refImage='image_1',
+				method=method,microlensing=None,maxcall=10,npoints=10,minsnr=0,set_from_simMeta={'z':'z'},t0_guess={'image_1':20,'image_2':70})
 			print('Passed!')
 		except Exception as e:
 			print('Failed')
@@ -148,9 +147,9 @@ def test_sntd():
 		n_optional_tests+=1
 		print('Testing parallelization...',end='')
 
-		fitCurves=sntd.fit_data([myMISN]*50,snType='Ia', models='salt2-extended',bands=['bessellb','bessellr'],
-				params=['x0','x1','t0','c'],constants=[{'z':.5}]*50,bounds={'t0':(-15,15),'x1':(-2,2),'c':(-1,1),'td':(-15,15),'mu':(.5,2)},
-				method='parallel',microlensing=None,maxcall=None,npoints=20,minsnr=0,t0_guess={'image_1':10,'image_2':70},verbose=False)
+		fitCurves=sntd.fit_data([myMISN]*5,snType='Ia', models='salt2-extended',bands=['bessellb','bessellr'],
+				params=['x0','x1','t0','c'],constants=[{'z':.5}]*5,bounds={'t0':(-15,15),'x1':(-2,2),'c':(-1,1),'td':(-15,15),'mu':(.5,2)},
+				method='parallel',microlensing=None,maxcall=10,npoints=20,minsnr=0,t0_guess={'image_1':10,'image_2':70},verbose=False)
 
 		print('Passed!')
 	except Exception as e:
