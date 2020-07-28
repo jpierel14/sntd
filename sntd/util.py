@@ -178,9 +178,13 @@ def run_sbatch(folder_name,script_name_init,script_name,total_jobs,max_batch_job
                 fits_output.close()
                 fits_output=tarfile.open(os.path.join(os.path.abspath(folder_name),'sntd_fits_%i.tar.gz'%tarfit_ind),mode='w')
                 tarfit_ind+=1
+            d_filename=os.path.join(os.path.join(os.path.abspath(folder_name),'to_delete'))
+            os.mkdir(d_filename)
             for filename in output:
                 fits_output.add(filename)
-                os.remove(filename)
+
+                os.rename(filename,os.path.join(d_filename,os.path.basename(filename)))
+            shutils.rmtree(d_filename)
             if nadded<total_jobs:
                 for i in range(math.ceil(len(output)/(n_per_node/n_per_file))):
                     if nadded>total_jobs-1:
