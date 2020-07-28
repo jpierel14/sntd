@@ -190,6 +190,7 @@ def run_sbatch(folder_name,script_name_init,script_name,total_jobs,max_batch_job
                     nadded+=1
 
             if wait_for_batch:
+                print(saved_fits,n_per_node,n_per_file,total_jobs,ncurves)
                 printProgressBar(saved_fits/(n_per_node/n_per_file),total_jobs)
         if saved_fits>=ncurves:
             break
