@@ -176,15 +176,15 @@ def run_sbatch(folder_name,script_name_init,script_name,total_jobs,max_batch_job
             continue
         done_file = done_files[0]
         done=str(np.loadtxt(done_file,dtype=str))
-        print(done,done_file)
+
         while done=='FALSE':
             time.sleep(10) #update every 10 seconds
             done=str(np.loadtxt(done_file,dtype=str))
-        print(done,done_file[:-5])
+
         os.remove(done_file)
         output=glob.glob(done_file[:-5]+'*.pkl')
         saved_fits+=len(output)
-        print(len(output))
+
         if len(output)>0:
             if int(saved_fits*n_per_file)>=50000*(tarfit_ind+1):
                 fits_output.close()
@@ -203,7 +203,6 @@ def run_sbatch(folder_name,script_name_init,script_name,total_jobs,max_batch_job
                     nadded+=1
 
             if wait_for_batch:
-                print(saved_fits,n_per_node,n_per_file,total_jobs,ncurves)
                 printProgressBar(saved_fits/(n_per_node/n_per_file),total_jobs)
         if saved_fits>=ncurves:
             break
