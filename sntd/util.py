@@ -172,6 +172,7 @@ def run_sbatch(folder_name,script_name_init,script_name,total_jobs,max_batch_job
     while True:
         time.sleep(10) #update every 10 seconds
         output=glob.glob(os.path.join(os.path.abspath(folder_name),'sntd_fit*.pkl'))
+        print(len(output))
         saved_fits+=len(output)
         if len(output)>0:
             if int(saved_fits*n_per_file)>=50000*(tarfit_ind+1):
