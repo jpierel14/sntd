@@ -176,9 +176,11 @@ def run_sbatch(folder_name,script_name_init,script_name,total_jobs,max_batch_job
             continue
         done_file = done_files[0]
         done=str(np.loadtxt(done_file,dtype=str))
+        print(done,done_file)
         while done=='FALSE':
             time.sleep(10) #update every 10 seconds
             done=str(np.loadtxt(done_file,dtype=str))
+        print(done,done_file[:-5])
         os.remove(done_file)
         output=glob.glob(os.path.join(os.path.abspath(folder_name),done_file[:-5]+'*.pkl'))
         saved_fits+=len(output)
