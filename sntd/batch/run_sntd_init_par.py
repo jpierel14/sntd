@@ -45,6 +45,7 @@ except Exception as e:
     succeed=False
 
 np.savetxt(os.path.join(os.path.abspath(os.path.dirname(__file__)),'sntd_fit%s.DONE'%sys.argv[1]),['FALSE'],fmt='%s')
+print(len(all_input))
 for i in range(len(all_input)):
     filename=os.path.join(os.path.abspath(os.path.dirname(__file__)),'sntd_fit%s_%i.pkl'%(sys.argv[1],i))
     if succeed:
