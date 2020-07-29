@@ -310,7 +310,7 @@ def fit_data(curves=None, snType='Ia',bands=None, models=None, params=None, boun
 					with open(os.path.join(__filedir__,'batch',pyfile)) as f:
 						batch_py=f.read()
 					if 'init' in pyfile:
-						batch_py=batch_py.replace('nlcsreplace',str(min(int(n_per_node*nbatch_jobs),len(args['curves']))))
+						batch_py=batch_py.replace('nlcsreplace',str(min(int(n_per_node*min(total_jobs,max_batch_jobs)),len(args['curves']))))
 						batch_py=batch_py.replace('njobsreplace',str(min(total_jobs,max_batch_jobs)))
 					else:
 						batch_py=batch_py.replace('nlcsreplace',str(n_per_node))
