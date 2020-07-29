@@ -171,7 +171,16 @@ def run_sbatch(folder_name,script_name_init,script_name,total_jobs,max_batch_job
     
     while True:
         time.sleep(10) #update every 10 seconds
-        output=glob.glob(os.path.join(os.path.abspath(folder_name),'sntd_fit*.pkl'))
+        done_files=glob.glob(os.path.join(os.path.abspath(folder_name),'sntd_fit*.DONE'))
+        if len(done_files)==0:
+            continue
+        done_file = done_files[0]
+        done=str(np.loadtxt(done_file,dtype=str))
+        while done=='FALSE':
+            time.sleep(10) #update every 10 seconds
+            done=str(np.loadtxt(done_file,dtype=str))
+        os.remove(done_file)
+        output=glob.glob(os.path.join(os.path.abspath(folder_name),done_file[:-4]+'*.pkl'))
         saved_fits+=len(output)
         print(len(output))
         if len(output)>0:
