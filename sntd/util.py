@@ -1,6 +1,6 @@
 #!/Users/jpierel/anaconda3/envs/astro2/bin python2
 
-import os,sncosmo,glob,sys,subprocess,time,shutil
+import os,sncosmo,glob,sys,subprocess,time
 from astropy.io import ascii
 import numpy as np
 from collections import OrderedDict as odict
@@ -172,20 +172,17 @@ def run_sbatch(folder_name,script_name_init,script_name,total_jobs,max_batch_job
     while True:
         time.sleep(10) #update every 10 seconds
         output=glob.glob(os.path.join(os.path.abspath(folder_name),'sntd_fit*.pkl'))
-        print(len(output))
         saved_fits+=len(output)
+        print(len(output))
         if len(output)>0:
             if int(saved_fits*n_per_file)>=50000*(tarfit_ind+1):
                 fits_output.close()
                 fits_output=tarfile.open(os.path.join(os.path.abspath(folder_name),'sntd_fits_%i.tar.gz'%tarfit_ind),mode='w')
                 tarfit_ind+=1
-            d_filename=os.path.join(os.path.join(os.path.abspath(folder_name),'to_delete'))
-            os.mkdir(d_filename)
             for filename in output:
                 fits_output.add(filename)
+                os.remove(filename)
 
-                os.rename(filename,os.path.join(d_filename,os.path.basename(filename)))
-            shutil.rmtree(d_filename)
             if nadded<total_jobs:
                 for i in range(math.ceil(len(output)/(n_per_node/n_per_file))):
                     if nadded>total_jobs-1:
