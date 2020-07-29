@@ -1,6 +1,6 @@
 #!/Users/jpierel/anaconda3/envs/astro2/bin python2
 
-import os,sncosmo,glob,sys,subprocess,time
+import os,sncosmo,glob,sys,subprocess,time,shutil
 from astropy.io import ascii
 import numpy as np
 from collections import OrderedDict as odict
@@ -184,7 +184,7 @@ def run_sbatch(folder_name,script_name_init,script_name,total_jobs,max_batch_job
                 fits_output.add(filename)
 
                 os.rename(filename,os.path.join(d_filename,os.path.basename(filename)))
-            shutils.rmtree(d_filename)
+            shutil.rmtree(d_filename)
             if nadded<total_jobs:
                 for i in range(math.ceil(len(output)/(n_per_node/n_per_file))):
                     if nadded>total_jobs-1:
