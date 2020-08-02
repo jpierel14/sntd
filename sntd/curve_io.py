@@ -499,6 +499,10 @@ class curveDict(dict):
         -------
         self: :class:`sntd.curve_io.curveDict`
         """
+        for im in self.images.keys():
+            self.images[im].table=self.images[im].table[~np.isnan(self.images[im].table['flux'])]
+            self.images[im].table=self.images[im].table[~np.isnan(self.images[im].table['fluxerr'])]
+            self.images[im].table=self.images[im].table[~np.isnan(self.images[im].table['time'])]
         if method=='parallel':
             good_bands=[]
             for im in self.images.keys():
