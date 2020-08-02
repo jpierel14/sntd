@@ -22,8 +22,8 @@ from .ml import *
 
 __all__=['fit_data']
 
-__thetaSN__=['z','hostebv','screenebv','screenz','rise','fall','sigma','k','x1','c']
-__thetaL__=['t0','amplitude','dt0','A','B','t1','psi','phi','s','x0']
+__thetaSN__=['z','hostebv','screenz','rise','fall','sigma','k','x1','c']
+__thetaL__=['t0','amplitude','screenebv','dt0','A','B','t1','psi','phi','s','x0']
 
 
 _needs_bounds={'z'}
