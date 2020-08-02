@@ -787,6 +787,9 @@ def _fitColor(all_args):
 	if args['clip_data']:
 		for im in args['curves'].images.keys():
 			args['curves'].clip_data(im=im,minsnr=args.get('minsnr',0),max_cadence=args['max_cadence'])
+	else:
+		for im in args['curves'].images.keys():
+			args['curves'].clip_data(im=im,rm_NaN=True)
 
 	args['bands']=list(args['bands'])
 	_,band_SNR,_=getBandSNR(args['curves'],args['bands'],args['min_points_per_band'])
@@ -1425,6 +1428,9 @@ def _fitseries(all_args):
 	if args['clip_data']:
 		for im in args['curves'].images.keys():
 			args['curves'].clip_data(im=im,minsnr=args.get('minsnr',0),max_cadence=args['max_cadence'])
+	else:
+		for im in args['curves'].images.keys():
+			args['curves'].clip_data(im=im,rm_NaN=True)
 
 	args['bands'],band_SNR,_=getBandSNR(args['curves'],args['bands'],args['min_points_per_band'])
 	args['curves'].series.bands=args['bands'][:args['max_n_bands']]if args['max_n_bands'] is not None else args['bands']
@@ -2124,6 +2130,9 @@ def _fitparallel(all_args):
 	if args['clip_data']:
 		for im in args['curves'].images.keys():
 			args['curves'].clip_data(im=im,minsnr=args.get('minsnr',0),max_cadence=args['max_cadence'])
+	else:
+		for im in args['curves'].images.keys():
+			args['curves'].clip_data(im=im,rm_NaN=True)
 
 	args['bands'],band_SNR,band_dict=getBandSNR(args['curves'],args['bands'],args['min_points_per_band'])
 	args['curves'].bands=args['bands']
