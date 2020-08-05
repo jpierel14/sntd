@@ -12,9 +12,9 @@ Documentation for this package is hosted on [ReadTheDocs](https://sntd.readthedo
 
 Here you can run the SNTD example notebooks directly in your browser using Google Colab:
 
-**Simulations:**  [![*Simulations:*](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/jpierel14/sntd/blob/tree/master/notebooks/simulations.ipynb)
+**Simulations:**  [![*Simulations:*](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/jpierel14/sntd/blob/master/notebooks/simulations.ipynb)
 
 
-**Fitting and Plotting:**  [![*Fitting and Plotting:*](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/jpierel14/sntd/blob/tree/master/notebooks/fitting_and_plotting.ipynb)
+**Fitting and Plotting:**  [![*Fitting and Plotting:*](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/jpierel14/sntd/blob/master/notebooks/fitting_and_plotting.ipynb)
 
 **Citation:** [![SNTD](https://img.shields.io/badge/SNTD-DOI-RED.svg)](https://doi.org/10.3847/1538-4357/ab164a)
