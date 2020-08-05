@@ -436,7 +436,7 @@ class curveDict(dict):
 
         return(self)
 
-    def clip_data(self,im,minsnr=0,mintime=-np.inf,maxtime=np.inf,peak=0,remove_bands=[],max_cadence=None):
+    def clip_data(self,im,minsnr=-np.inf,mintime=-np.inf,maxtime=np.inf,peak=0,remove_bands=[],max_cadence=None,rm_NaN=True):
         """
         Clips the data of an image based on various properties.
 
@@ -456,8 +456,14 @@ class curveDict(dict):
             List of bands to remove from the light curve
         max_cadence: float
             Clips data so that points are spread by at least max_cadence
+        rm_NaN: bool
+            If True, removed NaNs from the data.
         """
         
+        self.images[im].table=self.images[im].table[~np.isnan(self.images[im].table['flux'])]
+        self.images[im].table=self.images[im].table[~np.isnan(self.images[im].table['fluxerr'])]
+        self.images[im].table=self.images[im].table[~np.isnan(self.images[im].table['time'])]
+
         self.images[im].table=self.images[im].table[self.images[im].table['flux']/\
                                                     self.images[im].table['fluxerr']>minsnr]
         
@@ -499,6 +505,7 @@ class curveDict(dict):
         -------
         self: :class:`sntd.curve_io.curveDict`
         """
+
         if method=='parallel':
             good_bands=[]
             for im in self.images.keys():

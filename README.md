@@ -10,4 +10,11 @@ Welcome to Supernova Time Delays (SNTD)
 
 Documentation for this package is hosted on [ReadTheDocs](https://sntd.readthedocs.io/en/latest/). This package is under active use and development, so please post GitHub issues if anything arises (bug or feature request). Please see the "notebooks" folder for jupyter notebook examples of using SNTD.
 
+Here you can run the SNTD example notebooks directly in your browser using Google Colab:
+
+**Simulations:**  [![*Simulations:*](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/jpierel14/sntd/blob/tree/master/notebooks/simulations.ipynb)
+
+
+**Fitting and Plotting:**  [![*Fitting and Plotting:*](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/jpierel14/sntd/blob/tree/master/notebooks/fitting_and_plotting.ipynb)
+
 **Citation:** [![SNTD](https://img.shields.io/badge/SNTD-DOI-RED.svg)](https://doi.org/10.3847/1538-4357/ab164a)
