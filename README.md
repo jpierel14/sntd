@@ -17,4 +17,6 @@ Here you can run the SNTD example notebooks directly in your browser using Googl
 
 **Fitting and Plotting:**  [![*Fitting and Plotting:*](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/jpierel14/sntd/blob/master/notebooks/fitting_and_plotting.ipynb)
 
+**Constraining Cosmology:**  [![*Cosmology:*](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/jpierel14/sntd/blob/master/notebooks/cosmology.ipynb)
+
 **Citation:** [![SNTD](https://img.shields.io/badge/SNTD-DOI-RED.svg)](https://doi.org/10.3847/1538-4357/ab164a)
