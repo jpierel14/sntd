@@ -18,7 +18,7 @@ class SNTDTest(TestCommand):
 
 AUTHOR = 'Justin Pierel'
 AUTHOR_EMAIL = 'jr23@email.sc.edu'
-VERSION = '2.3.0'
+VERSION = '2.3.1'
 LICENSE = 'BSD'
 URL = 'sntd.readthedocs.org'
 
@@ -51,7 +51,7 @@ setup(
     cmdclass={'test': SNTDTest},
     setup_requires=['numpy','cython'],
     install_requires=['numpy','scipy','cython','sncosmo',
-    	'astropy','matplotlib','nestle','pyParz','sklearn','iminuit',
+    	'astropy','matplotlib','nestle','pyParz','sklearn','iminuit','corner',
         'pytest-astropy'],
     packages=['sntd'],
     version=VERSION,
