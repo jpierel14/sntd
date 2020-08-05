@@ -2216,9 +2216,15 @@ def _fitparallel(all_args):
 			if isinstance(mod,str):
 				if mod.upper() in ['BAZIN','BAZINSOURCE']:
 					mod='BAZINSOURCE'
-					if len(np.unique(args['curves'].images[args['fitOrder'][0]].table['band']))>1 and args['color_curve'] is None:
+					if len(np.unique(args['curves'].images[args['fitOrder'][0]].table['band']))>1:
+						if args['color_curve'] is None:
+							best_band=band_SNR[args['fitOrder'][0]][0]
+							inds=np.where(args['curves'].images[args['fitOrder'][0]].table['band']==best_band)[0]
+						else:
+							inds=np.arange(0,len(args['curves'].images[args['fitOrder'][0]].table),1)
+					else:
 						best_band=band_SNR[args['fitOrder'][0]][0]
-						inds=np.where(args['curves'].images[args['fitOrder'][0]].table['band']==best_band)[0]
+						inds=np.arange(0,len(args['curves'].images[args['fitOrder'][0]].table),1)	
 						
 
 					source=BazinSource(data=args['curves'].images[args['fitOrder'][0]].table[inds],colorCurve=args['color_curve'])
@@ -2260,9 +2266,15 @@ def _fitparallel(all_args):
 		if isinstance(mod,str):
 			if mod.upper() in ['BAZIN','BAZINSOURCE']:
 				mod='BAZINSOURCE'
-				if len(np.unique(args['curves'].images[args['fitOrder'][0]].table['band']))>1 and args['color_curve'] is None:
+				if len(np.unique(args['curves'].images[args['fitOrder'][0]].table['band']))>1:
+					if args['color_curve'] is None:
+						best_band=band_SNR[args['fitOrder'][0]][0]
+						inds=np.where(args['curves'].images[args['fitOrder'][0]].table['band']==best_band)[0]
+					else:
+						inds=np.arange(0,len(args['curves'].images[args['fitOrder'][0]].table),1)
+				else:
 					best_band=band_SNR[args['fitOrder'][0]][0]
-					inds=np.where(args['curves'].images[args['fitOrder'][0]].table['band']==best_band)[0]
+					inds=np.arange(0,len(args['curves'].images[args['fitOrder'][0]].table),1)	
 						
 
 				source=BazinSource(data=args['curves'].images[args['fitOrder'][0]].table[inds],colorCurve=args['color_curve'])
@@ -2301,8 +2313,13 @@ def _fitparallel(all_args):
 			for b in args['bounds'].keys():
 				if b in res.param_names:
 					if b!='t0':
-						args['bounds'][b]=np.array([np.max([args['bounds'][b][0],(args['bounds'][b][0]-np.median(args['bounds'][b]))/2+fit.get(b)]),
-							np.min([args['bounds'][b][1],(args['bounds'][b][1]-np.median(args['bounds'][b]))/2+fit.get(b)])])
+						if args['bounds'][b][0]<=fit.get(b)<=args['bounds'][b][1]:
+							args['bounds'][b]=np.array([np.max([args['bounds'][b][0],(args['bounds'][b][0]-np.median(args['bounds'][b]))/2+fit.get(b)]),
+								np.min([args['bounds'][b][1],(args['bounds'][b][1]-np.median(args['bounds'][b]))/2+fit.get(b)])])
+						else:
+							args['bounds'][b]=np.array([(args['bounds'][b][0]-np.median(args['bounds'][b]))/2+fit.get(b),
+									(args['bounds'][b][1]-np.median(args['bounds'][b]))/2+fit.get(b)])
+
 					else:
 						args['bounds'][b]=args['bounds'][b]+fit.get('t0')
 
@@ -2346,7 +2363,6 @@ def _fitparallel(all_args):
 			else:
 				args['bounds'][b]=np.array([0,np.inf])
 
-
 		res,fit=sncosmo.nest_lc(fit_table,tempMod,[x for x in args['params'] if x in tempMod.param_names],
 								bounds=args['bounds'],
 							  priors=args.get('priors',None), ppfs=args.get('ppfs',None),
@@ -2355,7 +2371,7 @@ def _fitparallel(all_args):
 							  rstate=args.get('rstate',None),guess_amplitude_bound=False,
 							  zpsys=args['curves'].images[args['fitOrder'][0]].zpsys,
 							  maxiter=args.get('maxiter',None),npoints=args.get('npoints',100))
-		
+
 		all_fit_dict[mod]=[copy(fit),copy(res)]
 		
 		if finallogz<res.logz:
@@ -2702,6 +2718,7 @@ def nest_parallel_lc(data,model,prev_res,bounds,guess_amplitude_bound=False,gues
 				prior_val+=temp_prior
 
 		chisq=chisq_likelihood(parameters)
+
 		try:
 			return(prior_val-.5*chisq)
 		except:
