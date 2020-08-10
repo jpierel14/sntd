@@ -16,6 +16,10 @@ with SNTD.
 # function. The true delay for all of these fits is 50 days.
 # You can batch process using any or all of these methods as well 
 # (see :ref:`examples:Batch Processing Time Delay Measurements`)
+#
+#  -----------------------------------
+# `Run this notebook with Google Colab <https://colab.research.google.com/github/jpierel14/sntd/blob/master/notebooks/docs_fitting.ipynb>`_.
+#  -----------------------------------
 # 
 # **Parallel:**
 import sntd

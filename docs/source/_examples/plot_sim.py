@@ -13,6 +13,10 @@ Simulating a multiply-imaged supernova.
 # supernova. The function being used in these examples is 
 # :py:func:`~sntd.simulation.createMultiplyImagedSN` . 
 #
+#  -----------------------------------
+# `Run this notebook with Google Colab <https://colab.research.google.com/github/jpierel14/sntd/blob/master/notebooks/docs_sim.ipynb>`_.
+#  -----------------------------------
+#
 # **No Microlensing**
    
 import sntd

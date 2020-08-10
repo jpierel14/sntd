@@ -15,6 +15,12 @@ Simulate Microlensing
 
 Simulate a microlensing microcaustic.
 
+This notebook gives examples on creating microlensing for simulations
+
+ -----------------------------------
+`Run this notebook with Google Colab <https://colab.research.google.com/github/jpierel14/sntd/blob/master/notebooks/docs_micro.ipynb>`_.
+ -----------------------------------
+
 
 .. code-block:: default
 
@@ -72,7 +78,7 @@ examples.
 
 .. rst-class:: sphx-glr-timing
 
-   **Total running time of the script:** ( 0 minutes  41.227 seconds)
+   **Total running time of the script:** ( 0 minutes  38.190 seconds)
 
 
 .. _sphx_glr_download_examples_plot_micro.py:

@@ -21,6 +21,10 @@ printed information will be different, as this is a randomly generated
 supernova. The function being used in these examples is 
 :py:func:`~sntd.simulation.createMultiplyImagedSN` . 
 
+ -----------------------------------
+`Run this notebook with Google Colab <https://colab.research.google.com/github/jpierel14/sntd/blob/master/notebooks/docs_sim.ipynb>`_.
+ -----------------------------------
+
 **No Microlensing**
 
 
@@ -63,9 +67,9 @@ supernova. The function being used in these examples is
     Metadata:
        z:1.4
        t0:20.0
-       x0:1.7969533573240614e-05
-       x1:0.6203919068068094
-       c:-0.011851268615079891
+       x0:1.3887167600432106e-05
+       x1:2.8118783750058736
+       c:0.02519951266832267
        sourcez:1.4
        hostebv:0
        lensebv:0
@@ -76,14 +80,14 @@ supernova. The function being used in these examples is
     Image: image_2:
     Bands: ['F160W', 'F110W']
     Date Range: 25.73529->175.00000
-    Number of points: 59
+    Number of points: 60
 
     Metadata:
        z:1.4
        t0:70.0
-       x0:8.984766786620307e-06
-       x1:0.6203919068068094
-       c:-0.011851268615079891
+       x0:6.943583800216053e-06
+       x1:2.8118783750058736
+       c:0.02519951266832267
        sourcez:1.4
        hostebv:0
        lensebv:0
@@ -142,9 +146,9 @@ in any way you want.
     Metadata:
        z:1.33
        t0:10.0
-       x0:9.94791215897092e-06
-       x1:1.81029512623779
-       c:-0.07206919528332736
+       x0:3.904985907026126e-06
+       x1:1.1277952428676232
+       c:-0.060830074321754024
        sourcez:1.33
        hostebv:0.0967741935483871
        lensebv:0
@@ -154,15 +158,15 @@ in any way you want.
     ------------------
     Image: image_2:
     Bands: ['F125W', 'F110W']
-    Date Range: 30.88235->175.00000
-    Number of points: 58
+    Date Range: 25.73529->169.85294
+    Number of points: 53
 
     Metadata:
        z:1.33
        t0:70.0
-       x0:4.97395607948546e-06
-       x1:1.81029512623779
-       c:-0.07206919528332736
+       x0:1.952492953513063e-06
+       x1:1.1277952428676232
+       c:-0.060830074321754024
        sourcez:1.33
        hostebv:0.0967741935483871
        lensebv:0
@@ -219,30 +223,30 @@ in any way you want.
     Metadata:
        z:1.33
        t0:10.0
-       x0:1.2450561395597121e-05
-       x1:0.5580252637967957
-       c:-0.058742878991890374
+       x0:1.1766668720328373e-05
+       x1:0.9895727958115563
+       c:0.13391482967526191
        sourcez:1.33
-       hostebv:0.1757641361541573
-       lensebv:0.16625178323248557
+       hostebv:0.18324603075864204
+       lensebv:0.18261272426637346
        lensz:0.53
        mu:7
        td:10.0
     ------------------
     Image: image_2:
     Bands: ['F125W', 'F110W']
-    Date Range: 25.73529->175.00000
+    Date Range: 30.88235->175.00000
     Number of points: 58
 
     Metadata:
        z:1.33
        t0:70.0
-       x0:6.225280697798561e-06
-       x1:0.5580252637967957
-       c:-0.058742878991890374
+       x0:5.8833343601641865e-06
+       x1:0.9895727958115563
+       c:0.13391482967526191
        sourcez:1.33
-       hostebv:0.1757641361541573
-       lensebv:0.16625178323248557
+       hostebv:0.18324603075864204
+       lensebv:0.18261272426637346
        lensz:0.53
        mu:3.5
        td:70.0
@@ -255,7 +259,7 @@ in any way you want.
 
 .. rst-class:: sphx-glr-timing
 
-   **Total running time of the script:** ( 0 minutes  1.144 seconds)
+   **Total running time of the script:** ( 0 minutes  0.751 seconds)
 
 
 .. _sphx_glr_download_examples_plot_sim.py:

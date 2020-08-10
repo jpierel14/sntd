@@ -6,6 +6,13 @@ Simulate Microlensing
 Simulate a microlensing microcaustic.
 """
 
+#######################################################################
+# This notebook gives examples on creating microlensing for simulations
+# 
+#  -----------------------------------
+# `Run this notebook with Google Colab <https://colab.research.google.com/github/jpierel14/sntd/blob/master/notebooks/docs_micro.ipynb>`_.
+#  -----------------------------------
+
 import sntd
 import numpy as np
        

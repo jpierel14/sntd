@@ -25,6 +25,10 @@ function. The true delay for all of these fits is 50 days.
 You can batch process using any or all of these methods as well 
 (see :ref:`examples:Batch Processing Time Delay Measurements`)
 
+ -----------------------------------
+`Run this notebook with Google Colab <https://colab.research.google.com/github/jpierel14/sntd/blob/master/notebooks/docs_fitting.ipynb>`_.
+ -----------------------------------
+
 **Parallel:**
 
 
@@ -74,10 +78,10 @@ You can batch process using any or all of these methods as well
 
  .. code-block:: none
 
-    {'image_1': 0, 'image_2': 49.85157867276823}
-    {'image_1': array([0, 0]), 'image_2': array([-0.14876104,  0.15856045])}
-    {'image_1': 1, 'image_2': 0.5026550239797724}
-    {'image_1': array([0, 0]), 'image_2': array([-0.00463476,  0.00569706])}
+    {'image_1': 0, 'image_2': 49.8599218853653}
+    {'image_1': array([0, 0]), 'image_2': array([-0.13931291,  0.1445786 ])}
+    {'image_1': 1, 'image_2': 0.5025850488075057}
+    {'image_1': array([0, 0]), 'image_2': array([-0.00460646,  0.00456556])}
 
     <Figure size 970x970 with 16 Axes>
 
@@ -131,10 +135,14 @@ Other methods are called in a similar fashion, with a couple of extra arguments:
 
  .. code-block:: none
 
-    {'image_1': 0, 'image_2': 49.841785794834834}
-    {'image_1': array([0, 0]), 'image_2': array([-0.07516144,  0.08541643])}
-    {'image_1': 1, 'image_2': 0.5042602367917445}
-    {'image_1': array([0, 0]), 'image_2': array([-0.00168644,  0.00175662])}
+    {'image_1': 0, 'image_2': 46.28787407994734}
+    {'image_1': array([0, 0]), 'image_2': array([-0.01157278,  0.01552872])}
+    {'image_1': 1, 'image_2': 0.6498218888008135}
+    {'image_1': array([0, 0]), 'image_2': array([-0.00232995,  0.00239059])}
+    WARNING:root:Too few points to create valid contours
+    WARNING:root:Too few points to create valid contours
+    WARNING:root:Too few points to create valid contours
+    WARNING:root:Too few points to create valid contours
 
     <Figure size 1390x1390 with 36 Axes>
 
@@ -184,8 +192,8 @@ argument.
 
  .. code-block:: none
 
-    {'image_1': 0, 'image_2': 51.569492764373166}
-    {'image_1': array([0, 0]), 'image_2': array([-1.17305869,  1.34980142])}
+    {'image_1': 0, 'image_2': 51.62474583859374}
+    {'image_1': array([0, 0]), 'image_2': array([-1.33499566,  1.31253678])}
 
     <Figure size 760x760 with 9 Axes>
 
@@ -224,10 +232,10 @@ You can include your fit from the parallel method as a prior on light curve and 
 
  .. code-block:: none
 
-    {'image_1': 0, 'image_2': 49.84883627277922}
-    {'image_1': array([0, 0]), 'image_2': array([-0.16183423,  0.16044441])}
-    {'image_1': 0, 'image_2': 49.81198577173508}
-    {'image_1': array([0, 0]), 'image_2': array([-0.31871531,  0.35213228])}
+    {'image_1': 0, 'image_2': 49.851237220541684}
+    {'image_1': array([0, 0]), 'image_2': array([-0.14312314,  0.15251288])}
+    {'image_1': 0, 'image_2': 49.830178002680626}
+    {'image_1': array([0, 0]), 'image_2': array([-0.31193061,  0.28094124])}
 
 
 
@@ -262,7 +270,7 @@ extreme dust in the source and lens frames (your final simulations may look slig
 
  .. code-block:: none
 
-    lensebv: 0.48387096774193544 hostebv: 0.3225806451612903 c: 0.060732400001427815
+    lensebv: 0.48387096774193544 hostebv: 0.3225806451612903 c: 0.07112681237378883
 
 
 
@@ -296,9 +304,9 @@ Okay, now we can fit the MISN first without taking these effects into account:
 
  .. code-block:: none
 
-    {'image_1': 0, 'image_2': 57.221950994393794}
-    {'image_1': array([0, 0]), 'image_2': array([-1.14387136,  1.43070062])}
-    c: 0.44505679401082343
+    {'image_1': 0, 'image_2': 59.307049586590516}
+    {'image_1': array([0, 0]), 'image_2': array([-0.37066751,  0.40624268])}
+    c: 0.775167607727538
 
     <Figure size 1000x1000 with 2 Axes>
 
@@ -339,9 +347,9 @@ as it attempts to compensate for extinction without a propagation effect. Now le
 
  .. code-block:: none
 
-    {'image_1': 0, 'image_2': 59.31723548143942}
-    {'image_1': array([0, 0]), 'image_2': array([-1.21555549,  1.56002922])}
-    c: 0.26716942663285076 lensebv: 0.4017104967376445 hostebv: 0.2256947517442909
+    {'image_1': 0, 'image_2': 59.2875364087285}
+    {'image_1': array([0, 0]), 'image_2': array([-0.38235675,  0.42474486])}
+    c: 0.41839482903274644 lensebv: 0.22774365383286208 hostebv: 0.17530664011282607
 
     <Figure size 1000x1000 with 2 Axes>
 
@@ -353,7 +361,7 @@ more accurate.
 
 .. rst-class:: sphx-glr-timing
 
-   **Total running time of the script:** ( 6 minutes  28.110 seconds)
+   **Total running time of the script:** ( 41 minutes  1.204 seconds)
 
 
 .. _sphx_glr_download_examples_plot_fitting.py:

@@ -17,7 +17,11 @@ Simulate cosmological constraints
 from a sample of lensed SN.
 
 All of these cosmology tools are based on `Coe & Moustakas 2009 <https://arxiv.org/pdf/0906.4108.pdf>`_.
-and Dan Coe's `Fisher matrix starter paper <https://arxiv.org/pdf/0906.4123.pdf>`_.
+and Dan Coe's `Fisher matrix starter paper <https://arxiv.org/pdf/0906.4123.pdf>`_. 
+
+ -----------------------------------
+`Run this notebook with Google Colab <https://colab.research.google.com/github/jpierel14/sntd/blob/master/notebooks/docs_cosmo.ipynb>`_.
+ -----------------------------------
 
 **Creating a Survey**
 
@@ -81,7 +85,7 @@ This will make a smooth contour plot for 2 parameters.
 
     No handles with labels found to put in legend.
 
-    <matplotlib.axes._subplots.AxesSubplot object at 0x1a1bd44710>
+    <matplotlib.axes._subplots.AxesSubplot object at 0x1a14883860>
 
 
 
@@ -148,15 +152,15 @@ Add a prior that assumes perfect knowledge of all other parameters
 
  .. code-block:: none
 
-    Either your color_list is the wrong size or you did not define it, taking defaults...
 
+    <matplotlib.axes._subplots.AxesSubplot object at 0x1a16b6de10>
 
 
 
 
 .. rst-class:: sphx-glr-timing
 
-   **Total running time of the script:** ( 0 minutes  34.477 seconds)
+   **Total running time of the script:** ( 0 minutes  37.879 seconds)
 
 
 .. _sphx_glr_download_examples_plot_survey.py:
