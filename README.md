@@ -8,7 +8,7 @@ Welcome to Supernova Time Delays (SNTD)
 
 ![alt text](docs/source/_static/logo.jpg?raw=true)
 
-Documentation for this package is hosted on [ReadTheDocs](https://sntd.readthedocs.io/en/latest/). This package is under active use and development, so please post GitHub issues if anything arises (bug or feature request). Please see the "notebooks" folder for jupyter notebook examples of using SNTD.
+SNTD is a Python package dedicated to measuring time delays for (resolved) strongly lensed and multiply-imaged SN. The package can simulate lensed SN, fit for each SN time delay, and propagate the results all the way through to cosmological constraints. Documentation for this package is hosted on [ReadTheDocs](https://sntd.readthedocs.io/en/latest/). This package is under active use and development, so please post GitHub issues if anything arises (bug or feature request). Please see the "notebooks" folder for jupyter notebook examples of using SNTD.
 
 Here you can run the SNTD example notebooks directly in your browser using Google Colab:
 
