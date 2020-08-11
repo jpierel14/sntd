@@ -39,7 +39,7 @@ You can batch process (with sbatch or multiprocessing) using any or all of these
     myMISN=sntd.load_example_misn()
 
     fitCurves=sntd.fit_data(myMISN,snType='Ia', models='salt2-extended',bands=['F110W','F160W'],
-                    params=['x0','t0','x1','c'],constants={'z':1.4},refImage='image_1',cut_time=[-50,30],
+                    params=['x0','t0','x1','c'],constants={'z':1.4},refImage='image_1',cut_time=[-30,40],
                     bounds={'t0':(-20,20),'x1':(-3,3),'c':(-.5,.5),'mu':(.5,2)},fitOrder=['image_2','image_1'],
                     method='parallel',microlensing=None,modelcov=False,npoints=100)
     print(fitCurves.parallel.time_delays)
@@ -78,10 +78,10 @@ You can batch process (with sbatch or multiprocessing) using any or all of these
 
  .. code-block:: none
 
-    {'image_1': 0, 'image_2': 49.842057953239205}
-    {'image_1': array([0, 0]), 'image_2': array([-0.10569226,  0.17109392])}
-    {'image_1': 1, 'image_2': 0.5028390253713437}
-    {'image_1': array([0, 0]), 'image_2': array([-0.0042554 ,  0.00486965])}
+    {'image_1': 0, 'image_2': 49.840019971680576}
+    {'image_1': array([0, 0]), 'image_2': array([-0.15335578,  0.15516413])}
+    {'image_1': 1, 'image_2': 0.5026350011268993}
+    {'image_1': array([0, 0]), 'image_2': array([-0.00463769,  0.00505748])}
 
     <Figure size 970x970 with 16 Axes>
 
@@ -100,7 +100,7 @@ Other methods are called in a similar fashion, with a couple of extra arguments:
 
 
     fitCurves=sntd.fit_data(myMISN,snType='Ia', models='salt2-extended',bands=['F110W','F160W'],
-            params=['x0','t0','x1','c'],constants={'z':1.4},refImage='image_1',cut_time=[-50,30],
+            params=['x0','t0','x1','c'],constants={'z':1.4},refImage='image_1',cut_time=[-30,40],
             bounds={'t0':(-20,20),'td':(-20,20),'mu':(.5,2),'x1':(-3,3),'c':(-.5,.5)},
             method='series',npoints=100)
         
@@ -135,12 +135,12 @@ Other methods are called in a similar fashion, with a couple of extra arguments:
 
  .. code-block:: none
 
-    [ 2.13725819e-05  1.99573804e+01 -1.43577978e-01  6.61535915e-02
-      4.98389494e+01  5.04010024e-01]
-    {'image_1': 0, 'image_2': 49.8321750134354}
-    {'image_1': array([0, 0]), 'image_2': array([-0.06593141,  0.0811852 ])}
-    {'image_1': 1, 'image_2': 0.5039919011518899}
-    {'image_1': array([0, 0]), 'image_2': array([-0.00146214,  0.00156142])}
+    [ 2.13811422e-05  1.99464548e+01 -1.65168083e-01  6.53175153e-02
+      4.98454606e+01  5.04624203e-01]
+    {'image_1': 0, 'image_2': 49.841793423312915}
+    {'image_1': array([0, 0]), 'image_2': array([-0.06908658,  0.07011961])}
+    {'image_1': 1, 'image_2': 0.5046481823741065}
+    {'image_1': array([0, 0]), 'image_2': array([-0.0016663 ,  0.00161565])}
 
     <Figure size 1390x1390 with 36 Axes>
 
@@ -159,7 +159,7 @@ argument.
     
     fitCurves=sntd.fit_data(myMISN,snType='Ia', models='salt2-extended',bands=['F110W','F160W'],
                         params=['t0','c'],constants={'z':1.4,'x1':fitCurves.images['image_1'].fits.model.get('x1')},refImage='image_1',
-                        color_param_ignore=['x1'],bounds={'t0':(-20,20),'td':(-20,20),'mu':(.5,2),'c':(-.5,.5)},cut_time=[-50,30],
+                        color_param_ignore=['x1'],bounds={'t0':(-20,20),'td':(-20,20),'mu':(.5,2),'c':(-.5,.5)},cut_time=[-30,40],
                         method='color',microlensing=None,modelcov=False,npoints=200,maxiter=None,minsnr=3)
 
     print(fitCurves.color.time_delays)
@@ -190,8 +190,8 @@ argument.
 
  .. code-block:: none
 
-    {'image_1': 0, 'image_2': 51.59180420703214}
-    {'image_1': array([0, 0]), 'image_2': array([-1.2334528 ,  1.28406879])}
+    {'image_1': 0, 'image_2': 51.52545264404653}
+    {'image_1': array([0, 0]), 'image_2': array([-1.23242995,  1.34490708])}
 
     <Figure size 760x760 with 9 Axes>
 
@@ -207,7 +207,7 @@ You can include your fit from the parallel method as a prior on light curve and 
 
     fitCurves_parallel=sntd.fit_data(myMISN,snType='Ia', models='salt2-extended',bands=['F110W','F160W'],
                     	params=['x0','t0','x1','c'],constants={'z':1.4},refImage='image_1',
-                    	bounds={'t0':(-20,20),'x1':(-3,3),'c':(-.5,.5),'mu':(.5,2)},fitOrder=['image_2','image_1'],cut_time=[-50,30],
+                    	bounds={'t0':(-20,20),'x1':(-3,3),'c':(-.5,.5),'mu':(.5,2)},fitOrder=['image_2','image_1'],cut_time=[-30,40],
                    	    method='parallel',microlensing=None,modelcov=False,npoints=100,maxiter=None)
     fitCurves_color=sntd.fit_data(myMISN,snType='Ia', models='salt2-extended',bands=['F110W','F160W'],cut_time=[-50,30],
                     	params=['t0','c'],constants={'z':1.4,'x1':fitCurves.images['image_1'].fits.model.get('x1')},refImage='image_1',
@@ -230,10 +230,10 @@ You can include your fit from the parallel method as a prior on light curve and 
 
  .. code-block:: none
 
-    {'image_1': 0, 'image_2': 49.85636058457829}
-    {'image_1': array([0, 0]), 'image_2': array([-0.1403925 ,  0.14674745])}
-    {'image_1': 0, 'image_2': 49.80469869083909}
-    {'image_1': array([0, 0]), 'image_2': array([-0.25457953,  0.30725668])}
+    {'image_1': 0, 'image_2': 49.83642937969682}
+    {'image_1': array([0, 0]), 'image_2': array([-0.16216226,  0.14232851])}
+    {'image_1': 0, 'image_2': 49.82679825541822}
+    {'image_1': array([0, 0]), 'image_2': array([-0.30500095,  0.30527895])}
 
 
 
@@ -251,7 +251,7 @@ extreme dust in the source and lens frames (your final simulations may look slig
 
 
     myMISN2 = sntd.createMultiplyImagedSN(sourcename='salt2-extended', snType='Ia', redshift=1.4,z_lens=.53, bands=['F110W','F160W'],
-                  zp=[26.9,26.2], cadence=5., epochs=35.,time_delays=[10., 70.], magnifications=[20,10],
+                  zp=[26.9,26.2], cadence=8., epochs=30.,time_delays=[20., 70.], magnifications=[20,10],
                   objectName='My Type Ia SN',telescopename='HST',av_lens=1.5,
                   av_host=1)
     print('lensebv:',myMISN2.images['image_1'].simMeta['lensebv'],
@@ -268,7 +268,7 @@ extreme dust in the source and lens frames (your final simulations may look slig
 
  .. code-block:: none
 
-    lensebv: 0.48387096774193544 hostebv: 0.3225806451612903 c: -0.04457818351436854
+    lensebv: 0.48387096774193544 hostebv: 0.3225806451612903 c: 0.0036396427131899175
 
 
 
@@ -283,7 +283,7 @@ Okay, now we can fit the MISN first without taking these effects into account:
 
     fitCurves_dust=sntd.fit_data(myMISN2,snType='Ia', models='salt2-extended',bands=['F110W','F160W'],
                                                          params=['x0','x1','t0','c'],npoints=200,
-                                                         constants={'z':1.4},minsnr=1,cut_time=[-50,30],
+                                                         constants={'z':1.4},minsnr=1,cut_time=[-30,40],
                                                          bounds={'t0':(-15,15),'x1':(-3,3),'c':(-.3,.3)})
     print(fitCurves_dust.parallel.time_delays)
     print(fitCurves_dust.parallel.time_delay_errors)
@@ -302,9 +302,9 @@ Okay, now we can fit the MISN first without taking these effects into account:
 
  .. code-block:: none
 
-    {'image_1': 0, 'image_2': 60.28541672468899}
-    {'image_1': array([0, 0]), 'image_2': array([-0.99299896,  0.99442813])}
-    c: 0.66434516506831
+    {'image_1': 0, 'image_2': 50.38279703244322}
+    {'image_1': array([0, 0]), 'image_2': array([-0.6135019 ,  0.68283929])}
+    c: 0.7402092975258244
 
     <Figure size 1000x1000 with 2 Axes>
 
@@ -322,9 +322,9 @@ as it attempts to compensate for extinction without a propagation effect. Now le
     dust = sncosmo.CCM89Dust()
     salt2_model=sncosmo.Model('salt2-extended',effects=[dust,dust],effect_names=['lens','host'],effect_frames=['free','rest'])
     fitCurves_dust=sntd.fit_data(myMISN2,snType='Ia', models=salt2_model,bands=['F110W','F160W'],npoints=200,
-                        params=['x0','x1','t0','c','lensebv','hostebv'],minsnr=1,cut_time=[-50,30],
+                        params=['x0','x1','t0','c','lensebv','hostebv'],minsnr=1,cut_time=[-30,40],
                         constants={'z':1.4,'lensr_v':3.1,'lensz':0.53,'hostr_v':3.1},
-                        bounds={'t0':(-15,15),'x1':(-3,3),'c':(-.3,.3),'lensebv':(0,1.),'hostebv':(0,1.)})
+                        bounds={'t0':(-15,15),'x1':(-3,3),'c':(-.1,.1),'lensebv':(.2,1.),'hostebv':(.2,1.)})
 
     print(fitCurves_dust.parallel.time_delays)
     print(fitCurves_dust.parallel.time_delay_errors)
@@ -345,9 +345,9 @@ as it attempts to compensate for extinction without a propagation effect. Now le
 
  .. code-block:: none
 
-    {'image_1': 0, 'image_2': 60.32107300747058}
-    {'image_1': array([0, 0]), 'image_2': array([-0.95490479,  1.05140333])}
-    c: 0.440306959014058 lensebv: 0.13754135258838374 hostebv: 0.12419446982968683
+    {'image_1': 0, 'image_2': 50.40527972431711}
+    {'image_1': array([0, 0]), 'image_2': array([-0.66916388,  0.71217856])}
+    c: 0.28127107977898574 lensebv: 0.3963084663702129 hostebv: 0.1491811267077542
 
     <Figure size 1000x1000 with 2 Axes>
 
@@ -359,7 +359,7 @@ more accurate.
 
 .. rst-class:: sphx-glr-timing
 
-   **Total running time of the script:** ( 4 minutes  47.043 seconds)
+   **Total running time of the script:** ( 4 minutes  38.210 seconds)
 
 
 .. _sphx_glr_download_examples_plot_fitting.py:
