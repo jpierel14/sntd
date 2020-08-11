@@ -8,13 +8,13 @@ with SNTD.
 """
 
 ###############################################################
-# There are 3 methods built into SNTD to measure time delays 
+# There are 3 methods built into SNTD to measure time delays
 # (parallel, series, color). They are accessed by the same 
 # function: :py:func:`~sntd.fitting.fit_data` . 
 # Here ``myMISN`` was generated in the :ref:`examples/plot_sim:Simulating Supernovae` part 
 # of the documentation, using the :py:func:`~sntd.simulation.createMultiplyImagedSN` 
 # function. The true delay for all of these fits is 50 days.
-# You can batch process using any or all of these methods as well 
+# You can batch process (with sbatch or multiprocessing) using any or all of these methods as well 
 # (see :ref:`examples:Batch Processing Time Delay Measurements`)
 #
 #  -----------------------------------

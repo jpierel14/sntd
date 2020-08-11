@@ -5,42 +5,6 @@ Examples using ``sntd.curveDict``
 
 .. raw:: html
 
-    <div class="sphx-glr-thumbcontainer" tooltip="Simulate a microlensing microcaustic. ">
-
-.. only:: html
-
- .. figure:: /examples/images/thumb/sphx_glr_plot_micro_thumb.png
-
-     :ref:`sphx_glr_examples_plot_micro.py`
-
-.. raw:: html
-
-    </div>
-
-.. only:: not html
-
- * :ref:`sphx_glr_examples_plot_micro.py`
-
-.. raw:: html
-
-    <div class="sphx-glr-thumbcontainer" tooltip="Simulating a multiply-imaged supernova. ">
-
-.. only:: html
-
- .. figure:: /examples/images/thumb/sphx_glr_plot_sim_thumb.png
-
-     :ref:`sphx_glr_examples_plot_sim.py`
-
-.. raw:: html
-
-    </div>
-
-.. only:: not html
-
- * :ref:`sphx_glr_examples_plot_sim.py`
-
-.. raw:: html
-
     <div class="sphx-glr-thumbcontainer" tooltip="A series of examples demonstrating various fitting options  with SNTD. ">
 
 .. only:: html

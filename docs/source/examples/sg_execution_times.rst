@@ -5,14 +5,14 @@
 
 Computation times
 =================
-**41:40.145** total execution time for **examples** files:
+**04:47.043** total execution time for **examples** files:
 
 +----------------------------------------------------------------+-----------+--------+
-| :ref:`sphx_glr_examples_plot_fitting.py` (``plot_fitting.py``) | 41:01.204 | 0.0 MB |
+| :ref:`sphx_glr_examples_plot_fitting.py` (``plot_fitting.py``) | 04:47.043 | 0.0 MB |
 +----------------------------------------------------------------+-----------+--------+
-| :ref:`sphx_glr_examples_plot_micro.py` (``plot_micro.py``)     | 00:38.190 | 0.0 MB |
+| :ref:`sphx_glr_examples_plot_micro.py` (``plot_micro.py``)     | 00:00.000 | 0.0 MB |
 +----------------------------------------------------------------+-----------+--------+
-| :ref:`sphx_glr_examples_plot_sim.py` (``plot_sim.py``)         | 00:00.751 | 0.0 MB |
+| :ref:`sphx_glr_examples_plot_sim.py` (``plot_sim.py``)         | 00:00.000 | 0.0 MB |
 +----------------------------------------------------------------+-----------+--------+
 | :ref:`sphx_glr_examples_plot_survey.py` (``plot_survey.py``)   | 00:00.000 | 0.0 MB |
 +----------------------------------------------------------------+-----------+--------+
