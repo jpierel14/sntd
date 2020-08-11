@@ -1928,7 +1928,6 @@ def nest_series_lc(data,model,nimage,vparam_names,bounds,ref='image_1',use_MLE=F
 	if tied is None:
 		tied = {}
 
-	
 
 	# Convert bounds/priors combinations into ppfs
 	if bounds is not None:
@@ -1995,42 +1994,41 @@ def nest_series_lc(data,model,nimage,vparam_names,bounds,ref='image_1',use_MLE=F
 	#data=data[np.where(np.logical_and(data['time']>=mindat,data['time']<=maxdat))]
 	im_indices=[np.where(data['image']==i)[0] for i in np.unique(data['image']) if i !=ref]
 	cov = np.diag(data['fluxerr']**2)
-	zp=data['zp']
-	zpsys=data['zpsys']
-	time=data['time']
-	flux=data['flux']
-
+	zp=np.array(data['zp'])
+	zpsys=np.array(data['zpsys'])
+	time=np.array(data['time'])
+	flux=np.array(data['flux'])
+	fluxerr=np.array(data['fluxerr'])
+	band=np.array(data['band'])
 	def chisq_likelihood(parameters):
 		model.parameters[model_param_index]=parameters[model_idx]
-		all_data=deepcopy(data)
-		for i in range(len(im_indices)):
-			all_data['time'][im_indices[i]]-=parameters[td_idx[i]]
-			all_data['flux'][im_indices[i]]/=parameters[amp_idx[i]]
-		all_data.sort('time')
 
-		model_observations = model.bandflux(all_data['band'],all_data['time'],
+		tempTime=deepcopy(time)
+		tempFlux=deepcopy(flux)
+		for i in range(len(im_indices)):
+			tempTime[im_indices[i]]-=parameters[td_idx[i]]
+			tempFlux[im_indices[i]]/=parameters[amp_idx[i]]
+		
+		model_observations = model.bandflux(band,tempTime,
 											zp=zp,zpsys=zpsys)
 		if modelcov:
 			
-			_, mcov = model.bandfluxcov(all_data['band'], all_data['time'],
+			_, mcov = model.bandfluxcov(band, tempTime,
 										zp=zp, zpsys=zpsys)
 
 			cov = cov + mcov
 			invcov = np.linalg.pinv(cov)
 
-			diff = all_data['flux']-model_observations
+			diff = tempFlux-model_observations
 			chisq=np.dot(np.dot(diff, invcov), diff)
 
 		else:
-			chi=(np.array(all_data['flux'])-model_observations)/np.array(all_data['fluxerr'])
+			chi=(tempFlux-model_observations)/np.array(fluxerr)
 			chisq=np.dot(chi,chi)
 		return chisq
 
 	def loglike(parameters):
 		chisq=chisq_likelihood(parameters)
-		if not np.isfinite(chisq):
-			return -np.inf
-
 		return(-.5*chisq)
 
 
@@ -2044,6 +2042,8 @@ def nest_series_lc(data,model,nimage,vparam_names,bounds,ref='image_1',use_MLE=F
 						callback=(nestle.print_progress if verbose else None))
 
 	vparameters, cov = nestle.mean_and_cov(res.samples, res.weights)
+
+	print(vparameters)
 
 	res = sncosmo.utils.Result(niter=res.niter,
 							   ncall=res.ncall,
