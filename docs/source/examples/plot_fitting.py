@@ -129,7 +129,7 @@ print(fitCurves_dust.parallel.time_delay_errors)
 print('c:',fitCurves_dust.images['image_1'].fits.model.get('c'))
 fitCurves_dust.plot_object(showFit=True)
 ########################################################################################################################
-# We can see that the fitter has done reasonably well, and the time delay is still accurate (True delay is 60 days). 
+# We can see that the fitter has done reasonably well, and the time delay is still accurate (True delay is 50 days). 
 # However, one issue is that the measured value for **c** is vastly different than the actual value 
 # as it attempts to compensate for extinction without a propagation effect. Now let's add in the propagation effects:
 

@@ -310,7 +310,7 @@ Okay, now we can fit the MISN first without taking these effects into account:
 
 
 
-We can see that the fitter has done reasonably well, and the time delay is still accurate (True delay is 60 days). 
+We can see that the fitter has done reasonably well, and the time delay is still accurate (True delay is 50 days). 
 However, one issue is that the measured value for **c** is vastly different than the actual value 
 as it attempts to compensate for extinction without a propagation effect. Now let's add in the propagation effects:
 
@@ -359,7 +359,7 @@ more accurate.
 
 .. rst-class:: sphx-glr-timing
 
-   **Total running time of the script:** ( 4 minutes  38.210 seconds)
+   **Total running time of the script:** ( 4 minutes  38.032 seconds)
 
 
 .. _sphx_glr_download_examples_plot_fitting.py:
