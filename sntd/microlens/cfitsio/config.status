@@ -439,7 +439,7 @@ Copyright (C) 2010 Free Software Foundation, Inc.
 This config.status script is free software; the Free Software Foundation
 gives unlimited permission to copy, distribute and modify it."
 
-ac_pwd='/work/jr23/sntd/sntd/microlens/cfitsio'
+ac_pwd='/Users/jpierel/CodeBase/sntd/sntd/microlens/cfitsio'
 srcdir='.'
 test -n "$AWK" || AWK=awk
 # The default lists apply if the user does not specify any file.
@@ -596,13 +596,13 @@ echo 'BEGIN {' >"$ac_tmp/subs1.awk" &&
 cat >>"$ac_tmp/subs1.awk" <<\_ACAWK &&
 S["LTLIBOBJS"]=""
 S["LIBOBJS"]=""
-S["my_shmem"]="${SOURCES_SHMEM}"
+S["my_shmem"]=""
 S["F77_WRAPPERS"]="${FITSIO_SRC}"
-S["SHLIB_SUFFIX"]=".so"
-S["SHLIB_LD"]="cc -shared"
+S["SHLIB_SUFFIX"]=".dylib"
+S["SHLIB_LD"]="cc -dynamiclib -arch i386 -arch x86_64"
 S["LIBPRE"]=""
-S["ARCH"]="linux"
-S["GCCVERSION"]="4.8.5"
+S["ARCH"]="i386"
+S["GCCVERSION"]="12.0.0"
 S["SSE_FLAGS"]=""
 S["EGREP"]="/usr/bin/grep -E"
 S["GREP"]="/usr/bin/grep"
@@ -614,7 +614,7 @@ S["EXEEXT"]=""
 S["ac_ct_CC"]=""
 S["CPPFLAGS"]=""
 S["LDFLAGS"]=""
-S["CFLAGS"]="-g -O2 -Dg77Fortran -fPIC"
+S["CFLAGS"]="-g -O2 -arch i386 -arch x86_64 -Dg77Fortran -fPIC -fno-common"
 S["CC"]="cc"
 S["uname_found"]="1"
 S["INSTALL_ROOT"]="${prefix}"
@@ -623,12 +623,12 @@ S["host_alias"]=""
 S["build_alias"]=""
 S["LIBS"]=""
 S["ECHO_T"]=""
-S["ECHO_N"]="-n"
-S["ECHO_C"]=""
+S["ECHO_N"]=""
+S["ECHO_C"]="\\c"
 S["DEFS"]="-DPACKAGE_NAME=\\\"\\\" -DPACKAGE_TARNAME=\\\"\\\" -DPACKAGE_VERSION=\\\"\\\" -DPACKAGE_STRING=\\\"\\\" -DPACKAGE_BUGREPORT=\\\"\\\" -DPACKAGE_URL=\\\"\\\" -DSTDC_HEADERS=1"\
 " -DHAVE_SYS_TYPES_H=1 -DHAVE_SYS_STAT_H=1 -DHAVE_STDLIB_H=1 -DHAVE_STRING_H=1 -DHAVE_MEMORY_H=1 -DHAVE_STRINGS_H=1 -DHAVE_INTTYPES_H=1 -DHAVE_STDINT"\
-"_H=1 -DHAVE_UNISTD_H=1 -DHAVE_STDLIB_H=1 -DHAVE_STRING_H=1 -DHAVE_MATH_H=1 -DHAVE_LIMITS_H=1 -D_LARGEFILE_SOURCE=1 -D_FILE_OFFSET_BITS=64 -DHAVE_FTR"\
-"UNCATE=1 -DHAVE_LONGLONG=1 -DHAVE_SHMEM_SERVICES=1 -DHAVE_NET_SERVICES=1"
+"_H=1 -DHAVE_UNISTD_H=1 -DHAVE_STDLIB_H=1 -DHAVE_STRING_H=1 -DHAVE_MATH_H=1 -DHAVE_LIMITS_H=1 -D_LARGEFILE_SOURCE=1 -D_FILE_OFFSET_BITS=64 -DHAVE_LON"\
+"GLONG=1 -DHAVE_UNION_SEMUN=1"
 S["mandir"]="${datarootdir}/man"
 S["localedir"]="${datarootdir}/locale"
 S["libdir"]="${exec_prefix}/lib"
@@ -649,7 +649,7 @@ S["libexecdir"]="${exec_prefix}/libexec"
 S["sbindir"]="${exec_prefix}/sbin"
 S["bindir"]="${exec_prefix}/bin"
 S["program_transform_name"]="s,x,x,"
-S["prefix"]="/work/jr23/sntd/sntd/microlens/cfitsio"
+S["prefix"]="/Users/jpierel/CodeBase/sntd/sntd/microlens/cfitsio"
 S["exec_prefix"]="${prefix}"
 S["PACKAGE_URL"]=""
 S["PACKAGE_BUGREPORT"]=""

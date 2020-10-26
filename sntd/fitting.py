@@ -2043,8 +2043,6 @@ def nest_series_lc(data,model,nimage,vparam_names,bounds,ref='image_1',use_MLE=F
 
 	vparameters, cov = nestle.mean_and_cov(res.samples, res.weights)
 
-	print(vparameters)
-
 	res = sncosmo.utils.Result(niter=res.niter,
 							   ncall=res.ncall,
 							   logz=res.logz,

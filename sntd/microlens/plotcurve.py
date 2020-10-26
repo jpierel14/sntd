@@ -1,4 +1,4 @@
-from pylab import plot, show
+from pylab import plot, savefig
 fil = open('out_line')
 all = fil.readlines()
 x = []
@@ -9,6 +9,6 @@ for l in all:
     y.append(float(s[4]))
 
 plot(x,y)
-show()
+savefig('lcurv.png')
 
 

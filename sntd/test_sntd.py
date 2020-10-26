@@ -4,7 +4,9 @@ from copy import deepcopy
 sys.path.append(os.path.join(os.path.dirname(os.path.abspath(__file__)),'..'))
 import sntd
 import numpy as np
+import warnings
 
+warnings.simplefilter('ignore')
 
 np.random.seed(3)
 def test_sntd():
@@ -33,7 +35,6 @@ def test_sntd():
 		print('Failed')
 		print(traceback.format_exc())
 		failed+=1
-
 	for method in ['parallel','series','color']:
 		try:
 			total+=1
@@ -41,7 +42,7 @@ def test_sntd():
 			fitCurves=sntd.fit_data(myMISN,snType='Ia', models='salt2-extended',bands=['bessellv','bessellr'],
 				params=['x0','x1','t0','c'],bounds={'t0':(-15,15),'x1':(-2,2),'c':(-1,1),'td':(-15,15),'mu':(.5,2)},
 				color_param_ignore=['x1'],min_n_bands=1000,min_points_per_band=10000,
-				method=method,microlensing=None,maxcall=5,minsnr=0,set_from_simMeta={'z':'z'},t0_guess={'image_1':20,'image_2':70})
+				method=method,microlensing=None,maxcall=50,minsnr=0,set_from_simMeta={'z':'z'},t0_guess={'image_1':20,'image_2':70})
 			if fitCurves is not None:
 				raise RuntimeError('Accidentally passed quality check?')
 			print('Passed!')
@@ -58,7 +59,7 @@ def test_sntd():
 			fitCurves=sntd.fit_data(myMISN,snType='Ia', models='salt2-extended',bands=['bessellb','bessellr'],
 				params=['x0','x1','t0','c'],bounds={'t0':(-15,15),'x1':(-2,2),'c':(-1,1),'td':(-30,30),'mu':(.5,2)},
 				color_param_ignore=['x1'],use_MLE=False,refImage='image_1',
-				method=method,microlensing=None,maxcall=10,npoints=10,minsnr=0,set_from_simMeta={'z':'z'},t0_guess={'image_1':20,'image_2':70})
+				method=method,microlensing=None,maxcall=50,npoints=10,minsnr=0,set_from_simMeta={'z':'z'},t0_guess={'image_1':20,'image_2':70})
 			print('Passed!')
 		except Exception as e:
 			print('Failed')
@@ -85,7 +86,7 @@ def test_sntd():
 		fitCurves=sntd.fit_data(myMISN_ml,snType='Ia', models='salt2-extended',bands=['bessellb','bessellr'],
 			params=['x0','x1','t0','c'],constants={'z':.5},bounds={'t0':(-1,1),'x1':(-2,2),'c':(-1,1)},
 			method='parallel',microlensing='achromatic',t0_guess={'image_1':10,'image_2':70},
-			nMicroSamples=10,maxcall=500,minsnr=0)
+			nMicroSamples=5,maxcall=50,minsnr=0)
 
 		print('Passed!')
 	except Exception as e:
@@ -149,7 +150,7 @@ def test_sntd():
 
 		fitCurves=sntd.fit_data([myMISN]*5,snType='Ia', models='salt2-extended',bands=['bessellb','bessellr'],
 				params=['x0','x1','t0','c'],constants=[{'z':.5}]*5,bounds={'t0':(-15,15),'x1':(-2,2),'c':(-1,1),'td':(-15,15),'mu':(.5,2)},
-				method='parallel',microlensing=None,maxcall=10,npoints=20,minsnr=0,t0_guess={'image_1':10,'image_2':70},verbose=False)
+				method='parallel',microlensing=None,maxcall=50,npoints=10,minsnr=0,t0_guess={'image_1':10,'image_2':70},verbose=False)
 
 		print('Passed!')
 	except Exception as e:
