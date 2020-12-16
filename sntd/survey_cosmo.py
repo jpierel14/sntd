@@ -241,7 +241,8 @@ class Survey(object):
 		Name of your survey
 
 	"""
-	def __init__(self, N=10,dTL=5, dTT=5, zl=0.3, zs=0.8,P=1,calc_ensemble_P=False, name='mySurvey', **kwargs):
+	def __init__(self, N=10,dTL=5, dTT=5, zl=0.3, zs=0.8,P=1,
+				calc_ensemble_P=False, name='mySurvey',sys_dTL = 0 **kwargs):
 		if not isinstance(zl,(list,tuple,np.ndarray)):
 			zl=[zl]
 		if not isinstance(zs,(list,tuple,np.ndarray)):
@@ -254,6 +255,7 @@ class Survey(object):
 			self.N = N
 		self.dTL = dTL
 		self.dTT = dTT
+		self.sys_dTL = sys_dTL
 		self.zl = zl
 		self.zs = zs
 
@@ -284,7 +286,7 @@ class Survey(object):
 		"""
 		Returns the combined lens/delay uncertainty assuming statistical uncertainties
 		"""
-		return np.sqrt(self.dTL**2 + self.dTT**2) / np.sqrt(self.N)   
+		return np.sqrt( (self.dTL**2 + self.dTT**2) / self.N  + self.sys_dTL**2)
 
 	def survey_grid(self,vparam_names,bounds={},npoints=100,grad_param=None,constants={},
 			grad_param_bounds=None,ngrad=10,grid_param1=None,grid_param2=None,**kwargs):
