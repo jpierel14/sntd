@@ -11,11 +11,12 @@ Examples
 
 .. raw:: html
 
-    <div class="sphx-glr-thumbcontainer" tooltip="Simulate a microlensing microcaustic. ">
+    <div class="sphx-glr-thumbcontainer" tooltip="Simulate a microlensing microcaustic.">
 
 .. only:: html
 
  .. figure:: /examples/images/thumb/sphx_glr_plot_micro_thumb.png
+     :alt: Simulate Microlensing
 
      :ref:`sphx_glr_examples_plot_micro.py`
 
@@ -31,11 +32,12 @@ Examples
 
 .. raw:: html
 
-    <div class="sphx-glr-thumbcontainer" tooltip="Simulate cosmological constraints from a sample of lensed SN. ">
+    <div class="sphx-glr-thumbcontainer" tooltip="Simulate cosmological constraints from a sample of lensed SN.">
 
 .. only:: html
 
  .. figure:: /examples/images/thumb/sphx_glr_plot_survey_thumb.png
+     :alt: Constrain Cosmology
 
      :ref:`sphx_glr_examples_plot_survey.py`
 
@@ -51,11 +53,12 @@ Examples
 
 .. raw:: html
 
-    <div class="sphx-glr-thumbcontainer" tooltip="Simulating a multiply-imaged supernova. ">
+    <div class="sphx-glr-thumbcontainer" tooltip="Simulating a multiply-imaged supernova.">
 
 .. only:: html
 
  .. figure:: /examples/images/thumb/sphx_glr_plot_sim_thumb.png
+     :alt: Simulate Supernovae
 
      :ref:`sphx_glr_examples_plot_sim.py`
 
@@ -71,11 +74,12 @@ Examples
 
 .. raw:: html
 
-    <div class="sphx-glr-thumbcontainer" tooltip="A series of examples demonstrating various fitting options  with SNTD. ">
+    <div class="sphx-glr-thumbcontainer" tooltip="A series of examples demonstrating various fitting options  with SNTD.">
 
 .. only:: html
 
  .. figure:: /examples/images/thumb/sphx_glr_plot_fitting_thumb.png
+     :alt: Measure Time Delays
 
      :ref:`sphx_glr_examples_plot_fitting.py`
 
