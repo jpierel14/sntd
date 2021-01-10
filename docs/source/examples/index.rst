@@ -1,7 +1,3 @@
-:orphan:
-
-
-
 .. _sphx_glr_examples:
 
 Examples

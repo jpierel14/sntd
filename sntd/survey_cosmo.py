@@ -242,7 +242,7 @@ class Survey(object):
 
 	"""
 	def __init__(self, N=10,dTL=5, dTT=5, zl=0.3, zs=0.8,P=1,
-				calc_ensemble_P=False, name='mySurvey',sys_dTL = 0 **kwargs):
+				calc_ensemble_P=False, name='mySurvey',sys_dTL = 0, **kwargs):
 		if not isinstance(zl,(list,tuple,np.ndarray)):
 			zl=[zl]
 		if not isinstance(zs,(list,tuple,np.ndarray)):
