@@ -8,7 +8,6 @@ from .fitting import *
 from .ml import *
 from .survey_cosmo import Survey
 from .util import load_example_data,load_example_misn
-from .test_sntd import test_sntd
 
 import sncosmo
 sncosmo.Model._flux=_mlFlux

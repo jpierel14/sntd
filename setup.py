@@ -1,6 +1,6 @@
 from setuptools import setup
 import os,glob,warnings,sys,fnmatch,subprocess
-from setuptools.command.test import test as TestCommand
+#from setuptools.command.test import test as TestCommand
 from distutils.core import setup
 import numpy.distutils.misc_util
 
@@ -8,13 +8,20 @@ import numpy.distutils.misc_util
 if sys.version_info < (3,0):
     sys.exit('Sorry, Python 2 is not supported')
 
-class SNTDTest(TestCommand):
+# class SNTDTest(TestCommand):
 
-    def run_tests(self):
-        import sntd
-        errno = sntd.test()
-        sntd.test_sntd()
-        sys.exit(errno)
+#     def run_tests(self):
+#         import sntd
+#         errno = sntd.test()
+#         sntd.test_sntd()
+#         sys.exit(errno)
+
+# def test_loader(loader):
+#     suite = unittest.TestSuite()
+#     for test_class in test_cases:
+#         tests = loader.loadTestsFromTestCase(test_class)
+#         suite.addTests(tests)
+#     return suite
 
 AUTHOR = 'Justin Pierel'
 AUTHOR_EMAIL = 'jr23@email.sc.edu'
@@ -48,11 +55,12 @@ data_files = [f[len(PACKAGENAME)+1:] for f in data_files]
 
 setup(
     name='sntd',
-    cmdclass={'test': SNTDTest},
+    test_suite = 'tests.test_suite_loader',
+    #cmdclass={'test': SNTDTest},
     setup_requires=['numpy','cython'],
     install_requires=['numpy','scipy','cython','sncosmo',
-    	'astropy','matplotlib','nestle','pyParz','sklearn','iminuit','corner',
-        'pytest-astropy'],
+    	'astropy','matplotlib','nestle','pyParz','sklearn',
+        'iminuit==1.4.9','corner','pandas'],
     packages=['sntd'],
     version=VERSION,
     author=AUTHOR,

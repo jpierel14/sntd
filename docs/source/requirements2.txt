@@ -8,4 +8,4 @@ sklearn
 pytest-astropy
 corner
 sphinx_gallery
-iminuit
+iminuit==1.4.9
