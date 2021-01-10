@@ -64,9 +64,10 @@ version using ``git``::
 
 then::
 
-    python setup.py test
+    tox
     python setup.py install
 
+`tox` can be install with `pip`, and runs the unit test suite (optional).
 
 Optional dependencies
 =====================
