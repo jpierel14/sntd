@@ -73,20 +73,23 @@ class TestFitting(unittest.TestCase):
 		fitCurves=sntd.fit_data(self.myMISN,snType='Ia', models='salt2-extended',bands=['F110W','F160W'],
 				params=['x0','x1','t0','c'],bounds={'t0':(-15,15),'x1':(-2,2),'c':(-1,1),'td':(-30,30),'mu':(.5,2)},
 				color_param_ignore=['x1'],use_MLE=False,refImage='image_1',
-				method='parallel',microlensing=None,maxcall=50,npoints=10,minsnr=0,set_from_simMeta={'z':'z'},t0_guess={'image_1':20,'image_2':70})
-
+				method='parallel',microlensing=None,maxcall=50,npoints=10,minsnr=0,
+				set_from_simMeta={'z':'z'},t0_guess={'image_1':20,'image_2':70})
+		print(fitCurves.parallel.time_delays)
 	def test_series_fit(self):
 		fitCurves=sntd.fit_data(self.myMISN,snType='Ia', models='salt2-extended',bands=['F110W','F160W'],
 				params=['x0','x1','t0','c'],bounds={'t0':(-15,15),'x1':(-2,2),'c':(-1,1),'td':(-30,30),'mu':(.5,2)},
 				color_param_ignore=['x1'],use_MLE=False,refImage='image_1',
-				method='series',microlensing=None,maxcall=50,npoints=10,minsnr=0,set_from_simMeta={'z':'z'},t0_guess={'image_1':20,'image_2':70})
-
+				method='series',microlensing=None,maxcall=50,npoints=10,minsnr=0,
+				set_from_simMeta={'z':'z'},t0_guess={'image_1':20,'image_2':70})
+		print(fitCurves.series.time_delays)
 	def test_color_fit(self):
 		fitCurves=sntd.fit_data(self.myMISN,snType='Ia', models='salt2-extended',bands=['F110W','F160W'],
 				params=['x0','x1','t0','c'],bounds={'t0':(-15,15),'x1':(-2,2),'c':(-1,1),'td':(-30,30),'mu':(.5,2)},
 				color_param_ignore=['x1'],use_MLE=False,refImage='image_1',
-				method='color',microlensing=None,maxcall=50,npoints=10,minsnr=0,set_from_simMeta={'z':'z'},t0_guess={'image_1':20,'image_2':70})
-
+				method='color',microlensing=None,maxcall=50,npoints=10,minsnr=0,
+				set_from_simMeta={'z':'z'},t0_guess={'image_1':20,'image_2':70})
+		print(fitCurves.color.time_delays)
 class TestCosmology(unittest.TestCase):
 	"""
 	Test SNTD cosmology tools.
@@ -147,8 +150,8 @@ def test_loader(loader):
 
 if __name__ == '__main__':
     #TEST LIST
-    test_cases = 'ALL'
-    #test_cases = [TestCosmology]
+    #test_cases = 'ALL'
+    test_cases = [TestFitting]
 
     if test_cases == 'ALL':
         unittest.main()
