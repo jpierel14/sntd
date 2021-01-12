@@ -77,13 +77,13 @@ You can batch process (with sbatch or multiprocessing) using any or all of these
     *
 
       .. image:: /examples/images/sphx_glr_plot_c_fitting_002.png
-          :alt: t0 = ${40.94}_{-0.01}^{+0.01}$, x0 = ${0.00}_{-0.00}^{+0.00}$, x1 = ${-2.47}_{-0.01}^{+0.00}$, c = ${-0.49}_{-0.01}^{+0.01}$
+          :alt: t0 = ${35.46}_{-0.01}^{+0.01}$, x0 = ${0.00}_{-0.00}^{+0.00}$, x1 = ${-2.52}_{-0.00}^{+0.00}$, c = ${-0.50}_{-0.00}^{+0.00}$
           :class: sphx-glr-multi-img
 
     *
 
       .. image:: /examples/images/sphx_glr_plot_c_fitting_003.png
-          :alt: t0 = ${74.24}_{-0.91}^{+0.87}$, x0 = ${0.00}_{-0.00}^{+0.00}$, x1 = ${-3.01}_{-0.46}^{+0.33}$, c = ${-0.53}_{-0.05}^{+0.05}$
+          :alt: t0 = ${72.31}_{-0.23}^{+0.24}$, x0 = ${0.00}_{-0.00}^{+0.00}$, x1 = ${-2.95}_{-0.14}^{+0.14}$, c = ${-0.54}_{-0.01}^{+0.01}$
           :class: sphx-glr-multi-img
 
 
@@ -93,10 +93,14 @@ You can batch process (with sbatch or multiprocessing) using any or all of these
 
  .. code-block:: none
 
-    {'image_1': 0, 'image_2': 33.30441501344263}
-    {'image_1': array([0, 0]), 'image_2': array([-0.88601444,  0.87284192])}
-    {'image_1': 1, 'image_2': 0.7181287746558946}
-    {'image_1': array([0, 0]), 'image_2': array([-0.03499346,  0.04092652])}
+    {'image_1': 0, 'image_2': 36.84549760670118}
+    {'image_1': array([0, 0]), 'image_2': array([-0.22700236,  0.23468696])}
+    {'image_1': 1, 'image_2': 0.49847559771861877}
+    {'image_1': array([0, 0]), 'image_2': array([-0.00487031,  0.00515703])}
+    WARNING:root:Too few points to create valid contours
+    WARNING:root:Too few points to create valid contours
+    WARNING:root:Too few points to create valid contours
+    WARNING:root:Too few points to create valid contours
     WARNING:root:Too few points to create valid contours
     WARNING:root:Too few points to create valid contours
 
@@ -147,7 +151,7 @@ Other methods are called in a similar fashion, with a couple of extra arguments:
     *
 
       .. image:: /examples/images/sphx_glr_plot_c_fitting_005.png
-          :alt: x0 = ${0.00}_{-0.00}^{+0.00}$, t0 = ${30.85}_{-0.24}^{+0.24}$, x1 = ${2.62}_{-0.03}^{+0.02}$, c = ${-0.35}_{-0.01}^{+0.01}$, dt_2 = ${53.90}_{-0.11}^{+0.04}$, mu_2 = ${0.78}_{-0.02}^{+0.02}$
+          :alt: x0 = ${0.00}_{-0.00}^{+0.00}$, t0 = ${26.60}_{-0.01}^{+0.01}$, x1 = ${1.52}_{-0.02}^{+0.04}$, c = ${-0.34}_{-0.01}^{+0.01}$, dt_2 = ${51.42}_{-0.03}^{+0.22}$, mu_2 = ${0.51}_{-0.00}^{+0.00}$
           :class: sphx-glr-multi-img
 
 
@@ -157,10 +161,13 @@ Other methods are called in a similar fashion, with a couple of extra arguments:
 
  .. code-block:: none
 
-    {'image_1': 0, 'image_2': 53.89831832434927}
-    {'image_1': array([0, 0]), 'image_2': array([-0.10872904,  0.04138502])}
-    {'image_1': 1, 'image_2': 0.7803583875080096}
-    {'image_1': array([0, 0]), 'image_2': array([-0.01821259,  0.02136115])}
+    {'image_1': 0, 'image_2': 51.41797858413026}
+    {'image_1': array([0, 0]), 'image_2': array([-0.02534613,  0.21539693])}
+    {'image_1': 1, 'image_2': 0.5072303926853948}
+    {'image_1': array([0, 0]), 'image_2': array([-0.00273297,  0.00262995])}
+    WARNING:root:Too few points to create valid contours
+    WARNING:root:Too few points to create valid contours
+    WARNING:root:Too few points to create valid contours
     WARNING:root:Too few points to create valid contours
     WARNING:root:Too few points to create valid contours
     WARNING:root:Too few points to create valid contours
@@ -208,7 +215,7 @@ argument.
     *
 
       .. image:: /examples/images/sphx_glr_plot_c_fitting_007.png
-          :alt: t0 = ${28.10}_{-0.83}^{+0.78}$, c = ${-0.48}_{-0.01}^{+0.01}$, dt_2 = ${49.29}_{-4.42}^{+2.24}$
+          :alt: t0 = ${27.55}_{-0.32}^{+0.39}$, c = ${-0.47}_{-0.01}^{+0.01}$, dt_2 = ${53.90}_{-1.22}^{+1.13}$
           :class: sphx-glr-multi-img
 
 
@@ -218,8 +225,8 @@ argument.
 
  .. code-block:: none
 
-    {'image_1': 0, 'image_2': 49.28898602297453}
-    {'image_1': array([0, 0]), 'image_2': array([-4.42259225,  2.24529219])}
+    {'image_1': 0, 'image_2': 53.901169911988404}
+    {'image_1': array([0, 0]), 'image_2': array([-1.21960779,  1.13149098])}
 
     <Figure size 760x760 with 9 Axes>
 
@@ -261,10 +268,10 @@ You can include your fit from the parallel method as a prior on light curve and 
 
  .. code-block:: none
 
-    {'image_1': 0, 'image_2': 33.25109760314137}
-    {'image_1': array([0, 0]), 'image_2': array([-0.90057526,  0.81692132])}
-    {'image_1': 0, 'image_2': 35.90635471692211}
-    {'image_1': array([0, 0]), 'image_2': array([-0.06072463,  0.03403777])}
+    {'image_1': 0, 'image_2': 36.84647091693532}
+    {'image_1': array([0, 0]), 'image_2': array([-0.22145359,  0.2358786 ])}
+    {'image_1': 0, 'image_2': 37.491591686964945}
+    {'image_1': array([0, 0]), 'image_2': array([-0.02158565,  0.01366344])}
 
 
 
@@ -302,7 +309,7 @@ extreme dust in the source and lens frames (your final simulations may look slig
 
  .. code-block:: none
 
-    lensebv: 0.48387096774193544 hostebv: 0.3225806451612903 c: -0.15446105890399453
+    lensebv: 0.48387096774193544 hostebv: 0.3225806451612903 c: 0.1517545384563399
 
 
 
@@ -340,9 +347,9 @@ Okay, now we can fit the MISN first without taking these effects into account:
 
  .. code-block:: none
 
-    {'image_1': 0, 'image_2': 50.34798856048176}
-    {'image_1': array([0, 0]), 'image_2': array([-1.20396072,  1.34554044])}
-    c: 0.5345555413024323
+    {'image_1': 0, 'image_2': 50.38532822427862}
+    {'image_1': array([0, 0]), 'image_2': array([-1.00455451,  1.01433299])}
+    c: 0.9169541422136009
 
     <Figure size 1000x1000 with 2 Axes>
 
@@ -387,9 +394,9 @@ as it attempts to compensate for extinction without a propagation effect. Now le
 
  .. code-block:: none
 
-    {'image_1': 0, 'image_2': 50.35744562205852}
-    {'image_1': array([0, 0]), 'image_2': array([-1.34647757,  1.28347513])}
-    c: 0.294958430085742 lensebv: 0.6888373861510075 hostebv: -0.28156692646799264
+    {'image_1': 0, 'image_2': 50.455205707101534}
+    {'image_1': array([0, 0]), 'image_2': array([-1.04093443,  1.02128521])}
+    c: 0.2960428896920041 lensebv: 0.8752419931029314 hostebv: -0.04584333112184245
 
     <Figure size 1000x1000 with 2 Axes>
 
@@ -403,7 +410,7 @@ more accurate.
 
 .. rst-class:: sphx-glr-timing
 
-   **Total running time of the script:** ( 4 minutes  39.020 seconds)
+   **Total running time of the script:** ( 17 minutes  56.997 seconds)
 
 
 .. _sphx_glr_download_examples_plot_c_fitting.py:

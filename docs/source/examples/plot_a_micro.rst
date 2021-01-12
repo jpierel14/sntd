@@ -57,8 +57,8 @@ This notebook gives examples on creating microlensing for simulations
 
  .. code-block:: none
 
-    /Users/jpierel/miniconda3/envs/basic/lib/python3.8/site-packages/sntd-2.3.5-py3.8.egg/sntd/ml.py:239: MatplotlibDeprecationWarning: Passing parameters norm and vmin/vmax simultaneously is deprecated since 3.3 and will become an error two minor releases later. Please pass vmin/vmax directly to the norm when creating it.
-      ax.imshow(-2.5*np.log10(image), aspect='equal', interpolation='nearest', cmap=cm.bwr,
+    /Users/jpierel/miniconda3/envs/py37/lib/python3.7/site-packages/sntd/ml.py:241: MatplotlibDeprecationWarning: Passing parameters norm and vmin/vmax simultaneously is deprecated since 3.3 and will become an error two minor releases later. Please pass vmin/vmax directly to the norm when creating it.
+      vmin=-2, vmax=2, origin='lower')
 
 
 
@@ -102,7 +102,7 @@ examples.
 
 .. rst-class:: sphx-glr-timing
 
-   **Total running time of the script:** ( 0 minutes  19.047 seconds)
+   **Total running time of the script:** ( 0 minutes  18.377 seconds)
 
 
 .. _sphx_glr_download_examples_plot_a_micro.py:
