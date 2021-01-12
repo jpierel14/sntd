@@ -3,7 +3,7 @@
 Measure Time Delays
 ===================
 
-A series of examples demonstrating various fitting options 
+A series of examples demonstrating various fitting options/features
 with SNTD.
 """
 
@@ -22,13 +22,16 @@ with SNTD.
 # ------------------------------------------------------------------------------------------------------------------------------------------
 # 
 # **Parallel:**
+import sys,os
+sys.path.append(os.path.join(os.path.dirname(os.path.abspath(__file__)),'..','..','..'))
+
 import sntd
 
 myMISN=sntd.load_example_misn()
 
 fitCurves=sntd.fit_data(myMISN,snType='Ia', models='salt2-extended',bands=['F110W','F160W'],
                 params=['x0','t0','x1','c'],constants={'z':1.4},refImage='image_1',cut_time=[-30,40],
-                bounds={'t0':(-20,20),'x1':(-3,3),'c':(-.5,.5),'mu':(.5,2)},fitOrder=['image_2','image_1'],
+                bounds={'t0':(-20,20),'x1':(-3,3),'c':(-1,1),'mu':(.5,2)},fitOrder=['image_1','image_2'],
                 method='parallel',microlensing=None,modelcov=False,npoints=100)
 print(fitCurves.parallel.time_delays)
 print(fitCurves.parallel.time_delay_errors)
@@ -85,7 +88,7 @@ fitCurves.plot_fit(method='color')
 
 fitCurves_parallel=sntd.fit_data(myMISN,snType='Ia', models='salt2-extended',bands=['F110W','F160W'],
                 	params=['x0','t0','x1','c'],constants={'z':1.4},refImage='image_1',
-                	bounds={'t0':(-20,20),'x1':(-3,3),'c':(-.5,.5),'mu':(.5,2)},fitOrder=['image_2','image_1'],cut_time=[-30,40],
+                	bounds={'t0':(-20,20),'x1':(-3,3),'c':(-.5,.5),'mu':(.5,2)},fitOrder=['image_1','image_2'],cut_time=[-30,40],
                	    method='parallel',microlensing=None,modelcov=False,npoints=100,maxiter=None)
 fitCurves_color=sntd.fit_data(myMISN,snType='Ia', models='salt2-extended',bands=['F110W','F160W'],cut_time=[-50,30],
                 	params=['t0','c'],constants={'z':1.4,'x1':fitCurves.images['image_1'].fits.model.get('x1')},refImage='image_1',
@@ -123,7 +126,7 @@ print('lensebv:',myMISN2.images['image_1'].simMeta['lensebv'],
 fitCurves_dust=sntd.fit_data(myMISN2,snType='Ia', models='salt2-extended',bands=['F110W','F160W'],
                                                      params=['x0','x1','t0','c'],npoints=200,
                                                      constants={'z':1.4},minsnr=1,cut_time=[-30,40],
-                                                     bounds={'t0':(-15,15),'x1':(-3,3),'c':(-.3,.3)})
+                                                     bounds={'t0':(-15,15),'x1':(-3,3),'c':(-1,1)})
 print(fitCurves_dust.parallel.time_delays)
 print(fitCurves_dust.parallel.time_delay_errors)
 print('c:',fitCurves_dust.images['image_1'].fits.model.get('c'))
