@@ -93,7 +93,7 @@ Out::
 Uknown Supernova Type
 *********************
 
-You may not know that your SN is a Type Ia (as other examples here and in :ref:`examples/plot_fitting:Measuring Time Delays`).
+You may not know that your SN is a Type Ia (as other examples here and in :ref:`sphx_glr_examples_plot_c_fitting.py`).
 In that case you have two more options. You could use the parameterized `Bazin model <https://ui.adsabs.harvard.edu/abs/2009A%26A...499..653B/abstract>`_:
 
 .. code-block:: python
