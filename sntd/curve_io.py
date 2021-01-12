@@ -992,7 +992,7 @@ class curveDict(dict):
                                                        mode='lines',line=dict(color='yellow',width=8),
                                                        showlegend=False,**kwargs),row=crow,col=ccol)
                         else:
-                            ax.plot(time_model,flux_model,'k-')
+                            ax.plot(time_model,flux_model,linestyle='-',color=colors[i])
                     if not plot3D:
                         ax.text(0.95, 0.95, b.upper(), fontsize='large',
                             transform=ax.transAxes, ha='right', va='top')

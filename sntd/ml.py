@@ -17,7 +17,7 @@ from scipy.interpolate import interp1d,interp2d
 from sncosmo.models import _ModelBase
 import extinction
 
-from .util import __filedir__,__current_dir__
+from .util import _filedir_,_current_dir_
 from .mldata import MicrolensingData
 
 __all__=['_mlProp','_mlFlux','realizeMicro','microcaustic_field_to_curve',
@@ -33,7 +33,7 @@ def realizeMicro(arand=.25,debug=0,kappas=.75,kappac=.15,gamma=.76,eps=.6,nray=3
     """
     types=['%.3f','%i','%.2f','%.2f','%.2f','%.3f','%i','%.6f','%.6f','%.3f','%.3f','%.3f','%.3f','%.3f','%.3f','%i']
     inData=[arand,debug,kappas,kappac,gamma,eps,nray,minmass,maxmass,power,pixmax,pixminx,pixminy,pixdif,fracpixd,iwrite]
-    inputFile=np.loadtxt(os.path.join(__filedir__,'microlens','default_input'),dtype='str',delimiter='tab')
+    inputFile=np.loadtxt(os.path.join(_filedir_,'microlens','default_input'),dtype='str',delimiter='tab')
     outFile=[]
     for i in range(len(inputFile)-1):
 
@@ -42,7 +42,7 @@ def realizeMicro(arand=.25,debug=0,kappas=.75,kappac=.15,gamma=.76,eps=.6,nray=3
         outFile.append(dat)
 
 
-    thefile=open(os.path.join(__filedir__,'microlens','input'),'w')
+    thefile=open(os.path.join(_filedir_,'microlens','input'),'w')
 
     for i in range(len(outFile)-1):
         thefile.write((types[i]+'\n')%(float(outFile[i])))
@@ -51,18 +51,18 @@ def realizeMicro(arand=.25,debug=0,kappas=.75,kappac=.15,gamma=.76,eps=.6,nray=3
 
     num='001'
     try:
-        os.remove(os.path.join(__filedir__,'microlens','IRIS'+str(num)))
+        os.remove(os.path.join(_filedir_,'microlens','IRIS'+str(num)))
     except:
         pass
     try:
-        os.remove(os.path.join(__filedir__,'microlens','IRIS'+str(num)+'.fits'))
+        os.remove(os.path.join(_filedir_,'microlens','IRIS'+str(num)+'.fits'))
     except:
         pass
     try:
-        os.remove(os.path.join(__filedir__,'microlens','dat.'+str(num)))
+        os.remove(os.path.join(_filedir_,'microlens','dat.'+str(num)))
     except:
         pass
-    os.chdir(os.path.join(__filedir__,'microlens'))
+    os.chdir(os.path.join(_filedir_,'microlens'))
     if verbose:
         subprocess.call(r'./microlens')
     else:
@@ -70,17 +70,17 @@ def realizeMicro(arand=.25,debug=0,kappas=.75,kappac=.15,gamma=.76,eps=.6,nray=3
             subprocess.call(r'./microlens',stdout=f)
 
 
-    np.savetxt(os.path.join(__filedir__,'microlens','jobnum'),[num],fmt='%s')
+    np.savetxt(os.path.join(_filedir_,'microlens','jobnum'),[num],fmt='%s')
 
     try:
-        fitsFile=fits.open(os.path.join(__filedir__,'microlens','IRIS'+str(num)+'.fits'))
+        fitsFile=fits.open(os.path.join(_filedir_,'microlens','IRIS'+str(num)+'.fits'))
         lensPlane=fitsFile[0].data
         fitsFile.close()
 
     except RuntimeError:
         print('There was an error with the inputs of your microcaustic.')
         sys.exit()
-    os.chdir(__current_dir__)
+    os.chdir(_current_dir_)
     return(lensPlane)
 
 

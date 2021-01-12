@@ -14,8 +14,8 @@ import tarfile,os,pickle
 from scipy.stats import rv_continuous
 
 
-__current_dir__=os.path.abspath(os.getcwd())
-__filedir__=os.path.abspath(os.path.dirname(__file__))
+_current_dir_=os.path.abspath(os.getcwd())
+_filedir_=os.path.abspath(os.path.dirname(__file__))
 
 NORMAL = 0    # use python zip libraries
 PROCESS = 1   # use (zcat, gzip) or (bzcat, bzip2)
@@ -85,7 +85,7 @@ _sncosmo_snana= [('snana-2004fe', 'SN Ic', 'CSP-2004fe.SED'),
           ('s11-2006jl', 'SN IIP', 'S11_SDSS-014599.SED')]
 
 def get_models_by_sntype(snType):
-    mod,types=np.loadtxt(os.path.join(__filedir__,'data','sncosmo','models.ref'),dtype='str',unpack=True)
+    mod,types=np.loadtxt(os.path.join(_filedir_,'data','sncosmo','models.ref'),dtype='str',unpack=True)
     modDict={mod[i]:types[i] for i in range(len(mod))}
     mods = [x[0] for x in sncosmo.models._SOURCES._loaders.keys() if x[0] in modDict.keys() and modDict[x[0]][:len(snType)]==snType]
     return(mods)
@@ -104,11 +104,11 @@ def sncosmo_to_snana(sncosmo_mod):
     return None
 
 def load_example_data():
-    example_files=glob.glob(os.path.join(__filedir__,'data','examples','*.dat'))
+    example_files=glob.glob(os.path.join(_filedir_,'data','examples','*.dat'))
     return(ascii.read(example_files[0]),ascii.read(example_files[1]))
 
 def load_example_misn():
-    example_file=glob.glob(os.path.join(__filedir__,'data','examples','*.pkl'))
+    example_file=glob.glob(os.path.join(_filedir_,'data','examples','*.pkl'))
     with open(example_file[0],'rb') as f:
         misn = pickle.load(f)
 
@@ -242,14 +242,14 @@ def make_sbatch(partition=None,njobs=None,njobstotal=None,python_path=None,init=
     if python_path is None:
         python_path=subprocess.check_output("which python", shell=True).decode('utf-8').strip('\n')
     if not init:
-        with open(os.path.join(__filedir__,'batch','sbatch_job.BATCH')) as f:
+        with open(os.path.join(_filedir_,'batch','sbatch_job.BATCH')) as f:
             sbatch=f.read()
         if parallelize is None:
             pyfile='run_sntd.py'
         else:
             pyfile='run_sntd_par.py'
     else:
-        with open(os.path.join(__filedir__,'batch','sbatch_job_init.BATCH')) as f:
+        with open(os.path.join(_filedir_,'batch','sbatch_job_init.BATCH')) as f:
             sbatch=f.read()
         if parallelize is None:
             pyfile='run_sntd_init.py'
@@ -369,14 +369,50 @@ def weighted_quantile(values, quantiles, sample_weight=None,
     return np.interp(quantiles, weighted_quantiles, values)
 
 class posterior(rv_continuous):
-    "Skewed Normal Distribution"
     def _pdf(self,x,samples,weights):
         pdf,edges=np.histogram(samples,weights=weights,
                                bins=30,density=True)
         
-        func=scipy.interpolate.interp1d([(edges[i]+edges[i+1])/2 for i in range(len(edges)-1)],
-                                        pdf/np.max(pdf),fill_value=0,bounds_error=False)
+        #func=scipy.interpolate.interp1d([(edges[i]+edges[i+1])/2 for i in range(len(edges)-1)],
+        #                                pdf/np.max(pdf),fill_value=0,bounds_error=False)
+        func=scipy.interpolate.interp1d(samples,weights/np.sum(weights),fill_value=0,bounds_error=False)
         return(func(x))
+
+    def _logpdf(self,samples,weights):
+        pdf,edges=np.histogram(samples,weights=weights,
+                               bins=30,density=True)
+        
+        #func=scipy.interpolate.interp1d([(edges[i]+edges[i+1])/2 for i in range(len(edges)-1)],
+        #                                pdf/np.max(pdf),fill_value=0,bounds_error=False)
+        func=scipy.interpolate.interp1d(samples,np.log(weights/np.sum(weights)),
+            fill_value=-np.inf,bounds_error=False)
+        return(func)
+
+    def _argcheck(self,*args):
+        return True
+
+class NDposterior(rv_continuous):
+    def _pdf(self,x,samples,weights):
+        #pdf,edges=np.histogram(samples,weights=weights,
+        #                       bins=30,density=True)
+        
+        #func=scipy.interpolate.interp1d([(edges[i]+edges[i+1])/2 for i in range(len(edges)-1)],
+        #                                pdf/np.max(pdf),fill_value=0,bounds_error=False)
+        func=scipy.interpolate.interp1d(samples,weights/np.sum(weights),fill_value=0,bounds_error=False)
+        return(func(x))
+
+    def _logpdf(self,samples,weights):
+        #pdf,edges=np.histogram(samples,weights=weights,
+        #                       bins=30,density=True)
+        
+        #func=scipy.interpolate.interp1d([(edges[i]+edges[i+1])/2 for i in range(len(edges)-1)],
+        #                                pdf/np.max(pdf),fill_value=0,bounds_error=False)
+        #func=scipy.interpolate.interp1d(samples,np.log(weights/np.sum(weights)),
+        #    fill_value=-np.inf,bounds_error=False)
+
+        func = scipy.interpolate.LinearNDInterpolator(samples,
+            np.log(weights/np.sum(weights)),fill_value=-np.inf)
+        return(func)
 
     def _argcheck(self,*args):
         return True

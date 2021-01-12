@@ -15,15 +15,15 @@ from collections import OrderedDict
 
 
 from .util import *
-from .util import __filedir__,__current_dir__
+from .util import _filedir_,_current_dir_
 from .curve_io import _sntd_deepcopy
 from .models import *
 from .ml import *
 
 __all__=['fit_data']
 
-__thetaSN__=['z','hostebv','screenz','rise','fall','sigma','k','x1','c']
-__thetaL__=['t0','amplitude','screenebv','dt0','A','B','t1','psi','phi','s','x0']
+_thetaSN_=['z','hostebv','screenz','rise','fall','sigma','k','x1','c']
+_thetaL_=['t0','amplitude','screenebv','dt0','A','B','t1','psi','phi','s','x0']
 
 
 _needs_bounds={'z'}
@@ -41,18 +41,18 @@ class newDict(dict):
 	__delattr__ = dict.__delitem__
 	__getattr__ = dict.__getitem__
 
-	def __getstate__(self):
+	def _getstate_(self):
 		"""
 		A function necessary for pickling
 		:return: self
 		"""
 		return self
 
-	def __setstate__(self, d):
+	def _setstate_(self, d):
 		"""
 		A function necessary for pickling
 		:param d: A value
-		:return: self.__dict__
+		:return: self._dict_
 		"""
 		self.__dict__ = d
 
@@ -227,7 +227,7 @@ def fit_data(curves=None, snType='Ia',bands=None, models=None, params=None, boun
 
 	models=[models] if models is not None and not isinstance(models,(tuple,list,np.ndarray)) else models
 	if models is None:
-		mod,types=np.loadtxt(os.path.join(__filedir__,'data','sncosmo','models.ref'),dtype='str',unpack=True)
+		mod,types=np.loadtxt(os.path.join(_filedir_,'data','sncosmo','models.ref'),dtype='str',unpack=True)
 		modDict={mod[i]:types[i] for i in range(len(mod))}
 		if isinstance(snType,str):
 			if snType!='Ia':
@@ -307,7 +307,7 @@ def fit_data(curves=None, snType='Ia',bands=None, models=None, params=None, boun
 				pickle.dump(args['curves'],open(os.path.join(folder_name,'sntd_data.pkl'),'wb'))
 				pyfiles=['run_sntd_init.py','run_sntd.py'] if parallelize is None else ['run_sntd_init_par.py','run_sntd_par.py']
 				for pyfile in pyfiles:
-					with open(os.path.join(__filedir__,'batch',pyfile)) as f:
+					with open(os.path.join(_filedir_,'batch',pyfile)) as f:
 						batch_py=f.read()
 					if 'init' in pyfile:
 						batch_py=batch_py.replace('nlcsreplace',str(min(int(n_per_node*min(total_jobs,max_batch_jobs)),len(args['curves']))))
@@ -490,7 +490,7 @@ def fit_data(curves=None, snType='Ia',bands=None, models=None, params=None, boun
 				pickle.dump(args['curves'],open(os.path.join(folder_name,'sntd_data.pkl'),'wb'))
 				pyfiles=['run_sntd_init.py','run_sntd.py'] if parallelize is None else ['run_sntd_init_par.py','run_sntd_par.py']
 				for pyfile in pyfiles:
-					with open(os.path.join(__filedir__,'batch',pyfile)) as f:
+					with open(os.path.join(_filedir_,'batch',pyfile)) as f:
 						batch_py=f.read()
 					if 'init' in pyfile:
 						batch_py=batch_py.replace('nlcsreplace',str(min(int(n_per_node*min(total_jobs,max_batch_jobs)),len(args['curves']))))
@@ -597,7 +597,7 @@ def fit_data(curves=None, snType='Ia',bands=None, models=None, params=None, boun
 				pickle.dump(args['curves'],open(os.path.join(folder_name,'sntd_data.pkl'),'wb'))
 				pyfiles=['run_sntd_init.py','run_sntd.py'] if parallelize is None else ['run_sntd_init_par.py','run_sntd_par.py']
 				for pyfile in pyfiles:
-					with open(os.path.join(__filedir__,'batch',pyfile)) as f:
+					with open(os.path.join(_filedir_,'batch',pyfile)) as f:
 						batch_py=f.read()
 					if 'init' in pyfile:
 						batch_py=batch_py.replace('nlcsreplace',str(min(int(n_per_node*min(total_jobs,max_batch_jobs)),len(args['curves']))))
@@ -695,7 +695,7 @@ def fit_data(curves=None, snType='Ia',bands=None, models=None, params=None, boun
 				pickle.dump(args['curves'],open(os.path.join(folder_name,'sntd_data.pkl'),'wb'))
 				pyfiles=['run_sntd_init.py','run_sntd.py'] if parallelize is None else ['run_sntd_init_par.py','run_sntd_par.py']
 				for pyfile in pyfiles:
-					with open(os.path.join(__filedir__,'batch',pyfile)) as f:
+					with open(os.path.join(_filedir_,'batch',pyfile)) as f:
 						batch_py=f.read()
 					if 'init' in pyfile:
 						batch_py=batch_py.replace('nlcsreplace',str(min(int(n_per_node*min(total_jobs,max_batch_jobs)),len(args['curves']))))
@@ -2360,7 +2360,6 @@ def _fitparallel(all_args):
 				args['bounds'][b]=np.array([max([args['bounds'][b][0],0]),max([args['bounds'][b][1],0])])
 			else:
 				args['bounds'][b]=np.array([0,np.inf])
-
 		res,fit=sncosmo.nest_lc(fit_table,tempMod,[x for x in args['params'] if x in tempMod.param_names],
 								bounds=args['bounds'],
 							  priors=args.get('priors',None), ppfs=args.get('ppfs',None),
@@ -2389,9 +2388,6 @@ def _fitparallel(all_args):
 	args['curves'].images[args['fitOrder'][0]].fits=newDict()
 	args['curves'].images[args['fitOrder'][0]].fits['model']=first_res[1]
 	args['curves'].images[args['fitOrder'][0]].fits['res']=first_res[2]
-
-
-
 
 	t0ind=first_res[2].vparam_names.index('t0')
 	ampind=first_res[2].vparam_names.index(first_res[1].param_names[2])
@@ -2456,7 +2452,6 @@ def _fitparallel(all_args):
 				guess_t0_start=True
 			else:
 				guess_t0_start=False
-		
 		par_output=nest_parallel_lc(fit_table,first_res[1],first_res[2],image_bounds,min_n_bands=args['min_n_bands'],
 						min_n_points_per_band=args['min_points_per_band'],guess_t0_start=guess_t0_start,use_MLE=args['use_MLE'],
 						guess_amplitude_bound=True,priors=args.get('priors',None), ppfs=args.get('None'),
@@ -2625,31 +2620,18 @@ def nest_parallel_lc(data,model,prev_res,bounds,guess_amplitude_bound=False,gues
 	# with same random seed.  This is because iparam_names[i] is
 	# matched to u[i] below and u will be in a reproducible order,
 	# so iparam_names must also be.
-
-
-	final_priors=[]
+	
 	if prev_res is not None:
 		doPrior=True
-		for p in vparam_names:
-			if p in __thetaL__:
-				final_priors.append(lambda x:0)
-				continue
-
-			ind=prev_res.vparam_names.index(p)
-			temp=posterior('temp',np.min(prev_res.samples[:,ind]),np.max(prev_res.samples[:,ind]))
-			samples=np.linspace(np.min(prev_res.samples[:,ind]),
-								np.max(prev_res.samples[:,ind]),1000)
-			
-
-			final_priors.append(scipy.interpolate.interp1d(samples,
-														   np.log(temp._pdf(samples,prev_res.samples[:,ind],
-																			prev_res.weights)),fill_value=-np.inf,
-														   bounds_error=False))
+		prior_inds = [i for i in range(len(vparam_names)) if vparam_names[i] in _thetaSN_]
+		prior_dist = NDposterior('temp')#,np.min(prev_res.samples),np.max(prev_res.samples))
+		prior_func = prior_dist._logpdf([tuple(prev_res.samples[i,prior_inds]) for i in range(prev_res.samples.shape[0])],
+				prev_res.weights)
+		
 	else:
 		doPrior=False
+	
 	iparam_names = [key for key in vparam_names if key in ppfs]
-
-
 
 	ppflist = [ppfs[key] for key in iparam_names]
 	npdim = len(iparam_names)  # length of u
@@ -2706,27 +2688,52 @@ def nest_parallel_lc(data,model,prev_res,bounds,guess_amplitude_bound=False,gues
 			chisq=np.dot(chi,chi)
 		return chisq
 
+	lower_minval_dict = {}
+	upper_minval_dict = {}
+	lower_minloc_dict = {}
+	upper_minloc_dict = {}
+	for i in range(len(prior_inds)):
+		mid = np.median(bounds[vparam_names[prior_inds[i]]])
+		temp1 = prev_res.weights[np.where(prev_res.samples[:,prior_inds[i]]<mid)[0]]
+		temp1_p = prev_res.samples[np.where(prev_res.samples[:,prior_inds[i]]<mid)[0],prior_inds[i]]
+		temp1 = np.log(temp1/np.sum(prev_res.weights))
+		temp1 = temp1[np.isfinite(temp1)]
+		temp2 = prev_res.weights[np.where(prev_res.samples[:,prior_inds[i]]>=mid)[0]]
+		temp2_p = prev_res.samples[np.where(prev_res.samples[:,prior_inds[i]]>=mid)[0],prior_inds[i]]
+		temp2 = np.log(temp2/np.sum(prev_res.weights))
+		temp2 = temp2[np.isfinite(temp2)]
+		lower_minval_dict[vparam_names[prior_inds[i]]]=\
+			np.nanmin(temp1)
+		upper_minval_dict[vparam_names[prior_inds[i]]]=\
+			np.nanmin(temp2)
+		lower_minloc_dict[vparam_names[prior_inds[i]]] = temp1_p[temp1.argmin()]
+		upper_minloc_dict[vparam_names[prior_inds[i]]] = temp2_p[temp2.argmin()]
+
+	#minloc=np.log(prev_res.weights/np.sum(prev_res.weights)).argmin()
+	#maxloc=np.log(prev_res.weights/np.sum(prev_res.weights)).argmax()
+	
+
 	def loglike(parameters):
-		prior_val=0
 		if doPrior:
-			for i in range(len(parameters)):
-				temp_prior=final_priors[i](parameters[i])
-				if not np.isfinite(temp_prior):
-					return -np.inf
-				prior_val+=temp_prior
+			prior_val = prior_func(*parameters[prior_inds])
+		else:
+			prior_val = 0
+		if not np.isfinite(prior_val):
+			tanhRes = []
+			for i in range(len(prior_inds)):
+				if parameters[prior_inds[i]]<np.median(bounds[vparam_names[prior_inds[i]]]):
+					tanhRes.append(np.tanh(parameters[prior_inds[i]]+\
+							lower_minloc_dict[vparam_names[prior_inds[i]]]+2)+(lower_minval_dict[vparam_names[prior_inds[i]]]-1))
+				else:
+					tanhRes.append(-np.tanh(parameters[prior_inds[i]]+\
+							upper_minloc_dict[vparam_names[prior_inds[i]]]+2)+(upper_minval_dict[vparam_names[prior_inds[i]]]-1))
+				
+			
+			prior_val = np.mean(tanhRes)
 
 		chisq=chisq_likelihood(parameters)
-
-		try:
-			return(prior_val-.5*chisq)
-		except:
-			return -np.inf
-
+		return(prior_val-.5*chisq)
 		
-
-
-
-
 
 
 	res = nestle.sample(loglike, prior_transform, ndim, npdim=npdim,

@@ -1,7 +1,7 @@
                    1 jobnu:   number of job
-                    date and time of start:  10. 1.2021    15:40:00
-                    date and time of stop:   10. 1.2021    15:40:01
-CPU-time:         0.70 sec =       0.01 min =     0.00 h
+                    date and time of start:  11. 1.2021    18:56:18
+                    date and time of stop:   11. 1.2021    18:56:19
+CPU-time:         0.79 sec =       0.01 min =     0.00 h
 
  important parameters:
                 1730 nlens:      total number of lenses within rstars
@@ -9,7 +9,7 @@ CPU-time:         0.70 sec =       0.01 min =     0.00 h
                73.99% ncell/nlens: ratio in percent
               17.079 avlens:     average number of lenses used per ray
               75.978 avcell:     average number of cells  used per ray
-         0.000000088 CPU-time/ray: shooting time (CPU-sec) per ray
+         0.000000099 CPU-time/ray: shooting time (CPU-sec) per ray
                2.139 rayperpi:   average number of rays per pixel
                   44 pixhigh:    highest number of rays per pixel
                    0 pixlow:     lowest number of rays per pixel
@@ -78,11 +78,11 @@ CPU-time:         0.70 sec =       0.01 min =     0.00 h
                          0.000 times(13): CPU-sec for     setup    
                          0.000 times(14): CPU-sec for sorting lenses
                          0.000 times(15): CPU-sec for sorting cells
-               0.690 times(7):   time in CPU-sec for    shooting
-                         0.005 times(4): CPU-sec for shootcl  ( 0.73%)
-                         0.194 times(5): CPU-sec for shootfix (28.09%)
-                         0.410 times(6): CPU-sec for shotayco (59.43%)
-               0.701 times(8):   time in CPU-sec whole run
+               0.776 times(7):   time in CPU-sec for    shooting
+                         0.008 times(4): CPU-sec for shootcl  ( 1.03%)
+                         0.210 times(5): CPU-sec for shootfix (27.08%)
+                         0.467 times(6): CPU-sec for shotayco (60.23%)
+               0.787 times(8):   time in CPU-sec whole run
 
 
       1730 lenses   after sorting: 

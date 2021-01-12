@@ -8,7 +8,7 @@ from astropy.table import Table
 from scipy.interpolate import interp1d
 from sncosmo.utils import alias_map
 
-from .util import __filedir__
+from .util import _filedir_
 from .curve_io import curve,curveDict
 from .ml import *
 
@@ -27,7 +27,7 @@ OBSERVATIONS_ALIASES = OrderedDict([
 ])
 
 def _getAbsoluteDist():
-    absolutes=ascii.read(os.path.join(__filedir__,'sim','data','absolutes.ref'))
+    absolutes=ascii.read(os.path.join(_filedir_,'sim','data','absolutes.ref'))
     total=float(np.sum(absolutes['N'][absolutes['type']!='Ia']))
     absDict=dict([])
     for row in absolutes:
