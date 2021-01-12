@@ -2709,10 +2709,6 @@ def nest_parallel_lc(data,model,prev_res,bounds,guess_amplitude_bound=False,gues
 		lower_minloc_dict[vparam_names[prior_inds[i]]] = temp1_p[temp1.argmin()]
 		upper_minloc_dict[vparam_names[prior_inds[i]]] = temp2_p[temp2.argmin()]
 
-	#minloc=np.log(prev_res.weights/np.sum(prev_res.weights)).argmin()
-	#maxloc=np.log(prev_res.weights/np.sum(prev_res.weights)).argmax()
-	
-
 	def loglike(parameters):
 		if doPrior:
 			prior_val = prior_func(*parameters[prior_inds])

@@ -9,7 +9,7 @@ import warnings
 warnings.simplefilter('ignore')
 
 _NOSBATCH_ = True
-_GOFAST_ = False
+_GOFAST_ = True
 _PARONLY_ = False
 
 np.random.seed(3)
