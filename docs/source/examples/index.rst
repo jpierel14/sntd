@@ -53,7 +53,7 @@ Examples
 
 .. raw:: html
 
-    <div class="sphx-glr-thumbcontainer" tooltip="A series of examples demonstrating various fitting options  with SNTD.">
+    <div class="sphx-glr-thumbcontainer" tooltip="A series of examples demonstrating various fitting options/features with SNTD.">
 
 .. only:: html
 

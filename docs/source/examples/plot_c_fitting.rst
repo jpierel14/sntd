@@ -22,7 +22,7 @@
 Measure Time Delays
 ===================
 
-A series of examples demonstrating various fitting options 
+A series of examples demonstrating various fitting options/features
 with SNTD.
 
 .. GENERATED FROM PYTHON SOURCE LINES 11-25
@@ -52,7 +52,7 @@ You can batch process (with sbatch or multiprocessing) using any or all of these
 
     fitCurves=sntd.fit_data(myMISN,snType='Ia', models='salt2-extended',bands=['F110W','F160W'],
                     params=['x0','t0','x1','c'],constants={'z':1.4},refImage='image_1',cut_time=[-30,40],
-                    bounds={'t0':(-20,20),'x1':(-3,3),'c':(-.5,.5),'mu':(.5,2)},fitOrder=['image_2','image_1'],
+                    bounds={'t0':(-20,20),'x1':(-3,3),'c':(-1,1),'mu':(.5,2)},fitOrder=['image_1','image_2'],
                     method='parallel',microlensing=None,modelcov=False,npoints=100)
     print(fitCurves.parallel.time_delays)
     print(fitCurves.parallel.time_delay_errors)
@@ -77,13 +77,13 @@ You can batch process (with sbatch or multiprocessing) using any or all of these
     *
 
       .. image:: /examples/images/sphx_glr_plot_c_fitting_002.png
-          :alt: t0 = ${35.46}_{-0.01}^{+0.01}$, x0 = ${0.00}_{-0.00}^{+0.00}$, x1 = ${-2.52}_{-0.00}^{+0.00}$, c = ${-0.50}_{-0.00}^{+0.00}$
+          :alt: t0 = ${19.53}_{-0.68}^{+0.67}$, x0 = ${0.00}_{-0.00}^{+0.00}$, x1 = ${-0.26}_{-0.32}^{+0.28}$, c = ${0.11}_{-0.03}^{+0.03}$
           :class: sphx-glr-multi-img
 
     *
 
       .. image:: /examples/images/sphx_glr_plot_c_fitting_003.png
-          :alt: t0 = ${72.31}_{-0.23}^{+0.24}$, x0 = ${0.00}_{-0.00}^{+0.00}$, x1 = ${-2.95}_{-0.14}^{+0.14}$, c = ${-0.54}_{-0.01}^{+0.01}$
+          :alt: t0 = ${69.34}_{-1.03}^{+1.09}$, x0 = ${0.00}_{-0.00}^{+0.00}$, x1 = ${-0.06}_{-0.29}^{+0.28}$, c = ${0.10}_{-0.03}^{+0.04}$
           :class: sphx-glr-multi-img
 
 
@@ -93,16 +93,10 @@ You can batch process (with sbatch or multiprocessing) using any or all of these
 
  .. code-block:: none
 
-    {'image_1': 0, 'image_2': 36.84549760670118}
-    {'image_1': array([0, 0]), 'image_2': array([-0.22700236,  0.23468696])}
-    {'image_1': 1, 'image_2': 0.49847559771861877}
-    {'image_1': array([0, 0]), 'image_2': array([-0.00487031,  0.00515703])}
-    WARNING:root:Too few points to create valid contours
-    WARNING:root:Too few points to create valid contours
-    WARNING:root:Too few points to create valid contours
-    WARNING:root:Too few points to create valid contours
-    WARNING:root:Too few points to create valid contours
-    WARNING:root:Too few points to create valid contours
+    {'image_1': 0, 'image_2': 49.78483583372012}
+    {'image_1': array([0, 0]), 'image_2': array([-1.04735064,  1.15332557])}
+    {'image_1': 1, 'image_2': 0.5168082527243778}
+    {'image_1': array([0, 0]), 'image_2': array([-0.02566919,  0.03143942])}
 
     <Figure size 970x970 with 16 Axes>
 
@@ -151,7 +145,7 @@ Other methods are called in a similar fashion, with a couple of extra arguments:
     *
 
       .. image:: /examples/images/sphx_glr_plot_c_fitting_005.png
-          :alt: x0 = ${0.00}_{-0.00}^{+0.00}$, t0 = ${26.60}_{-0.01}^{+0.01}$, x1 = ${1.52}_{-0.02}^{+0.04}$, c = ${-0.34}_{-0.01}^{+0.01}$, dt_2 = ${51.42}_{-0.03}^{+0.22}$, mu_2 = ${0.51}_{-0.00}^{+0.00}$
+          :alt: x0 = ${0.00}_{-0.00}^{+0.00}$, t0 = ${19.51}_{-0.66}^{+0.63}$, x1 = ${0.25}_{-0.25}^{+0.26}$, c = ${0.10}_{-0.03}^{+0.02}$, dt_2 = ${50.02}_{-0.84}^{+0.86}$, mu_2 = ${0.54}_{-0.01}^{+0.01}$
           :class: sphx-glr-multi-img
 
 
@@ -161,16 +155,10 @@ Other methods are called in a similar fashion, with a couple of extra arguments:
 
  .. code-block:: none
 
-    {'image_1': 0, 'image_2': 51.41797858413026}
-    {'image_1': array([0, 0]), 'image_2': array([-0.02534613,  0.21539693])}
-    {'image_1': 1, 'image_2': 0.5072303926853948}
-    {'image_1': array([0, 0]), 'image_2': array([-0.00273297,  0.00262995])}
-    WARNING:root:Too few points to create valid contours
-    WARNING:root:Too few points to create valid contours
-    WARNING:root:Too few points to create valid contours
-    WARNING:root:Too few points to create valid contours
-    WARNING:root:Too few points to create valid contours
-    WARNING:root:Too few points to create valid contours
+    {'image_1': 0, 'image_2': 50.01892748861569}
+    {'image_1': array([0, 0]), 'image_2': array([-0.84449775,  0.85645679])}
+    {'image_1': 1, 'image_2': 0.541584394085735}
+    {'image_1': array([0, 0]), 'image_2': array([-0.01215357,  0.01264845])}
 
     <Figure size 1390x1390 with 36 Axes>
 
@@ -215,7 +203,7 @@ argument.
     *
 
       .. image:: /examples/images/sphx_glr_plot_c_fitting_007.png
-          :alt: t0 = ${27.55}_{-0.32}^{+0.39}$, c = ${-0.47}_{-0.01}^{+0.01}$, dt_2 = ${53.90}_{-1.22}^{+1.13}$
+          :alt: t0 = ${17.66}_{-3.54}^{+3.03}$, c = ${0.13}_{-0.03}^{+0.03}$, dt_2 = ${51.53}_{-5.03}^{+5.96}$
           :class: sphx-glr-multi-img
 
 
@@ -225,8 +213,8 @@ argument.
 
  .. code-block:: none
 
-    {'image_1': 0, 'image_2': 53.901169911988404}
-    {'image_1': array([0, 0]), 'image_2': array([-1.21960779,  1.13149098])}
+    {'image_1': 0, 'image_2': 51.53146236757031}
+    {'image_1': array([0, 0]), 'image_2': array([-5.03948127,  6.00702174])}
 
     <Figure size 760x760 with 9 Axes>
 
@@ -245,7 +233,7 @@ You can include your fit from the parallel method as a prior on light curve and 
 
     fitCurves_parallel=sntd.fit_data(myMISN,snType='Ia', models='salt2-extended',bands=['F110W','F160W'],
                     	params=['x0','t0','x1','c'],constants={'z':1.4},refImage='image_1',
-                    	bounds={'t0':(-20,20),'x1':(-3,3),'c':(-.5,.5),'mu':(.5,2)},fitOrder=['image_2','image_1'],cut_time=[-30,40],
+                    	bounds={'t0':(-20,20),'x1':(-3,3),'c':(-.5,.5),'mu':(.5,2)},fitOrder=['image_1','image_2'],cut_time=[-30,40],
                    	    method='parallel',microlensing=None,modelcov=False,npoints=100,maxiter=None)
     fitCurves_color=sntd.fit_data(myMISN,snType='Ia', models='salt2-extended',bands=['F110W','F160W'],cut_time=[-50,30],
                     	params=['t0','c'],constants={'z':1.4,'x1':fitCurves.images['image_1'].fits.model.get('x1')},refImage='image_1',
@@ -268,10 +256,10 @@ You can include your fit from the parallel method as a prior on light curve and 
 
  .. code-block:: none
 
-    {'image_1': 0, 'image_2': 36.84647091693532}
-    {'image_1': array([0, 0]), 'image_2': array([-0.22145359,  0.2358786 ])}
-    {'image_1': 0, 'image_2': 37.491591686964945}
-    {'image_1': array([0, 0]), 'image_2': array([-0.02158565,  0.01366344])}
+    {'image_1': 0, 'image_2': 49.79074153775034}
+    {'image_1': array([0, 0]), 'image_2': array([-1.31360787,  1.17135513])}
+    {'image_1': 0, 'image_2': 49.557964891502955}
+    {'image_1': array([0, 0]), 'image_2': array([-2.58881936,  2.31909064])}
 
 
 
@@ -309,7 +297,7 @@ extreme dust in the source and lens frames (your final simulations may look slig
 
  .. code-block:: none
 
-    lensebv: 0.48387096774193544 hostebv: 0.3225806451612903 c: 0.1517545384563399
+    lensebv: 0.48387096774193544 hostebv: 0.3225806451612903 c: -0.10069725106231615
 
 
 
@@ -328,30 +316,28 @@ Okay, now we can fit the MISN first without taking these effects into account:
     fitCurves_dust=sntd.fit_data(myMISN2,snType='Ia', models='salt2-extended',bands=['F110W','F160W'],
                                                          params=['x0','x1','t0','c'],npoints=200,
                                                          constants={'z':1.4},minsnr=1,cut_time=[-30,40],
-                                                         bounds={'t0':(-15,15),'x1':(-3,3),'c':(-.3,.3)})
+                                                         bounds={'t0':(-15,15),'x1':(-3,3),'c':(-1,1)})
     print(fitCurves_dust.parallel.time_delays)
     print(fitCurves_dust.parallel.time_delay_errors)
     print('c:',fitCurves_dust.images['image_1'].fits.model.get('c'))
     fitCurves_dust.plot_object(showFit=True)
 
 
-
-.. image:: /examples/images/sphx_glr_plot_c_fitting_008.png
-    :alt: Multiply-Imaged SN "My Type Ia SN"--HST
-    :class: sphx-glr-single-img
-
-
 .. rst-class:: sphx-glr-script-out
 
- Out:
+.. code-block:: pytb
 
- .. code-block:: none
+    Traceback (most recent call last):
+      File "/Users/jpierel/CodeBase/sntd/docs/source/_examples/plot_c_fitting.py", line 126, in <module>
+        bounds={'t0':(-15,15),'x1':(-3,3),'c':(-1,1)})
+      File "/Users/jpierel/miniconda3/envs/py37/lib/python3.7/site-packages/sntd/fitting.py", line 559, in fit_data
+        curves=_fitparallel(args)
+      File "/Users/jpierel/miniconda3/envs/py37/lib/python3.7/site-packages/sntd/fitting.py", line 2461, in _fitparallel
+        maxiter=args.get('maxiter',None),npoints=args.get('npoints',1000))
+      File "/Users/jpierel/miniconda3/envs/py37/lib/python3.7/site-packages/sntd/fitting.py", line 2713, in nest_parallel_lc
+        lower_minloc_dict[vparam_names[prior_inds[i]]] = temp1_p[temp1.argmin()]
+    IndexError: index 0 is out of bounds for axis 0 with size 0
 
-    {'image_1': 0, 'image_2': 50.38532822427862}
-    {'image_1': array([0, 0]), 'image_2': array([-1.00455451,  1.01433299])}
-    c: 0.9169541422136009
-
-    <Figure size 1000x1000 with 2 Axes>
 
 
 
@@ -381,27 +367,6 @@ as it attempts to compensate for extinction without a propagation effect. Now le
           'hostebv:',fitCurves_dust.images['image_1'].fits.model.get('hostebv'))
     fitCurves_dust.plot_object(showFit=True)
 
-
-
-.. image:: /examples/images/sphx_glr_plot_c_fitting_009.png
-    :alt: Multiply-Imaged SN "My Type Ia SN"--HST
-    :class: sphx-glr-single-img
-
-
-.. rst-class:: sphx-glr-script-out
-
- Out:
-
- .. code-block:: none
-
-    {'image_1': 0, 'image_2': 50.455205707101534}
-    {'image_1': array([0, 0]), 'image_2': array([-1.04093443,  1.02128521])}
-    c: 0.2960428896920041 lensebv: 0.8752419931029314 hostebv: -0.04584333112184245
-
-    <Figure size 1000x1000 with 2 Axes>
-
-
-
 .. GENERATED FROM PYTHON SOURCE LINES 151-153
 
 Now the measured value for **c** is much closer to reality, and the measured times of peak are somewhat
@@ -410,7 +375,7 @@ more accurate.
 
 .. rst-class:: sphx-glr-timing
 
-   **Total running time of the script:** ( 17 minutes  56.997 seconds)
+   **Total running time of the script:** ( 1 minutes  4.994 seconds)
 
 
 .. _sphx_glr_download_examples_plot_c_fitting.py:
