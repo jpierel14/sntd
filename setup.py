@@ -11,7 +11,7 @@ if sys.version_info < (3,0):
 
 AUTHOR = 'Justin Pierel'
 AUTHOR_EMAIL = 'jr23@email.sc.edu'
-VERSION = '2.3.3'
+VERSION = '2.3.4'
 LICENSE = 'BSD'
 URL = 'sntd.readthedocs.org'
 
