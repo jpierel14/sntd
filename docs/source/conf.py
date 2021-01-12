@@ -14,6 +14,7 @@
 #
 import os
 import sys
+from sphinx_gallery.sorting import FileNameSortKey
 #sys.path.insert(0, os.path.abspath('.'))
 sys.path.insert(0, os.path.abspath('../../sntd'))
 
@@ -98,6 +99,7 @@ html_theme_options = {
     "collapse_navigation": False,
 }
 sphinx_gallery_conf = {
+    'within_subsection_order':FileNameSortKey,
     'examples_dirs': '_examples',  # path to examples scripts
     'gallery_dirs': 'examples',   # path to gallery generated examples
     'backreferences_dir': 'modules/generated',  # path to store the module

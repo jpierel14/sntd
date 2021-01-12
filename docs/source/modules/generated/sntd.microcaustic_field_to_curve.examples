@@ -5,13 +5,14 @@ Examples using ``sntd.microcaustic_field_to_curve``
 
 .. raw:: html
 
-    <div class="sphx-glr-thumbcontainer" tooltip="Simulate a microlensing microcaustic. ">
+    <div class="sphx-glr-thumbcontainer" tooltip="Simulate a microlensing microcaustic.">
 
 .. only:: html
 
- .. figure:: /examples/images/thumb/sphx_glr_plot_micro_thumb.png
+ .. figure:: /examples/images/thumb/sphx_glr_plot_a_micro_thumb.png
+     :alt: Simulate Microlensing
 
-     :ref:`sphx_glr_examples_plot_micro.py`
+     :ref:`sphx_glr_examples_plot_a_micro.py`
 
 .. raw:: html
 
@@ -19,4 +20,4 @@ Examples using ``sntd.microcaustic_field_to_curve``
 
 .. only:: not html
 
- * :ref:`sphx_glr_examples_plot_micro.py`
+ * :ref:`sphx_glr_examples_plot_a_micro.py`

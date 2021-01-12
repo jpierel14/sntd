@@ -9,7 +9,7 @@ from scipy.interpolate import interp1d
 from sncosmo.utils import alias_map
 
 from .util import _filedir_
-from .curve_io import curve,curveDict
+from .curve_io import image_lc,MISN
 from .ml import *
 
 __all__=['createMultiplyImagedSN']
@@ -145,8 +145,8 @@ def createMultiplyImagedSN(
 
     Returns
     -------
-    MISN: :class:`~sntd.curveDict`
-        A curveDict object containing each of the multiply-imaged SN light curves
+    MISN: :class:`~sntd.MISN`
+        A MISN object containing each of the multiply-imaged SN light curves
         and the simulation parameters.
     Examples
     --------
@@ -173,7 +173,7 @@ def createMultiplyImagedSN(
         zpList=[zp for i in range(len(bandList))]
 
     #set up object to be filled by simulations
-    curve_obj=curveDict(telescopename=telescopename,object=objectName)
+    curve_obj=MISN(telescopename=telescopename,object=objectName)
     curve_obj.bands = set(bandList)
 
     #make sncosmo obs table
@@ -335,8 +335,8 @@ def createMultiplyImagedSN(
         if timeArr is None:
             table_i=table_i[table_i['time']<model_i.get('t0')+clip_time[1]*(1+model_i.get('z'))]
             table_i=table_i[table_i['time']>model_i.get('t0')+clip_time[0]*(1+model_i.get('z'))]
-        #create is curve with all parameters and add it to the overall curveDict object from above
-        curve_i=curve()
+        #create is curve with all parameters and add it to the overall MISN object from above
+        curve_i=image_lc()
         curve_i.object=None
         curve_i.zpsys=zpsys
         curve_i.table=deepcopy(table_i)
@@ -357,7 +357,7 @@ def createMultiplyImagedSN(
         elif microlensing_type is not None:
             curve_i.simMeta['microlensing_params'] = interp1d(time+model_i._source._phase[0],dmag)
 
-        curve_obj.add_curve(curve_i)
+        curve_obj.add_image_lc(curve_i)
 
 
     # Store the un-lensed model as a component of the lensed SN object.

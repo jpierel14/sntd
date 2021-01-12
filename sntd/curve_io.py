@@ -16,20 +16,20 @@ except:
 
 from .util import *
 
-__all__=['curve','curveDict','read_data','write_data','table_factory']
+__all__=['image_lc','MISN','read_data','write_data','table_factory']
 
 _comment_char={'#','='}
 _meta__={'@','$','%','!','&'}
 
 def _sntd_deepcopy(obj):
-    newCurve=curveDict()
+    newMISN=MISN()
     for k in obj:
-        setattr(newCurve,k,obj[k])
-    return(newCurve)
+        setattr(newMISN,k,obj[k])
+    return(newMISN)
 
-class curve(dict):
+class image_lc(dict):
     """
-    SNTD class that describes each image of a MISN
+    SNTD class that describes each image light curve of a MISN
     """
     def __deepcopy__(self, memo):
         return deepcopy(dict(self))
@@ -41,10 +41,10 @@ class curve(dict):
 
         """
         #todo populate param documentation
-        super(curve,self).__init__()
+        super(image_lc,self).__init__()
         self.meta = {'info': ''}
         """@type: :class:`dict`
-            The metadata for the curveDict object, intialized with an empty "info" key value pair. It's
+            The metadata for the MISN object, intialized with an empty "info" key value pair. It's
             populated by added _metachar__ characters into the header of your data file.
         """
         self.table=None
@@ -69,7 +69,7 @@ class curve(dict):
             Contains fit information from fit_data"""
 
 
-    #these three functions allow you to access the curveDict via "dot" notation
+    #these three functions allow you to access the MISN via "dot" notation
     __setattr__ = dict.__setitem__
     __delattr__ = dict.__delitem__
     __getattr__ = dict.__getitem__
@@ -92,7 +92,7 @@ class curve(dict):
         self.__dict__ = d
 
 
-class curveDict(dict):
+class MISN(dict):
     """
     The main object for SNTD. This organizes a MISN, containing
     the multiple light curves in self.images, all the fits, etc.
@@ -103,7 +103,7 @@ class curveDict(dict):
 
     def __init__(self,telescopename="Unknown",object="Unknown"):
         """
-        Constructor for curveDict class. Inherits from the dictionary class,
+        Constructor for MISN class. Inherits from the dictionary class,
         and is the main object of organization used by SNTD.
 
         Parameters
@@ -115,18 +115,18 @@ class curveDict(dict):
 
         Returns
         -------
-        MISN : :class:`~sntd.curveDict`
+        MISN : :class:`~sntd.MISN`
         """
-        super(curveDict, self).__init__() #init for the super class
+        super(MISN, self).__init__() #init for the super class
         self.meta = {'info': ''}
         """@type: :class:`dict`
-            The metadata for the curveDict object, intialized with an empty "info" key value pair. It's
+            The metadata for the MISN object, intialized with an empty "info" key value pair. It's
             populated by added _metachar__ characters into the header of your data file.
         """
         self.bands=set()
         """
         @type: :class:`list`
-            The list of bands contained inside this curveDict
+            The list of bands contained inside this MISN
         """
         self.table=None
         """
@@ -145,13 +145,13 @@ class curveDict(dict):
         """
         self.images=dict([])
 
-        self.parallel=curve()
-        self.series=curve()
-        self.color=curve()
+        self.parallel=image_lc()
+        self.series=image_lc()
+        self.color=image_lc()
         self.constants={}
 
 
-    #these three functions allow you to access the curveDict via "dot" notation
+    #these three functions allow you to access the MISN via "dot" notation
     __setattr__ = dict.__setitem__
     __delattr__ = dict.__delitem__
     __getattr__ = dict.__getitem__
@@ -175,7 +175,7 @@ class curveDict(dict):
 
     def __str__(self):
         """
-        A replacement for the print method of the class, so that when you run print(curveDict()), this is how it shows
+        A replacement for the print method of the class, so that when you run print(MISN()), this is how it shows
         up.
         """
         print('Telescope: %s'%self.telescopename)
@@ -197,47 +197,47 @@ class curveDict(dict):
         return '------------------'
 
 
-    def add_curve(self,myCurve,key=None):
-        """Adds a curve object to the existing curveDict (i.e. adds
+    def add_image_lc(self,myImage,key=None):
+        """Adds an image_lc object to the existing MISN (i.e. adds
         an image to a MISN)
 
         Parameters
         ----------
-        myCurve: :class:`sntd.curve`
+        myImage: :class:`~sntd.image_lc`
             The curve to add to self.
         key: str
             The key you want to save this as, default is 'image_1,image_2,etc.'
 
         Returns
         -------
-        self: :class:`sntd.curve_io.curveDict`
+        self: :class:`sntd.curve_io.MISN`
         """
 
-        self.bands.update([x for x in myCurve.bands if x not in self.bands])
+        self.bands.update([x for x in myImage.bands if x not in self.bands])
         if key is None:
-            myCurve.object='image_'+str(len(self.images)+1)
+            myImage.object='image_'+str(len(self.images)+1)
         else:
-            myCurve.object=key
+            myImage.object=key
 
-        if 'image' not in myCurve.table.colnames:
-            myCurve.table.add_column(Column([myCurve.object for i in range(len(myCurve.table))],name='image'))
+        if 'image' not in myImage.table.colnames:
+            myImage.table.add_column(Column([myImage.object for i in range(len(myImage.table))],name='image'))
 
 
-        if 'zpsys' not in myCurve.table.colnames:
+        if 'zpsys' not in myImage.table.colnames:
             print('Assuming AB magsystem...')
-            myCurve.table['zpsys']='AB'
+            myImage.table['zpsys']='AB'
         else:
-            myCurve.zpsys=myCurve.table['zpsys'][0]
+            myImage.zpsys=myImage.table['zpsys'][0]
 
-        tempCurve=_sntd_deepcopy(myCurve)
+        tempMISN=_sntd_deepcopy(myImage)
 
 
-        self.images[myCurve.object]=tempCurve
+        self.images[myImage.object]=tempMISN
 
         if self.table:
-            self.table=vstack([tempCurve.table])
+            self.table=vstack([tempMISN.table])
         else:
-            self.table=copy(tempCurve.table)
+            self.table=copy(tempMISN.table)
         return(self)
 
     def combine_curves(self,time_delays=None,magnifications=None,referenceImage='image_1',static=False,
@@ -268,7 +268,7 @@ class curveDict(dict):
 
         Returns
         -------
-        self: :class:`sntd.curve_io.curveDict`
+        self: :class:`sntd.curve_io.MISN`
         """
         if len(self.images) <2:
             print("Not enough curves to combine!")
@@ -346,7 +346,7 @@ class curveDict(dict):
 
         Returns
         -------
-        self: :class:`sntd.curve_io.curveDict`
+        self: :class:`sntd.curve_io.MISN`
         """
 
         ignore_images=list(ignore_images) if not isinstance(ignore_images,(list,tuple)) else ignore_images
@@ -503,7 +503,7 @@ class curveDict(dict):
             table (series), or the color table (color)
         Returns
         -------
-        self: :class:`sntd.curve_io.curveDict`
+        self: :class:`sntd.curve_io.MISN`
         """
 
         if method=='parallel':
@@ -1131,11 +1131,11 @@ def table_factory(tables,telescopename="Unknown",object_name=None):
 
     """
 
-    new_SN=curveDict(telescopename,object_name)
+    new_SN=MISN(telescopename,object_name)
     if not isinstance(tables,(list,tuple)):
         tables=[tables]
     for table in tables:
-        newlc=curve()
+        newlc=image_lc()
         table=standardize_table_colnames(table)
         newlc.bands={x for x in table[get_default_prop_name('band')]}
         zp_dict=dict([])
@@ -1153,9 +1153,9 @@ def table_factory(tables,telescopename="Unknown",object_name=None):
         newlc.object = object_name
         if 'image' in newlc.table.colnames:
             im_key=newlc.table['image'][0]
-            new_SN.add_curve(newlc,key=im_key)
+            new_SN.add_image_lc(newlc,key=im_key)
         else:
-            new_SN.add_curve(newlc)
+            new_SN.add_image_lc(newlc)
 
     return new_SN
 
@@ -1168,12 +1168,12 @@ def _switch(ext):
 
 
 def write_data(curves,filename=None,protocol=-1):
-    """Used to write a curveDict object to a pickle
+    """Used to write a MISN object to a pickle
         to be read later
 
     Parameters
     ----------
-    curves : `~sntd.curveDict`
+    curves : `~sntd.MISN`
     filename : str
         Name of output file
     protocol : int
@@ -1206,7 +1206,7 @@ def read_data(filename,**kwargs):
 
     Returns
     -------
-    curve : :class:`~sntd.curve` or :class:`~sntd.curveDict`
+    curve : :class:`~sntd.curve` or :class:`~sntd.MISN`
     """
     return(_switch(os.path.splitext(filename)[1])(filename,**kwargs))
 
@@ -1244,7 +1244,7 @@ def _read_data(filename,**kwargs):
 
 
     delim = kwargs.get('delim', None)
-    myCurve=curve()
+    myCurve=image_lc()
     with anyOpen(filename) as f:
         lines=f.readlines()
         length=mode([len(l.split()) for l in lines])[0][0]#uses the most common line length as the correct length

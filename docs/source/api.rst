@@ -12,8 +12,8 @@ Summary
 	sntd.fitting.fit_data
 	sntd.simulation.createMultiplyImagedSN
 	sntd.survey_cosmo.Survey
-	sntd.curve_io.curve
-	sntd.curve_io.curveDict
+	sntd.curve_io.image_lc
+	sntd.curve_io.MISN
 	sntd.curve_io.table_factory
 	sntd.ml.realizeMicro
 	sntd.ml.microcaustic_field_to_curve

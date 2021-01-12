@@ -5,13 +5,14 @@ Examples using ``sntd.Fisher.prior``
 
 .. raw:: html
 
-    <div class="sphx-glr-thumbcontainer" tooltip="Simulate cosmological constraints from a sample of lensed SN. ">
+    <div class="sphx-glr-thumbcontainer" tooltip="Simulate cosmological constraints from a sample of lensed SN.">
 
 .. only:: html
 
- .. figure:: /examples/images/thumb/sphx_glr_plot_survey_thumb.png
+ .. figure:: /examples/images/thumb/sphx_glr_plot_d_survey_thumb.png
+     :alt: Constrain Cosmology
 
-     :ref:`sphx_glr_examples_plot_survey.py`
+     :ref:`sphx_glr_examples_plot_d_survey.py`
 
 .. raw:: html
 
@@ -19,4 +20,4 @@ Examples using ``sntd.Fisher.prior``
 
 .. only:: not html
 
- * :ref:`sphx_glr_examples_plot_survey.py`
+ * :ref:`sphx_glr_examples_plot_d_survey.py`

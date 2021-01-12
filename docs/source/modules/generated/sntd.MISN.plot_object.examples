@@ -1,0 +1,42 @@
+
+
+Examples using ``sntd.MISN.plot_object``
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+.. raw:: html
+
+    <div class="sphx-glr-thumbcontainer" tooltip="Simulating a multiply-imaged supernova.">
+
+.. only:: html
+
+ .. figure:: /examples/images/thumb/sphx_glr_plot_b_sim_thumb.png
+     :alt: Simulate Supernovae
+
+     :ref:`sphx_glr_examples_plot_b_sim.py`
+
+.. raw:: html
+
+    </div>
+
+.. only:: not html
+
+ * :ref:`sphx_glr_examples_plot_b_sim.py`
+
+.. raw:: html
+
+    <div class="sphx-glr-thumbcontainer" tooltip="A series of examples demonstrating various fitting options  with SNTD.">
+
+.. only:: html
+
+ .. figure:: /examples/images/thumb/sphx_glr_plot_c_fitting_thumb.png
+     :alt: Measure Time Delays
+
+     :ref:`sphx_glr_examples_plot_c_fitting.py`
+
+.. raw:: html
+
+    </div>
+
+.. only:: not html
+
+ * :ref:`sphx_glr_examples_plot_c_fitting.py`

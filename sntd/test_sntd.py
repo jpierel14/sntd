@@ -63,8 +63,11 @@ class TestFitting(unittest.TestCase):
 		self.myMISN = sntd.load_example_misn()
 		# self.myMISN = sntd.createMultiplyImagedSN(sourcename='salt2-extended', snType='Ia', redshift=.5,z_lens=.2, 
 		# 	bands=['F110W','F160W'],
-		# 	zp=[25,25], cadence=5., epochs=13.,time_delays=[20., 70.], magnifications=[5,5],
+		# 	zp=[25,25], cadence=5., epochs=20.,time_delays=[20., 70.], magnifications=[10,5],
 		# 	objectName='My Type Ia SN',telescopename='HST')
+		# import pickle
+		# pickle.dump(self.myMISN,open(os.path.join('data','examples','example_data.pkl'),'wb'))
+		# sys.exit()
 
 	@unittest.skipIf(_PARONLY_,"Skipping non-parallel fit.")
 	def test_quality_check(self):
@@ -157,8 +160,8 @@ def test_loader(loader):
 
 if __name__ == '__main__':
     #TEST LIST
-    test_cases = 'ALL'
-    #test_cases = [TestFitting]
+    #test_cases = 'ALL'
+    test_cases = [TestFitting]
 
     if test_cases == 'ALL':
         unittest.main()

@@ -1,3 +1,7 @@
+:orphan:
+
+
+
 .. _sphx_glr_examples:
 
 Examples
@@ -11,10 +15,10 @@ Examples
 
 .. only:: html
 
- .. figure:: /examples/images/thumb/sphx_glr_plot_micro_thumb.png
+ .. figure:: /examples/images/thumb/sphx_glr_plot_a_micro_thumb.png
      :alt: Simulate Microlensing
 
-     :ref:`sphx_glr_examples_plot_micro.py`
+     :ref:`sphx_glr_examples_plot_a_micro.py`
 
 .. raw:: html
 
@@ -24,28 +28,7 @@ Examples
 .. toctree::
    :hidden:
 
-   /examples/plot_micro
-
-.. raw:: html
-
-    <div class="sphx-glr-thumbcontainer" tooltip="Simulate cosmological constraints from a sample of lensed SN.">
-
-.. only:: html
-
- .. figure:: /examples/images/thumb/sphx_glr_plot_survey_thumb.png
-     :alt: Constrain Cosmology
-
-     :ref:`sphx_glr_examples_plot_survey.py`
-
-.. raw:: html
-
-    </div>
-
-
-.. toctree::
-   :hidden:
-
-   /examples/plot_survey
+   /examples/plot_a_micro
 
 .. raw:: html
 
@@ -53,10 +36,10 @@ Examples
 
 .. only:: html
 
- .. figure:: /examples/images/thumb/sphx_glr_plot_sim_thumb.png
+ .. figure:: /examples/images/thumb/sphx_glr_plot_b_sim_thumb.png
      :alt: Simulate Supernovae
 
-     :ref:`sphx_glr_examples_plot_sim.py`
+     :ref:`sphx_glr_examples_plot_b_sim.py`
 
 .. raw:: html
 
@@ -66,7 +49,7 @@ Examples
 .. toctree::
    :hidden:
 
-   /examples/plot_sim
+   /examples/plot_b_sim
 
 .. raw:: html
 
@@ -74,10 +57,10 @@ Examples
 
 .. only:: html
 
- .. figure:: /examples/images/thumb/sphx_glr_plot_fitting_thumb.png
+ .. figure:: /examples/images/thumb/sphx_glr_plot_c_fitting_thumb.png
      :alt: Measure Time Delays
 
-     :ref:`sphx_glr_examples_plot_fitting.py`
+     :ref:`sphx_glr_examples_plot_c_fitting.py`
 
 .. raw:: html
 
@@ -87,7 +70,28 @@ Examples
 .. toctree::
    :hidden:
 
-   /examples/plot_fitting
+   /examples/plot_c_fitting
+
+.. raw:: html
+
+    <div class="sphx-glr-thumbcontainer" tooltip="Simulate cosmological constraints from a sample of lensed SN.">
+
+.. only:: html
+
+ .. figure:: /examples/images/thumb/sphx_glr_plot_d_survey_thumb.png
+     :alt: Constrain Cosmology
+
+     :ref:`sphx_glr_examples_plot_d_survey.py`
+
+.. raw:: html
+
+    </div>
+
+
+.. toctree::
+   :hidden:
+
+   /examples/plot_d_survey
 .. raw:: html
 
     <div class="sphx-glr-clear"></div>

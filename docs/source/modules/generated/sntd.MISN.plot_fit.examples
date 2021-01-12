@@ -1,0 +1,23 @@
+
+
+Examples using ``sntd.MISN.plot_fit``
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+.. raw:: html
+
+    <div class="sphx-glr-thumbcontainer" tooltip="A series of examples demonstrating various fitting options  with SNTD.">
+
+.. only:: html
+
+ .. figure:: /examples/images/thumb/sphx_glr_plot_c_fitting_thumb.png
+     :alt: Measure Time Delays
+
+     :ref:`sphx_glr_examples_plot_c_fitting.py`
+
+.. raw:: html
+
+    </div>
+
+.. only:: not html
+
+ * :ref:`sphx_glr_examples_plot_c_fitting.py`

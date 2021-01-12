@@ -39,7 +39,7 @@ Out::
 	133.82352941176472 F160W  7.288367029732507 ... 26.2    AB image_1
 	138.97058823529412 F160W  6.416746741653151 ... 26.2    AB image_1
 
-Now, to turn these two data tables into an :py:class:`~sntd.curve_io.curveDict` object that will be fit, we use the :py:func:`~sntd.curve_io.table_factory` function:
+Now, to turn these two data tables into an :py:class:`~sntd.curve_io.MISN` object that will be fit, we use the :py:func:`~sntd.curve_io.table_factory` function:
 
 .. code-block:: python
 
@@ -136,7 +136,7 @@ Batch Processing Time Delay Measurements
 ****************************************
 
 Parallel processing and batch processing is built into SNTD in order to fit a large number of (likely simulated) MISN. To access this feature,
-simply provide a list of MISN instead of a single :py:class:`~sntd.curve_io.curveDict` object, specifying whether you want to use multiprocessing (split the list across multiple cores)
+simply provide a list of MISN instead of a single :py:class:`~sntd.curve_io.MISN` object, specifying whether you want to use multiprocessing (split the list across multiple cores)
 or batch processing (splitting the list into multiple jobs with sbatch). If you specify batch mode, you need to provide
 the partition and number of jobs you want to implement or the number of lensed SN you want to fit per node. 
 
@@ -185,7 +185,7 @@ You can also use batch processing and multiprocssing (using N cores per node acr
                     method='parallel',npoints=1000,par_or_batch='batch', batch_partition='myPartition',nbatch_jobs=1)
 
 If you would like to run multiple methods in a row in batch mode, the recommended way is by providing a list of the methods to the :py:func:`~sntd.fitting.fit_data` function. You 
-can have it use the parallel fit as a prior on the subsequent fits by setting ``fit_prior`` to ``True`` instead of giving it a :py:class:`~sntd.curve_io.curveDict` object.
+can have it use the parallel fit as a prior on the subsequent fits by setting ``fit_prior`` to ``True`` instead of giving it a :py:class:`~sntd.curve_io.MISN` object.
 
 
 .. code-block:: python

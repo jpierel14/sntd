@@ -36,7 +36,7 @@ class newDict(dict):
 	def __init__(self):
 		super(newDict,self).__init__()
 
-	# these three functions allow you to access the curveDict via "dot" notation
+	# these three functions allow you to access the dict via "dot" notation
 	__setattr__ = dict.__setitem__
 	__delattr__ = dict.__delitem__
 	__getattr__ = dict.__getitem__
@@ -71,8 +71,8 @@ def fit_data(curves=None, snType='Ia',bands=None, models=None, params=None, boun
 
 	Parameters
 	----------
-	curves: :class:`~sntd.curve_io.curveDict`
-		The curveDict object containing the multiple images to fit.
+	curves: :class:`~sntd.curve_io.MISN`
+		The MISN object containing the multiple images to fit.
 	snType: str
 		The supernova classification
 	bands: :class:`~list` of :class:`~sncosmo.Bandpass` or :class:`~str`, or :class:`~sncosmo.Bandpass` or :class:`~str`
@@ -133,9 +133,9 @@ def fit_data(curves=None, snType='Ia',bands=None, models=None, params=None, boun
 		To clip each image of a MISN to this cadence
 	fit_colors: list
 		List of colors to use in color fitting (e.g. ['bessellb-bessellv','bessellb-bessellr'])
-	fit_prior: :class:`~sntd.curve_io.curveDict` or bool
+	fit_prior: :class:`~sntd.curve_io.MISN` or bool
 		if implementing parallel method alongside others and fit_prior is True, will use output of parallel as prior
-		for series/color. If SNTD curveDict object, used as prior for series or color.
+		for series/color. If SNTD MISN object, used as prior for series or color.
 	par_or_batch: str
 		if providing a list of SNe, par means multiprocessing and batch means sbatch. Must supply other batch
 		parameters if batch is chosen, so parallel is default.
@@ -158,7 +158,7 @@ def fit_data(curves=None, snType='Ia',bands=None, models=None, params=None, boun
 		If you want colors to be fit in a specific order (e.g. B-V instead of V-B depending on band order)
 	set_from_simMeta: :class:`~dict`
 		Dictionary where keys are model parameters and values are the corresponding key in the 
-		:class:`~sntd.curve_io.curveDict`.images.simMeta dictionary (e.g. {'z':'sim_redshift'} if you want to set the model
+		:class:`~sntd.curve_io.MISN`.images.simMeta dictionary (e.g. {'z':'sim_redshift'} if you want to set the model
 		redshift based on a simulated redshift in simMeta called 'sim_redshfit')
 	guess_amplitude: bool
 		If True, the amplitude parameter for the model is estimated, as well as its bounds
@@ -184,8 +184,8 @@ def fit_data(curves=None, snType='Ia',bands=None, models=None, params=None, boun
 		Turns on/off the verbosity flag
 	Returns
 	-------
-	fitted_curveDict: :class:`~sntd.curve_io.curveDict` or :class:`~list`
-		The same curveDict that was passed to fit_data, but with new fits and time delay measurements included. List
+	fitted_MISN: :class:`~sntd.curve_io.MISN` or :class:`~list`
+		The same MISN that was passed to fit_data, but with new fits and time delay measurements included. List
 		if list was provided.
 	Examples
 	--------
