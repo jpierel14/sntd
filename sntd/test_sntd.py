@@ -9,8 +9,8 @@ import warnings
 warnings.simplefilter('ignore')
 
 _NOSBATCH_ = True
-_GOFAST_ = True
-_PARONLY_ = True
+_GOFAST_ = False
+_PARONLY_ = False
 
 np.random.seed(3)
 class TestMicrolensing(unittest.TestCase):
@@ -61,13 +61,6 @@ class TestFitting(unittest.TestCase):
 	"""
 	def setUp(self):
 		self.myMISN = sntd.load_example_misn()
-		# self.myMISN = sntd.createMultiplyImagedSN(sourcename='salt2-extended', snType='Ia', redshift=1.4,z_lens=.5, 
-		# 	bands=['F110W','F160W'],
-		# 	zp=[25,25], cadence=8., epochs=15.,time_delays=[20., 70.], magnifications=[10,5],
-		# 	objectName='My Type Ia SN',telescopename='HST',av_host=0)
-		# import pickle
-		# pickle.dump(self.myMISN,open(os.path.join('data','examples','example_data.pkl'),'wb'))
-		# sys.exit()
 
 	@unittest.skipIf(_PARONLY_,"Skipping non-parallel fit.")
 	def test_quality_check(self):
@@ -79,18 +72,12 @@ class TestFitting(unittest.TestCase):
 				t0_guess={'image_1':20,'image_2':70})
 
 	def test_parallel_fit(self):
-		print([self.myMISN.images[im].simMeta for im in self.myMISN.images.keys()])
-		# fitCurves=sntd.fit_data(self.myMISN,snType='Ia', models='salt2-extended',bands=['F110W','F160W'],
-		# 		params=['x0','x1','t0','c'],bounds={'t0':(-15,15),'x1':(-2,2),'c':(-1,1),'td':(-30,30),'mu':(.5,2)},
-		# 		color_param_ignore=['x1'],use_MLE=False,refImage='image_1',cut_time=[-40,20],
-		# 		method='parallel',microlensing=None,maxcall=None,npoints=100,minsnr=0,
-		# 		set_from_simMeta={'z':'z'},t0_guess={'image_1':20,'image_2':70})
 		fitCurves=sntd.fit_data(self.myMISN,snType='Ia', models='salt2-extended',bands=['F110W','F160W'],
-                params=['x0','t0','x1','c'],constants={'z':1.4},refImage='image_1',cut_time=[-30,40],
-                bounds={'t0':(-20,20),'x1':(-3,3),'c':(-.5,.5),'mu':(.5,2)},fitOrder=['image_1','image_2'],
-                method='parallel',microlensing=None,modelcov=False,npoints=100)
-		print([fitCurves.images[im].fits.model.parameters for im in fitCurves.images.keys()])
-
+				params=['x0','x1','t0','c'],bounds={'t0':(-15,15),'x1':(-2,2),'c':(-1,1),'td':(-30,30),'mu':(.5,2)},
+				color_param_ignore=['x1'],use_MLE=False,refImage='image_1',cut_time=[-40,20],
+				method='parallel',microlensing=None,maxcall=None,npoints=100,minsnr=0,
+				set_from_simMeta={'z':'z'},t0_guess={'image_1':20,'image_2':70})
+		
 	@unittest.skipIf(_PARONLY_,"Skipping non-parallel fit.")
 	def test_series_fit(self):
 		fitCurves=sntd.fit_data(self.myMISN,snType='Ia', models='salt2-extended',bands=['F110W','F160W'],

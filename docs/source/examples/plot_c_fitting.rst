@@ -42,9 +42,10 @@ You can batch process (with sbatch or multiprocessing) using any or all of these
 
 **Parallel:**
 
-.. GENERATED FROM PYTHON SOURCE LINES 25-41
+.. GENERATED FROM PYTHON SOURCE LINES 25-42
 
 .. code-block:: default
+
 
     import sntd
 
@@ -77,13 +78,13 @@ You can batch process (with sbatch or multiprocessing) using any or all of these
     *
 
       .. image:: /examples/images/sphx_glr_plot_c_fitting_002.png
-          :alt: t0 = ${19.53}_{-0.68}^{+0.67}$, x0 = ${0.00}_{-0.00}^{+0.00}$, x1 = ${-0.26}_{-0.32}^{+0.28}$, c = ${0.11}_{-0.03}^{+0.03}$
+          :alt: t0 = ${19.62}_{-0.79}^{+0.51}$, x0 = ${0.00}_{-0.00}^{+0.00}$, x1 = ${-0.26}_{-0.28}^{+0.31}$, c = ${0.11}_{-0.03}^{+0.03}$
           :class: sphx-glr-multi-img
 
     *
 
       .. image:: /examples/images/sphx_glr_plot_c_fitting_003.png
-          :alt: t0 = ${69.34}_{-1.03}^{+1.09}$, x0 = ${0.00}_{-0.00}^{+0.00}$, x1 = ${-0.06}_{-0.29}^{+0.28}$, c = ${0.10}_{-0.03}^{+0.04}$
+          :alt: t0 = ${69.41}_{-1.12}^{+1.03}$, x0 = ${0.00}_{-0.00}^{+0.00}$, x1 = ${-0.01}_{-0.29}^{+0.26}$, c = ${0.09}_{-0.03}^{+0.04}$
           :class: sphx-glr-multi-img
 
 
@@ -93,16 +94,16 @@ You can batch process (with sbatch or multiprocessing) using any or all of these
 
  .. code-block:: none
 
-    {'image_1': 0, 'image_2': 49.78483583372012}
-    {'image_1': array([0, 0]), 'image_2': array([-1.04735064,  1.15332557])}
-    {'image_1': 1, 'image_2': 0.5168082527243778}
-    {'image_1': array([0, 0]), 'image_2': array([-0.02566919,  0.03143942])}
+    {'image_1': 0, 'image_2': 49.839224841981796}
+    {'image_1': array([0, 0]), 'image_2': array([-1.1706755 ,  1.27356472])}
+    {'image_1': 1, 'image_2': 0.5216958795576582}
+    {'image_1': array([0, 0]), 'image_2': array([-0.03045439,  0.02518114])}
 
     <Figure size 970x970 with 16 Axes>
 
 
 
-.. GENERATED FROM PYTHON SOURCE LINES 42-48
+.. GENERATED FROM PYTHON SOURCE LINES 43-49
 
 Note that the bounds for the 't0' parameter are not absolute, the actual peak time will be estimated (unless t0_guess is defined)
 and the defined bounds will be added to this value. Similarly for amplitude, where bounds are multiplicative
@@ -111,7 +112,7 @@ Other methods are called in a similar fashion, with a couple of extra arguments:
 
 **Series:**
 
-.. GENERATED FROM PYTHON SOURCE LINES 48-63
+.. GENERATED FROM PYTHON SOURCE LINES 49-64
 
 .. code-block:: default
 
@@ -145,7 +146,7 @@ Other methods are called in a similar fashion, with a couple of extra arguments:
     *
 
       .. image:: /examples/images/sphx_glr_plot_c_fitting_005.png
-          :alt: x0 = ${0.00}_{-0.00}^{+0.00}$, t0 = ${19.51}_{-0.66}^{+0.63}$, x1 = ${0.25}_{-0.25}^{+0.26}$, c = ${0.10}_{-0.03}^{+0.02}$, dt_2 = ${50.02}_{-0.84}^{+0.86}$, mu_2 = ${0.54}_{-0.01}^{+0.01}$
+          :alt: x0 = ${0.00}_{-0.00}^{+0.00}$, t0 = ${19.52}_{-0.65}^{+0.61}$, x1 = ${0.24}_{-0.24}^{+0.23}$, c = ${0.10}_{-0.03}^{+0.02}$, dt_2 = ${50.13}_{-0.80}^{+0.84}$, mu_2 = ${0.54}_{-0.01}^{+0.01}$
           :class: sphx-glr-multi-img
 
 
@@ -155,23 +156,23 @@ Other methods are called in a similar fashion, with a couple of extra arguments:
 
  .. code-block:: none
 
-    {'image_1': 0, 'image_2': 50.01892748861569}
-    {'image_1': array([0, 0]), 'image_2': array([-0.84449775,  0.85645679])}
-    {'image_1': 1, 'image_2': 0.541584394085735}
-    {'image_1': array([0, 0]), 'image_2': array([-0.01215357,  0.01264845])}
+    {'image_1': 0, 'image_2': 50.12517657858812}
+    {'image_1': array([0, 0]), 'image_2': array([-0.7998957 ,  0.83977423])}
+    {'image_1': 1, 'image_2': 0.5403141907894311}
+    {'image_1': array([0, 0]), 'image_2': array([-0.01268087,  0.01272975])}
 
     <Figure size 1390x1390 with 36 Axes>
 
 
 
-.. GENERATED FROM PYTHON SOURCE LINES 64-68
+.. GENERATED FROM PYTHON SOURCE LINES 65-69
 
 **Color:**
 By default, this will attempt to fit every combination of colors possible from
 the bands present in the data. You can define specific colors using the "fit_colors"
 argument.
 
-.. GENERATED FROM PYTHON SOURCE LINES 68-81
+.. GENERATED FROM PYTHON SOURCE LINES 69-82
 
 .. code-block:: default
 
@@ -203,7 +204,7 @@ argument.
     *
 
       .. image:: /examples/images/sphx_glr_plot_c_fitting_007.png
-          :alt: t0 = ${17.66}_{-3.54}^{+3.03}$, c = ${0.13}_{-0.03}^{+0.03}$, dt_2 = ${51.53}_{-5.03}^{+5.96}$
+          :alt: t0 = ${17.05}_{-3.90}^{+3.22}$, c = ${0.12}_{-0.03}^{+0.03}$, dt_2 = ${52.17}_{-4.93}^{+5.96}$
           :class: sphx-glr-multi-img
 
 
@@ -213,18 +214,18 @@ argument.
 
  .. code-block:: none
 
-    {'image_1': 0, 'image_2': 51.53146236757031}
-    {'image_1': array([0, 0]), 'image_2': array([-5.03948127,  6.00702174])}
+    {'image_1': 0, 'image_2': 52.14063928027035}
+    {'image_1': array([0, 0]), 'image_2': array([-4.9281695 ,  5.98184409])}
 
     <Figure size 760x760 with 9 Axes>
 
 
 
-.. GENERATED FROM PYTHON SOURCE LINES 82-83
+.. GENERATED FROM PYTHON SOURCE LINES 83-84
 
 You can include your fit from the parallel method as a prior on light curve and time delay parameters in the series/color methods with the "fit_prior" command:
 
-.. GENERATED FROM PYTHON SOURCE LINES 83-101
+.. GENERATED FROM PYTHON SOURCE LINES 84-102
 
 .. code-block:: default
 
@@ -256,15 +257,15 @@ You can include your fit from the parallel method as a prior on light curve and 
 
  .. code-block:: none
 
-    {'image_1': 0, 'image_2': 49.79074153775034}
-    {'image_1': array([0, 0]), 'image_2': array([-1.31360787,  1.17135513])}
-    {'image_1': 0, 'image_2': 49.557964891502955}
-    {'image_1': array([0, 0]), 'image_2': array([-2.58881936,  2.31909064])}
+    {'image_1': 0, 'image_2': 49.9071432680179}
+    {'image_1': array([0, 0]), 'image_2': array([-1.22501342,  1.14244589])}
+    {'image_1': 0, 'image_2': 49.734025619756856}
+    {'image_1': array([0, 0]), 'image_2': array([-2.38861668,  2.36446144])}
 
 
 
 
-.. GENERATED FROM PYTHON SOURCE LINES 102-107
+.. GENERATED FROM PYTHON SOURCE LINES 103-108
 
 **Fitting Using Extra Propagation Effects**
 
@@ -272,7 +273,7 @@ You might also want to include other propagation effects in your fitting model, 
 simply adding effects to an SNCosmo model, in the same way as if you were fitting a single SN with SNCosmo. First we can add some
 extreme dust in the source and lens frames (your final simulations may look slightly different as **c** is chosen randomly):
 
-.. GENERATED FROM PYTHON SOURCE LINES 107-118
+.. GENERATED FROM PYTHON SOURCE LINES 108-119
 
 .. code-block:: default
 
@@ -297,16 +298,16 @@ extreme dust in the source and lens frames (your final simulations may look slig
 
  .. code-block:: none
 
-    lensebv: 0.48387096774193544 hostebv: 0.3225806451612903 c: -0.10069725106231615
+    lensebv: 0.48387096774193544 hostebv: 0.3225806451612903 c: 0.1016798306073721
 
 
 
 
-.. GENERATED FROM PYTHON SOURCE LINES 119-120
+.. GENERATED FROM PYTHON SOURCE LINES 120-121
 
 Okay, now we can fit the MISN first without taking these effects into account:
 
-.. GENERATED FROM PYTHON SOURCE LINES 120-131
+.. GENERATED FROM PYTHON SOURCE LINES 121-132
 
 .. code-block:: default
 
@@ -323,31 +324,33 @@ Okay, now we can fit the MISN first without taking these effects into account:
     fitCurves_dust.plot_object(showFit=True)
 
 
+
+.. image:: /examples/images/sphx_glr_plot_c_fitting_008.png
+    :alt: Multiply-Imaged SN "My Type Ia SN"--HST
+    :class: sphx-glr-single-img
+
+
 .. rst-class:: sphx-glr-script-out
 
-.. code-block:: pytb
+ Out:
 
-    Traceback (most recent call last):
-      File "/Users/jpierel/CodeBase/sntd/docs/source/_examples/plot_c_fitting.py", line 126, in <module>
-        bounds={'t0':(-15,15),'x1':(-3,3),'c':(-1,1)})
-      File "/Users/jpierel/miniconda3/envs/py37/lib/python3.7/site-packages/sntd/fitting.py", line 559, in fit_data
-        curves=_fitparallel(args)
-      File "/Users/jpierel/miniconda3/envs/py37/lib/python3.7/site-packages/sntd/fitting.py", line 2461, in _fitparallel
-        maxiter=args.get('maxiter',None),npoints=args.get('npoints',1000))
-      File "/Users/jpierel/miniconda3/envs/py37/lib/python3.7/site-packages/sntd/fitting.py", line 2713, in nest_parallel_lc
-        lower_minloc_dict[vparam_names[prior_inds[i]]] = temp1_p[temp1.argmin()]
-    IndexError: index 0 is out of bounds for axis 0 with size 0
+ .. code-block:: none
+
+    {'image_1': 0, 'image_2': 50.27016628281137}
+    {'image_1': array([0, 0]), 'image_2': array([-0.6758891 ,  0.62439854])}
+    c: 0.8420233853618283
+
+    <Figure size 1000x1000 with 2 Axes>
 
 
 
-
-.. GENERATED FROM PYTHON SOURCE LINES 132-135
+.. GENERATED FROM PYTHON SOURCE LINES 133-136
 
 We can see that the fitter has done reasonably well, and the time delay is still accurate (True delay is 50 days). 
 However, one issue is that the measured value for **c** is vastly different than the actual value 
 as it attempts to compensate for extinction without a propagation effect. Now let's add in the propagation effects:
 
-.. GENERATED FROM PYTHON SOURCE LINES 135-150
+.. GENERATED FROM PYTHON SOURCE LINES 136-151
 
 .. code-block:: default
 
@@ -367,7 +370,28 @@ as it attempts to compensate for extinction without a propagation effect. Now le
           'hostebv:',fitCurves_dust.images['image_1'].fits.model.get('hostebv'))
     fitCurves_dust.plot_object(showFit=True)
 
-.. GENERATED FROM PYTHON SOURCE LINES 151-153
+
+
+.. image:: /examples/images/sphx_glr_plot_c_fitting_009.png
+    :alt: Multiply-Imaged SN "My Type Ia SN"--HST
+    :class: sphx-glr-single-img
+
+
+.. rst-class:: sphx-glr-script-out
+
+ Out:
+
+ .. code-block:: none
+
+    {'image_1': 0, 'image_2': 50.18345984845832}
+    {'image_1': array([0, 0]), 'image_2': array([-0.60232825,  0.66840882])}
+    c: 0.2999239138302293 lensebv: -0.5021916426516561 hostebv: 0.9013926581359335
+
+    <Figure size 1000x1000 with 2 Axes>
+
+
+
+.. GENERATED FROM PYTHON SOURCE LINES 152-154
 
 Now the measured value for **c** is much closer to reality, and the measured times of peak are somewhat
 more accurate. 
@@ -375,7 +399,7 @@ more accurate.
 
 .. rst-class:: sphx-glr-timing
 
-   **Total running time of the script:** ( 1 minutes  4.994 seconds)
+   **Total running time of the script:** ( 2 minutes  29.665 seconds)
 
 
 .. _sphx_glr_download_examples_plot_c_fitting.py:

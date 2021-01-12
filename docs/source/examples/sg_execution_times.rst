@@ -5,10 +5,10 @@
 
 Computation times
 =================
-**01:04.994** total execution time for **examples** files:
+**02:29.665** total execution time for **examples** files:
 
 +--------------------------------------------------------------------+-----------+--------+
-| :ref:`sphx_glr_examples_plot_c_fitting.py` (``plot_c_fitting.py``) | 01:04.994 | 0.0 MB |
+| :ref:`sphx_glr_examples_plot_c_fitting.py` (``plot_c_fitting.py``) | 02:29.665 | 0.0 MB |
 +--------------------------------------------------------------------+-----------+--------+
 | :ref:`sphx_glr_examples_plot_a_micro.py` (``plot_a_micro.py``)     | 00:00.000 | 0.0 MB |
 +--------------------------------------------------------------------+-----------+--------+
