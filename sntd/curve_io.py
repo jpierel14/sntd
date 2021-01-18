@@ -348,7 +348,6 @@ class MISN(dict):
         -------
         self: :class:`sntd.curve_io.MISN`
         """
-
         ignore_images=list(ignore_images) if not isinstance(ignore_images,(list,tuple)) else ignore_images
         names=['time','image','zpsys']
         dtype=[self.table.dtype[x] for x in names]
@@ -384,7 +383,6 @@ class MISN(dict):
                 to_add={}
                 temp2=deepcopy(self.images[im].table[self.images[im].table['band']==band2])
                 temp1=deepcopy(self.images[im].table[self.images[im].table['band']==band1])
-              
               
                 temp1=temp1[temp1['flux']>0]
                 temp2=temp2[temp2['flux']>0]
@@ -843,8 +841,9 @@ class MISN(dict):
                                                             array=temp[bands[0]+'-'+bands[1]+'_err']),mode='markers',
                                                marker=dict(color=colors3d[i]),name='Image %s'%lc[-1],**kwargs))
                 else:
-                    ax.errorbar(temp['time'],temp[bands[0]+'-'+bands[1]],yerr=temp[bands[0]+'-'+bands[1]+'_err'],
-                            markersize=4, fmt=colors[i]+'.')
+                    leg.append(ax.errorbar(temp['time'],
+                        temp[bands[0]+'-'+bands[1]],yerr=temp[bands[0]+'-'+bands[1]+'_err'],
+                            markersize=4, fmt=colors[i]+'.'))
 
                     ax.text(0.95, 0.95, bands[0].upper()+'-'+bands[1].upper(), fontsize='large',
                         transform=ax.transAxes, ha='right', va='top')
@@ -861,6 +860,7 @@ class MISN(dict):
                                                    showlegend=False,**kwargs))
                     else:
                         ax.plot(mod_time,modCol,color='y')
+            ax.invert_yaxis()
         else:
             if isinstance(bands,str):
                 if bands == 'all':
@@ -1101,8 +1101,12 @@ class MISN(dict):
 
 
             if not showMicro:
-                fig.text(0.02, .5, 'Flux', va='center',
-                    rotation='vertical',fontsize='large')
+                if method.lower() != 'color':
+                    fig.text(0.02, .5, 'Flux', va='center',
+                        rotation='vertical',fontsize='large')
+                else:
+                    fig.text(0.02, .5, bands[0].upper()+'-'+bands[1].upper()+' Color', va='center',
+                        rotation='vertical',fontsize='large')
             fig.text(0.5, 0.02, r'Observer-frame time (days)', ha='center',
                      fontsize='large')
 

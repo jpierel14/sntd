@@ -200,7 +200,6 @@ def fit_data(curves=None, snType='Ia',bands=None, models=None, params=None, boun
     args = copy(locs)
     for k in kwargs.keys():
         args[k]=kwargs[k]
-
     if isinstance(curves,(list,tuple,np.ndarray)):
 
         if isinstance(curves[0],str):#then its a filename list
@@ -753,6 +752,7 @@ def fit_data(curves=None, snType='Ia',bands=None, models=None, params=None, boun
 
                 return run_sbatch(folder_name,script_name_init,script_name,total_jobs,max_batch_jobs,n_per_node,wait_for_batch,parallelize,len(args['curves']),verbose)
         else:
+
             if args['color_bands'] is not None:
                 args['bands']=args['color_bands']
 
@@ -897,6 +897,7 @@ def _fitColor(all_args):
         effects=[effect_names]
     if not isinstance(effect_frames,(list,tuple)):
         effects=[effect_frames]
+
 
     if 'ignore_models' in args['set_from_simMeta'].keys():
         to_ignore=args['curves'].images[ref].simMeta[args['set_from_simMeta']['ignore_models']]
@@ -1050,8 +1051,17 @@ def _fitColor(all_args):
                 args['curves'].color.meta['td']=temp_delays
                 
             else:
-                args['curves'].color_table([x[0] for x in colors_to_fit],[x[1] for x in colors_to_fit],referenceImage=args['refImage'],static=True,model=tempMod,
-                                                                    minsnr=args.get('minsnr',0))
+                if args['t0_guess'] is not None:
+                    args['curves'].color_table([x[0] for x in colors_to_fit],[x[1] for x in colors_to_fit],
+                        referenceImage=args['refImage'],static=True,model=tempMod,
+                        minsnr=args.get('minsnr',0),
+                        time_delays = {im:args['t0_guess'][im]-args['t0_guess'][args['refImage']] for\
+                             im in args['t0_guess'].keys()})
+                    args['curves'].color.meta['reft0'] = args['t0_guess'][args['refImage']]
+                else:
+                    args['curves'].color_table([x[0] for x in colors_to_fit],[x[1] for x in colors_to_fit],
+                        referenceImage=args['refImage'],static=True,model=tempMod,
+                        minsnr=args.get('minsnr',0))
                 for b in args['bounds']:
                     if b.startswith('dt_'):
                         args['bounds'][b]=np.array(args['bounds']['td'])+args['curves'].color.meta['td'][im_name+b[-1]]
@@ -1085,9 +1095,12 @@ def _fitColor(all_args):
                 args['bounds'][b]=np.array([max([args['bounds'][b][0],0]),max([args['bounds'][b][1],0])])
             else:
                 args['bounds'][b]=np.array([0,np.inf])
+
         if not args['curves'].quality_check(min_n_bands=args['min_n_bands'],
                         min_n_points_per_band=args['min_points_per_band'],clip=args['clip_data'],method='color'):
+            print("Error: Did not pass quality check.")
             return
+
         params,res,model=nest_color_lc(args['curves'].color.table,tempMod,nimage,colors=colors_to_fit,
                                             bounds=args['bounds'],use_MLE=args['use_MLE'],
                                              vparam_names=[x for x in all_vparam_names if x in tempMod.param_names or x in snParams],ref=par_ref,
@@ -1290,7 +1303,7 @@ def nest_color_lc(data,model,nimage,colors, vparam_names,bounds,ref='image_1',us
     zp_dict={b:data['zp_%s'%b][nonan_dict[b][0]] for b in unique_bands}
     zpsys=data['zpsys'][0]
 
-    
+
     def chisq_likelihood(parameters):
         model.set(**{model_param_names[k]:parameters[model_idx[k]] for k in range(len(model_idx))})
         all_data=deepcopy(data)
@@ -1322,7 +1335,7 @@ def nest_color_lc(data,model,nimage,colors, vparam_names,bounds,ref='image_1',us
             mod_flux2=mod_dict[color[1]]
             color_inds1=[i for i in range(len(nonan_dict[color[0]])) if nonan_dict[color[0]][i] in col_inds]
             color_inds2=[i for i in range(len(nonan_dict[color[1]])) if nonan_dict[color[1]][i] in col_inds]
-            model_observations=mod_flux1[color_inds1]/mod_flux2[color_inds2]
+            model_observations=-2.5*np.log10(mod_flux1[color_inds1]/mod_flux2[color_inds2])
             
 
             
@@ -1336,7 +1349,8 @@ def nest_color_lc(data,model,nimage,colors, vparam_names,bounds,ref='image_1',us
             model_observations=model_observations[good_obs]
             obs=obs[good_obs]
             err=err[good_obs]
-            
+            if len(obs)==0:
+                return -np.inf
             if modelcov:
                 cov=np.diag(err)
                 
@@ -1354,6 +1368,9 @@ def nest_color_lc(data,model,nimage,colors, vparam_names,bounds,ref='image_1',us
             else:
                 chi = (obs-model_observations)/err
                 chisq+=np.dot(chi,chi)
+                if chisq==0:
+                    print(chisq,chi,obs,model_observations)
+                    sys.exit()
 
         return chisq
 
@@ -1361,7 +1378,6 @@ def nest_color_lc(data,model,nimage,colors, vparam_names,bounds,ref='image_1',us
         chisq=chisq_likelihood(parameters)
         if not np.isfinite(chisq):
             return -np.inf
-
         return(-.5*chisq)
 
 
