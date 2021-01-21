@@ -9,7 +9,7 @@ import warnings
 warnings.simplefilter('ignore')
 
 _NOSBATCH_ = True
-_GOFAST_ = False
+_GOFAST_ = True
 _PARONLY_ = False
 
 np.random.seed(3)
@@ -154,7 +154,7 @@ def test_loader(loader):
 if __name__ == '__main__':
     #TEST LIST
     #test_cases = 'ALL'
-    test_cases = [TestFitting]
+    test_cases = [TestMicrolensing]
 
     if test_cases == 'ALL':
         unittest.main()
