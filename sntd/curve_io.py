@@ -397,7 +397,8 @@ class MISN(dict):
                 temp2['magerr']=1.0857*temp2['fluxerr']/temp2['flux']
                 temp1['mag']=-2.5*np.log10(temp1['flux'])+temp1['zp']
                 temp1['magerr']=1.0857*temp1['fluxerr']/temp1['flux']
-
+                temp1=temp1[~np.isnan(temp1['mag'])]
+                temp2=temp2[~np.isnan(temp2['mag'])]
                 temp1_remove=[i for i in range(len(temp1)) if temp1['time'][i] not in temp2['time']]
                 temp1.remove_rows(temp1_remove)
                 temp2_remove=[i for i in range(len(temp2)) if temp2['time'][i] not in temp1['time']]
@@ -701,6 +702,7 @@ class MISN(dict):
                                     sharex=True, sharey=False,figsize=(10,10))
             if nbands==1:
                 axlist = [axlist]
+            
             for lc in np.sort([x for x in self.images.keys()]):
                 temp=self.series.table[self.series.table['image']==lc]
                 if nrows==1:
@@ -725,7 +727,8 @@ class MISN(dict):
                         ccol+=1
                     else:
                         crow+=1
-
+                    mintime=np.min(self.series.table['time'][self.series.table['band']==b])
+                    maxtime=np.max(self.series.table['time'][self.series.table['band']==b])
                     if b==list(bands)[0]:
 
                         if plot3D:
@@ -783,8 +786,8 @@ class MISN(dict):
                                            mode='lines',line=dict(color='yellow',width=8),
                                            showlegend=False,**kwargs),row=crow,col=ccol)
                         else:
-                            ax.plot(np.arange(np.min(temp['time'][temp['band']==b]),np.max(temp['time'][temp['band']==b]),1),
-                                self.series.fits.model.bandflux(b,np.arange(np.min(temp['time'][temp['band']==b]),np.max(temp['time'][temp['band']==b]),1),
+                            ax.plot(np.arange(mintime,maxtime,.1),
+                                self.series.fits.model.bandflux(b,np.arange(mintime,maxtime,.1),
                                                                   zp=temp['zp'][temp['band']==b][0],
                                                                   zpsys=temp['zpsys'][temp['band']==b][0]),color='y')
                     if not plot3D:
