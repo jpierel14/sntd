@@ -16,14 +16,15 @@ __all__ = []
 
 MLDATA_ALIASES = OrderedDict([
     ('time', {'phase', 'day', 'time', 't', 'date',
-               'jd', 'mjd', 'mjdobs', 'mjd_obs'}),
+              'jd', 'mjd', 'mjdobs', 'mjd_obs'}),
     ('magnification', {'magnification', 'mu', 'mag', 'deltamag',
                        'dm', 'deltam'}),
     ('wavelength', {'wavelength', 'lambda', 'wave', 'w', 'lam'}),
-    ])
+])
 
 ACHROMATIC_MLDATA_REQUIRED_ALIASES = ('phase', 'magnification')
 CHROMATIC_MLDATA_REQUIRED_ALIASES = ('phase', 'magnification', 'wavelength')
+
 
 class MicrolensingData(object):
     """Internal standardized representation of microlensing magnification
@@ -76,9 +77,9 @@ class MicrolensingData(object):
 
         self.magnification = np.asarray(data[mapping['magnification']])
         magform = magformat[:2].lower()
-        if magform not in ['ad','mu']:
+        if magform not in ['ad', 'mu']:
             raise RuntimeError("``magformat`` must be ``multiply`` or ``add``")
-        if magform=='ad':
+        if magform == 'ad':
             self.magnification = 10**(-0.4*self.magnification)
         self.time = np.asarray(data[mapping['time']])
 
@@ -112,13 +113,12 @@ class MicrolensingData(object):
             newdata.wavelength = self.wavelength[key]
         return newdata
 
-
     def magnification_interpolator(self):
         """Return an interpolation function that provides the microlensing
         magnification at any phase (and wavelength, if microlensing is
         chromatic).
         """
-        
+
         if self.chromatic:
             return interp2d(self.time, self.wavelength, self.magnification,
                             bounds_error=False, fill_value=1.0, kind='cubic')
@@ -146,7 +146,7 @@ def read_mldatafile(datafilename, magformat='multiply', **kwargs):
         provides an additive magnitude, DeltaM=-2.5*log10(mu).
 
     """
-    #TODO: parse header info for ``magformat`` and ``chromatic``
+    # TODO: parse header info for ``magformat`` and ``chromatic``
 
     datafilepath = path.abspath(path.expanduser(datafilename))
     ext = path.splitext(path.basename(datafilepath))[1].lower()

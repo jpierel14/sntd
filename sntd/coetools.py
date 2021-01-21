@@ -1,45 +1,44 @@
-## Automatically adapted for numpy Jun 08, 2006 by 
+# Automatically adapted for numpy Jun 08, 2006 by
 
-## Automatically adapted for numpy Jun 08, 2006 by 
+# Automatically adapted for numpy Jun 08, 2006 by
 
 # PYTHON TOOLS
 # Dan Coe
 
+from os.path import exists, join
+from numpy.linalg import eig, svd
+import math
+import numpy.random as RandomArray
+from pylab import ylim as ylim1
+from pylab import xlim as xlim1
+from pylab import close as closecurrentfig
+from pylab import *
+import matplotlib
+import string
+from numpy.random import *  # random
+from scipy.special import erf
+from scipy.integrate import quad
+from bisect import bisect
+import string  # LOAD THIS AFTER numpy, BECAUSE numpy HAS ITS OWN string
+from time import *
+from types import *  # TO TELL WHAT TYPE A VARIABLE IS
 import os
 import sys
 
 from numpy import *
 sys.float_output_precision = 5  # PRINTING ARRAYS: # OF DECIMALS
-from types import *  # TO TELL WHAT TYPE A VARIABLE IS
 
-from time import *
-import string  # LOAD THIS AFTER numpy, BECAUSE numpy HAS ITS OWN string
 
-from numpy import *
-from bisect import bisect
-from scipy.integrate import quad
-from scipy.special import erf
-from numpy.random import *  # random
 #from biggles import *
-import string
 
 # FOR MORE PLOTTING IDEAS, SEE ksbtools.py (USED biggles)
 
-import matplotlib
-#matplotlib.use('TkAgg')
-from pylab import *
+# matplotlib.use('TkAgg')
 # I HAVE A FUNCTION close IN MLab_coe WHICH CONFLICTS WITH THE FIGURE CLOSER:
 
-from pylab import close as closecurrentfig
-from pylab import xlim as xlim1
-from pylab import ylim as ylim1
-import numpy.random as RandomArray
-import math
 #from MLab_coe import singlevalue
-import os
-from numpy.linalg import eig, svd
-## Automatically adapted for numpy Jun 08, 2006
-## By hand: 'float' -> float, Float -> float, Int -> int
+# Automatically adapted for numpy Jun 08, 2006
+# By hand: 'float' -> float, Float -> float, Int -> int
 
 # coeio.py
 # INPUT / OUTPUT OF FILES
@@ -48,14 +47,12 @@ from numpy.linalg import eig, svd
 
 #import fitsio
 try:
-    import pyfits#, numarray
+    import pyfits  # , numarray
     pyfitsloaded = True
 except:
     pyfitsloaded = False
-    #pass # print "pyfits not installed, so not importing it"
+    # pass # print "pyfits not installed, so not importing it"
 
-
-from os.path import exists, join
 
 """
 Dan Coe (2009)
@@ -94,103 +91,117 @@ LUTSIZE = mpl.rcParams['image.lut']
 
 lo, hi = 0.1, 0.7
 x = 1  # DOESN'T MATTER??
-_gray1070_data =  {
+_gray1070_data = {
     'red':   ((0., x, lo), (1, hi, x)),
     'green': ((0., x, lo), (1, hi, x)),
     'blue':  ((0., x, lo), (1, hi, x))}
 
-cm.gray1070 = matplotlib.colors.LinearSegmentedColormap('gray1070', _gray1070_data, LUTSIZE)
+cm.gray1070 = matplotlib.colors.LinearSegmentedColormap(
+    'gray1070', _gray1070_data, LUTSIZE)
 
 cm.datad['gray1070'] = _gray1070_data
+
 
 def gray1070():
     rc('image', cmap='gray1070')
     im = gci()
-    
+
     if im is not None:
         im.set_cmap(cm.gray1070)
     draw_if_interactive()
 
 #################################
 
+
 lo, hi = 0.2, 0.7
 x = 1  # DOESN'T MATTER??
-_gray2070_data =  {
+_gray2070_data = {
     'red':   ((0., x, lo), (1, hi, x)),
     'green': ((0., x, lo), (1, hi, x)),
     'blue':  ((0., x, lo), (1, hi, x))}
 
-cm.gray2070 = matplotlib.colors.LinearSegmentedColormap('gray2070', _gray2070_data, LUTSIZE)
+cm.gray2070 = matplotlib.colors.LinearSegmentedColormap(
+    'gray2070', _gray2070_data, LUTSIZE)
 
 cm.datad['gray2070'] = _gray2070_data
+
 
 def gray2070():
     rc('image', cmap='gray2070')
     im = gci()
-    
+
     if im is not None:
         im.set_cmap(cm.gray2070)
     draw_if_interactive()
 
 #################################
 
+
 lo, hi = 0.0, 1.0
 x = 1  # DOESN'T MATTER??
-_gray0010_data =  {
+_gray0010_data = {
     'red':   ((0., x, lo), (1, hi, x)),
     'green': ((0., x, lo), (1, hi, x)),
     'blue':  ((0., x, lo), (1, hi, x))}
 
-cm.gray0010 = matplotlib.colors.LinearSegmentedColormap('gray0010', _gray0010_data, LUTSIZE)
+cm.gray0010 = matplotlib.colors.LinearSegmentedColormap(
+    'gray0010', _gray0010_data, LUTSIZE)
 
 cm.datad['gray0010'] = _gray0010_data
+
 
 def gray0010():
     rc('image', cmap='gray0010')
     im = gci()
-    
+
     if im is not None:
         im.set_cmap(cm.gray0010)
     draw_if_interactive()
 
 #################################
 
+
 lo, hi = 1.0, 0.0
 x = 1  # DOESN'T MATTER??
-_grayinv_data =  {
+_grayinv_data = {
     'red':   ((0., x, lo), (1, hi, x)),
     'green': ((0., x, lo), (1, hi, x)),
     'blue':  ((0., x, lo), (1, hi, x))}
 
-cm.grayinv = matplotlib.colors.LinearSegmentedColormap('grayinv', _grayinv_data, LUTSIZE)
+cm.grayinv = matplotlib.colors.LinearSegmentedColormap(
+    'grayinv', _grayinv_data, LUTSIZE)
 
 cm.datad['grayinv'] = _grayinv_data
+
 
 def grayinv():
     rc('image', cmap='grayinv')
     im = gci()
-    
+
     if im is not None:
         im.set_cmap(cm.grayinv)
     draw_if_interactive()
 
 #################################
 
+
 lo, hi = 1.0, 0.2
 x = 1  # DOESN'T MATTER??
-_grayinv20_data =  {
+_grayinv20_data = {
     'red':   ((0., x, lo), (1, hi, x)),
     'green': ((0., x, lo), (1, hi, x)),
     'blue':  ((0., x, lo), (1, hi, x))}
 
-cm.grayinv20 = matplotlib.colors.LinearSegmentedColormap('grayinv20', _grayinv20_data, LUTSIZE)
+cm.grayinv20 = matplotlib.colors.LinearSegmentedColormap(
+    'grayinv20', _grayinv20_data, LUTSIZE)
 
 cm.datad['grayinv20'] = _grayinv20_data
+
 
 def grayinv20():
     rc('image', cmap='grayinv20')
     im = gci()
-    
+
     if im is not None:
         im.set_cmap(cm.grayinv20)
     draw_if_interactive()
@@ -205,6 +216,7 @@ def grayinv20():
 # C = 100
 # D = 500
 # M = 1000
+
 
 def roman(x):
     s = ''
@@ -253,8 +265,10 @@ def roman(x):
 
 # THE numpy1.0b compress SUCKS!
 # I REIMPORT IT AS compress1b AND I USE IT HERE
+
+
 def compress(c, m):
-    #print 'compress2: NEW VERSION OF compress BECAUSE THE Numpy 1.0b VERSION IS SHWAG'
+    # print 'compress2: NEW VERSION OF compress BECAUSE THE Numpy 1.0b VERSION IS SHWAG'
     m = array(m)
     if len(m.shape) == 1:
         mc = compress(c, m)
@@ -270,24 +284,25 @@ def compress(c, m):
         print('MORE THAN 2 AXES NOT SUPPORTED BY compress2')
     return mc
 
+
 # Ellipse colors
 # outer (lighter), inner (darker)
-blues = [(0,1,1), (0,0,1)]
+blues = [(0, 1, 1), (0, 0, 1)]
 #reds = [(1,0,1), (1,0,0)]
-reds = [(1,0.5,0.5), (1,0,0)]
-purples = [(1,0,1), (0.5,0,0.5)]
-yellows = [(1,1,0), (0.5,0.5,0)]
-oranges = [(1,0.7,0.5), (1,0.5,0)]
-darkoranges = [(1,0.5,0), (0.5,0.25,0)]
+reds = [(1, 0.5, 0.5), (1, 0, 0)]
+purples = [(1, 0, 1), (0.5, 0, 0.5)]
+yellows = [(1, 1, 0), (0.5, 0.5, 0)]
+oranges = [(1, 0.7, 0.5), (1, 0.5, 0)]
+darkoranges = [(1, 0.5, 0), (0.5, 0.25, 0)]
 #greens = [(0,1,0), (0,0.8,0)]
 #greens = [(0.5,1,0.5), (0,1,0)]
-greens = [(0.25,1,0.25), (0,0.8,0)]
-greys = [(0.5,0.5,0.5), (0,0,0)]
-lightblues = [(0.7,1,1), (0.7,0.7,1)]
-lightreds = [(1,0.7,1), (1,0.7,0.7)]
-lightgreens = [(0.7,1,0.7), (0.5,0.8,0.5)]
-lightyellows = [(1,1,0.7), (0.8,0.8,0.5)]
-lightgreys = [(0.8,0.8,0.8), (0.5,0.5,0.5)]
+greens = [(0.25, 1, 0.25), (0, 0.8, 0)]
+greys = [(0.5, 0.5, 0.5), (0, 0, 0)]
+lightblues = [(0.7, 1, 1), (0.7, 0.7, 1)]
+lightreds = [(1, 0.7, 1), (1, 0.7, 0.7)]
+lightgreens = [(0.7, 1, 0.7), (0.5, 0.8, 0.5)]
+lightyellows = [(1, 1, 0.7), (0.8, 0.8, 0.5)]
+lightgreys = [(0.8, 0.8, 0.8), (0.5, 0.5, 0.5)]
 
 # Axis labels
 axlabs = {}
@@ -297,21 +312,25 @@ axlabs['OQ'] = '$\Omega_\Lambda$'
 axlabs['OL'] = '$\Omega_\Lambda$'
 axlabs['Ode'] = '$\Omega_{de}$'
 axlabs['Ok'] = '$\Omega_k$'
-axlabs['w']  = 'w'
-axlabs['h']  = '$h$'
-axlabs['w0']  = r'${\rm w}_0$'
-axlabs['wa']  = r'${\rm w}_a$'
+axlabs['w'] = 'w'
+axlabs['h'] = '$h$'
+axlabs['w0'] = r'${\rm w}_0$'
+axlabs['wa'] = r'${\rm w}_a$'
 
-# List of variables for which axis labels should be 
+# List of variables for which axis labels should be
 # horizontal rather than vertical
 axhor = 'h w w0 wa OQ OL Ode Om Ok'.split()
 
 ndec = 2
+
+
 def mapfmt(x):
     fmt = '%%.%df' % ndec
     return fmt % x
 
 # ~/cosmo/DETFast1/plots/flat/plotell.py
+
+
 def rightaxis(sh=1, ndeca=2, adj=0):
     """Plot right axis: Om = 1 - Ode"""
     # Right axis
@@ -331,23 +350,29 @@ def rightaxis(sh=1, ndeca=2, adj=0):
     p = ax2.set_yticklabels(ytxs)
     ax2.set_ylabel('$\Omega_m$', rotation='horizontal')
     ax2.yaxis.set_label_position('right')
-    if adj: subplots_adjust(left=0.1, right=0.9)  # default: 0.125, 0.9
-    if sh: show()
+    if adj:
+        subplots_adjust(left=0.1, right=0.9)  # default: 0.125, 0.9
+    if sh:
+        show()
+
 
 def xvarlabel(xvar):
     """Mark x-axis label, given abbreviation xvar (e.g., 'w0')"""
     xlabel(axlabs[xvar])
+
 
 def yvarlabel(yvar):
     """Mark x-axis label, given abbreviation xvar (e.g., 'wa')"""
     rot = ['vertical', 'horizontal'][yvar in axhor]
     ylabel(axlabs[yvar], rotation=rot)
 
+
 def xylabels(xvar, yvar):
     """Mark x-axis and y-axis labels, given abbreviations (e.g., 'w0', 'wa')"""
     xlabel(axlabs[xvar])
     rot = ['vertical', 'horizontal'][yvar in axhor]
     ylabel(axlabs[yvar], rotation=rot)
+
 
 def markinput(x0, y0, c='0.40', dc='w'):
     """Dotted gray lines and white circle (default)
@@ -356,7 +381,7 @@ def markinput(x0, y0, c='0.40', dc='w'):
     xr = xlim()
     yr = ylim()
     axlines(x0, y0, c=c, ls=':', zorder=20)
-    if dc != None: 
+    if dc != None:
         dcf = dce = dc
         if type(dc) == str:
             if len(dc) > 1:
@@ -365,12 +390,16 @@ def markinput(x0, y0, c='0.40', dc='w'):
     xlim(xr)
     ylim(yr)
 
+
 def finishup(x0, y0, xvar, yvar, c='0.40', dc='w', addax=0, sh=1, ndec=2):
     """Mark best fit cosmo, add axis labels, etc."""
     markinput(x0, y0, c=c, dc=dc)
     xylabels(xvar, yvar)
-    if addax: rightaxis(sh, ndec)
-    elif sh: show()
+    if addax:
+        rightaxis(sh, ndec)
+    elif sh:
+        show()
+
 
 def setnd(nd=2):
     """Set sigma for confidence contours
@@ -386,8 +415,12 @@ def setnd(nd=2):
     nsig2, nsig1, nsig0 = nsig
     return nsig
 
+
 setnd()  # DEFAULT 2-D
-def chisqplot(chisq, xs, ys, cl=0, addax=0, colors=[(0,1,1), (0,0,1)], zorder=None, alpha=1, nlev=2, nD=2, sh=1, fill=1, lw=2):  # ls='-'
+
+
+# ls='-'
+def chisqplot(chisq, xs, ys, cl=0, addax=0, colors=[(0, 1, 1), (0, 0, 1)], zorder=None, alpha=1, nlev=2, nD=2, sh=1, fill=1, lw=2):
     """Plot confidence contours given chisq(xs,ys) (matrix[y,x])
     Sigma:
     (0, 1, 2) -- default
@@ -396,41 +429,52 @@ def chisqplot(chisq, xs, ys, cl=0, addax=0, colors=[(0,1,1), (0,0,1)], zorder=No
     To plot 3-sigma contours or more, 
     colors would need to be given additional color(s), and other tweaks?"""
     global CS, CS2
-    colors = colors[::-1] # dark (inner), light (outer)
+    colors = colors[::-1]  # dark (inner), light (outer)
     chisq = chisq - min(chisq.flat)
-    
-    #nsig = 
-    #dchisq = array([0, 2.3, 6.17])  # for ellipse, yields 95.4% & 68% CL (covariance.py)
-    #if nD == 1: dchisq = array([0, 1, 2])  # 1-D
-    #if nD == 1: dchisq = array([0, 1, 4])  # 1-D
+
+    # nsig =
+    # dchisq = array([0, 2.3, 6.17])  # for ellipse, yields 95.4% & 68% CL (covariance.py)
+    # if nD == 1: dchisq = array([0, 1, 2])  # 1-D
+    # if nD == 1: dchisq = array([0, 1, 4])  # 1-D
     setnd(nD)
     dchisq = nsig**2
-    if nlev == 1: dchisq = dchisq.take([0, 2])
-    if nlev == -1: dchisq = dchisq.take([0, 1])
-    
-    if cl: clf()
+    if nlev == 1:
+        dchisq = dchisq.take([0, 2])
+    if nlev == -1:
+        dchisq = dchisq.take([0, 1])
+
+    if cl:
+        clf()
     if fill:
-        CS = contourf(xs, ys, chisq, dchisq, colors=colors[:nlev], zorder=zorder)
+        CS = contourf(xs, ys, chisq, dchisq,
+                      colors=colors[:nlev], zorder=zorder)
     else:
-        CS = contour(xs, ys, chisq, dchisq, colors=colors[:nlev][::-1], zorder=zorder, linewidths=[lw])
-    if (alpha < 1) or (zorder != None): 
+        CS = contour(xs, ys, chisq, dchisq,
+                     colors=colors[:nlev][::-1], zorder=zorder, linewidths=[lw])
+    if (alpha < 1) or (zorder != None):
         contour_set(CS, alpha=alpha, zorder=zorder, sh=sh)
     color = colors[0]
-    if type(color) in (tuple, list): color = [color]
-    dchisq = dchisq.take((0,-1))
+    if type(color) in (tuple, list):
+        color = [color]
+    dchisq = dchisq.take((0, -1))
     if fill:
-        CS2 = contour(xs, ys, chisq, dchisq, colors=color, hold='on', linewidths=[lw], zorder=zorder, alpha=alpha)
-    if (alpha < 1) or (zorder != None): 
-        if zorder != None: zorder += 0.01  # Lines on top of solid regions
+        CS2 = contour(xs, ys, chisq, dchisq, colors=color,
+                      hold='on', linewidths=[lw], zorder=zorder, alpha=alpha)
+    if (alpha < 1) or (zorder != None):
+        if zorder != None:
+            zorder += 0.01  # Lines on top of solid regions
         # Default: lines = 2, solids = 1
         contour_set(CS2, alpha=alpha, zorder=zorder, color=color[0], sh=sh)
-    
-    if addax: rightaxis()
+
+    if addax:
+        rightaxis()
+
 
 def Pplot(P, xs, ys, **other):
     """Plot confidence contours given probability P(xs,ys) (matrix[y,x])"""
     chisq = -2 * log(P)
     chisqplot(chisq, xs, ys, **other)
+
 
 def setell(dx, dy, p, nD=2):
     """Return ellipse parameters A, B, ang[degrees] given dx, dy, p
@@ -440,7 +484,7 @@ def setell(dx, dy, p, nD=2):
     # Ellipse formulae
     # http://www.scribd.com/doc/2341150/Lecture-5-Bivariate-ND-Error-Ellipses
     dxy = p * dx * dy
-    
+
     de1 = (dx**2 + dy**2) / 2
     de2 = (dx**2 - dy**2)**2 / 4
     de3 = sqrt(de2 + dxy**2)
@@ -449,24 +493,26 @@ def setell(dx, dy, p, nD=2):
     if nD == 1:
         A = A * sqrt(2)
         B = B * sqrt(2)
-    
-    sin2ang = 2 * dxy # / something
-    cos2ang = dx**2 - dy**2 # / something
+
+    sin2ang = 2 * dxy  # / something
+    cos2ang = dx**2 - dy**2  # / something
     ang = atanxy(cos2ang, sin2ang) / 2
     return A, B, ang
+
 
 def plotells(xo, yo, A, B, ang, colors=blues, alpha=1, zorder=1, lw=1, fill=1, nD=2):
     """Plot 1-sigma & 2-sigma ellipses given A, B, ang[radians]"""
     setnd(nD)
-    patch = ellpatch1(xo, yo, 2*nsig2*A, 2*nsig2*B, ang, 
+    patch = ellpatch1(xo, yo, 2*nsig2*A, 2*nsig2*B, ang,
                       fc=colors[0], ec=colors[1], alpha=alpha, zorder=zorder, fill=fill)
     patch.set_lw(lw + fill)
     gca().add_patch(patch)
-    
-    patch = ellpatch1(xo, yo, 2*nsig1*A, 2*nsig1*B, ang, 
+
+    patch = ellpatch1(xo, yo, 2*nsig1*A, 2*nsig1*B, ang,
                       fc=colors[1], ec=colors[1], alpha=alpha, zorder=zorder, fill=fill)
     patch.set_lw(lw + 1 - fill)
     gca().add_patch(patch)
+
 
 def plotellsp(xo, yo, dx, dy, p, colors=blues, alpha=1, zorder=1, lw=1, fill=1, nD=2):
     """Plot 1-sigma & 2-sigma ellipses given dx, dy, p
@@ -477,19 +523,21 @@ def plotellsp(xo, yo, dx, dy, p, colors=blues, alpha=1, zorder=1, lw=1, fill=1, 
     plotells(xo, yo, A, B, ang,
              colors=colors, alpha=alpha, zorder=zorder, lw=lw, fill=fill, nD=nD)
 
+
 def plotell2p(xo, yo, dx, dy, p, color='b', fillcolor=None, alpha=1, zorder=1, lw=1, fill=False, nD=2):
     """Plot 2-sigma ellipse given dx, dy, p
     dx, dy = 1-sigma uncertainties in x, y
     p = correlation coefficient (0 = independent, 1 = completely correlated)
     """
     setnd(nD)
-    if fill and fillcolor==None:
+    if fill and fillcolor == None:
         fillcolor = color
     A, B, ang = setell(dx, dy, p)
-    patch = ellpatch1(xo, yo, 2*nsig2*A, 2*nsig2*B, ang, 
+    patch = ellpatch1(xo, yo, 2*nsig2*A, 2*nsig2*B, ang,
                       fillcolor, color, alpha, zorder, fill)
     patch.set_lw(lw)
     gca().add_patch(patch)
+
 
 def plotell1p(xo, yo, dx, dy, p, color='b', fillcolor=None, alpha=1, zorder=1, lw=1, fill=False, nD=2):
     """Plot 1-sigma ellipse given dx, dy, p
@@ -497,10 +545,10 @@ def plotell1p(xo, yo, dx, dy, p, color='b', fillcolor=None, alpha=1, zorder=1, l
     p = correlation coefficient (0 = independent, 1 = completely correlated)
     """
     setnd(nD)
-    if fill and fillcolor==None:
+    if fill and fillcolor == None:
         fillcolor = color
     A, B, ang = setell(dx, dy, p)
-    patch = ellpatch1(xo, yo, 2*nsig1*A, 2*nsig1*B, ang, 
+    patch = ellpatch1(xo, yo, 2*nsig1*A, 2*nsig1*B, ang,
                       fillcolor, color, alpha, zorder, fill)
     patch.set_lw(lw)
     gca().add_patch(patch)
@@ -520,22 +568,23 @@ def initlegxy(xl0=0.75, yl0=0.95, sxl0=0.06, syl0=0.05):
     syl = syl0 * p2p(yr)
     dxl = sxl * 0.8
     dyl = syl * 1.2
-    
-#xl, yl = 0.75, 0.535  # TOP-RIGHT (GOING DOWN)
-#xl0, yl0 = 0.75, 0.95  # TOP-RIGHT
+
+# xl, yl = 0.75, 0.535  # TOP-RIGHT (GOING DOWN)
+# xl0, yl0 = 0.75, 0.95  # TOP-RIGHT
+
 
 def addell(x, y, colors=blues, alpha=1, sx=0.05, sy=0.05, zorder=1, sh=0):
     """Add legend ellipse"""
     ax = gca()
-    
+
     patch = Ellipse((x, y), sx, sy)
     ax.add_patch(patch)
     patch.set_fc(colors[0])
     patch.set_ec(colors[1])
     patch.set_alpha(alpha)
     patch.set_zorder(zorder)
-    #patch.set_lw(2)
-    
+    # patch.set_lw(2)
+
     #nsig = sqrt(array([6.17, 2.3, 0]))
     #fac = nsig1 / nsig2
     fac = sqrt(2.3 / 6.17)
@@ -545,21 +594,26 @@ def addell(x, y, colors=blues, alpha=1, sx=0.05, sy=0.05, zorder=1, sh=0):
     patch.set_ec(colors[1])
     patch.set_alpha(alpha)
     patch.set_zorder(zorder)
-    
-    if sh: show()
+
+    if sh:
+        show()
+
 
 xl = None
+
 
 def addlab(lab, colors=blues, alpha=1, sx=0.05, sy=0.05, zorder=10, sh=0):
     """Add legend label"""
     global yl
-    if xl == None: initlegxy()
+    if xl == None:
+        initlegxy()
     addell(xl, yl, colors, alpha, sxl, syl, zorder=zorder, sh=0)
     p = text(xl+dxl, yl, lab, va='center', zorder=1000)
     p.set_zorder(10000)
-    #yl += dyl  # GOING UP
+    # yl += dyl  # GOING UP
     yl -= dyl  # GOING DOWN
-    if sh: show()
+    if sh:
+        show()
 
 
 def strspl(s):
@@ -567,6 +621,7 @@ def strspl(s):
         if s.find(' ') > -1:
             s = s.split()
     return s
+
 
 def pint(A, n=0):
     """Makes it easier to view float arrays:
@@ -577,15 +632,15 @@ def pint(A, n=0):
         A = A * 10**n
     print(A.astype(int))
 
+
 def pintup(A, n=0):
     """Makes it easier to view float arrays:
     prints A.astype(int)"""
     pint(flipud(A), n)
 
 
-
 #pyfitsusesnumpy = (string.atof(pyfits.__version__[:3]) >= 1.1) and (numerix == 'numpy')
-#if not pyfitsusesnumpy and pyfitsloaded:
+# if not pyfitsusesnumpy and pyfitsloaded:
 #    import numarray
 
 def recapfile(name, ext):
@@ -599,6 +654,7 @@ def recapfile(name, ext):
         outname = name[:i] + ext
     return outname
 
+
 def capfile(name, ext):
     """ADD EXTENSION TO FILENAME IF NECESSARY"""
     if ext[0] != '.':
@@ -607,6 +663,7 @@ def capfile(name, ext):
     if name[-n:] != ext:
         name += ext
     return name
+
 
 def decapfile(name, ext=''):
     """REMOVE EXTENSION FROM FILENAME IF PRESENT
@@ -622,6 +679,7 @@ def decapfile(name, ext=''):
         if i > -1:
             name = name[:i]
     return name
+
 
 uncapfile = decapfile
 
@@ -645,11 +703,11 @@ def params_cl():
                         value = value[0]  # JUST ELEMENT
                 dict[key] = value
             if list[i]:
-                key = list[i][1:] # REMOVE LEADING '-'
+                key = list[i][1:]  # REMOVE LEADING '-'
                 value = None
                 dict[key] = value  # IN CASE THERE IS NO VALUE!
-        else: # VALUE (OR HAVEN'T GOTTEN TO KEYS)
-            if key: # (HAVE GOTTEN TO KEYS)
+        else:  # VALUE (OR HAVEN'T GOTTEN TO KEYS)
+            if key:  # (HAVE GOTTEN TO KEYS)
                 if value:
                     value.append(str2num(list[i]))
                 else:
@@ -660,7 +718,7 @@ def params_cl():
 
 
 def delfile(file, silent=0):
-    if os.path.exists(file) or os.path.islink(file): # COULD BE BROKEN LINK!
+    if os.path.exists(file) or os.path.islink(file):  # COULD BE BROKEN LINK!
         if not silent:
             print('REMOVING ', file, '...')
         os.remove(file)
@@ -668,7 +726,9 @@ def delfile(file, silent=0):
         if not silent:
             print("CAN'T REMOVE", file, "DOES NOT EXIST.")
 
+
 rmfile = delfile
+
 
 def dirfile(filename, dir=""):
     """RETURN CLEAN FILENAME COMPLETE WITH PATH
@@ -680,7 +740,7 @@ def dirfile(filename, dir=""):
             dir = os.path.join(home, dir[2:])
         filename = os.path.join(dir, filename)
     return filename
-    
+
 
 def loadfile(filename, dir="", silent=0, keepnewlines=0):
     infile = dirfile(filename, dir)
@@ -693,6 +753,7 @@ def loadfile(filename, dir="", silent=0, keepnewlines=0):
         for i in range(len(sin)):
             sin[i] = sin[i][:-1]
     return sin
+
 
 def loadheader(filename, dir="", silent=0, keepnewlines=0):
     infile = dirfile(filename, dir)
@@ -713,6 +774,7 @@ def loadheader(filename, dir="", silent=0, keepnewlines=0):
             sin[i] = sin[i][:-1]
     return sin
 
+
 def fileempty(filename, dir="", silent=0, delifempty=0):
     """CHECK IF A FILE ACTUALLY HAS ANYTHING IN IT
     OR IF IT'S JUST CONTAINS BLANK / COMMENTED LINES"""
@@ -732,8 +794,10 @@ def fileempty(filename, dir="", silent=0, delifempty=0):
         fin.close()
     return (gotdata == 0)
 
+
 def delfileifempty(filename, dir="", silent=0):
     fileempty(filename, dir, silent, 1)
+
 
 def assigndict(keys, values):
     n = len(keys)
@@ -744,6 +808,7 @@ def assigndict(keys, values):
         for i in range(n):
             d[keys[i]] = values[i]
         return d
+
 
 def loaddict1(filename, dir="", silent=0):
     lines = loadfile(filename, dir, silent)
@@ -759,7 +824,7 @@ def loaddict1(filename, dir="", silent=0):
                 val = []
                 for word in words[1:]:
                     val.append(str2num(word))
-                
+
             dict[key] = val
     return dict
 
@@ -786,7 +851,7 @@ def loaddict(filename, dir="", silent=0):
                     val.append(str2num(word))
                 if valtuple:
                     val = tuple(val)
-                
+
             dict[key] = val
     return dict
 
@@ -829,7 +894,7 @@ def loadcols(infile, format='', pl=0):
                 except:
                     format += 's'
 
-    #print format
+    # print format
     roundcols = []
     for line in txt:
         if line:
@@ -842,7 +907,7 @@ def loadcols(infile, format='', pl=0):
                         print('EXTRA CONTENT IN LINE: ', end=' ')
                         print(words[iword:].join())
                         break
-                    #print iword
+                    # print iword
                     word = words[iword]
                     formatum = format[iword]
                     if formatum == 'f':
@@ -862,12 +927,14 @@ def loadcols(infile, format='', pl=0):
                     else:
                         datum = word
                     data[iword].append(datum)
-    
+
     if roundcols:
         if len(roundcols) > 1:
-            print('WARNING, THE FOLLOWING COLUMNS WERE ROUNDED FROM FLOAT TO INT: ', roundcols)
+            print(
+                'WARNING, THE FOLLOWING COLUMNS WERE ROUNDED FROM FLOAT TO INT: ', roundcols)
         else:
-            print('WARNING, THE FOLLOWING COLUMN WAS ROUNDED FROM FLOAT TO INT: ', roundcols)
+            print(
+                'WARNING, THE FOLLOWING COLUMN WAS ROUNDED FROM FLOAT TO INT: ', roundcols)
 
     if arrayout:
         for icol in range(ncols):
@@ -877,6 +944,8 @@ def loadcols(infile, format='', pl=0):
     return data
 
 # CRUDE
+
+
 def savecols(data, filename, format=''):
     ncols = len(data)
     nrows = len(data[0])
@@ -905,7 +974,7 @@ def savecols(data, filename, format=''):
         for icol in range(ncols):
             dataline.append(data[icol][irow])
         fout.write(format % tuple(dataline))
-    
+
     fout.close()
 
 
@@ -926,7 +995,7 @@ def savedata(data, filename, dir="", header="", separator="  ", format='', label
         filename = filename[:-1]
 
     if machine:
-        filename = 'datafile%d.txt' % machine # doubles as table number
+        filename = 'datafile%d.txt' % machine  # doubles as table number
     outfile = dirfile(filename, dir)
 
     if dow and os.path.exists(outfile):
@@ -938,8 +1007,9 @@ def savedata(data, filename, dir="", header="", separator="  ", format='', label
         if len(data.shape) == 1:
             data = reshape(data, (len(data), 1))
             #data = data[:,NewAxis]
-        [ny,nx] = data.shape
-        colneg = [0] * nx  # WHETHER THE COLUMN HAS ANY NEGATIVE NUMBERS: 1=YES, 0=NO
+        [ny, nx] = data.shape
+        # WHETHER THE COLUMN HAS ANY NEGATIVE NUMBERS: 1=YES, 0=NO
+        colneg = [0] * nx
         collens = []
         if format:
             if type(format) == dict:  # CONVERT DICTIONARY FORM TO LIST
@@ -948,19 +1018,22 @@ def savedata(data, filename, dir="", header="", separator="  ", format='', label
                     if label in list(format.keys()):
                         dd += format[label]
                     else:
-                        print("WARNING: YOU DIDN'T SUPPLY A FORMAT FOR", label + ".  USING %.3f AS DEFAULT")
+                        print("WARNING: YOU DIDN'T SUPPLY A FORMAT FOR",
+                              label + ".  USING %.3f AS DEFAULT")
                         dd += '%.3f'
                     dd += '  '
                 dd = dd[:-2] + '\n'  # REMOVE LAST WHITESPACE, ADD NEWLINE
                 format = dd
-                #print format
+                # print format
         else:
             if not silent:
                 print("Formatting... ")
             coldec = [0] * nx  # OF DECIMAL PLACES
-            colint = [0] * nx  # LENGTH BEFORE DECIMAL PLACE (INCLUDING AN EXTRA ONE IF IT'S NEGATIVE)
-            #colneg = [0] * nx  # WHETHER THE COLUMN HAS ANY NEGATIVE NUMBERS: 1=YES, 0=NO
-            colexp = [0] * nx  # WHETHER THE COLUMN HAS ANY REALLY BIG NUMBERS THAT NEED exp FORMAT : 1=YES, 0=NO
+            # LENGTH BEFORE DECIMAL PLACE (INCLUDING AN EXTRA ONE IF IT'S NEGATIVE)
+            colint = [0] * nx
+            # colneg = [0] * nx  # WHETHER THE COLUMN HAS ANY NEGATIVE NUMBERS: 1=YES, 0=NO
+            # WHETHER THE COLUMN HAS ANY REALLY BIG NUMBERS THAT NEED exp FORMAT : 1=YES, 0=NO
+            colexp = [0] * nx
 
             if machine:
                 maxy = 0
@@ -971,11 +1044,12 @@ def savedata(data, filename, dir="", header="", separator="  ", format='', label
                 yyy = yyy.astype(int)
             for iy in yyy:
                 for ix in range(nx):
-                    datum = data[iy,ix]
+                    datum = data[iy, ix]
                     if isNaN(datum):
                         ni, nd = 1, 1
                     else:
-                        if (abs(datum) > 1.e9) or (0 < abs(datum) < 1.e-5): # IF TOO BIG OR TOO SMALL, NEED exp FORMAT
+                        # IF TOO BIG OR TOO SMALL, NEED exp FORMAT
+                        if (abs(datum) > 1.e9) or (0 < abs(datum) < 1.e-5):
                             ni, nd = 1, 3
                             colexp[ix] = 1
                         else:
@@ -988,25 +1062,29 @@ def savedata(data, filename, dir="", header="", separator="  ", format='', label
 
                     if ni > colint[ix]:  # IF BIGGEST, YOU GET TO DECIDE NEG SPACE OR NO
                         colneg[ix] = (datum < 0)
-                        #print '>', ix, colneg[ix], nd, coldec[ix]
-                    elif ni == colint[ix]:  # IF MATCH BIGGEST, YOU CAN SET NEG SPACE ON (NOT OFF)
+                        # print '>', ix, colneg[ix], nd, coldec[ix]
+                    # IF MATCH BIGGEST, YOU CAN SET NEG SPACE ON (NOT OFF)
+                    elif ni == colint[ix]:
                         colneg[ix] = (datum < 0) or colneg[ix]
-                        #print '=', ix, colneg[ix], nd, coldec[ix]
-                    coldec[ix] = max([ nd, coldec[ix] ])
-                    colint[ix] = max([ ni, colint[ix] ])
+                        # print '=', ix, colneg[ix], nd, coldec[ix]
+                    coldec[ix] = max([nd, coldec[ix]])
+                    colint[ix] = max([ni, colint[ix]])
 
-            #print colneg
-            #print colint
-            #print coldec
+            # print colneg
+            # print colint
+            # print coldec
 
             collens = []
             for ix in range(nx):
                 if colexp[ix]:
                     collen = 9 + colneg[ix]
                 else:
-                    collen = colint[ix] + coldec[ix] + (coldec[ix] > 0) + (colneg[ix] > 0)  # EXTRA ONES FOR DECIMAL POINT / - SIGN
+                    # EXTRA ONES FOR DECIMAL POINT / - SIGN
+                    collen = colint[ix] + coldec[ix] + \
+                        (coldec[ix] > 0) + (colneg[ix] > 0)
                 if labels and not machine:
-                    collen = max((collen, len(labels[ix])))  # MAKE COLUMN BIG ENOUGH TO ACCOMODATE LABEL
+                    # MAKE COLUMN BIG ENOUGH TO ACCOMODATE LABEL
+                    collen = max((collen, len(labels[ix])))
                 collens.append(collen)
 
             format = ' '
@@ -1028,23 +1106,23 @@ def savedata(data, filename, dir="", header="", separator="  ", format='', label
                     format += "\n"
             if pf:
                 print("format='%s\\n'" % format[:-1])
-                
+
         # NEED TO BE ABLE TO ALTER INPUT FORMAT
         if machine:  # machine readable
-            collens = [] # REDO collens (IN CASE format WAS INPUT)
+            collens = []  # REDO collens (IN CASE format WAS INPUT)
             mformat = ''
             separator = ' '
             colformats = format.split('%')[1:]
             format = ''  # redoing format, too
             for ix in range(nx):
-                #print ix, colformats
+                # print ix, colformats
                 cf = colformats[ix]
                 format += '%'
                 if cf[0] == ' ':
                     format += ' '
                 cf = cf.strip()
                 format += cf
-                mformat += {'d':'I', 'f':'F', 'e':'E'}[cf[-1]]
+                mformat += {'d': 'I', 'f': 'F', 'e': 'E'}[cf[-1]]
                 mformat += cf[:-1]
                 if ix < nx - 1:
                     format += separator
@@ -1063,7 +1141,7 @@ def savedata(data, filename, dir="", header="", separator="  ", format='', label
                 collens.append(collen)
         else:
             if not collens:
-                collens = [] # REDO collens (IN CASE format WAS INPUT)
+                collens = []  # REDO collens (IN CASE format WAS INPUT)
                 colformats = format.split('%')[1:]
                 for ix in range(nx):
                     cf = colformats[ix]
@@ -1075,25 +1153,26 @@ def savedata(data, filename, dir="", header="", separator="  ", format='', label
                         cf = cf.split('d')[0]  # INT:   Number before 'd'
                         collen = int(cf)
                     if labels:
-                        collen = max((collen, len(labels[ix])))  # MAKE COLUMN BIG ENOUGH TO ACCOMODATE LABEL
+                        # MAKE COLUMN BIG ENOUGH TO ACCOMODATE LABEL
+                        collen = max((collen, len(labels[ix])))
                     collens.append(collen)
-            
 
-##             if machine:  # machine readable
+
+# if machine:  # machine readable
 ##                 mformat = ''
-##                 for ix in range(nx):
+# for ix in range(nx):
 ##                     collen = collens[ix]
-##                     if colexp[ix]: # EXP
+# if colexp[ix]: # EXP
 ##                         mformat += 'E5.3'
-##                     elif coldec[ix]: # FLOAT
+# elif coldec[ix]: # FLOAT
 ##                         mformat += 'F%d.%d' % (collen, coldec[ix])
-##                     else: # DECIMAL
+# else: # DECIMAL
 ##                         mformat += 'I%d' % collen
-##                     if ix < nx - 1:
+# if ix < nx - 1:
 ##                         mformat += separator
-##                     else:
+# else:
 ##                         mformat += "\n"
-                
+
         if descriptions:
             if type(descriptions) == dict:  # CONVERT DICTIONARY FORM TO LIST
                 dd = []
@@ -1109,8 +1188,8 @@ def savedata(data, filename, dir="", header="", separator="  ", format='', label
                 units = dd
 
         if not machine:
-##             if not descriptions:
-##                 descriptions = labels
+            # if not descriptions:
+            ##                 descriptions = labels
             if labels:
                 headline = ''
                 maxcollen = 1
@@ -1123,10 +1202,10 @@ def savedata(data, filename, dir="", header="", separator="  ", format='', label
                         if descriptions[ix]:
                             headline += '  %s' % descriptions[ix]
                     headline += '\n'
-                    ##headline += '# %2d %s  %s\n' % (ix+1, label, descriptions[ix])
-                    #ff = '# %%2d %%%ds  %%s\n' % maxcollen  # '# %2d %10s %s\n' 
+                    # headline += '# %2d %s  %s\n' % (ix+1, label, descriptions[ix])
+                    # ff = '# %%2d %%%ds  %%s\n' % maxcollen  # '# %2d %10s %s\n'
                     #headline += ff % (ix+1, labels[ix], descriptions[ix])
-                    #headline += '# %2d %s\n' % (ix+1, descriptions[ix])
+                    # headline += '# %2d %s\n' % (ix+1, descriptions[ix])
                 headline += '#\n'
                 headline += '#'
                 colformats = format.split('%')[1:]
@@ -1135,7 +1214,7 @@ def savedata(data, filename, dir="", header="", separator="  ", format='', label
                 for ix in range(nx):
                     cf = colformats[ix]
                     collen = collens[ix]
-                    #label = labels[ix][:collen]  # TRUNCATE LABEL TO FIT COLUMN DATA
+                    # label = labels[ix][:collen]  # TRUNCATE LABEL TO FIT COLUMN DATA
                     label = labels[ix]
                     label = label.center(collen)
                     headline += label + separator
@@ -1186,7 +1265,7 @@ def savedata(data, filename, dir="", header="", separator="  ", format='', label
             byte = 1
             for ix in range(nx):
                 collen = collens[ix]
-                headline = ' %3d-%3d' % (byte, byte + collen - 1) # bytes
+                headline = ' %3d-%3d' % (byte, byte + collen - 1)  # bytes
                 headline += ' '
                 # format:
                 cf = colformats[ix]
@@ -1221,7 +1300,8 @@ def savedata(data, filename, dir="", header="", separator="  ", format='', label
                     header.append(headline)
                     if len(note) > 1:
                         for iline in range(1, len(note)):
-                            if note[iline]: # make sure it's not blank (e.g., after \n)
+                            # make sure it's not blank (e.g., after \n)
+                            if note[iline]:
                                 headline = ' ' * 10
                                 headline += note[iline]
                                 if headline[-1] != '\n':
@@ -1239,7 +1319,7 @@ def savedata(data, filename, dir="", header="", separator="  ", format='', label
         if header:
             if header[-1] == '.':
                 header = header[:-1]
-        
+
         for headline in header:
             fout.write(headline)
             if not (headline[-1] == '\n'):
@@ -1287,7 +1367,7 @@ def loaddata(filename, dir="", silent=0, headlines=0):
 
     nx = len(ss)
     #size = [nx,ny]
-    data = FltArr(ny,nx)
+    data = FltArr(ny, nx)
 
     sin = sin[headlines:ny+headlines]
 
@@ -1295,15 +1375,15 @@ def loaddata(filename, dir="", silent=0, headlines=0):
         ss = sin[iy].split()
         for ix in range(nx):
             try:
-                data[iy,ix] = float(ss[ix])
+                data[iy, ix] = float(ss[ix])
             except:
                 print(ss)
                 print(ss[ix])
-                data[iy,ix] = float(ss[ix])
-    
+                data[iy, ix] = float(ss[ix])
+
     if tr:
         data = transpose(data)
-    
+
     if data.shape[0] == 1:  # ONE ROW
         return ravel(data)
     else:
@@ -1349,7 +1429,7 @@ def machinereadable(filename, dir=''):
     fin = open(filename, 'r')
     line = fin.readline()
     return line[0] == 'T'  # BEGINS WITH Title:
-    
+
 
 def loadmachine(filename, dir="", silent=0):
     """Loads machine-readable ascii data file into a VarsClass()
@@ -1390,7 +1470,7 @@ def loadmachine(filename, dir="", silent=0):
         cols.append(xx)
         cat.labels.append(line[9:].split()[2])
         line = fin.readline()
-    
+
     nx = len(cat.labels)
 
     # NOW SKIP NOTES:
@@ -1401,21 +1481,21 @@ def loadmachine(filename, dir="", silent=0):
     # INITIALIZE DATA
     for ix in range(nx):
         exec('cat.%s = []' % cat.labels[ix])
-    
+
     # LOAD DATA
     while line:
         line = fin.readline()
         if line:
             for ix in range(nx):
                 s = line[cols[ix][0]-1:cols[ix][1]]
-                #print cols[ix][0], cols[ix][1], s
+                # print cols[ix][0], cols[ix][1], s
                 val = float(s)
                 exec('cat.%s.append(val)' % cat.labels[ix])
-    
+
     # FINALIZE DATA
     for ix in range(nx):
         exec('cat.%s = array(cat.%s)' % (cat.labels[ix], cat.labels[ix]))
-    
+
     return cat
 
 
@@ -1423,14 +1503,15 @@ def loadpymc(filename, dir="", silent=0):
     filename = dirfile(filename, dir)
     ind = loaddict(filename+'.ind')
     i, data = loaddata(filename+'.out+')
-    
+
     cat = VarsClass()
     for label in list(ind.keys()):
         ilo, ihi = ind[label]
         chunk = data[ilo-1:ihi]
         cat.add(label, chunk)
-    
+
     return cat
+
 
 class Cat2D:
     def __init__(self, filename='', dir="", silent=0, labels='x y z'.split()):
@@ -1442,10 +1523,12 @@ class Cat2D:
                 filename += '+'
             self.data = loaddata(filename, dir)
             self.assigndata()
+
     def assigndata(self):
         exec('self.%s = self.x = self.data[1:,0]' % self.labels[0])
         exec('self.%s = self.y = self.data[0,1:]' % self.labels[1])
         exec('self.%s = self.z = self.data[1:,1:]' % self.labels[2])
+
     def get(self, x, y, dointerp=0):
         ix = interp(x, self.x, arange(len(self.x)))
         iy = interp(y, self.y, arange(len(self.y)))
@@ -1454,7 +1537,7 @@ class Cat2D:
             #iy = searchsorted(self.y, y)
             ix = roundint(ix)
             iy = roundint(iy)
-            z = self.z[ix,iy]
+            z = self.z[ix, iy]
         else:
             z = bilin2(iy, ix, self.z)
         return z
@@ -1467,6 +1550,7 @@ def loadcat2d(filename, dir="", silent=0, labels='x y z'):
         labels = labels.split()
     outclass = Cat2D(filename, dir, silent, labels)
     return outclass
+
 
 def savecat2d(data, x, y, filename, dir="", silent=0):
     """OUTPUT: FILE WITH data IN BODY AND x & y ALONG LEFT AND TOP"""
@@ -1482,12 +1566,14 @@ def savecat2d(data, x, y, filename, dir="", silent=0):
     #savedata(data, filename)
     savedata1(data, filename)
 
+
 def savedata1d(data, filename, dir="./", format='%6.5e ', header=""):
     fout = open(filename, 'w')
     for datum in data:
         fout.write('%d\n' % datum)
     fout.close()
-                                                                               
+
+
 def loadvars(filename, dir="", silent=0):
     """INPUT: CATALOG w/ LABELED COLUMNS
     OUTPUT: A STRING WHICH WHEN EXECUTED WILL LOAD DATA INTO VARIABLES WITH NAMES THE SAME AS COLUMNS
@@ -1500,8 +1586,9 @@ def loadvars(filename, dir="", silent=0):
     labels = header[-1][1:].split()
     labelstr = labels.join(',')
     print(labelstr + ' = data')
-    return 'from coeio import data,labels,labelstr\n' + labelstr + ' = data'  # STRING TO BE EXECUTED AFTER EXIT
-    #return 'from coeio import data\n' + labelstr + ' = data'  # STRING TO BE EXECUTED AFTER EXIT
+    # STRING TO BE EXECUTED AFTER EXIT
+    return 'from coeio import data,labels,labelstr\n' + labelstr + ' = data'
+    # return 'from coeio import data\n' + labelstr + ' = data'  # STRING TO BE EXECUTED AFTER EXIT
 
 
 class VarsClass:
@@ -1518,7 +1605,8 @@ class VarsClass:
                 for label in self.labels:
                     print(label)
                     print(tbdata.field(label)[:5])
-                    exec("self.%s = array(tbdata.field('%s'), 'f')" % (label, label))
+                    exec("self.%s = array(tbdata.field('%s'), 'f')" %
+                         (label, label))
                     print(self.get(label)[:5])
                 self.updatedata()
             elif machinereadable(filename, dir):
@@ -1528,7 +1616,7 @@ class VarsClass:
                 for label in self.labels:
                     exec('self.%s = self2.%s[:]' % (label, label))
                 self.name = filename
-                #self.header = '' # for now...
+                # self.header = '' # for now...
             else:
                 if filename[-1] != '+':
                     filename += '+'
@@ -1549,6 +1637,7 @@ class VarsClass:
         self.descriptions = {}
         self.units = {}
         self.notes = []
+
     def assigndata(self):
         for iii in range(len(self.labels)):
             label = self.labels[iii]
@@ -1557,8 +1646,9 @@ class VarsClass:
             except:
                 print('BAD LABEL NAME:', label)
                 xxx[9] = 3
+
     def copy(self):
-        #return copy.deepcopy(self)
+        # return copy.deepcopy(self)
         selfcopy = VarsClass()
         selfcopy.labels = self.labels[:]
         selfcopy.data = self.updateddata()
@@ -1568,29 +1658,32 @@ class VarsClass:
         selfcopy.notes = self.notes
         selfcopy.header = self.header
         return selfcopy
+
     def updateddata(self):
         selflabelstr = ''
         for label in self.labels:
-            #if label <> 'flags':
+            # if label <> 'flags':
             selflabelstr += 'self.' + label + ', '
-            #print label
+            # print label
             #exec('print self.%s') % label
             #exec('print type(self.%s)') % label
             #exec('print self.%s.shape') % label
-            #print
+            # print
         selflabelstr = selflabelstr[:-2]
-        #print 'x', selflabelstr, 'x'
+        # print 'x', selflabelstr, 'x'
         #data1 = array([self.id, self.area])
-        #print array([self.id, self.area])
+        # print array([self.id, self.area])
         #s = 'data3 = array([%s])' % selflabelstr
-        #print s
-        #exec(s)
-        #print data1
-        #print 'data3 = array([%s])' % selflabelstr
+        # print s
+        # exec(s)
+        # print data1
+        # print 'data3 = array([%s])' % selflabelstr
         exec('data3 = array([%s])' % selflabelstr)
         return data3
+
     def updatedata(self):
         self.data = self.updateddata()
+
     def len(self):
         if self.labels:
             x = self.get(self.labels[0])
@@ -1602,21 +1695,25 @@ class VarsClass:
         else:
             l = 0
         return l
+
     def subset(self, good):
         #selfcopy = self.copy()
-##         if len(self.id) <> len(good):
-##             print "VarsClass: SUBSET CANNOT BE CREATED: good LENGTH = %d, data LENGTH = %d" % (len(self.id), len(good))
+        # if len(self.id) <> len(good):
+        # print "VarsClass: SUBSET CANNOT BE CREATED: good LENGTH = %d, data LENGTH = %d" % (len(self.id), len(good))
         if self.len() != len(good):
-            print("VarsClass: SUBSET CANNOT BE CREATED: good LENGTH = %d, data LENGTH = %d" % (self.len(), len(good)))
+            print("VarsClass: SUBSET CANNOT BE CREATED: good LENGTH = %d, data LENGTH = %d" % (
+                self.len(), len(good)))
         else:
             selfcopy = self.copy()
             data = self.updateddata()
             selfcopy.data = compress(good, data)
             selfcopy.assigndata()
-            selfcopy.data = compress(good, self.data) # PRESERVE UN-UPDATED DATA ARRAY
+            # PRESERVE UN-UPDATED DATA ARRAY
+            selfcopy.data = compress(good, self.data)
             selfcopy.taken = compress(good, arange(self.len()))
             selfcopy.good = good
             return selfcopy
+
     def between(self, lo, labels, hi):
         """labels = list of labels or just one label"""
         if type(labels) == list:
@@ -1627,6 +1724,7 @@ class VarsClass:
             exec('good = between(lo, self.%s, hi)' % labels)
         self.good = good
         return self.subset(good)
+
     def take(self, indices):
         indices = indices.astype(int)
         sub = VarsClass()
@@ -1638,24 +1736,27 @@ class VarsClass:
             sub.data = reshape(sub.data, sh[:2])
         sub.assigndata()
         return sub
+
     def put(self, label, indices, values):
         #exec('put(self.%s, indices, values)' % label)
         exec('x = self.%s.copy()' % label)
         put(x, indices, values)
         exec('self.%s = x' % label)
+
     def takeid(self, id, idlabel='id'):
-        selfid = self.get(idlabel).astype(int) # [6 4 5]
+        selfid = self.get(idlabel).astype(int)  # [6 4 5]
         i = argmin(abs(selfid - id))
         if selfid[i] != id:
             print("PROBLEM! ID %d NOT FOUND IN takeid" % id)
             return None
         else:
             return self.take(array([i]))
+
     def putid(self, label, id, value, idlabel='id'):
-        #print "putid UNTESTED!!"  -- STILL TRUE
-        #print "(Hit Enter to continue)"
-        #pause()
-        selfid = self.get(idlabel).astype(int) # [6 4 5]
+        # print "putid UNTESTED!!"  -- STILL TRUE
+        # print "(Hit Enter to continue)"
+        # pause()
+        selfid = self.get(idlabel).astype(int)  # [6 4 5]
         i = argmin(abs(selfid - id))
         if selfid[i] != id:
             print("PROBLEM! ID %d NOT FOUND IN putid" % id)
@@ -1664,39 +1765,43 @@ class VarsClass:
             exec('x = self.%s.copy()' % label)
             put(x, i, value)
             exec('self.%s = x' % label)
-        #print self.takeid(id).get(label)
+        # print self.takeid(id).get(label)
+
     def takeids(self, ids, idlabel='id'):
-        #selfid = self.id.astype(int) # [6 4 5]
-        selfid = self.get(idlabel).astype(int) # [6 4 5]
+        # selfid = self.id.astype(int) # [6 4 5]
+        selfid = self.get(idlabel).astype(int)  # [6 4 5]
         indexlist = zeros(max(selfid)+1, int) - 1
         put(indexlist, selfid, arange(len(selfid)))  # [- - - - 1 2 0]
-        #self.good = greater(selfid, -1)  # TOTALLY WRONG!  USED IN bpzphist
-        indices = take(indexlist, array(ids).astype(int))  # ids = [4 6]  ->  indices = [1 0]
-        #print type(indices[0])
+        # self.good = greater(selfid, -1)  # TOTALLY WRONG!  USED IN bpzphist
+        # ids = [4 6]  ->  indices = [1 0]
+        indices = take(indexlist, array(ids).astype(int))
+        # print type(indices[0])
         goodindices = compress(greater(indices, -1), indices)
         good = zeros(self.len(), int)
-        #print 'takeids'
+        # print 'takeids'
         good = good.astype(int)
         goodindices = goodindices.astype(int)
-        #print type(good[0]) #good.type()
-        #print type(goodindices[0])  #goodindices.type()
-        #pause()
+        # print type(good[0]) #good.type()
+        # print type(goodindices[0])  #goodindices.type()
+        # pause()
         put(good, goodindices, 1)
         self.good = good
         if -1 in indices:
             print("PROBLEM! NOT ALL IDS FOUND IN takeids!")
             print(compress(less(indices, 0), ids))
         return self.take(indices)
+
     def putids(self, label, ids, values, idlabel='id'):
-        #print "putids UNTESTED!!"
-        #print "putids not fully tested"
-        #print "(Hit Enter to continue)"
-        #pause()
-        #selfid = self.id.astype(int) # [6 4 5]
-        selfid = self.get(idlabel).astype(int) # [6 4 5]
+        # print "putids UNTESTED!!"
+        # print "putids not fully tested"
+        # print "(Hit Enter to continue)"
+        # pause()
+        # selfid = self.id.astype(int) # [6 4 5]
+        selfid = self.get(idlabel).astype(int)  # [6 4 5]
         indexlist = zeros(max(selfid)+1, int) - 1
         put(indexlist, selfid, arange(len(selfid)))  # [- - - - 1 2 0]
-        indices = take(indexlist, array(ids).astype(int))  # ids = [4 6]  ->  indices = [1 0]
+        # ids = [4 6]  ->  indices = [1 0]
+        indices = take(indexlist, array(ids).astype(int))
         if -1 in indices:
             print("PROBLEM! NOT ALL IDS FOUND IN putids!")
             print(compress(less(indices, 0), ids))
@@ -1705,40 +1810,46 @@ class VarsClass:
             values = zeros(self.len(), float) + values
         put(x, indices, values)
         exec('self.%s = x' % label)
+
     def takecids(self, ids, idlabel='id'):  # only take common ids
-        #selfid = self.id.astype(int) # [6 4 5]
-        selfid = self.get(idlabel).astype(int) # [6 4 5]
+        # selfid = self.id.astype(int) # [6 4 5]
+        selfid = self.get(idlabel).astype(int)  # [6 4 5]
         n = max((max(selfid), max(ids)))
         indexlist = zeros(n+1, int)
         #indexlist = zeros(max(selfid)+1)
         put(indexlist, selfid, arange(len(selfid))+1)  # [- - - - 1 2 0]
-        indices = take(indexlist, array(ids).astype(int))  # ids = [4 6]  ->  indices = [1 0]
+        # ids = [4 6]  ->  indices = [1 0]
+        indices = take(indexlist, array(ids).astype(int))
         indices = compress(indices, indices-1)
         goodindices = compress(greater(indices, -1), indices)
         good = zeros(self.len(), int)
         put(good, goodindices, 1)
         self.good = good
         return self.take(indices)
+
     def removeids(self, ids, idlabel='id'):
-        selfid = self.get(idlabel).astype(int) # [6 4 5]
+        selfid = self.get(idlabel).astype(int)  # [6 4 5]
         if singlevalue(ids):
             ids = [ids]
-        #newids = set(selfid) - set(ids)  # SCREWS UP ORDER!
+        # newids = set(selfid) - set(ids)  # SCREWS UP ORDER!
         #newids = list(newids)
         newids = invertselection(ids, selfid)
         return self.takeids(newids)
+
     def get(self, label, orelse=None):
         if label in self.labels:
             exec('out = self.%s' % label)
         else:
             out = orelse
         return out
+
     def set(self, label, data):
         if singlevalue(data):
             data = zeros(self.len(), float) + data
         exec('self.%s = data' % label)
+
     def add(self, label, data):
-        if 1:  #self.labels:
+        if 1:  # self.labels:
             if singlevalue(data):
                 if self.len():
                     data = zeros(self.len(), float) + data
@@ -1746,15 +1857,18 @@ class VarsClass:
                     data = array([float(data)])
             elif self.len() and (len(data) != self.len()):
                 print('WARNING!! in loadvarswithclass.add:')
-                print('len(%s) = %d BUT len(id) = %d' % (label, len(data), self.len()))
+                print('len(%s) = %d BUT len(id) = %d' %
+                      (label, len(data), self.len()))
                 print()
         self.labels.append(label)
         exec('self.%s = data.astype(float)' % label)
+
     def assign(self, label, data):
         if label in self.labels:
             self.set(label, data)
         else:
             self.add(label, data)
+
     def append(self, self2, over=0):
         # APPENDS THE CATALOG self2 TO self
         labels = self.labels[:]
@@ -1774,6 +1888,7 @@ class VarsClass:
                 exec('self.%s = concatenate((self.get(label), self2.get(label)))' % label)
             self.updatedata()
         return self
+
     def merge(self, self2, labels=None, replace=0):
         # self2 HAS NEW INFO (LABELS) TO ADD TO self
         if 'id' in self.labels:
@@ -1785,7 +1900,8 @@ class VarsClass:
                 self.add(label, self2.get(label))
             elif replace:
                 exec('self.%s = self2.%s' % (label, label))
-    def sort(self, label): # label could also be an array
+
+    def sort(self, label):  # label could also be an array
         if type(label) == str:
             if (label == 'random') and ('random' not in self.labels):
                 SI = argsort(random(self.len()))
@@ -1803,6 +1919,7 @@ class VarsClass:
         self.updatedata()
         self.data = take(self.data, SI, 1)
         self.assigndata()
+
     def findmatches(self, searchcat1, dtol=4):
         """Finds matches for self in searchcat1
         match distances within dtol, but may not always be closest
@@ -1810,7 +1927,7 @@ class VarsClass:
         matchids = []
         dists = []
         searchcat = searchcat1.copy()
-        #searchcat.sort('x')
+        # searchcat.sort('x')
         if 'dtol' in self.labels:
             dtol = self.dtol
         else:
@@ -1818,14 +1935,15 @@ class VarsClass:
         for i in range(self.len()):
             if not (i % 100):
                 print("%d / %d" % (i, self.len()))
-            #matchid, dist = findmatch(searchcat.x, searchcat.y, self.x[i], self.y[i], dtol=dtol[i], silent=1, returndist=1, xsorted=1)  # silent=2*(i<>38)-1
-            matchid, dist = findmatch(searchcat.x, searchcat.y, self.x[i], self.y[i], dtol=dtol[i], silent=1, returndist=1, xsorted=0)  # silent=2*(i<>38)-1
-##             print self.x[i], self.y[i], matchid,
-##             if matchid < self.len():
-##                 print searchcat.id[matchid], searchcat.x[matchid], searchcat.y[matchid]
-##             else:
-##                 print
-##             pause()
+            # matchid, dist = findmatch(searchcat.x, searchcat.y, self.x[i], self.y[i], dtol=dtol[i], silent=1, returndist=1, xsorted=1)  # silent=2*(i<>38)-1
+            matchid, dist = findmatch(
+                searchcat.x, searchcat.y, self.x[i], self.y[i], dtol=dtol[i], silent=1, returndist=1, xsorted=0)  # silent=2*(i<>38)-1
+# print self.x[i], self.y[i], matchid,
+# if matchid < self.len():
+# print searchcat.id[matchid], searchcat.x[matchid], searchcat.y[matchid]
+# else:
+# print
+# pause()
             matchids.append(matchid)
             dists.append(dist)
         matchids = array(matchids)
@@ -1833,6 +1951,7 @@ class VarsClass:
         matchids = where(equal(matchids, searchcat.len()), -1, matchids)
         self.assign('matchid', matchids)
         self.assign('dist', dists)
+
     def findmatches2(self, searchcat, dtol=0):
         """Finds closest matches for self within searchcat"""
         i, d = findmatches2(searchcat.x, searchcat.y, self.x, self.y)
@@ -1840,6 +1959,7 @@ class VarsClass:
             i = where(less(d, dtol), i, -1)
         self.assign('matchi', i)
         self.assign('dist', d)
+
     def rename(self, oldlabel, newlabel):
         self.set(newlabel, self.get(oldlabel))
         i = self.labels.index(oldlabel)
@@ -1850,15 +1970,19 @@ class VarsClass:
         if self.units:
             if oldlabel in list(self.units.keys()):
                 self.units[newlabel] = self.units[oldlabel]
+
     def save(self, name='', header='', format='', labels=1, pf=0, maxy=300, machine=0, silent=0):
         if type(labels) == list:
             self.labels = labels
         labels = labels and self.labels  # if labels then self.labels, else 0
         name = name or self.name  # if name then name, else self.name
         header = header or self.header  # if header then header, else self.header
-        savedata(self.updateddata(), name+'+', labels=labels, header=header, format=format, pf=pf, maxy=maxy, machine=machine, descriptions=self.descriptions, units=self.units, notes=self.notes, silent=silent)
+        savedata(self.updateddata(), name+'+', labels=labels, header=header, format=format, pf=pf, maxy=maxy,
+                 machine=machine, descriptions=self.descriptions, units=self.units, notes=self.notes, silent=silent)
+
     def savefitstable(self, name='', header='', format={}, labels=1, overwrite=1):  # FITS TABLE
-        name = name or recapfile(self.name, 'fits')  # if name then name, else self.name
+        # if name then name, else self.name
+        name = name or recapfile(self.name, 'fits')
         name = capfile(name, 'fits')  # IF WAS name (PASSED IN) NEED TO capfile
         if (not overwrite) and os.path.exists(name):
             print(name, 'ALREADY EXISTS, AND YOU TOLD ME NOT TO OVERWRITE IT')
@@ -1874,9 +1998,11 @@ class VarsClass:
                 if not pyfitsusesnumpy:
                     a = numarray.array(a)
                 if label in list(units.keys()):
-                    col = pyfits.Column(name=label, format=format.get(label, 'E'), unit=units[label], array=a)
+                    col = pyfits.Column(name=label, format=format.get(
+                        label, 'E'), unit=units[label], array=a)
                 else:
-                    col = pyfits.Column(name=label, format=format.get(label, 'E'), array=a)
+                    col = pyfits.Column(
+                        name=label, format=format.get(label, 'E'), array=a)
                 collist.append(col)
             cols = pyfits.ColDefs(collist)
             tbhdu = pyfits.new_table(cols)
@@ -1900,9 +2026,11 @@ class VarsClass:
                             i = description[:45].rfind(' ')
                             description1 = description[:i]+'...'
                             description2 = '...'+description[i+1:]
-                        prihdr.update('TTYPE%d'%(ilabel+1), label, description1)
+                        prihdr.update('TTYPE%d' %
+                                      (ilabel+1), label, description1)
                         if description2:
-                            prihdr.update('TFORM%d'%(ilabel+1), format.get(label, 'E'), description2)
+                            prihdr.update('TFORM%d' % (ilabel+1),
+                                          format.get(label, 'E'), description2)
                 for inote in range(len(self.notes)):
                     words = self.notes[inote].split('\n')
                     for iword in range(len(words)):
@@ -1912,18 +2040,19 @@ class VarsClass:
                                 prihdr.add_comment('(%d) %s' % (inote+1, word))
                             else:
                                 prihdr.add_comment('    %s' % word)
-                                #prihdr.add_blank(word)
+                                # prihdr.add_blank(word)
                 headlines = header.split('\n')
                 for headline in headlines:
                     if headline:
                         key, value = headline.split('\t')
                         prihdr.update(key, value)
                 hdulist.writeto(name)
+
     def pr(self):  # print
         self.save('tmp.cat')
         os.system('cat tmp.cat | more')
         os.remove('tmp.cat')
-##     def takecids(self, ids):
+# def takecids(self, ids):
 ##         selfid = self.id.astype(int)
 ##         ids = ids.astype(int)
 ##         n = max((max(selfid), max(ids)))
@@ -1933,13 +2062,14 @@ class VarsClass:
 ##         put(takeme2, ids, 1)
 ##         takeme = takeme1 * takeme2
 ##         takeme = take(takeme, selfid)
-##         return self.subset(takeme)
-##     def labelstr(self):
-##         return string.join(labels, ', ')[:-2]
+# return self.subset(takeme)
+# def labelstr(self):
+# return string.join(labels, ', ')[:-2]
         # FORGET THIS!  JUST USE copy.deepcopy
 ##         selfcopy = VarsClass()
 ##         selfcopy.data = self.data[:]
 ##         selfcopy.labels = self.labels.copy()
+
 
 def loadvarswithclass(filename, dir="", silent=0, labels='', header='', headlines=0):
     """INPUT: CATALOG w/ LABELED COLUMNS
@@ -1948,16 +2078,19 @@ def loadvarswithclass(filename, dir="", silent=0, labels='', header='', headline
     >>> mybpz.id
     >>> mybpz.data -- ARRAY WITH ALL DATA"""
     outclass = VarsClass(filename, dir, silent, labels, header, headlines)
-    #outclass.assigndata()
+    # outclass.assigndata()
     return outclass
+
 
 loadcat = loadvarswithclass
 
-#def loadcat(filename, dir="", silent=0):
+# def loadcat(filename, dir="", silent=0):
+
+
 def loadimcat(filename, dir="", silent=0):
     """LOADS A CATALOG CREATED BY IMCAT
     STORES VARIABLES IN A DICTIONARY OF ARRAYS!"""
-    
+
     infile = dirfile(filename, dir)
     if not silent:
         print("Loading ", infile, "...\n")
@@ -1974,18 +2107,19 @@ def loadimcat(filename, dir="", silent=0):
     sin = sin[headlines:]  # REMOVE HEADLINES
     nx = len(names)
     ny = len(sin)
-    data = FltArr(ny,nx)
-    
+    data = FltArr(ny, nx)
+
     for iy in range(ny):
         ss = sin[iy].split()
         for ix in range(nx):
-            data[iy,ix] = float(ss[ix])
+            data[iy, ix] = float(ss[ix])
 
     cat = {}
     for i in range(nx):
-        cat[names[i]] = data[:,i]
+        cat[names[i]] = data[:, i]
 
     return cat
+
 
 def savedict(dict, filename, dir="", silent=0):
     """SAVES A DICTIONARY OF STRINGS"""
@@ -1994,6 +2128,7 @@ def savedict(dict, filename, dir="", silent=0):
     for key in list(dict.keys()):
         fout.write('%s %s\n' % (key, dict[key]))
     fout.close()
+
 
 def savefile(lines, filename, dir="", silent=0):
     """SAVES lines TO filename"""
@@ -2006,14 +2141,15 @@ def savefile(lines, filename, dir="", silent=0):
     fout.close()
 
 
-#def savecat(cat, filename, dir="./", silent=0):
+# def savecat(cat, filename, dir="./", silent=0):
 def saveimcat(cat, filename, dir="./", silent=0):
     # DOESN'T WORK RIGHT YET!!!  HEADER INCOMPLETE.
     """SAVES A DICTIONARY OF 1-D ARRAYS AS AN IMCAT CATALOGUE"""
     outfile = dirfile(filename, dir)
     fout = open(outfile, 'w')
-    fout.write("# IMCAT format catalogue file -- edit with 'lc' or my Python routines\n")
-    
+    fout.write(
+        "# IMCAT format catalogue file -- edit with 'lc' or my Python routines\n")
+
     # COLUMN HEADERS
     fout.write("#")
     for key in list(cat.keys()):
@@ -2030,10 +2166,11 @@ def saveimcat(cat, filename, dir="./", silent=0):
             if (x - int(x)):
                 fout.write("%15.5f" % x)
             else:
-                fout.write("%15d" % x)      
+                fout.write("%15d" % x)
         fout.write("\n")
 
     fout.close()
+
 
 def prunecols(infile, cols, outfile, separator=" "):
     """TAKES CERTAIN COLUMNS FROM infile AND OUTPUTS THEM TO OUTFILE
@@ -2102,9 +2239,9 @@ class SExSegParamsClass:
                 self.configkeys.append(key)
         # OKAY...
         fout = open(name, 'w')
-        #fout.write('#######################################\n')
-        #fout.write('# CONFIGURATION\n')
-        #fout.write('\n')
+        # fout.write('#######################################\n')
+        # fout.write('# CONFIGURATION\n')
+        # fout.write('\n')
         fout.write('# ----- CONFIGURATION -----\n')
         for key in self.configkeys:
             line = ''
@@ -2119,9 +2256,9 @@ class SExSegParamsClass:
             line += '\n'
             fout.write(line)
         fout.write('\n')
-        #fout.write('#######################################\n')
-        #fout.write('# PARAMETERS\n')
-        #fout.write('\n')
+        # fout.write('#######################################\n')
+        # fout.write('# PARAMETERS\n')
+        # fout.write('\n')
         fout.write('# ----- PARAMETERS -----\n')
         for param in self.params:
             line = ''
@@ -2144,7 +2281,7 @@ class SExSegParamsClass:
         for key in list(self2.comments.keys()):
             if self2.comments[key]:
                 self.comments[key] = self2.comments[key]
-        
+
 
 def loadsexsegconfig(filename='', dir="", silent=0, headlines=0):
     return SExSegParamsClass(filename, dir, silent, headlines)
@@ -2169,9 +2306,9 @@ def loadsexcat(infile, purge=1, maxflags=8, minfwhm=1, minrf=0, maxmag=99, magna
 
     infile = join(dir, infile)
     if not silent:
-        print("LOADING SExtractor catalog " + infile, end=' ') 
-    
-    #req = {'fwhm': 1, 'mag': 99, 'flags': 4}  # REQUIREMENTS FOR DATA TO BE INCLUDED (NOT PURGED)
+        print("LOADING SExtractor catalog " + infile, end=' ')
+
+    # req = {'fwhm': 1, 'mag': 99, 'flags': 4}  # REQUIREMENTS FOR DATA TO BE INCLUDED (NOT PURGED)
     req = {}
     req['FLAGS'] = maxflags
     req['FWHM'] = minfwhm
@@ -2199,13 +2336,13 @@ def loadsexcat(infile, purge=1, maxflags=8, minfwhm=1, minrf=0, maxmag=99, magna
 
     nx = len(sin[0].split())
     ny = len(sin)
-    data = FltArr(ny,nx)
+    data = FltArr(ny, nx)
 
     for iy in range(ny):
         ss = sin[iy].split()
         for ix in range(nx):
             try:
-                data[iy,ix] = float(ss[ix])
+                data[iy, ix] = float(ss[ix])
             except:
                 print(iy, ix, nx)
                 print(ss)
@@ -2214,35 +2351,38 @@ def loadsexcat(infile, purge=1, maxflags=8, minfwhm=1, minrf=0, maxmag=99, magna
     data = transpose(data)
     paramcol = {}
     params = []
-    
+
     flags = None
     fwhm = None
     mag = None
     rf = None
 
-    #print 'TRYING NEW MAG ASSIGNMENT...'
+    # print 'TRYING NEW MAG ASSIGNMENT...'
     lastcol = 0  # COLUMN OF PREVIOUS PARAM
     lastparam = ''
     params = []
     fullparamnames = []
     for headline in header:
-        ss = headline.split()  # ['#', '15', 'X_IMAGE', 'Object position along x', '[pixel]']
+        # ['#', '15', 'X_IMAGE', 'Object position along x', '[pixel]']
+        ss = headline.split()
         if len(ss) == 1:
             break
-        col = int(ss[1])  # 15  -- DON'T SUBTRACT 1 FROM col!  DON'T WANT A 0 COLUMN!  FACILITATES DATA DISTRIBUTION
+        # 15  -- DON'T SUBTRACT 1 FROM col!  DON'T WANT A 0 COLUMN!  FACILITATES DATA DISTRIBUTION
+        col = int(ss[1])
         ncols = col - lastcol
         param = ss[2]    # "X_IMAGE"
         fullparamnames.append(param)
         if param[-1] == ']':
             param = param.split('[')[0]
         if param[:4] == "MAG_":  # MAG_AUTO or MAG_APER but not MAGERR_AUTO
-            #if (param == magname) or not magname or 'MAG' not in paramcol.keys():  # magname IF YOU ONLY WANT MAG_AUTO (DEFAULT)
+            # if (param == magname) or not magname or 'MAG' not in paramcol.keys():  # magname IF YOU ONLY WANT MAG_AUTO (DEFAULT)
             if (param == magname) or not magname:  # magname IF YOU ONLY WANT MAG_AUTO (DEFAULT)
                 magname = param
                 param = "MAG"
         if param[:7] == "MAGERR_":  # MAGERR_AUTO or MAGERR_APER
-            #if (param == magerrname) or not magerrname or 'MAG' not in paramcol.keys():  # magname IF YOU ONLY WANT MAG_AUTO (DEFAULT)
-            if (param == magerrname) or not magerrname:  # magname IF YOU ONLY WANT MAG_AUTO (DEFAULT)
+            # if (param == magerrname) or not magerrname or 'MAG' not in paramcol.keys():  # magname IF YOU ONLY WANT MAG_AUTO (DEFAULT)
+            # magname IF YOU ONLY WANT MAG_AUTO (DEFAULT)
+            if (param == magerrname) or not magerrname:
                 magerrname = param
                 param = "MAGERR"
         if param[-6:] == "_IMAGE":  # TRUNCATE "_IMAGE"
@@ -2252,15 +2392,16 @@ def loadsexcat(infile, purge=1, maxflags=8, minfwhm=1, minrf=0, maxmag=99, magna
                 flags = ravel(data[col-1]).astype(int)
                 param = "FLAGS"
             else:
-                flags = bitwise_or(flags, ravel(data[col-1]).astype(int))  # "FLAGS" OR "IMAFLAGS_ISO"
+                # "FLAGS" OR "IMAFLAGS_ISO"
+                flags = bitwise_or(flags, ravel(data[col-1]).astype(int))
                 param = ''
                 lastcol += 1
-##      if (param == "FLAGS") and paramcol.has_key("FLAGS"):
-##          param = "SHWAG"  # "IMAFLAGS_ISO" (THE REAL FLAGS) HAVE ALREADY BEEN FOUND
-##      if param == "IMAFLAGS_ISO":  # FLAGS OR-ED WITH FLAG MAP IMAGE
+# if (param == "FLAGS") and paramcol.has_key("FLAGS"):
+# param = "SHWAG"  # "IMAFLAGS_ISO" (THE REAL FLAGS) HAVE ALREADY BEEN FOUND
+# if param == "IMAFLAGS_ISO":  # FLAGS OR-ED WITH FLAG MAP IMAGE
 ##          param = "FLAGS"
         #paramcol[param] = col
-        #if vector > 1
+        # if vector > 1
         # ASSIGN COLUMN(S), NOW THAT WE KNOW HOW MANY THERE ARE
         if param != lastparam and param:
             if lastcol:
@@ -2268,18 +2409,17 @@ def loadsexcat(infile, purge=1, maxflags=8, minfwhm=1, minrf=0, maxmag=99, magna
             lastcol = col
             lastparam = param
             params.append(param)
-        #print params
+        # print params
 
-##     # IN CASE WE ENDED ON AN ARRAY (MAG_APER[4]) -- TAKEN CARE OF BELOW?
-##     if param == lastparam:
-##         if lastcol:
+# IN CASE WE ENDED ON AN ARRAY (MAG_APER[4]) -- TAKEN CARE OF BELOW?
+# if param == lastparam:
+# if lastcol:
 ##             paramcol[lastparam] = arange(ncols) + lastcol
 ##         lastcol = col
 ##         lastparam = param
-##         params.append(param)
-   
-    #print len(params)
+# params.append(param)
 
+    # print len(params)
 
     bigparamnames = params[:]
     paramstr = params.join(',')
@@ -2289,13 +2429,16 @@ def loadsexcat(infile, purge=1, maxflags=8, minfwhm=1, minrf=0, maxmag=99, magna
 
     col = paramcol.get("FWHM")
     #fwhm = col and ravel(data[col-1])
-    if col.any(): fwhm = ravel(data[col-1])
+    if col.any():
+        fwhm = ravel(data[col-1])
     col = paramcol.get("FLUX_RADIUS")
     #rf = col and ravel(data[col-1])
-    if col.any(): rf = ravel(data[col-1])
+    if col.any():
+        rf = ravel(data[col-1])
     col = paramcol.get("MAG")
     #mag = col and ravel(data[col-1])
-    if col.any(): mag = ravel(data[col-1])
+    if col.any():
+        mag = ravel(data[col-1])
 
     good = ones(ny)
     if not silent:
@@ -2309,52 +2452,58 @@ def loadsexcat(infile, purge=1, maxflags=8, minfwhm=1, minrf=0, maxmag=99, magna
             good = good * greater(rf, minrf)
         if "MAG" in req and (mag != None):
             good = good * less(mag, maxmag)
-            
+
     if not silent:
         print(sum(good))
 
     if purge and not alltrue(good):
         data = compress(good, data)
-        if (flags != None): flags = compress(good, flags)
-        if (mag != None): mag = compress(good, mag)
-        if (fwhm != None): fwhm = compress(good, fwhm)
-        if (rf != None): rf = compress(good, rf)
+        if (flags != None):
+            flags = compress(good, flags)
+        if (mag != None):
+            mag = compress(good, mag)
+        if (fwhm != None):
+            fwhm = compress(good, fwhm)
+        if (rf != None):
+            rf = compress(good, rf)
 
     outdata = []
     #params = paramcol.keys()
     # RENAME params
-    paramtranslate = {'NUMBER':'id', 'CLASS_STAR':'stellarity', 'KRON_RADIUS':'rk', 'FLUX_RADIUS':'rf', 'ISOAREA':'area'}
+    paramtranslate = {'NUMBER': 'id', 'CLASS_STAR': 'stellarity',
+                      'KRON_RADIUS': 'rk', 'FLUX_RADIUS': 'rf', 'ISOAREA': 'area'}
     for ii in range(len(params)):
         param = params[ii]
-        param = paramtranslate.get(param, param)  # CHANGE IT IF IN DICTIONARY, OTHERWISE LEAVE IT ALONE
+        # CHANGE IT IF IN DICTIONARY, OTHERWISE LEAVE IT ALONE
+        param = paramtranslate.get(param, param)
         param = param.replace('_IMAGE', '')
         param = param.replace('PROFILE', 'PROF')
         param = param.lower()
         param = param.replace('_', '')
         #param = string.replace(param, 'magerr', 'dmag')
-        #if param in ['a', 'b']:
+        # if param in ['a', 'b']:
         #    param = string.upper(param)
         params[ii] = param
-        
-    #print params
-    #for kk in bigparamnames: #paramcol.keys():
-    for ii in range(len(bigparamnames)): #paramcol.keys():
+
+    # print params
+    # for kk in bigparamnames: #paramcol.keys():
+    for ii in range(len(bigparamnames)):  # paramcol.keys():
         pp = params[ii]
-        #print
-        #print pp
+        # print
+        # print pp
         if pp in ['flags', 'fwhm', 'rf', 'mag']:
             #exec('print type(%s)' % pp)
             #exec('print '+pp)
             exec('outdata.append(%s)' % pp)
-            #outdata.append(flags)
+            # outdata.append(flags)
         else:
             kk = bigparamnames[ii]
             col = paramcol[kk]
             if len(col) == 1:
                 #exec(kk + '= data[col-1]')
-                #print data[col-1]
-                #print shape(data[col-1])
-                #print type(data[col-1])
+                # print data[col-1]
+                # print shape(data[col-1])
+                # print type(data[col-1])
                 outdata.append(ravel(data[col-1]))
             else:
                 #exec(kk + '= take(data, col-1)')
@@ -2364,9 +2513,9 @@ def loadsexcat(infile, purge=1, maxflags=8, minfwhm=1, minrf=0, maxmag=99, magna
     #exec(paramstr + ' = outdata')
 
     # CALCULATE ell (IF NOT CALCULATED ALREADY)
-    #print params
-    #print params.index('a')
-    #print len(outdata)
+    # print params
+    # print params.index('a')
+    # print len(outdata)
     if 'ell' not in params:
         if 'a' in params and 'b' in params:
             a = outdata[params.index('a')]
@@ -2389,12 +2538,12 @@ def loadsexcat(infile, purge=1, maxflags=8, minfwhm=1, minrf=0, maxmag=99, magna
     if 'imaflagsiso' in params:
         flags = outdata[params.index('flags')]
         imaflagsiso = outdata[params.index('imaflagsiso')]
-        flags = bitwise_or(flags.astype(int), imaflagsiso.astype(int))  # "FLAGS" OR "IMAFLAGS_ISO"
+        # "FLAGS" OR "IMAFLAGS_ISO"
+        flags = bitwise_or(flags.astype(int), imaflagsiso.astype(int))
         outdata[params.index('flags')] = flags.astype(float)
 
-    
     # FOR Txitxo's photometry.py
-    #print 'COMMENTED OUT photometry.py LINES...'
+    # print 'COMMENTED OUT photometry.py LINES...'
     photcom = '\n'
     if 'stellarity' in params:
         photcom += 'cl = stellarity\n'
@@ -2408,7 +2557,7 @@ def loadsexcat(infile, purge=1, maxflags=8, minfwhm=1, minrf=0, maxmag=99, magna
     if ma1name:
         #magtype = string.lower(string.split(ma1name, '_')[-1])
         magtype = ma1name.split('[')[0].lower()
-        magtype = {'profile':'prof', 'isophotal':'iso'}.get(magtype, magtype)
+        magtype = {'profile': 'prof', 'isophotal': 'iso'}.get(magtype, magtype)
         pos = ma1name.find('[')
         if pos > -1:
             ma1i = int(ma1name[pos+1:-1])
@@ -2420,19 +2569,22 @@ def loadsexcat(infile, purge=1, maxflags=8, minfwhm=1, minrf=0, maxmag=99, magna
         else:
             photcom += 'ma1 = ravel(mag%s)\n' % magtype
             photcom += 'ema1 = ravel(magerr%s)\n' % magtype
-        
+
     data = outdata
-    #print 'params:', params
-    #print photcom
+    # print 'params:', params
+    # print photcom
     #outstr = 'from coeio import params,paramstr,data,fullparamnames\n' + paramstr + ' = data' + photcom
-    #print outstr
-    #return outstr
-    #return 'from coeio import data,labels,labelstr,params,outdata\n' + paramstr + ' = outdata' + photcom  # STRING TO BE EXECUTED AFTER EXIT
-    return 'from coeio import params,paramstr,data,fullparamnames\n' + paramstr + ' = data' + photcom  # STRING TO BE EXECUTED AFTER EXIT
+    # print outstr
+    # return outstr
+    # return 'from coeio import data,labels,labelstr,params,outdata\n' + paramstr + ' = outdata' + photcom  # STRING TO BE EXECUTED AFTER EXIT
+    # STRING TO BE EXECUTED AFTER EXIT
+    return 'from coeio import params,paramstr,data,fullparamnames\n' + paramstr + ' = data' + photcom
+
 
 def loadsexcat2(infile, purge=1, maxflags=8, minfwhm=1, minrf=0, maxmag=99, magname="MAG_AUTO", ma1name='APER', silent=0, dir=''):
     """RETURNS A VarsClass() VERSION OF THE CATALOG"""
-    loadsexcat(infile, purge=purge, maxflags=maxflags, minfwhm=minfwhm, minrf=minrf, maxmag=maxmag, magname=magname, ma1name=ma1name, silent=silent, dir=dir)
+    loadsexcat(infile, purge=purge, maxflags=maxflags, minfwhm=minfwhm, minrf=minrf,
+               maxmag=maxmag, magname=magname, ma1name=ma1name, silent=silent, dir=dir)
     # LOADS infile INTO data, params...
     cat = VarsClass()
     cat.name = infile
@@ -2444,6 +2596,7 @@ def loadsexcat2(infile, purge=1, maxflags=8, minfwhm=1, minrf=0, maxmag=99, magn
     #cat.flags = cat.flags[NewAxis,:]
     #cat.flags = cat.flags.astype(float)
     return cat
+
 
 def loadsexdict(sexfile):
     """LOADS A SEXTRACTOR CONFIGURATION (.sex) FILE INTO A DICTIONARY
@@ -2466,6 +2619,7 @@ def loadsexdict(sexfile):
                         sexdict[key] = str2num(value)
     return sexdict
 
+
 def savesexdict(sexdict, sexfile):
     """SAVES A SEXTRACTOR CONFIGURATION (.sex) FILE
     BASED ON THE sexdict DICTIONARY"""
@@ -2479,11 +2633,13 @@ def savesexdict(sexdict, sexfile):
 #################################
 # DS9 REGIONS FILES
 
+
 def saveregions1(x, y, filename, coords='image', color="green", symbol="circle", size=0, width=0):
     """SAVES POSITIONS AS A ds9 REGIONS FILE"""
     fout = open(filename, 'w')
-    fout.write('global color=' + color + ' font="helvetica 10 normal" select=1 edit=1 move=1 delete=1 include=1 fixed=0 source\n')
-    #fout.write("image\n")
+    fout.write('global color=' + color +
+               ' font="helvetica 10 normal" select=1 edit=1 move=1 delete=1 include=1 fixed=0 source\n')
+    # fout.write("image\n")
     fout.write(coords+"\n")
     n = len(x)
     for i in range(n):
@@ -2497,18 +2653,20 @@ def saveregions1(x, y, filename, coords='image', color="green", symbol="circle",
                 sout += ' # width = %d' % width
             sout += '\n'
             fout.write(sout)
-##         if size:
+# if size:
 ##             fout.write("%s %6.1f %6.1f %d\n" % (symbol, x[i], y[i], size))
-##         else:
+# else:
 ##             fout.write("%s point %6.1f %6.1f\n" % (symbol, x[i], y[i]))
-    
+
     fout.close()
+
 
 def saveregions(x, y, filename, labels=[], precision=1, coords='image', color="green", symbol="circle", size=0, width=0):
     """SAVES POSITIONS AND LABELS AS A ds9 REGIONS FILE"""
     fout = open(filename, 'w')
-    fout.write('global color=' + color + ' font="helvetica 10 normal" select=1 edit=1 move=1 delete=1 include=1 fixed=0 source\n')
-    #fout.write("image\n")
+    fout.write('global color=' + color +
+               ' font="helvetica 10 normal" select=1 edit=1 move=1 delete=1 include=1 fixed=0 source\n')
+    # fout.write("image\n")
     fout.write(coords+"\n")
     n = len(x)
     for i in range(n):
@@ -2526,22 +2684,24 @@ def saveregions(x, y, filename, labels=[], precision=1, coords='image', color="g
         print(sout)
         sout += '\n'
         fout.write(sout)
-    
+
     fout.close()
+
 
 def savelabels(x, y, labels, filename, coords='image', color="green", symbol="circle", precision=1, fontsize=12, bold=1):
     """SAVES POSITIONS AS A ds9 REGIONS FILE"""
     if type(labels) in [int, float]:
         labels = arange(len(x)) + 1
     fout = open(filename, 'w')
-    fout.write('global color=%s font="helvetica %d %s" select=1 edit=1 move=1 delete=1 include=1 fixed=0 source\n' % (color, fontsize, ['normal', 'bold'][bold]))
+    fout.write('global color=%s font="helvetica %d %s" select=1 edit=1 move=1 delete=1 include=1 fixed=0 source\n' % (
+        color, fontsize, ['normal', 'bold'][bold]))
     fout.write(coords+"\n")
     n = len(x)
     for i in range(n):
         label = labels[i]
-        #if type(label) == int:  # IntType
+        # if type(label) == int:  # IntType
         #    label = "%d" % label
-        #elif type(label) == float: # FloatType
+        # elif type(label) == float: # FloatType
         #    label = "%%.%df" % precision % label
         label = "%%.%df" % precision % label
         fout.write("text %d %d {%s}\n" % (x[i], y[i], label))
@@ -2558,13 +2718,14 @@ def savefits(data, filename, dir="", silent=0):
     filename = dirfile(filename, dir)
     if not silent:
         print('savefits:', filename)
-    #print type(data)
+    # print type(data)
     if os.path.exists(filename):
         os.remove(filename)
     # UNLESS $NUMERIX IS SET TO numpy, pyfits(v1.1b) USES NumArray
     if not pyfitsusesnumpy:
         data = numarray.array(data.tolist())
     pyfits.writeto(filename, data)
+
 
 def loadfits(filename, dir=""):
     """READS in the data of a .fits file (filename)"""
@@ -2573,7 +2734,7 @@ def loadfits(filename, dir=""):
     if os.path.exists(filename):
         # CAN'T RETURN data WHEN USING memmap
         # THE POINTER GETS MESSED UP OR SOMETHING
-        #return pyfits.open(filename, memmap=1)[0].data
+        # return pyfits.open(filename, memmap=1)[0].data
         data = pyfits.open(filename)[0].data
         # UNLESS $NUMERIX IS SET TO numpy, pyfits(v1.1b) USES NumArray
         if not pyfitsusesnumpy:
@@ -2584,102 +2745,105 @@ def loadfits(filename, dir=""):
         print(filename, "DOESN'T EXIST")
         FILE_DOESNT_EXIST[9] = 3
 
+
 def fitssize(filename):
     """RETURNS (ny, nx)"""
     filename = capfile(filename, '.fits')
     return pyfits.open(filename, memmap=1)[0]._dimShape()
 
-## def fits2int(filename):
+# def fits2int(filename):
 ##     """CONVERTS A FITS FILE TO INTEGER"""
 ##     filename = capfile(filename, '.fits')
-##     if os.path.exists(filename):
+# if os.path.exists(filename):
 ##         fitsio.writefits(filename, fitsio.readfits(filename), 16)
-##     else:
-##         print filename, "DOESN'T EXIST"
+# else:
+# print filename, "DOESN'T EXIST"
 
-## def fits2float(filename):
+# def fits2float(filename):
 ##     """CONVERTS A FITS FILE TO FLOAT"""
 ##     filename = capfile(filename, '.fits')
-##     if os.path.exists(filename):
+# if os.path.exists(filename):
 ##         fitsio.writefits(filename, fitsio.readfits(filename), -32)
-##     else:
-##         print filename, "DOESN'T EXIST"
+# else:
+# print filename, "DOESN'T EXIST"
 
-## def fits8to16(filename):
+# def fits8to16(filename):
 ##     """CONVERTS A FITS int8 FILE TO int16"""
 ##     filename = capfile(filename, '.fits')
-##     if os.path.exists(filename):
+# if os.path.exists(filename):
 ##         data = loadfits(filename)
-##         #data = where(less(data, 0), 256+data, data)
+# data = where(less(data, 0), 256+data, data)
 ##         data = data % 256
 ##         oldfile = filename[:-5] + '8.fits'
 ##         os.rename(filename, oldfile)
 ##         savefits(data, filename)
-##     else:
-##         print filename, "DOESN'T EXIST"
+# else:
+# print filename, "DOESN'T EXIST"
+
 
 def txt2fits(textfile, fitsfile):
     """CONVERTS A TEXT FILE DATA ARRAY TO A FITS FILE"""
     savefits(loaddata(textfile), fitsfile)
 
-## def fitsheadval(file, param):
-##     return fitsio.parsehead(fitsio.gethead(file), param)
+# def fitsheadval(file, param):
+# return fitsio.parsehead(fitsio.gethead(file), param)
 
-## def enlargefits(infits, outsize, outfits):
-##     """ENLARGES A FITS FILE TO THE DESIRED SIZE, USING BI-LINEAR INTERPOLATION
-##     outsize CAN EITHER BE A TUPLE/LIST OR A FILE TO GRAB THE SIZE FROM"""
-##     # RUNS SLOW!!
-##     # WOULD RUN A LITTLE QUICKER IF WE COULD FILL EACH BOX BEFORE MOVING ON TO THE NEXT ONE
-##     # RIGHT NOW I'M DOING ROW BY ROW WHICH DOES EACH BOX SEVERAL TIMES...
+# def enlargefits(infits, outsize, outfits):
+# """ENLARGES A FITS FILE TO THE DESIRED SIZE, USING BI-LINEAR INTERPOLATION
+# outsize CAN EITHER BE A TUPLE/LIST OR A FILE TO GRAB THE SIZE FROM"""
+# RUNS SLOW!!
+# WOULD RUN A LITTLE QUICKER IF WE COULD FILL EACH BOX BEFORE MOVING ON TO THE NEXT ONE
+# RIGHT NOW I'M DOING ROW BY ROW WHICH DOES EACH BOX SEVERAL TIMES...
 
-##     if type(outsize) == StringType:  # GRAB SIZE FROM A FILE
-##         print "DETERMINING SIZE OF OUTPUT fits FILE"
+# if type(outsize) == StringType:  # GRAB SIZE FROM A FILE
+# print "DETERMINING SIZE OF OUTPUT fits FILE"
 ##         fits = fitsio.readfits(outsize)
 ##         [nxout, nyout] = fits['naxes'][0:2]
-##     else:  # SIZE GIVEN
+# else:  # SIZE GIVEN
 ##         (nxout, nyout) = outsize
 
-##     print "CREATING OUTPUT DATA ARRAY..."
+# print "CREATING OUTPUT DATA ARRAY..."
 ##     dataout = FltArr(nyout, nxout) * 0
-        
-##     print "READING IN INPUT fits FILE"
+
+# print "READING IN INPUT fits FILE"
 ##     fits = fitsio.readfits(infits)
 ##     [nxin, nyin] = fits['naxes'][0:2]
 ##     datain = fits['data']
 
-##     print "Interpolating data to full-size fits file (size [%d, %d])... " % (nxout, nyout),
-##     print "%4d, %4d" % (0, 0),
+# print "Interpolating data to full-size fits file (size [%d, %d])... " % (nxout, nyout),
+# print "%4d, %4d" % (0, 0),
 
-##     # TRANSLATION FROM in COORDS TO out COORDS
+# TRANSLATION FROM in COORDS TO out COORDS
 ##     dx = 1. * (nxout - 1) / (nxin - 1)
 ##     dy = 1. * (nyout - 1) / (nyin - 1)
 
-##     # PRINT CREATE BOXES (4 POINTS) IN in SPACE, TRANSLATED TO out COORDS
-##     byout = array([0., dy]) 
-##     # GO THROUGH out COORDS
+# PRINT CREATE BOXES (4 POINTS) IN in SPACE, TRANSLATED TO out COORDS
+##     byout = array([0., dy])
+# GO THROUGH out COORDS
 ##     iyin = 0
-##     for iyout in range(nyout):
-##         if iyout > byout[1]:
+# for iyout in range(nyout):
+# if iyout > byout[1]:
 ##             byout = byout + dy
 ##             iyin = iyin + 1
 ##         bxout = array([0., dx])
 ##         ixin = 0
-##         for ixout in range(nxout):
-##             print "\b" * 11 + "%4d, %4d" % (ixout, iyout),
-##             if ixout > bxout[1]:
+# for ixout in range(nxout):
+# print "\b" * 11 + "%4d, %4d" % (ixout, iyout),
+# if ixout > bxout[1]:
 ##                 bxout = bxout + dx
 ##                 ixin = ixin + 1
-##             # MAYBE BETTER IF I DON'T HAVE TO CALL bilin:
-##             #lavg = ( (y - datay[0]) * data[1,0] + (datay[1] - y) * data[0,0] ) / (datay[1] - datay[0])
-##             #ravg = ( (y - datay[0]) * data[1,1] + (datay[1] - y) * data[0,1] ) / (datay[1] - datay[0])
-##             #return ( (x - datax[0]) * ravg + (datax[1] - x) * lavg ) / (datax[1] - datax[0])
+# MAYBE BETTER IF I DON'T HAVE TO CALL bilin:
+# lavg = ( (y - datay[0]) * data[1,0] + (datay[1] - y) * data[0,0] ) / (datay[1] - datay[0])
+# ravg = ( (y - datay[0]) * data[1,1] + (datay[1] - y) * data[0,1] ) / (datay[1] - datay[0])
+# return ( (x - datax[0]) * ravg + (datax[1] - x) * lavg ) / (datax[1] - datax[0])
 ##             dataout[iyout, ixout] = bilin(ixout, iyout, datain[iyin:iyin+2, ixin:ixin+2], bxout, byout)
 
-##     #fits['data'] = fitsdata
-##     print
-##     #print "Writing out .fits file ", outfits, "...\n"
+# fits['data'] = fitsdata
+# print
+# print "Writing out .fits file ", outfits, "...\n"
 ##     savefits(dataout, outfits)
-##     #fitsio.writefits(outfits,fits)
+# fitsio.writefits(outfits,fits)
+
 
 def loadpixelscale(image):
     if os.path.exists('temp.txt'):
@@ -2703,21 +2867,24 @@ def loadpixelscale(image):
 
 Ellipse = matplotlib.patches.Ellipse
 
+
 def ellpatch1(x, y, w, h, ang, fc, ec, alpha=1, zorder=1, fill=1):
-    patch = Ellipse((x,y), w, h, ang*180/pi, fill=fill)
+    patch = Ellipse((x, y), w, h, ang*180/pi, fill=fill)
     patch.set_fc(fc)
     patch.set_ec(ec)
     patch.set_alpha(alpha)
     patch.set_zorder(zorder)
     return patch
 
+
 def polypatch1(x, y, fc, ec, alpha=1, zorder=1):
-    patch = Polygon(list(zip(x,y)))
+    patch = Polygon(list(zip(x, y)))
     patch.set_fc(fc)
     patch.set_ec(ec)
     patch.set_alpha(alpha)
     patch.set_zorder(zorder)
     return patch
+
 
 def rectpatch1(x, y, dx, dy, fc, ec, alpha=1, zorder=1):
     patch = Rectangle((x-dx, y-dy), 2*dx, 2*dy)
@@ -2728,15 +2895,22 @@ def rectpatch1(x, y, dx, dy, fc, ec, alpha=1, zorder=1):
     return patch
 
 # /Library/Frameworks/Python.framework/Versions/Current/lib/python2.5/site-packages/matplotlib/contour.py
+
+
 def contour_set(CS, alpha=None, zorder=None, color=None, sh=1):
     """contourf alpha doesn't work!
     CS = contourf(x, y, z)
     contour_set_alpha(CS, 0.5)"""
     for collection in CS.collections:
-        if alpha  != None: collection.set_alpha(alpha)
-        if zorder != None: collection.set_zorder(zorder)
-        if color != None: collection.set_color(color)
-    if sh: show()
+        if alpha != None:
+            collection.set_alpha(alpha)
+        if zorder != None:
+            collection.set_zorder(zorder)
+        if color != None:
+            collection.set_color(color)
+    if sh:
+        show()
+
 
 def contour_set_alpha(CS, alpha, sh=1):
     """contourf alpha doesn't work!
@@ -2744,41 +2918,46 @@ def contour_set_alpha(CS, alpha, sh=1):
     contour_set_alpha(CS, 0.5)"""
     for collection in CS.collections:
         collection.set_alpha(alpha)
-    if sh: show()
+    if sh:
+        show()
+
 
 def zlabel(s, vert=False, fontsize=None, x=0.88, **other):
     """Places label on colorbar"""
     if vert:
         if fontsize == None:
             fontsize = 14
-        figtext(x, 0.5, s, rotation='vertical', va='center', fontsize=fontsize, **other)
+        figtext(x, 0.5, s, rotation='vertical',
+                va='center', fontsize=fontsize, **other)
     else:
         figtext(x, 0.5, s, **other)
+
 
 def plotsort(x, **other):
     i = arange(len(x)) / (len(x) - 1.)
     plot(i, sort(x), **other)
 
+
 def makelines(x1, y1, x2, y2):
     """(x1, y1), (x2, y2) LIST ALL CONNECTIONS
     CONNECT THE DOTS AND RETURN LISTS OF LISTS: x, y"""
     n = len(x1)
-    
+
     i = 0
     j = i
     while (x1[i+1] == x2[i]) and (y1[i+1] == y2[i]):
         i += 1
         if i > n - 2:
             break
-    
+
     x = x1[j:i+1].tolist()
     y = y1[j:i+1].tolist()
     x.append(x2[i])
     y.append(y2[i])
-    
+
     xx = [x]
     yy = [y]
-    
+
     while i < n-2:
         i += 1
         j = i
@@ -2786,7 +2965,7 @@ def makelines(x1, y1, x2, y2):
             i += 1
             if i > n - 2:
                 break
-            
+
         x = x1[j:i+1].tolist()
         y = y1[j:i+1].tolist()
         x.append(x2[i])
@@ -2794,12 +2973,13 @@ def makelines(x1, y1, x2, y2):
         #
         xx.append(x)
         yy.append(y)
-    
+
     return xx, yy
 
 #################################
 # ZOOM IN ON DATASET
 # SEE ~/glens/h0limis/results4ae.py
+
 
 def xyrcut(xr, yr, i, fac=0.8):
     dx = p2p(xr)
@@ -2814,18 +2994,19 @@ def xyrcut(xr, yr, i, fac=0.8):
         yr = yr[1] - fac * dy, yr[1]
     return xr, yr
 
+
 def catxyrcut(fac, ct, xr, yr, i, justn=0):
     if fac <= 0:
         return inf
     elif fac >= 1:
         return 0
-    
+
     xr2, yr2 = xyrcut(xr, yr, i, 1-fac)
     ct2 = ct.between(xr2[0], 'x', xr2[1])
     ct2 = ct2.between(yr2[0], 'y', yr2[1])
-    #print ct.len()
-    #print ct2.len()
-    
+    # print ct.len()
+    # print ct2.len()
+
     n = (ct.len() - ct2.len()) / float(ct.len())
     n = divsafe(fac, n)
     if justn:
@@ -2833,8 +3014,9 @@ def catxyrcut(fac, ct, xr, yr, i, justn=0):
     else:
         return n, xr2, yr2, ct2
 
+
 def funcy(x, func, args=(), y=0):
-    #print x, func(x, *args), 'result'
+    # print x, func(x, *args), 'result'
     return abs(func(x, *args) - y)
 
 
@@ -2843,10 +3025,10 @@ def zoom(x, y, nfac=30, fac=0.2, margin=0.02):
     cat.add('x', x)
     cat.add('y', y)
     cat.updatedata()
-    
+
     xr = minmax(cat.x)
     yr = minmax(cat.y)
-    
+
     for i in range(4):
         cat2 = cat
         n = 1e30
@@ -2856,23 +3038,28 @@ def zoom(x, y, nfac=30, fac=0.2, margin=0.02):
             yr = minmax(cat.y)
             n, xr2, yr2, cat2 = catxyrcut(fac, cat, xr, yr, i)
             print(i, n, cat2.len())
-    
+
     xlim(prange(xr, margin=margin))
     ylim(prange(yr, margin=margin))
 
 #################################
 
+
 def hline(v=0, c='k', ls='-', **other):
     """HORIZONTAL LINE THAT ALWAYS SPANS THE AXES"""
     axhline(v, c=c, ls=ls)
 
+
 yline = hline
+
 
 def vline(v=0, c='k', ls='-', **other):
     """VERTICAL LINE THAT ALWAYS SPANS THE AXES"""
     axvline(v, c=c, ls=ls, **other)
 
+
 xline = vline
+
 
 def axlines(x=0, y=0, c='k', ls='-', **other):
     """VERTICAL LINE THAT ALWAYS SPANS THE AXES"""
@@ -2880,6 +3067,8 @@ def axlines(x=0, y=0, c='k', ls='-', **other):
     axhline(y, c=c, ls=ls, **other)
 
 # from MLab_coe:
+
+
 def singlevalue(x):
     """IS x A SINGLE VALUE?  (AS OPPOSED TO AN ARRAY OR LIST)"""
     return type(x) in [NoneType, float, float32, float64, int, int0, int8, int16, int32, int64]  # THERE ARE MORE TYPECODES IN Numpy
@@ -2889,17 +3078,20 @@ def singlevalue(x):
 # FOR FURTHER USE INSTRUCTIONS, SEE e.g.,
 #  ~/LensPerfect/A1689/analysis/NFWfitWSplot.py
 # http://www.thescripts.com/forum/thread462268.html
+
+
 def log_10_product(x, pos):
     """The two args are the value and tick position.
     Label ticks with the product of the exponentiation"""
-    #return '%1i' % (x)
+    # return '%1i' % (x)
     ndec1 = ndec(x)
     if ndec1 == 0:
         format = '%d'
     else:
         format = '%%.%df' % ndec1
-    #print format, x
+    # print format, x
     return format % (x)
+
 
 def savepdf(figname, saveeps=1):
     if figname[:-4] == '.pdf':
@@ -2910,6 +3102,7 @@ def savepdf(figname, saveeps=1):
     if not saveeps:
         os.remove(figname+'.eps')
 
+
 def savepngpdf(figname, saveeps=1):
     if len(figname) > 4:
         if figname[-4] == '.':
@@ -2917,11 +3110,13 @@ def savepngpdf(figname, saveeps=1):
     savefig(figname+'.png')
     savepdf(figname, saveeps=saveeps)
 
+
 def savepng(figname):
     if len(figname) > 4:
         if figname[-4] == '.':
             figname = figname[:-4]
     savefig(figname+'.png')
+
 
 def ploterrorbars1(x, y, dy, ymax=None, color='k', xfac=1, **other):
     if ymax == None:
@@ -2930,7 +3125,7 @@ def ploterrorbars1(x, y, dy, ymax=None, color='k', xfac=1, **other):
     else:
         ymin = dy
         ymax = ymax
-    
+
     dx = 0.005 * xfac * (xlim()[1] - xlim()[0])
     itemp = isinteractive()
     xtemp = xlim()
@@ -2940,13 +3135,14 @@ def ploterrorbars1(x, y, dy, ymax=None, color='k', xfac=1, **other):
         plot([x[i], x[i]], [ymin[i], ymax[i]], color=color, **other)
         plot([x[i]-dx, x[i]+dx], [ymax[i], ymax[i]], color=color, **other)
         plot([x[i]-dx, x[i]+dx], [ymin[i], ymin[i]], color=color, **other)
-    
+
     if itemp:
         ion()
         show()
-    
+
     xlim(xtemp[0], xtemp[1])
     ylim(ytemp[0], ytemp[1])
+
 
 def ploterrorbars(x, y, dy, ymax=None, color='k', xfac=1, ax=None, **other):
     if ax == None:
@@ -2958,7 +3154,7 @@ def ploterrorbars(x, y, dy, ymax=None, color='k', xfac=1, ax=None, **other):
     else:
         ymin = dy
         ymax = ymax
-    
+
     dx = 0.005 * xfac * (xlim()[1] - xlim()[0])
     itemp = isinteractive()
     xtemp = xlim()
@@ -2968,11 +3164,11 @@ def ploterrorbars(x, y, dy, ymax=None, color='k', xfac=1, ax=None, **other):
         ax.plot([x[i], x[i]], [ymin[i], ymax[i]], color=color, **other)
         ax.plot([x[i]-dx, x[i]+dx], [ymax[i], ymax[i]], color=color, **other)
         ax.plot([x[i]-dx, x[i]+dx], [ymin[i], ymin[i]], color=color, **other)
-    
+
     if itemp:
         ion()
         show()
-    
+
     ax.set_xlim(xtemp[0], xtemp[1])
     ax.set_ylim(ytemp[0], ytemp[1])
 
@@ -2983,19 +3179,20 @@ def ploterrorbars(x, y, dy, ymax=None, color='k', xfac=1, ax=None, **other):
 def setaspect(xr=None, yr=None, aspect=5/7.):
     xr = xlim()
     yr = ylim()
-    
+
     dx = xr[1] - xr[0]
     dy = yr[1] - yr[0]
-    
+
     if dy/dx < aspect:
         yr = mean(yr) + dx * aspect * (arange(2)-0.5)
     else:
         xr = mean(xr) + dy / aspect * (arange(2)-0.5)
-    
+
     xlim(xr[0], xr[1])
     ylim(yr[0], yr[1])
 
-def xlim(lo=None,hi=None):
+
+def xlim(lo=None, hi=None):
     if lo == None and hi == None:
         return xlim1()
     else:
@@ -3007,9 +3204,10 @@ def xlim(lo=None,hi=None):
                 hi = hi1
         else:
             lo, hi = lo
-        xlim1(lo,hi)
+        xlim1(lo, hi)
 
-def ylim(lo=None,hi=None):
+
+def ylim(lo=None, hi=None):
     if lo == None and hi == None:
         return ylim1()
     else:
@@ -3021,7 +3219,7 @@ def ylim(lo=None,hi=None):
                 hi = hi1
         else:
             lo, hi = lo
-        ylim1(lo,hi)
+        ylim1(lo, hi)
 
 #################################
 
@@ -3035,7 +3233,7 @@ def len0(x):
 
 # PROBLEM WITH THIS IS I CAN'T DO plot(3, 'o')
 #from pylab import plot as _plot
-#def plot(x, **other):
+# def plot(x, **other):
 #    if not len0(x):
 #       x = [x]
 #    if 'y' not in other.keys():
@@ -3046,9 +3244,11 @@ def len0(x):
 #           y = [y]
 #       _plot(x, y, **other)
 
-#plot(1)
-# FROM THE matplotlib MANUAL: "Because most GUIs have a mainloop, they become unresponsive to input outside of their mainloop once they are launched."  
+# plot(1)
+# FROM THE matplotlib MANUAL: "Because most GUIs have a mainloop, they become unresponsive to input outside of their mainloop once they are launched."
 # THEY SUGGEST SOME WORKAROUNDS, BUT THIS WORKS, TOO:
+
+
 def killplot():
     plot([1])
     title('KILL THIS WINDOW!')
@@ -3056,7 +3256,8 @@ def killplot():
     # IMAGE WILL DISPLAY, BUT YOU WON'T BE ABLE TO USE THE Python SHELL
     # KILL THIS WINDOW, THEN...
     ioff()
-    
+
+
 if 0:
     killplot()
 
@@ -3068,7 +3269,6 @@ if 0:
 clear = cla  # cla() CLEAR PLOT
 
 
-
 def closefig(num=None):
     if num == None:
         closecurrentfig()
@@ -3076,16 +3276,20 @@ def closefig(num=None):
         figure(num)
         closecurrentfig()
 
+
 figclose = closefig
+
 
 def smallfig(num, fac=2, reopen=0):
     if reopen:
         closefig(num)
-    
+
     figure(num, figsize=(8/fac, 6/fac))
 
 # now x, y ranges can be input: lo & hi dictate axes
-def showarr(a, showcolorbar=1, nan=None, valrange=[None, None], sq=0, 
+
+
+def showarr(a, showcolorbar=1, nan=None, valrange=[None, None], sq=0,
             cmap='jet', x=None, y=None, cl=1, sh=1):
     if valrange[0] or valrange[1]:
         if valrange[0] == None:
@@ -3117,12 +3321,14 @@ def showarr(a, showcolorbar=1, nan=None, valrange=[None, None], sq=0,
         ion()
     return im
 
+
 def showxyz(x, y, z, **other):
     showarr(z, x=x, y=y, **other)
 
+
 def rectangle(lolimits, hilimits, fillit=0, **other):
-    [xmin,ymin] = lolimits
-    [xmax,ymax] = hilimits
+    [xmin, ymin] = lolimits
+    [xmax, ymax] = hilimits
     if not fillit:
         return plot([xmin, xmin, xmax, xmax, xmin], [ymin, ymax, ymax, ymin, ymin], **other)
     else:
@@ -3135,6 +3341,8 @@ def rectangle(lolimits, hilimits, fillit=0, **other):
             return fill([xmin, xmin, xmax, xmax, xmin], [ymin, ymax, ymax, ymin, ymin], **other)
 
 # FIX THE AXES ON A PLOT OF AN ARRAY
+
+
 def retick(lo, hi, N, ndec=1, ytx=None):
     N = N - 1.
 
@@ -3143,74 +3351,80 @@ def retick(lo, hi, N, ndec=1, ytx=None):
         ytx = ylocs / float(N) * (hi - lo) + lo
     else:
         ylocs = (ytx - lo) * N / float(hi - lo)
-    
+
     ytxs = []
     for ytick in ytx:
         format = '%%.%df' % ndec
         ytxs.append(format % ytick)
         #ytxs.append('%.1f' % ytick)
-    
+
     yticks(ylocs, ytxs)
     xticks(ylocs, ytxs)
-    
-    xlim(0,N)
-    ylim(0,N)
+
+    xlim(0, N)
+    ylim(0, N)
     show()
 
 # FIX ONE AXIS ON A PLOT OF AN ARRAY
+
+
 def retick1(x, axs, ntx=4, ndec=1, ytx=None, relim=True):
     N = len(x) - 1
     lo, hi = minmax(x)
-    
+
     if ytx == None:
         ylocs = arange(0, N+.001, N/float(ntx))
         ytx = ylocs / float(N) * (hi - lo) + lo
     else:
         ylocs = (ytx - lo) * N / float(hi - lo)
-    
+
     ytxs = []
     for ytick in ytx:
         format = '%%.%df' % ndec
         ytxs.append(format % ytick)
         #ytxs.append('%.1f' % ytick)
-    
+
     if axs == 'x':
         p = xticks(ylocs, ytxs)
-        if relim: p = xlim(-0.5, N+0.5)
+        if relim:
+            p = xlim(-0.5, N+0.5)
     elif axs == 'y':
         p = yticks(ylocs, ytxs)
-        if relim: p = ylim(-0.5, N+0.5)
+        if relim:
+            p = ylim(-0.5, N+0.5)
     else:
         print('Sorry, which axis? --retick1')
-        
+
     show()
+
 
 def retick2(xlo, xhi, Nx, ylo, yhi, Ny, Nxtx=4, Nytx=4, ndec=1):
     Nx = Nx - 1.
     Ny = Ny - 1.
-    
+
     xlocs = arange(0, Nx+.001, Nx/float(Nxtx))
     xtx = xlocs / float(Nx) * (xhi - xlo) + xlo
     xtxs = []
     for xtick in xtx:
         format = '%%.%df' % ndec
         xtxs.append(format % xtick)
-    
+
     ylocs = arange(0, Ny+.001, Ny/float(Nytx))
     ytx = ylocs / float(Ny) * (yhi - ylo) + ylo
     ytxs = []
     for ytick in ytx:
         format = '%%.%df' % ndec
         ytxs.append(format % ytick)
-    
+
     p = xticks(xlocs, xtxs)
     p = yticks(ylocs, ytxs)
-    
-    #xlim(0,Nx)
-    #ylim(0,Ny)
-    xlim(-0.5,Nx+0.5)
-    ylim(-0.5,Ny+0.5)
+
+    # xlim(0,Nx)
+    # ylim(0,Ny)
+    xlim(-0.5, Nx+0.5)
+    ylim(-0.5, Ny+0.5)
     show()
+
 
 def retick3(x, y, Nxtx=4, Nytx=4, ndec=1):
     xlo, xhi = minmax(x)
@@ -3218,6 +3432,7 @@ def retick3(x, y, Nxtx=4, Nytx=4, ndec=1):
     Nx = len(x)
     Ny = len(y)
     retick2(xlo, xhi, Nx, ylo, yhi, Ny, Nxtx=Nxtx, Nytx=Nytx, ndec=ndec)
+
 
 def reticklog1(x, axs, relim=True):
     """Automatcially places tickmarks at log intervals (0.001, 0.01, etc.)
@@ -3228,7 +3443,7 @@ def reticklog1(x, axs, relim=True):
     hi = max(log10(x))
     #lo = floor(lo+eps)
     #tx = arange(lo,hi+eps,1)
-    tx = multiples(lo,hi)
+    tx = multiples(lo, hi)
     txs = []
     for logx in tx:
         n = 10 ** logx
@@ -3236,23 +3451,27 @@ def reticklog1(x, axs, relim=True):
         tx1 = string.replace(tx1, '-0', '-')
         tx1 = string.replace(tx1, '+0', '+')
         txs.append(tx1)
-    
+
     ntx = len(tx)
     nx = len(x) - 1
     #locs = mgrid[0:nx:ntx*1j]
     locs = interp(tx, array([lo, hi]), array([0, nx]))
     if axs == 'x':
         p = xticks(locs, txs)
-        if relim: p = xlim(-0.5, nx+0.5)
+        if relim:
+            p = xlim(-0.5, nx+0.5)
     elif axs == 'y':
         p = yticks(locs, txs)
-        if relim: p = ylim(-0.5, nx+0.5)
+        if relim:
+            p = ylim(-0.5, nx+0.5)
     else:
         print('Sorry, which axis? --reticklog1')
+
 
 def reticklog(x, y, relim=True):
     reticklog1(x, 'x', relim=relim)
     reticklog1(y, 'y', relim=relim)
+
 
 def fillbetween(x1, y1, x2, y2, **other):
     # MAKE SURE IT'S NOT A LIST, THEN IN CASE IT'S A numpy ARRAY, CONVERT TO LIST, THEN CONVERT TO numarray ARRAY
@@ -3270,6 +3489,7 @@ def fillbetween(x1, y1, x2, y2, **other):
     y[len(y):] = y2[::-1]
     return fill(x, y, **other)
 
+
 def sqrange(x, y, margin=None, set=1):
     xmax = max(abs(array(x)))
     ymax = max(abs(array(y)))
@@ -3282,6 +3502,7 @@ def sqrange(x, y, margin=None, set=1):
         ylim(xyr)
     return xyr
 
+
 def prange(x, xinclude=None, margin=0.05):
     """RETURNS GOOD RANGE FOR DATA x TO BE PLOTTED IN.
     xinclude = VALUE YOU WANT TO BE INCLUDED IN RANGE.
@@ -3291,7 +3512,7 @@ def prange(x, xinclude=None, margin=0.05):
     if xinclude != None:
         xmin = min([xmin, xinclude])
         xmax = max([xmax, xinclude])
-    
+
     dx = xmax - xmin
     if dx:
         xmin = xmin - dx * margin
@@ -3300,6 +3521,7 @@ def prange(x, xinclude=None, margin=0.05):
         xmin = xmin - margin
         xmax = xmax + margin
     return [xmin, xmax]
+
 
 def prangelog(x, xinclude=None, margin=0.05):
     """RETURNS GOOD RANGE FOR DATA x TO BE PLOTTED IN.
@@ -3310,19 +3532,21 @@ def prangelog(x, xinclude=None, margin=0.05):
     if xinclude != None:
         xmin = min([xmin, xinclude])
         xmax = max([xmax, xinclude])
-    
+
     fac = xmax / xmin
     xmin = xmin / (fac ** margin)
     xmax = xmax * (fac ** margin)
-    
+
     return [xmin, xmax]
 
 # whiskerplot.py
+
+
 def vectorplot(vx, vy, x=[], y=[], xyfactor=[], heads=1, clear=1, color='k', **other):
-    #print 'vx, vy', minmax(ravel(vx)), minmax(ravel(vy))
+    # print 'vx, vy', minmax(ravel(vx)), minmax(ravel(vy))
     nmax = 10
     if clear:
-                clf()
+        clf()
     ioff()  # DON'T UPDATE PLOT WITH EACH ADDITIION (WAIT UNTIL END...)
     # IF TOO MANY VECTORS, SAMPLE:
     if len(vx.shape) == 2:
@@ -3339,8 +3563,8 @@ def vectorplot(vx, vy, x=[], y=[], xyfactor=[], heads=1, clear=1, color='k', **o
                 y = int(iy * dy)
                 for ix in range(nxred):
                     x = int(ix * dx)
-                    vxred[iy,ix] = vx[y,x]
-                    vyred[iy,ix] = vy[y,x]
+                    vxred[iy, ix] = vx[y, x]
+                    vyred[iy, ix] = vy[y, x]
                     #print (iy,ix), (y,x)
                     #print (vy[y,x], vx[y,x]), (vyred[iy,ix], vxred[iy,ix])
             vy = vyred
@@ -3350,7 +3574,7 @@ def vectorplot(vx, vy, x=[], y=[], xyfactor=[], heads=1, clear=1, color='k', **o
         vy = ravel(vy)
         x = ravel(x)
         y = ravel(y)
-    #print 'RED vx, vy', minmax(ravel(vx)), minmax(ravel(vy))
+    # print 'RED vx, vy', minmax(ravel(vx)), minmax(ravel(vy))
     try:
         xfactor, yfactor = xyfactor
     except:
@@ -3361,19 +3585,19 @@ def vectorplot(vx, vy, x=[], y=[], xyfactor=[], heads=1, clear=1, color='k', **o
             yfactor = 1.
     #ny, nx = vx.shape
     vr = hypot(vx, vy)
-    #print max(ravel(vx))
-    #print max(ravel(vy))
+    # print max(ravel(vx))
+    # print max(ravel(vy))
     #maxvr = max(ravel(vr))
     maxvr = max(vr)
     vx = vx / maxvr * 0.1 * ptp(x) * xfactor
     vy = vy / maxvr * 0.1 * ptp(y) * yfactor
-    #print maxvr, xfactor, yfactor
+    # print maxvr, xfactor, yfactor
     for i in range(len(vx)):
         xo = x[i]
         yo = y[i]
         dx = vx[i]
         dy = vy[i]
-        #print dx, dy
+        # print dx, dy
         #pause('TO PLOT...')
         dr = hypot(dx, dy)
         # IF IT'S TOO SMALL, DRAW A DOT
@@ -3385,7 +3609,7 @@ def vectorplot(vx, vy, x=[], y=[], xyfactor=[], heads=1, clear=1, color='k', **o
         if heads:
             # NOW FOR THE HEAD OF THE ARROW
             hx = -dx + -dy
-            hy =  dx + -dy
+            hy = dx + -dy
             #hr = hypot(hx, hy)
             #hx = 0.1 * hx / hr * xfactor
             #hy = 0.1 * hy / hr * yfactor
@@ -3394,7 +3618,7 @@ def vectorplot(vx, vy, x=[], y=[], xyfactor=[], heads=1, clear=1, color='k', **o
             plot([xo+dx, xo+dx+hx], [yo+dy, yo+dy+hy], color=color)
             plot([xo+dx, xo+dx-hy], [yo+dy, yo+dy+hx], color=color)
     #
-    show() # NOW SHOW THE PLOT
+    show()  # NOW SHOW THE PLOT
     ion()  # AND TURN INTERACTIVE MODE BACK ON
 
 
@@ -3419,12 +3643,12 @@ def atobplot(xa, ya, xb, yb, color='k', linetype='arrow', showplot=1, **other):
     ioff()
     for i in range(n):
         plot([xa[i], xb[i]], [ya[i], yb[i]], color=color, **other)
-        if linetype=='arrow':
+        if linetype == 'arrow':
             # NOW FOR THE HEAD OF THE ARROW
             dx = xb[i] - xa[i]
             dy = yb[i] - ya[i]
             hx = -dx + -dy
-            hy =  dx + -dy
+            hy = dx + -dy
             #hr = hypot(hx, hy)
             #hx = 0.1 * hx / hr * xfactor
             #hy = 0.1 * hy / hr * yfactor
@@ -3432,9 +3656,10 @@ def atobplot(xa, ya, xb, yb, color='k', linetype='arrow', showplot=1, **other):
             hy = 0.1 * hy
             plot([xb[i], xb[i]+hx], [yb[i], yb[i]+hy], color=color, **other)
             plot([xb[i], xb[i]-hy], [yb[i], yb[i]+hx], color=color, **other)
-        if linetype=='xo':
-                plot(xa, ya, 'x', markerfacecolor=color, markeredgecolor=color, **other)
-                plot(xb, yb, 'o', markerfacecolor=color, **other)
+        if linetype == 'xo':
+            plot(xa, ya, 'x', markerfacecolor=color,
+                 markeredgecolor=color, **other)
+            plot(xb, yb, 'o', markerfacecolor=color, **other)
     if isint and showplot:
         ion()
         show()
@@ -3446,7 +3671,6 @@ def atobplot(xa, ya, xb, yb, color='k', linetype='arrow', showplot=1, **other):
 
 #vectorplot(ax, ay)
 
-
         #yred, xred = indices((nyred, nxred))
         #yred = yred * (ny / float(nyred))
         #xred = xred * (nx / float(nxred))
@@ -3454,22 +3678,22 @@ def atobplot(xa, ya, xb, yb, color='k', linetype='arrow', showplot=1, **other):
         #vy = interpxy(xred, yred, xall, yall, vy)
 
 
-def colormaprgb(val, valrange=[0.,1.], cmap='jet', silent=0):
-    if valrange != [0.,1.]:
+def colormaprgb(val, valrange=[0., 1.], cmap='jet', silent=0):
+    if valrange != [0., 1.]:
         lo = float(valrange[0])
         hi = float(valrange[1])
         val = (val - lo) / (hi - lo)
-    
+
     try:
         n = len(val)
     except:  # SINGLE VALUE
         val = array([val])
-    
+
     cmapa = colormap_map[cmap]
-    
+
     xa = arange(len(cmapa)) / float(len(cmapa)-1)
     ra, ga, ba = transpose(cmapa)
-    
+
     r = interpn(val, xa, ra, silent)
     g = interpn(val, xa, ga, silent)
     b = interpn(val, xa, ba, silent)
@@ -3478,6 +3702,8 @@ def colormaprgb(val, valrange=[0.,1.], cmap='jet', silent=0):
 
 # colormap IS ALREADY BUILT IN, BUT NAMED scatter
 # AND THIS WAY, YOU CAN ADD A colorbar()!
+
+
 def colormap(x, y, z, showcolorbar=1, ticks=None, **other):
     x = ravel(x)
     y = ravel(y)
@@ -3487,21 +3713,24 @@ def colormap(x, y, z, showcolorbar=1, ticks=None, **other):
         colorbar(ticks=ticks)
 
 # SEE colormap.py
+
+
 def colormap_obsolete(x, y, z, valrange=[None, None], cmap='jet', markersize=5):
     ioff()
-    
+
     if valrange[0] == None:
         valrange[0] = min(z)
     if valrange[1] == None:
         valrange[1] = max(z)
     n = len(x)
-    
+
     for i in range(n):
         if not (isNaN(z[i]) or (valrange[0] == valrange[1])):
-            plot( [x[i]], [y[i]], 'o', markerfacecolor=colormaprgb(z[i], valrange=valrange), markersize=markersize )
+            plot([x[i]], [y[i]], 'o', markerfacecolor=colormaprgb(
+                z[i], valrange=valrange), markersize=markersize)
         else:
-            p.add(Point( x[i], y[i], 'ko', markersize=markersize ))
-    
+            p.add(Point(x[i], y[i], 'ko', markersize=markersize))
+
     colorbar()
     ion()
     show()
@@ -3513,14 +3742,17 @@ def test():
     z = arange(10)
     colormap(x, y, z)
 
-#test()
+# test()
 
 # THEY MUST'VE WRITTEN THIS, BUT I CAN'T FIND IT!
+
+
 def circle(xc, yc, r, n=100, **other):
     ang = arange(n+1) / float(n) * 2*pi
     x = xc + r * cos(ang)
     y = yc + r * sin(ang)
     plot(x, y, **other)
+
 
 def circles(xc, yc, r, n=100, **other):
     if singlevalue(xc):
@@ -3531,6 +3763,8 @@ def circles(xc, yc, r, n=100, **other):
         circle(xc[i], yc[i], r[i], n=n, **other)
 
 # COULD ALSO USE matplotlib.patches.Ellipse
+
+
 def ellipse(xc, yc, a, b, ang=0, n=100, **other):
     t = arange(n+1) / float(n) * 2*pi
     x = a * cos(t)
@@ -3541,11 +3775,13 @@ def ellipse(xc, yc, a, b, ang=0, n=100, **other):
     y = y + yc
     plot(x, y, **other)
 
+
 def ellipses(xc, yc, a, b, ang=None, n=100, **other):
-    if ang==None:
+    if ang == None:
         ang = zeros(len(a))
     for i in range(len(xc)):
         ellipse(xc[i], yc[i], a[i], b[i], ang[i], n=n, **other)
+
 
 def texts(x, y, z, format='%d', showit=True, **other):
     isint = isinteractive()
@@ -3560,6 +3796,8 @@ def texts(x, y, z, format='%d', showit=True, **other):
 
 # FROM MLab_coe.py
 # COLOR INPUT: fc = face color; ec = edge color
+
+
 def bargraph(x, y, fill=1, color='black', zeroedges=1, **other):
     n = len(x)
     xx = repeat(x, 2)
@@ -3571,7 +3809,7 @@ def bargraph(x, y, fill=1, color='black', zeroedges=1, **other):
     else:
         xx = xx[1:-1]
     zz = yy*0
-    
+
     if fill:
         fc = color
         ec = ['', color, 'k'][fill]
@@ -3593,6 +3831,8 @@ def bargraph(x, y, fill=1, color='black', zeroedges=1, **other):
 #            p0 = plot(xx, yy, color='k')
 
 # ALL LINES EXTEND DOWN TO ZERO
+
+
 def bargraph2(x, y, fill=1, **other):
     n = len(x)
     xx = repeat(x, 3)[1:-1]
@@ -3602,7 +3842,7 @@ def bargraph2(x, y, fill=1, **other):
     put(yy, arange(len(y))*3+1, y)
     put(yy, arange(len(y))*3+2, y)
     zz = yy*0
-    
+
     if fill:
         fillbetween(xx, yy, xx, zz, color=color)
     else:
@@ -3610,6 +3850,8 @@ def bargraph2(x, y, fill=1, **other):
 
 # ALL LINES EXTEND DOWN TO ZERO
 # color input works
+
+
 def bargraph3(x, y, fill=1, **other):
     n = len(x)
     xx = repeat(x, 3)[1:-1]
@@ -3619,7 +3861,7 @@ def bargraph3(x, y, fill=1, **other):
     put(yy, arange(len(y))*3+1, y)
     put(yy, arange(len(y))*3+2, y)
     zz = yy*0
-    
+
     if fill:
         fillbetween(xx, yy, xx, zz)
     else:
@@ -3633,6 +3875,7 @@ def matrix_multiply(MM):
         P = dot(P, M)
     return P
 
+
 def sinn(x):
     """
     x < 0: sin
@@ -3643,15 +3886,18 @@ def sinn(x):
     else:
         return sinh(x)
 
+
 def multiples(lo, hi, x=1, eps=1e-7):
     """Returns an array of the multiples of x between [lo,hi] inclusive"""
     l = ceil((lo-eps)/x)*x
     return arange(l, hi+eps, x)
 
+
 def multiples2(lohi, x=1, eps=1e-7):
     """Returns an array of the multiples of x between [lo,hi] inclusive"""
     lo, hi = lohi
     return multiples(lo, hi, x, eps)
+
 
 def multipleslog(lo, hi):
     """Returns an array of the log multiples between [lo,hi] inclusive.
@@ -3673,6 +3919,7 @@ def multipleslog(lo, hi):
         mm = concatenate([mm, m1])
     return mm
 
+
 def multiples2log(lohi):
     """Returns an array of the log multiples between [lo,hi] inclusive.
     That didn't make sense, but what I'm trying to say is:
@@ -3685,25 +3932,27 @@ def onlyids(data, ids):
     """ALTERS ARRAY data TO INCLUDE ONLY NUMBERS IN ids
     ALL OTHER VALUES SET TO zero"""
     keys = arange(data.size)
-    
+
     keysc = compress(data.flat, keys)
     valsc = compress(data.flat, data.flat)
-    
+
     mask = zeros(data.size)
     for id in ids:
         ee = equal(valsc, id)
         mask = logical_or(mask, ee)
-    
+
     keyscm = compress(mask, keysc)
     valscm = compress(mask, valsc)
-    
+
     datanew = zeros(data.shape)
     datanew.put(keyscm, valscm)
-    
+
     return datanew
+
 
 def cliplohi(xlo, xhi, xmin, xmax):
     return max([xlo, xmin]), min([xhi, xmax])
+
 
 def base(b, nums):
     """base(10, [1, 2, 3]) RETURNS 123"""
@@ -3715,8 +3964,10 @@ def base(b, nums):
         x += array(num) * b**i
     return x
 
+
 def strbegin(str, phr):  # coetools.py
     return str[:len(phr)] == phr
+
 
 def minsec(x, format=(), precision=None):
     """
@@ -3747,7 +3998,7 @@ def minsec(x, format=(), precision=None):
             m = '0'
             i += 1
         i = '%d' % i
-        ims = (i,m,s)
+        ims = (i, m, s)
         if len(format) == 1:
             out = string.join(ims, format)
         elif len(format) == 3:
@@ -3755,6 +4006,7 @@ def minsec(x, format=(), precision=None):
     else:
         out = (i, m, s)
     return out
+
 
 def sec2hms(x, precision=0, mpersist=True):
     """
@@ -3783,6 +4035,7 @@ def sec2hms(x, precision=0, mpersist=True):
     out += s
     return out
 
+
 def prange(x, xinclude=None, margin=0.05):
     """RETURNS GOOD RANGE FOR DATA x TO BE PLOTTED IN.
     xinclude = VALUE YOU WANT TO BE INCLUDED IN RANGE.
@@ -3792,7 +4045,7 @@ def prange(x, xinclude=None, margin=0.05):
     if xinclude != None:
         xmin = min([xmin, xinclude])
         xmax = max([xmax, xinclude])
-    
+
     dx = xmax - xmin
     if dx:
         xmin = xmin - dx * margin
@@ -3802,12 +4055,14 @@ def prange(x, xinclude=None, margin=0.05):
         xmax = xmax + margin
     return [xmin, xmax]
 
+
 def minmax(x, range=None):
     if range:
         lo, hi = range
         good = between(lo, x, hi)
         x = compress(good, x)
     return min(x), max(x)
+
 
 def rescale(x, lohi):
     lo, hi = lohi
@@ -3817,9 +4072,11 @@ def rescale(x, lohi):
     y = x / dx * dy + lo
     return y
 
+
 def inrange(x, r):
     lo, hi = minmax(r)
     return between(lo, x, hi)
+
 
 def pairs(x):
     p = []
@@ -3827,6 +4084,7 @@ def pairs(x):
         for j in range(i+1, len(x)):
             p.append((x[i], x[j]))
     return p
+
 
 def Psig(P, nsigma=1):
     """(ir, il) bound central nsigma of P
@@ -3842,16 +4100,20 @@ def Psig(P, nsigma=1):
     ir = n - ir
     return il, ir
 
+
 def xsig(x, P, nsigma=1):
     return p2p(take(x, Psig(P, nsigma))) / 2.
+
 
 def gaussin(nsigma=1):
     """FRACTION WITHIN nsigma"""
     return erf(nsigma / sqrt(2))
 
+
 def gaussp(nsigma=1):
     """FRACTION INCLUDED UP TO nsigma"""
     return 0.5 + gaussin(nsigma) / 2.
+
 
 def gaussbtw(nsig1, nsig2):
     """FRACTION BETWEEN nsig1, nsig2"""
@@ -3862,20 +4124,25 @@ def gaussbtw(nsig1, nsig2):
 
 sigma = gaussin
 
+
 def gausst(nsigma=1):
     """FRACTION IN TAIL TO ONE SIDE OF nsigma"""
     return 1 - gaussp(nsigma)
+
 
 def pick(x):
     n = len(x)
     i = random_integers(n)
     return x[i-1]
 
+
 def randrange(N=1):
     return (2 * random(N) - 1)
 
+
 def randrange2(lo, hi, N=1):
     return ((hi - lo) * random(N) + lo)
+
 
 class PDraw:
     def __init__(self, x, P):
@@ -3883,24 +4150,30 @@ class PDraw:
         self.P = P
         self.Pcum = cumsum(P)
         self.N = self.Pcum[-1]
+
     def draw(self, n=1):
         r = self.N * random(n)
         i = searchsorted(self.Pcum, r)
         return take(self.x, i)
 
+
 def hypotsq(dx, dy):
     return dx**2 + dy**2
 
+
 def hypotn(x):
     return sqrt(sum(x**2))
+
 
 def hypotnn(*x):
     return hypotn(array(x))
 
 #hypotnn(3, 4, 5)
 
+
 def hypotxy(x1, y1, x2, y2):
     return hypot(x1-x2, y1-y2)
+
 
 def subtend(x1, y1, x2, y2):
     """ANGLE SUBTENDED BY TWO VECTORS (wrt THE ORIGIN)"""
@@ -3913,32 +4186,38 @@ def subtend(x1, y1, x2, y2):
     theta = arccos(costheta)
     return theta
 
+
 def subtends(x, y):
     n = len(x)
     dd = []
     for i in range(n-1):
-        for j in range(i+1,n):
+        for j in range(i+1, n):
             dd.append(subtend(x[i], y[i], x[j], y[j]))
     return array(dd)
+
 
 def distances(x, y):
     n = len(x)
     dd = []
     for i in range(n-1):
-        for j in range(i+1,n):
+        for j in range(i+1, n):
             dd.append(hypot(x[i]-x[j], y[i]-y[j]))
     return array(dd)
+
 
 def nrange(x, n=100):
     """n EQUALLY-SPACED SAMPLES ON THE RANGE OF x"""
     return arange(n) / (n-1.) * (max(x) - min(x)) + min(x)
 
+
 def range01(n=100):
     """n EQUALLY-SPACED SAMPLES ON THE RANGE OF [0,1]"""
     return arange(n) / (n-1.)
 
+
 def middle(x):
     return (max(x) + min(x)) / 2.
+
 
 def within(A, xc, yc, ro, yesorno=0):  # --DC
     """RETURNS WHETHER EACH PIXEL OF AN ARRAY IS WITHIN A CIRCLE
@@ -3950,41 +4229,43 @@ def within(A, xc, yc, ro, yesorno=0):  # --DC
     BUT ARE AN IMPROVEMENT OVER NOT USING THEM AT ALL!
     TO TURN OFF FRACTIONS AND JUST RETURN True/False, SET yesorno=1"""
     ny, nx = A.shape
-    a = ones((ny,nx))
+    a = ones((ny, nx))
     y = arange(ny)
     x = arange(nx)
     x, y = meshgrid(x, y)
     x = x-xc + 0.
     y = y-yc + 0.
-    r = hypot(x,y)
+    r = hypot(x, y)
     xy = abs(divsafe(x, y, nan=0))
     yx = abs(divsafe(y, x, nan=0))
     m = min([xy, yx])
     dr = hypot(1, m)  # = 1 ON AXES, sqrt(2) ON DIAGONALS
-    
+
     if (ro - xc > 0.5) or (ro - yc > 0.5) \
             or (ro + xc > nx - 0.5) or (ro + yc > ny - 0.5):
         print('WARNING: CIRCLE EXTENDS BEYOND BOX IN MLab_coe.within')
-    
+
     if yesorno:
         v = less_equal(r, ro)  # TRUE OR FALSE, WITHOUT FRACTIONS
     else:
         v = less_equal(r, ro-0.5*dr) * 1
         v = v + between(ro-0.5*dr, r, ro+0.5*dr) * (ro+0.5*dr - r) / dr
-    
-    #if showplot:  matplotlib NOT LOADED IN MLab_coe
+
+    # if showplot:  matplotlib NOT LOADED IN MLab_coe
     if 0:
         matshow(v)
         circle(xc+0.5, yc+0.5, ro, color='k', linewidth=2)
-    
+
     return v
 
-#def sumwithin(A, xc, yc, ro, showplot=0):
+# def sumwithin(A, xc, yc, ro, showplot=0):
 #    return total(A * within(A, xc, yc, ro, showplot=showplot))
+
 
 def sumwithin(A, xc, yc, ro):
     """RETURNS SUM OF ARRAY WITHIN CIRCLE DEFINED ON ARRAY'S COORDINATES"""
     return total(A * within(A, xc, yc, ro))
+
 
 def floatin(x, l, ndec=3):
     """IS x IN THE LIST l?
@@ -3993,6 +4274,7 @@ def floatin(x, l, ndec=3):
     l = (array(l) * 10**ndec + 0.1).astype(int).tolist()
     return x in l
 
+
 def floatindex(x, l, ndec=3):
     """IS x IN THE LIST l?
     WHO KNOWS WITH FLOATING POINTS!"""
@@ -4000,8 +4282,10 @@ def floatindex(x, l, ndec=3):
     l = (array(l) * 10**ndec + 0.1).astype(int).tolist()
     return l.index(x)
 
+
 def integral(f, x1, x2):
     return quad(f, x1, x2)[0]
+
 
 def magnify(a, n):
     """MAGNIFIES A MATRIX BY n
@@ -4016,10 +4300,11 @@ def magnify(a, n):
     """
     ny, nx = a.shape
     a = repeat(a, n**2)
-    a = reshape(a, (ny,nx,n,n))
+    a = reshape(a, (ny, nx, n, n))
     a = transpose(a, (0, 2, 1, 3))
     a = reshape(a, (n*ny, n*nx))
     return a
+
 
 def demagnify(a, n, func='mean'):
     """DEMAGNIFIES A MATRIX BY n
@@ -4030,7 +4315,7 @@ def demagnify(a, n, func='mean'):
     678
     """
     ny, nx = array(a.shape) / n
-    a = a[:ny*8,:nx*8]  # Trim if not even multiples
+    a = a[:ny*8, :nx*8]  # Trim if not even multiples
     a = reshape(a, (ny, n, nx, n))
     a = transpose(a, (0, 2, 1, 3))
     a = reshape(a, (ny, nx, n*n))
@@ -4044,13 +4329,14 @@ def demagnify(a, n, func='mean'):
 # ones is from Numeric.py
 
 
-
 def listo(x):
     if singlevalue(x):
         x = [x]
     return x
 
 # ~/glens/h0limits/scatterrea.py
+
+
 def insidepoly1(xp, yp, x, y):
     """DETERMINES WHETHER THE POINT (x, y)
     IS INSIDE THE CONVEX POLYGON DELIMITED BY (xp, yp)"""
@@ -4060,7 +4346,7 @@ def insidepoly1(xp, yp, x, y):
     if xp[-1] != xp[0]:
         xp.append(xp[0])
         yp.append(yp[0])
-    
+
     xo = mean(xp)
     yo = mean(yp)
     inpoly = 1
@@ -4072,10 +4358,12 @@ def insidepoly1(xp, yp, x, y):
         if linescross2(xa, ya, xb, yb):
             inpoly = 0
             break
-    
+
     return inpoly
 
 # ~/glens/h0limits/scatterrea.py
+
+
 def insidepoly(xp, yp, xx, yy):
     """DETERMINES WHETHER THE POINTS (xx, yy)
     ARE INSIDE THE CONVEX POLYGON DELIMITED BY (xp, yp)"""
@@ -4088,7 +4376,7 @@ def insidepoly(xp, yp, xx, yy):
             print('%d / %d' % (i, len(xx)))
         inhull1 = insidepoly1(xp, yp, xx[i], yy[i])
         inhull.append(inhull1)
-    
+
     return array(inhull).astype(int)
 
 
@@ -4103,7 +4391,7 @@ def insidepolyshwag(xp, yp, xx, yy):
     if xp[-1] != xp[0]:
         xp.append(xp[-1])  # SHOULD BE [0]
         yp.append(yp[-1])  # SHOULD BE [0]
-    
+
     xo = mean(xp)
     yo = mean(yp)
     xx = ravel(listo(xx))
@@ -4120,8 +4408,9 @@ def insidepolyshwag(xp, yp, xx, yy):
             if linescross2(xa, ya, xb, yb):
                 inhull[i] = 0
                 break
-    
+
     return inhull
+
 
 def testinsidepoly():
     #from numpy.random import random
@@ -4141,11 +4430,13 @@ def testinsidepoly():
     for i in range(len(XX)):
         color = ['r', 'g'][ininin[i]]
         p = plot([xx[i]], [yy[i]], 'o', mfc=color)
-    
+
     show()
+
 
 def p2p(x):  # DEFINED AS ptp IN MLab (BELOW)
     return max(x) - min(x)
+
 
 def rotate(x, y, ang):
     """ROTATES (x, y) BY ang RADIANS CCW"""
@@ -4153,9 +4444,11 @@ def rotate(x, y, ang):
     y2 = y * cos(ang) + x * sin(ang)
     return x2, y2
 
+
 def rotdeg(x, y, ang):
     """ROTATES (x, y) BY ang DEGREES CCW"""
     return rotate(x, y, ang/180.*pi)
+
 
 def linefit(x1, y1, x2, y2):
     """y = mx + b FIT TO TWO POINTS"""
@@ -4166,6 +4459,7 @@ def linefit(x1, y1, x2, y2):
         m = (y2 - y1) / (x2 - x1)
         b = y1 - m * x1
     return m, b
+
 
 def linescross(xa, ya, xb, yb):
     """
@@ -4180,22 +4474,23 @@ def linescross(xa, ya, xb, yb):
     if xa[0] == xb[0]:
         xb = list(xb)
         xb[0] = xb[0] + 1e-10
-    
+
     if xa[1] == xb[1]:
         xb = list(xb)
         xb[1] = xb[1] + 1e-10
-    
+
     m0, b0 = linefit(xa[0], ya[0], xb[0], yb[0])
     ya1 = m0 * xa[1] + b0
     yb1 = m0 * xb[1] + b0
     cross1 = (ya1 > ya[1]) != (yb1 > yb[1])
-    
+
     m1, b1 = linefit(xa[1], ya[1], xb[1], yb[1])
     ya0 = m1 * xa[0] + b1
     yb0 = m1 * xb[0] + b1
     cross0 = (ya0 > ya[0]) != (yb0 > yb[0])
-    
+
     return cross0 and cross1
+
 
 def linescross2(xa, ya, xb, yb):
     """
@@ -4211,22 +4506,23 @@ def linescross2(xa, ya, xb, yb):
     if xa[0] == xa[1]:
         xa = list(xa)
         xa[1] = xa[1] + 1e-10
-    
+
     if xb[0] == xb[1]:
         xb = list(xb)
         xb[1] = xb[1] + 1e-10
-    
+
     ma, ba = linefit(xa[0], ya[0], xa[1], ya[1])
     yb0 = ma * xb[0] + ba
     yb1 = ma * xb[1] + ba
     crossb = (yb0 > yb[0]) != (yb1 > yb[1])
-    
+
     mb, bb = linefit(xb[0], yb[0], xb[1], yb[1])
     ya0 = mb * xa[0] + bb
     ya1 = mb * xa[1] + bb
     crossa = (ya0 > ya[0]) != (ya1 > ya[1])
-    
+
     return crossa and crossb
+
 
 def linescross2test():
     # from numpy.random import random
@@ -4234,7 +4530,7 @@ def linescross2test():
     ya = random(2)
     xb = random(2)
     yb = random(2)
-    
+
     figure(1)
     clf()
     plot(xa, ya)
@@ -4242,18 +4538,20 @@ def linescross2test():
     title('%s' % linescross2(xa, ya, xb, yb))
     show()
 
+
 def linescrosstest():
     # from random import random
     xa = random(), random()
     ya = random(), random()
     xb = random(), random()
     yb = random(), random()
-    
+
     figure(1)
     clf()
     atobplot(xa, ya, xb, yb, linetype='')
     title('%s' % linescross(xa, ya, xb, yb))
     show()
+
 
 def outside(x, y, xo, yo):
     """GIVEN 3 POINTS a, b, c OF A POLYGON 
@@ -4271,6 +4569,8 @@ def outside(x, y, xo, yo):
     return linescross(xA, yA, xB, yB)
 
 # TESTED IN ~/glens/lenspoints/optdefl/sourceconstraints/testconvexhull.py
+
+
 def convexhull(x, y, rep=1, nprev=0):
     """RETURNS THE CONVEX HULL OF x, y
     THAT IS, THE EXTERIOR POINTS"""
@@ -4294,23 +4594,24 @@ def convexhull(x, y, rep=1, nprev=0):
         if not outside(x[:3], y[:3], x1, y1):
             del x[1]
             del y[1]
-        else: # ROTATE THE COORD LISTS
+        else:  # ROTATE THE COORD LISTS
             x.append(x.pop(0))
             y.append(y.pop(0))
             ngood += 1
-    
+
     x = array(x)
     y = array(y)
-    
+
     # REPEAT UNTIL CONVERGENCE
     if (nprev == 0) or (len(x) < nprev):
         x, y = convexhull(x, y, nprev=len(x))
-    
+
     if rep:
         x = concatenate((x, [x[0]]))
         y = concatenate((y, [y[0]]))
-    
+
     return x, y
+
 
 def gauss(r, sig=1., normsum=1):
     """GAUSSIAN NORMALIZED SUCH THAT AREA=1"""
@@ -4321,9 +4622,11 @@ def gauss(r, sig=1., normsum=1):
         G = G * 0.5 / (pi * sig**2)
     return G
 
+
 def gauss1(r, sig=1.):
     """GAUSSIAN NORMALIZED SUCH THAT PEAK AMPLITUDE = 1"""
     return gauss(r, sig, 0)
+
 
 def atanxy(x, y, degrees=0):
     """ANGLE CCW FROM x-axis"""
@@ -4335,7 +4638,7 @@ def atanxy(x, y, degrees=0):
     return theta
 
 
-def chebyshev(x,n):
+def chebyshev(x, n):
     if n == 0:
         return x ** 0
     elif n == 1:
@@ -4351,22 +4654,26 @@ def chebyshev(x,n):
     elif n == 6:
         return 32 * x ** 6 - 48 * x ** 4 + 18 * x ** 2 - 1
 
-def chebyshev2d(x,y,a):
+
+def chebyshev2d(x, y, a):
     A = x * 0
     ncy, ncx = a.shape
     for iy in range(ncy):
         for ix in range(ncx):
             if a[iy][ix]:
-                A = A + a[iy][ix] * chebyshev(x,ix) * chebyshev(y,iy)
+                A = A + a[iy][ix] * chebyshev(x, ix) * chebyshev(y, iy)
     return A
+
 
 def crossprod(a, b):
     """CROSS PRODUCT (PROBABLY DEFINED IN SOME BUILT-IN MODULE!)"""
     return a[0] * b[1] - a[1] * b[0]
 
+
 def dotprod(a, b):
     """DOT PRODUCT (PROBABLY DEFINED IN SOME BUILT-IN MODULE!)"""
     return a[0] * b[0] + a[0] * b[0]
+
 
 def triarea(x, y, dir=0):
     """RETURNS THE AREA OF A TRIANGLE GIVEN THE COORDINATES OF ITS VERTICES
@@ -4383,6 +4690,7 @@ def triarea(x, y, dir=0):
         A = abs(A)
     return A
 
+
 def CCWsort(x, y):
     """FOR A CONVEX SET OF POINTS, 
     SORT THEM SUCH THAT THEY GO AROUND IN ORDER CCW FROM THE x-AXIS"""
@@ -4393,6 +4701,7 @@ def CCWsort(x, y):
     x2 = x.take(SI, 0)
     y2 = y.take(SI, 0)
     return x2, y2
+
 
 def polyarea(x, y):
     """RETURNS THE AREA OF A CONVEX POLYGON 
@@ -4405,13 +4714,16 @@ def polyarea(x, y):
         A += triarea(xtri, ytri)
     return A
 
+
 def odd(n):
     """RETURNS WHETHER AN INTEGER IS ODD"""
     return n & 1
 
+
 def even(n):
     """RETURNS WHETHER AN INTEGER IS EVEN"""
     return 1 - odd(n)
+
 
 def fpart(x):
     """FRACTIONAL PART OF A REAL NUMBER"""
@@ -4420,25 +4732,32 @@ def fpart(x):
             x = x[0]
     return math.modf(x)[0]
 
+
 def sigrange(x, nsigma=1):
     lo = percentile(gausst(nsigma), x)
     hi = percentile(gaussp(nsigma), x)
     return lo, hi
+
 
 def sqrtsafe(x):
     """sqrt(x) OR 0 IF x < 0"""
     x = clip2(x, 0, None)
     return sqrt(x)
 
+
 def sgn(a):
     return where(a, where(greater(a, 0), 1, -1), 0)
 
+
 def sym8(a):
     """OKAY, SO THIS ISN'T QUITE RADIAL SYMMETRY..."""
-    x = a + flipud(a) + fliplr(a) + transpose(a) + rot90(transpose(a),2) + rot90(a,1) + rot90(a,2) + rot90(a,3)
+    x = a + flipud(a) + fliplr(a) + transpose(a) + \
+        rot90(transpose(a), 2) + rot90(a, 1) + rot90(a, 2) + rot90(a, 3)
     return x / 8.
 
-#def divsafe(a, b, inf=1e30, nan=0.):
+# def divsafe(a, b, inf=1e30, nan=0.):
+
+
 def divsafe(a, b, inf=Inf, nan=NaN):
     """a / b with a / 0 = inf and 0 / 0 = nan"""
     a = array(a).astype(float)
@@ -4450,15 +4769,16 @@ def divsafe(a, b, inf=Inf, nan=NaN):
     sgn = where(a, xsgn, bsgn)
     babs = clip(abs(b), 1e-200, 1e9999)
     bb = bsgn * babs
-    #return where(b, a / bb, where(a, Inf, NaN))
+    # return where(b, a / bb, where(a, Inf, NaN))
     return where(b, a / bb, where(a, sgn*inf, nan))
+
 
 def expsafe(x):
     x = array(x)
     y = []
     for xx in x:
         if xx > 708:
-            y.append(1e333) # inf
+            y.append(1e333)  # inf
         elif xx < -740:
             y.append(0)
         else:
@@ -4468,11 +4788,14 @@ def expsafe(x):
     else:
         return array(y)
 
+
 def floorint(x):
     return(int(floor(x)))
 
+
 def ceilint(x):
     return(int(ceil(x)))
+
 
 def roundint(x):
     if singlevalue(x):
@@ -4480,11 +4803,14 @@ def roundint(x):
     else:
         return asarray(x).round().astype(int)
 
+
 intround = roundint
+
 
 def singlevalue(x):
     """IS x A SINGLE VALUE?  (AS OPPOSED TO AN ARRAY OR LIST)"""
     return type(x) in [type(None), float, float32, float64, int, int0, int8, int16, int32, int64]  # THERE ARE MORE TYPECODES IN Numpy
+
 
 def roundn(x, ndec=0):
     if singlevalue(x):
@@ -4496,35 +4822,42 @@ def roundn(x, ndec=0):
             rr.append(roundn(xx, ndec))
         return array(rr)
 
+
 def percentile(p, x):
     x = sort(x)
     i = p * (len(x) - 1.)
     return interp(i, arange(len(x)), x)
 
+
 def logical(x):
     return where(x, 1, 0)
+
 
 def element_or(*l):
     """l is a list/tuple of arrays
     USAGE: x = element_or(a, b, c)"""
     x = where(l[0], l[0], l[1])
-    for i in range(2,len(l)):
+    for i in range(2, len(l)):
         x = where(x, x, l[2])
     return x
+
 
 def log2(x, loexp=''):
     if loexp != '':
         x = clip2(x, 2**loexp, None)
     return log10(x) / log10(2)
 
+
 def log10clip(x, loexp, hiexp=None):
-    if hiexp==None:
+    if hiexp == None:
         return log10(clip2(x, 10.**loexp, None))
     else:
         return log10(clip2(x, 10.**loexp, 10.**hiexp))
 
+
 def lnclip(x, loexp):
     return log(clip2(x, e**loexp, None))
+
 
 def linreg(X, Y):
     # written by William Park
@@ -4549,7 +4882,7 @@ def linreg(X, Y):
     if len(X) != len(Y):
         raise ValueError('unequal length')
     N = len(X)
-    if N == 2: # --DC
+    if N == 2:  # --DC
         a = (Y[1] - Y[0]) / (X[1] - X[0])
         b = Y[0] - a * X[0]
     else:
@@ -4601,6 +4934,7 @@ def close(x, y, rtol=1.e-5, atol=1.e-8):
     """JUST LIKE THE Numeric FUNCTION allclose, BUT FOR SINGLE VALUES.  (WILL IT BE QUICKER?)"""
     return abs(y - x) < (atol + rtol * abs(y))
 
+
 def wherein(x, vals):
     """RETURNS 1 WHERE x IS IN vals"""
     try:
@@ -4611,9 +4945,11 @@ def wherein(x, vals):
         good = logical_or(good, close(x, val))
     return good
 
+
 def wherenotin(x, vals):
     """RETURNS 1 WHERE x ISN'T IN vals"""
     return logical_not(wherein(x, vals))
+
 
 def count(a):
     """RETURNS A DICTIONARY WITH THE NUMBER OF TIMES EACH ID OCCURS"""
@@ -4623,6 +4959,7 @@ def count(a):
     for i in range(len(h)):
         d[bins[i]] = h[i]
     return d
+
 
 def rep(a):
     """RETURNS A DICTIONARY WITH THE NUMBER OF TIMES EACH ID IS REPEATED
@@ -4640,6 +4977,7 @@ def rep(a):
     else:
         return {}
 
+
 def norep(a):
     """RETURNS a w/o REPETITIONS, i.e. THE MEMBERS OF a"""
     a = sort(a)
@@ -4648,10 +4986,11 @@ def norep(a):
     x = concatenate((c, [a[-1]]))
     return x
 ##     l = []
-##     for x in ravel(a):
-##         if x not in l:
-##             l.append(x)
-##     return array(l)
+# for x in ravel(a):
+# if x not in l:
+# l.append(x)
+# return array(l)
+
 
 def norepxy(x, y, tol=1e-8):
     """REMOVES REPEATS IN (x,y) LISTS -- WITHIN tol EQUALS MATCH"""
@@ -4679,6 +5018,7 @@ def isseq(a):
     """TELLS YOU IF a IS SEQUENTIAL, LIKE [3, 4, 5, 6]"""
     return (alltrue(a == arange(len(a)) + a[0]))
 
+
 def between(lo, x, hi):  # --DC
     # RETURNS 1 WHERE lo < x < hi
     # (can also use that syntax "lo < x < hi")
@@ -4693,8 +5033,10 @@ def between(lo, x, hi):  # --DC
         good = good * less(x, hi)
     return good
 
-def divisible(x, n): # --DC
+
+def divisible(x, n):  # --DC
     return (x / float(n) - x / n) < (0.2 / n)
+
 
 def ndec(x, max=3):  # --DC
     """RETURNS # OF DECIMAL PLACES IN A NUMBER"""
@@ -4703,6 +5045,7 @@ def ndec(x, max=3):  # --DC
             return n
     return 0  # IF ALL ELSE FAILS...  THERE'S NO DECIMALS
 
+
 def qkfmt(x, max=8):
     n = ndec(x, max=max)
     if n:
@@ -4710,6 +5053,7 @@ def qkfmt(x, max=8):
     else:
         fmt = '%d'
     return fmt % x
+
 
 def interp(x, xdata, ydata, silent=0, extrap=0):  # NEW VERSION!
     """DETERMINES y AS LINEAR INTERPOLATION OF 2 NEAREST ydata"""
@@ -4728,7 +5072,7 @@ def interp(x, xdata, ydata, silent=0, extrap=0):  # NEW VERSION!
     else:
         i2 = clip(ii,   0, n-1)
         i1 = clip(ii-1, 0, n-1)
-    
+
     x2 = take(xdata, i2)
     x1 = take(xdata, i1)
     y2 = take(ydata, i2)
@@ -4741,7 +5085,9 @@ def interp(x, xdata, ydata, silent=0, extrap=0):  # NEW VERSION!
         y = y[0]
     return y
 
+
 interpn = interp
+
 
 def interp1(x, xdata, ydata, silent=0):  # --DC
     """DETERMINES y AS LINEAR INTERPOLATION OF 2 NEAREST ydata"""
@@ -4768,6 +5114,7 @@ def interp1(x, xdata, ydata, silent=0):  # --DC
             [ylo, yhi] = ydata[i-1:i+1]
             return ((x - xlo) * yhi + (xhi - x) * ylo) / (xhi - xlo)
 
+
 def interpn1(x, xdata, ydata, silent=0):  # --DC
     """DETERMINES y AS LINEAR INTERPOLATION OF 2 NEAREST ydata
     interpn TAKES AN ARRAY AS INPUT"""
@@ -4776,6 +5123,7 @@ def interpn1(x, xdata, ydata, silent=0):  # --DC
         yout.append(interp(x1, xdata, ydata, silent=silent))
     return array(yout)
 
+
 def interp2(x, xdata, ydata):  # --DC
     """LINEAR INTERPOLATION/EXTRAPOLATION GIVEN TWO DATA POINTS"""
     m = (ydata[1] - ydata[0]) / (xdata[1] - xdata[0])
@@ -4783,13 +5131,17 @@ def interp2(x, xdata, ydata):  # --DC
     y = m * x + b
     return y
 
+
 def bilin(x, y, data, datax, datay):  # --DC
     """ x, y ARE COORDS OF INTEREST
     data IS 2x2 ARRAY CONTAINING NEARBY DATA
     datax, datay CONTAINS x & y COORDS OF NEARBY DATA"""
-    lavg = ( (y - datay[0]) * data[1,0] + (datay[1] - y) * data[0,0] ) / (datay[1] - datay[0])
-    ravg = ( (y - datay[0]) * data[1,1] + (datay[1] - y) * data[0,1] ) / (datay[1] - datay[0])
-    return ( (x - datax[0]) * ravg + (datax[1] - x) * lavg ) / (datax[1] - datax[0])
+    lavg = ((y - datay[0]) * data[1, 0] + (datay[1] - y)
+            * data[0, 0]) / (datay[1] - datay[0])
+    ravg = ((y - datay[0]) * data[1, 1] + (datay[1] - y)
+            * data[0, 1]) / (datay[1] - datay[0])
+    return ((x - datax[0]) * ravg + (datax[1] - x) * lavg) / (datax[1] - datax[0])
+
 
 def bilin2(x, y, data):  # --DC
     """ x, y ARE COORDS OF INTEREST, IN FRAME OF data - THE ENTIRE ARRAY"""
@@ -4813,162 +5165,192 @@ def bilin2(x, y, data):  # --DC
         val = bilin(x, y, stamp, datax, datay)
     return val
 
+
 def rand(*args):
-        """rand(d1,...,dn) returns a matrix of the given dimensions
-        which is initialized to random numbers from a uniform distribution
-        in the range [0,1).
-        """
-        return RandomArray.random(args)
+    """rand(d1,...,dn) returns a matrix of the given dimensions
+    which is initialized to random numbers from a uniform distribution
+    in the range [0,1).
+    """
+    return RandomArray.random(args)
+
 
 def eye(N, M=None, k=0, dtype=None):
-        """eye(N, M=N, k=0, dtype=None) returns a N-by-M matrix where the 
-        k-th diagonal is all ones, and everything else is zeros.
-        """
-        if M == None: M = N
-        if type(M) == type('d'): 
-                typecode = M
-                M = N
-        m = equal(subtract.outer(arange(N), arange(M)),-k)
-        return asarray(m,dtype=typecode)
+    """eye(N, M=N, k=0, dtype=None) returns a N-by-M matrix where the 
+    k-th diagonal is all ones, and everything else is zeros.
+    """
+    if M == None:
+        M = N
+    if type(M) == type('d'):
+        typecode = M
+        M = N
+    m = equal(subtract.outer(arange(N), arange(M)), -k)
+    return asarray(m, dtype=typecode)
+
 
 def tri(N, M=None, k=0, dtype=None):
-        """tri(N, M=N, k=0, dtype=None) returns a N-by-M matrix where all
-        the diagonals starting from lower left corner up to the k-th are all ones.
-        """
-        if M == None: M = N
-        if type(M) == type('d'): 
-                typecode = M
-                M = N
-        m = greater_equal(subtract.outer(arange(N), arange(M)),-k)
-        return m.astype(typecode)
-        
+    """tri(N, M=N, k=0, dtype=None) returns a N-by-M matrix where all
+    the diagonals starting from lower left corner up to the k-th are all ones.
+    """
+    if M == None:
+        M = N
+    if type(M) == type('d'):
+        typecode = M
+        M = N
+    m = greater_equal(subtract.outer(arange(N), arange(M)), -k)
+    return m.astype(typecode)
+
 # Matrix manipulation
 
+
 def diag(v, k=0):
-        """diag(v,k=0) returns the k-th diagonal if v is a matrix or
-        returns a matrix with v as the k-th diagonal if v is a vector.
-        """
-        v = asarray(v)
-        s = v.shape
-        if len(s)==1:
-                n = s[0]+abs(k)
-                if k > 0:
-                        v = concatenate((zeros(k, v.dtype.char),v))
-                elif k < 0:
-                        v = concatenate((v,zeros(-k, v.dtype.char)))
-                return eye(n, k=k)*v
-        elif len(s)==2:
-                v = add.reduce(eye(s[0], s[1], k=k)*v)
-                if k > 0: return v[k:]
-                elif k < 0: return v[:k]
-                else: return v
+    """diag(v,k=0) returns the k-th diagonal if v is a matrix or
+    returns a matrix with v as the k-th diagonal if v is a vector.
+    """
+    v = asarray(v)
+    s = v.shape
+    if len(s) == 1:
+        n = s[0]+abs(k)
+        if k > 0:
+            v = concatenate((zeros(k, v.dtype.char), v))
+        elif k < 0:
+            v = concatenate((v, zeros(-k, v.dtype.char)))
+        return eye(n, k=k)*v
+    elif len(s) == 2:
+        v = add.reduce(eye(s[0], s[1], k=k)*v)
+        if k > 0:
+            return v[k:]
+        elif k < 0:
+            return v[:k]
         else:
-                raise ValueError("Input must be 1- or 2-D.")
-        
+            return v
+    else:
+        raise ValueError("Input must be 1- or 2-D.")
+
 
 def fliplr(m):
-        """fliplr(m) returns a 2-D matrix m with the rows preserved and
-        columns flipped in the left/right direction.  Only works with 2-D
-        arrays.
-        """
-        m = asarray(m)
-        if len(m.shape) != 2:
-                raise ValueError("Input must be 2-D.")
-        return m[:, ::-1]
+    """fliplr(m) returns a 2-D matrix m with the rows preserved and
+    columns flipped in the left/right direction.  Only works with 2-D
+    arrays.
+    """
+    m = asarray(m)
+    if len(m.shape) != 2:
+        raise ValueError("Input must be 2-D.")
+    return m[:, ::-1]
+
 
 def flipud(m):
-        """flipud(m) returns a 2-D matrix with the columns preserved and
-        rows flipped in the up/down direction.  Only works with 2-D arrays.
-        """
-        m = asarray(m)
-        if len(m.shape) != 2:
-                raise ValueError("Input must be 2-D.")
-        return m[::-1]
-        
+    """flipud(m) returns a 2-D matrix with the columns preserved and
+    rows flipped in the up/down direction.  Only works with 2-D arrays.
+    """
+    m = asarray(m)
+    if len(m.shape) != 2:
+        raise ValueError("Input must be 2-D.")
+    return m[::-1]
+
 # reshape(x, m, n) is not used, instead use reshape(x, (m, n))
 
+
 def rot90(m, k=1):
-        """rot90(m,k=1) returns the matrix found by rotating m by k*90 degrees
-        in the counterclockwise direction.
-        """
-        m = asarray(m)
-        if len(m.shape) != 2:
-                raise ValueError("Input must be 2-D.")
-        k = k % 4
-        if k == 0: return m
-        elif k == 1: return transpose(fliplr(m))
-        elif k == 2: return fliplr(flipud(m))
-        elif k == 3: return fliplr(transpose(m))
+    """rot90(m,k=1) returns the matrix found by rotating m by k*90 degrees
+    in the counterclockwise direction.
+    """
+    m = asarray(m)
+    if len(m.shape) != 2:
+        raise ValueError("Input must be 2-D.")
+    k = k % 4
+    if k == 0:
+        return m
+    elif k == 1:
+        return transpose(fliplr(m))
+    elif k == 2:
+        return fliplr(flipud(m))
+    elif k == 3:
+        return fliplr(transpose(m))
+
 
 def rot180(m):
     return rot90(m, 2)
 
+
 def rot270(m):
     return rot90(m, 3)
 
+
 def tril(m, k=0):
-        """tril(m,k=0) returns the elements on and below the k-th diagonal of
-        m.  k=0 is the main diagonal, k > 0 is above and k < 0 is below the main
-        diagonal.
-        """
-        return tri(m.shape[0], m.shape[1], k=k, dtype=m.dtype.char)*m
+    """tril(m,k=0) returns the elements on and below the k-th diagonal of
+    m.  k=0 is the main diagonal, k > 0 is above and k < 0 is below the main
+    diagonal.
+    """
+    return tri(m.shape[0], m.shape[1], k=k, dtype=m.dtype.char)*m
+
 
 def triu(m, k=0):
-        """triu(m,k=0) returns the elements on and above the k-th diagonal of
-        m.  k=0 is the main diagonal, k > 0 is above and k < 0 is below the main
-        diagonal.
-        """     
-        return (1-tri(m.shape[0], m.shape[1], k-1, m.dtype.char))*m 
+    """triu(m,k=0) returns the elements on and above the k-th diagonal of
+    m.  k=0 is the main diagonal, k > 0 is above and k < 0 is below the main
+    diagonal.
+    """
+    return (1-tri(m.shape[0], m.shape[1], k-1, m.dtype.char))*m
 
 # Data analysis
 
 # Basic operations
+
+
 def max(m):
-        """max(m) returns the maximum along the first dimension of m.
-        """
-        return maximum.reduce(m)
+    """max(m) returns the maximum along the first dimension of m.
+    """
+    return maximum.reduce(m)
+
 
 def min(m):
-        """min(m) returns the minimum along the first dimension of m.
-        """
-        return minimum.reduce(m)
+    """min(m) returns the minimum along the first dimension of m.
+    """
+    return minimum.reduce(m)
 
 # Actually from BASIS, but it fits in so naturally here...
 
+
 def ptp(m):
-        """ptp(m) returns the maximum - minimum along the first dimension of m.
-        """
-        return max(m)-min(m)
+    """ptp(m) returns the maximum - minimum along the first dimension of m.
+    """
+    return max(m)-min(m)
+
 
 def mean1(m):
-        """mean(m) returns the mean along the first dimension of m.  Note:  if m is
-        an integer array, integer division will occur.
-        """
-        return add.reduce(m)/len(m)
+    """mean(m) returns the mean along the first dimension of m.  Note:  if m is
+    an integer array, integer division will occur.
+    """
+    return add.reduce(m)/len(m)
+
 
 def mean(m, axis=0):
-        """mean(m) returns the mean along the first dimension of m.  Note:  if m is
-        an integer array, integer division will occur.
-        """
-        return add.reduce(m, axis=axis) / m.shape[axis]
+    """mean(m) returns the mean along the first dimension of m.  Note:  if m is
+    an integer array, integer division will occur.
+    """
+    return add.reduce(m, axis=axis) / m.shape[axis]
+
 
 def meangeom(m):
     return product(m) ** (1. / len(m))
 
 # sort is done in C but is done row-wise rather than column-wise
+
+
 def msort(m):
-        """msort(m) returns a sort along the first dimension of m as in MATLAB.
-        """
-        return transpose(sort(transpose(m)))
+    """msort(m) returns a sort along the first dimension of m as in MATLAB.
+    """
+    return transpose(sort(transpose(m)))
+
 
 def median(m):
-        """median(m) returns the median of m along the first dimension of m.
-        """
-        if m.shape[0] & 1:
-            return msort(m)[m.shape[0]/2]  # ODD # OF ELEMENTS
-        else:
-            return (msort(m)[m.shape[0]/2] + msort(m)[m.shape[0]/2-1]) / 2.0  # EVEN # OF ELEMENTS
-            
+    """median(m) returns the median of m along the first dimension of m.
+    """
+    if m.shape[0] & 1:
+        return msort(m)[m.shape[0]/2]  # ODD # OF ELEMENTS
+    else:
+        # EVEN # OF ELEMENTS
+        return (msort(m)[m.shape[0]/2] + msort(m)[m.shape[0]/2-1]) / 2.0
+
 
 def rms(m):
     """Root-Mean-Squared, as advertised.
@@ -4976,78 +5358,87 @@ def rms(m):
     and later divides by N-1 instead of N"""
     return sqrt(mean(m**2))
 
+
 def std(m):
-        """std(m) returns the standard deviation along the first
-        dimension of m.  The result is unbiased meaning division by len(m)-1.
-        """
-        mu = mean(m)
-        return sqrt(add.reduce(pow(m-mu,2)))/sqrt(len(m)-1.0)
+    """std(m) returns the standard deviation along the first
+    dimension of m.  The result is unbiased meaning division by len(m)-1.
+    """
+    mu = mean(m)
+    return sqrt(add.reduce(pow(m-mu, 2)))/sqrt(len(m)-1.0)
+
 
 stddev = std
+
 
 def meanstd(m):
-        """meanstd(m) returns the mean and uncertainty = std / sqrt(N-1)
-        """
+    """meanstd(m) returns the mean and uncertainty = std / sqrt(N-1)
+    """
+    mu = mean(m)
+    dmu = sqrt(add.reduce(pow(m-mu, 2)))/(len(m)-1.0)
+    return mu, dmu
+
+
+def avgstd2(m):  # --DC
+    """avgstd2(m) returns the average & standard deviation along the first dimension of m.
+    avgstd2 ELIMINATES OUTLIERS
+    The result is unbiased meaning division by len(m)-1.
+    """
+    done = ''
+    while not done:
+        n = len(m)
         mu = mean(m)
-        dmu = sqrt(add.reduce(pow(m-mu,2)))/(len(m)-1.0)
-        return mu, dmu
+        sig = sqrt(add.reduce(pow(m-mu, 2)))/sqrt(n-1.0)
+        good = greater(m, mu-3*sig) * less(m, mu+3*sig)
+        m = compress(good, m)
+        done = sum(good) == n
 
-def avgstd2(m): # --DC
-        """avgstd2(m) returns the average & standard deviation along the first dimension of m.
-        avgstd2 ELIMINATES OUTLIERS
-        The result is unbiased meaning division by len(m)-1.
-        """
-        done = ''
-        while not done:
-            n = len(m)
-            mu = mean(m)
-            sig = sqrt(add.reduce(pow(m-mu,2)))/sqrt(n-1.0)
-            good = greater(m, mu-3*sig) * less(m, mu+3*sig)
-            m = compress(good, m)
-            done = sum(good) == n
-            
-        return [mu, sqrt(add.reduce(pow(m-mu,2)))/sqrt(len(m)-1.0)]
+    return [mu, sqrt(add.reduce(pow(m-mu, 2)))/sqrt(len(m)-1.0)]
 
-def std2(m): # --DC
-        """std2(m) returns the standard deviation along the first dimension of m.
-        std2 ELIMINATES OUTLIERS
-        The result is unbiased meaning division by len(m)-1.
-        """
-        [a, s] = avgstd2(m)
-        return s
+
+def std2(m):  # --DC
+    """std2(m) returns the standard deviation along the first dimension of m.
+    std2 ELIMINATES OUTLIERS
+    The result is unbiased meaning division by len(m)-1.
+    """
+    [a, s] = avgstd2(m)
+    return s
+
 
 stddev = std
+
 
 def weightedavg(x, w):
     return sum(x * w) / sum(w)
 
+
 weightedmean = weightedavg
 
-## def thetaavgstd1(theta):
-##     """SHWAG VERSION: WON'T WORK IF THETA SPANS A RANGE > pi
-##     CALCULATES THE AVERAGE & STANDARD DEVIATION IN A LIST (OR 1-D ARRAY) OF THETA (ANGLE) MEASUREMENTS
-##     RETURNS THE LIST [avg, std]    
-##     NEED A NEW CODE TO HANDLE THAT: ?INCREASING WEIGHTED AVERAGES (2 POINTS AT A TIME)?"""
-##     if len(theta) == 1:
-##      return([theta[0], 999])
-##     else:
-##      # PUT ALL theta IN [0, 2 * pi]
-##      for i in range(len(theta)):
-##          if theta[i] < 0:
+# def thetaavgstd1(theta):
+# """SHWAG VERSION: WON'T WORK IF THETA SPANS A RANGE > pi
+# CALCULATES THE AVERAGE & STANDARD DEVIATION IN A LIST (OR 1-D ARRAY) OF THETA (ANGLE) MEASUREMENTS
+# RETURNS THE LIST [avg, std]
+# NEED A NEW CODE TO HANDLE THAT: ?INCREASING WEIGHTED AVERAGES (2 POINTS AT A TIME)?"""
+# if len(theta) == 1:
+# return([theta[0], 999])
+# else:
+# PUT ALL theta IN [0, 2 * pi]
+# for i in range(len(theta)):
+# if theta[i] < 0:
 ##              theta[i] = theta[i] + 2 * pi
-##      if max(theta) - min(theta) > pi:
-##          # "PUT ALL THETA IN [-pi, pi]"
-##          for i in range(len(theta)):
-##              if theta[i] > pi:
+# if max(theta) - min(theta) > pi:
+# "PUT ALL THETA IN [-pi, pi]"
+# for i in range(len(theta)):
+# if theta[i] > pi:
 ##                  theta[i] = theta[i] - 2 * pi
-##      #print theta
-##      if max(theta) - min(theta) > pi:
-##          print "THETA RANGE TOO BIG FOR thetaavg"
-##          return([999, 999])
-##         else:
+# print theta
+# if max(theta) - min(theta) > pi:
+# print "THETA RANGE TOO BIG FOR thetaavg"
+# return([999, 999])
+# else:
 ##          thavg = mean(theta)
 ##          thstd = sqrt( sum( (theta - thavg) ** 2 ) / (len(theta) - 1.) )
-##          return([thavg, thstd])
+# return([thavg, thstd])
+
 
 def thetaavgstd(theta):
     """CALCULATES THE AVERAGE & STANDARD DEVIATION IN A LIST (OR 1-D ARRAY) OF THETA (ANGLE) MEASUREMENTS
@@ -5059,19 +5450,18 @@ def thetaavgstd(theta):
         return([theta[0], 999])
     else:
         thavg = theta[0]
-        for i in range(1,n):
+        for i in range(1, n):
             th = theta[i]
             if thavg - th > pi:
                 thavg = thavg - 2 * pi
             elif th - thavg > pi:
                 th = th - 2 * pi
-            thavg = ( i * thavg + th ) / (i+1)
+            thavg = (i * thavg + th) / (i+1)
         for i in range(n):
             if theta[i] > thavg + pi:
                 theta[i] = theta[i] - 2 * pi
         thstd = std(theta)
         return([thavg, thstd])
-                
 
 
 def clip2(m, m_min=None, m_max=None):
@@ -5082,20 +5472,22 @@ def clip2(m, m_min=None, m_max=None):
     return clip(m, m_min, m_max)
 
 
-## def sum(m):
-##      """sum(m) returns the sum of the elements along the first
-##      dimension of m.
-##      """
-##      return add.reduce(m)
+# def sum(m):
+# """sum(m) returns the sum of the elements along the first
+# dimension of m.
+# """
+# return add.reduce(m)
 sum = add.reduce  # ALLOWS FOR AXIS TO BE INPUT --DC
+
 
 def total(m):
     """RETURNS THE TOTAL OF THE ENTIRE ARRAY --DC"""
 ##     t = m
-##     while not(type(t) in [type(1), type(1.)]):
+# while not(type(t) in [type(1), type(1.)]):
 ##      t = sum(t)
-##     return t
+# return t
     return sum(ravel(m))
+
 
 def size(m):
     """RETURNS THE TOTAL SIZE OF THE ARRAY --DC"""
@@ -5105,41 +5497,51 @@ def size(m):
         x = x * n
     return x
 
+
 def cumsum(m, axis=0):
-        """cumsum(m) returns the cumulative sum of the elements along the
-        first dimension of m.
-        """
-        return add.accumulate(m, axis=axis)
+    """cumsum(m) returns the cumulative sum of the elements along the
+    first dimension of m.
+    """
+    return add.accumulate(m, axis=axis)
+
 
 def prod(m):
-        """prod(m) returns the product of the elements along the first
-        dimension of m.
-        """
-        return multiply.reduce(m)
+    """prod(m) returns the product of the elements along the first
+    dimension of m.
+    """
+    return multiply.reduce(m)
+
 
 def cumprod(m):
-        """cumprod(m) returns the cumulative product of the elments along the
-        first dimension of m.
-        """
-        return multiply.accumulate(m)
+    """cumprod(m) returns the cumulative product of the elments along the
+    first dimension of m.
+    """
+    return multiply.accumulate(m)
+
 
 def trapz(y, x=None):
-        """trapz(y,x=None) integrates y = f(x) using the trapezoidal rule.
-        """
-        if x == None: d = 1
-        else: d = diff(x)
-        return sum(d * (y[1:]+y[0:-1])/2.0)
+    """trapz(y,x=None) integrates y = f(x) using the trapezoidal rule.
+    """
+    if x == None:
+        d = 1
+    else:
+        d = diff(x)
+    return sum(d * (y[1:]+y[0:-1])/2.0)
+
 
 def cumtrapz(y, x=None, axis=0):
-        """trapz(y,x=None) integrates y = f(x) using the trapezoidal rule. --DC"""
-        if x == None: d = 1
-        else: d = diff(x)
-        if axis == 0:
-            return cumsum(d * (y[1:]+y[0:-1])/2.0)
-        elif axis == 1:
-            return cumsum(d * (y[:,1:]+y[:,0:-1])/2.0, axis=1)
-        else:
-            print('YOUR VALUE OF axis = %d IS NO GOOD IN MLab_coe.cumtrapz' % axis)
+    """trapz(y,x=None) integrates y = f(x) using the trapezoidal rule. --DC"""
+    if x == None:
+        d = 1
+    else:
+        d = diff(x)
+    if axis == 0:
+        return cumsum(d * (y[1:]+y[0:-1])/2.0)
+    elif axis == 1:
+        return cumsum(d * (y[:, 1:]+y[:, 0:-1])/2.0, axis=1)
+    else:
+        print('YOUR VALUE OF axis = %d IS NO GOOD IN MLab_coe.cumtrapz' % axis)
+
 
 def xbins(x):
     """[-0.5, 0.5, 1] --> [-1, 0, 0.75, 1.25]"""
@@ -5149,24 +5551,27 @@ def xbins(x):
     d = concatenate(([x[0] - da/2.], d, [x[-1] + db/2.]))
     return d
 
+
 def diff(x, n=1):
-        """diff(x,n=1) calculates the first-order, discrete difference
-        approximation to the derivative.
-        """
-        if n > 1:
-            return diff(x[1:]-x[:-1], n-1)
-        else:
-            return x[1:]-x[:-1]
+    """diff(x,n=1) calculates the first-order, discrete difference
+    approximation to the derivative.
+    """
+    if n > 1:
+        return diff(x[1:]-x[:-1], n-1)
+    else:
+        return x[1:]-x[:-1]
+
 
 def shorten(x, n=1):
-        """shorten(x,n=1) 
-        SHORTENS x, TAKING AVG OF NEIGHBORS, RECURSIVELY IF n > 1
-        """
-        a = (x[1:] + x[:-1]) / 2.
-        if n > 1:
-            return avg(a, n-1)
-        else:
-            return a
+    """shorten(x,n=1) 
+    SHORTENS x, TAKING AVG OF NEIGHBORS, RECURSIVELY IF n > 1
+    """
+    a = (x[1:] + x[:-1]) / 2.
+    if n > 1:
+        return avg(a, n-1)
+    else:
+        return a
+
 
 def lengthen(x, n):
     """lengthen([0, 1, 5], 4) ==> 0, 0.25, 0.5, 0.75, 1, 2, 3, 4, 5"""
@@ -5179,18 +5584,19 @@ def lengthen(x, n):
     o = concatenate((o, [x[-1]]))
     return o
 
+
 def powerlaw(x, y):
     """RETURNS EXPONENT n TO POWER LAW FIT y ~ x^n
     AT POINTS ON AVERAGED x"""
     logx = log10(x)
     logy = log10(y)
-    
+
     dlogx = diff(logx)
     dlogy = diff(logy)
-    
+
     dd = dlogy / dlogx
     x2 = (x[1:] + x[:-1]) / 2
-    
+
     return x2, dd
 
 
@@ -5199,11 +5605,12 @@ def grad(m):
     The result will be 2 arrays, one for each of the axes x & y, respectively,
     with each having dimension (N-2, N-2), where m was (N, N).
     The coordinates will be in between of those of m.  --DC"""
-    ay = (m[2:]   - m[:-2]) / 2.       # (N-2, N)
-    ax = (m[:,2:] - m[:,:-2]) / 2.     # (N,   N-2)
-    ay = ay[:,1:-1]                    # (N-2, N-2)
-    ax = ax[1:-1,:]
+    ay = (m[2:] - m[:-2]) / 2.       # (N-2, N)
+    ax = (m[:, 2:] - m[:, :-2]) / 2.     # (N,   N-2)
+    ay = ay[:, 1:-1]                    # (N-2, N-2)
+    ax = ax[1:-1, :]
     return array([ax, ay])
+
 
 def laplacian(m):
     """Calculates the laplacian of the matrix m
@@ -5214,88 +5621,98 @@ def laplacian(m):
     although theirs is a factor of 1/2 too low.
     """
     ny, nx = m.shape
-    center = m[1:-1,1:-1]
-    
+    center = m[1:-1, 1:-1]
+
     sides = zeros(center.shape, float)
-    for dx,dy in [(-1,0), (0,1), (1,0), (0,-1)]:
+    for dx, dy in [(-1, 0), (0, 1), (1, 0), (0, -1)]:
         sides = sides + m[1+dy:ny-1+dy, 1+dx:nx-1+dx]
-    
+
     corners = zeros(center.shape, float)
-    for dx,dy in [(-1,-1), (-1,1), (1,1), (1,-1)]:
+    for dx, dy in [(-1, -1), (-1, 1), (1, 1), (1, -1)]:
         corners = corners + m[1+dy:ny-1+dy, 1+dx:nx-1+dx]
-    
+
     return (2*corners - sides - 4*center) / 3.
 
-def corrcoef(x, y=None):
-        """The correlation coefficients
-        """
-        c = cov(x, y)
-        d = diag(c)
-        return c/sqrt(multiply.outer(d,d))
 
-def cov(m,y=None):
-        m = asarray(m)
-        mu = mean(m)
-        if y != None: m = concatenate((m,y))
-        sum_cov = 0.0
-        for v in m:
-                sum_cov = sum_cov+multiply.outer(v,v)
-        return (sum_cov-len(m)*multiply.outer(mu,mu))/(len(m)-1.0)
+def corrcoef(x, y=None):
+    """The correlation coefficients
+    """
+    c = cov(x, y)
+    d = diag(c)
+    return c/sqrt(multiply.outer(d, d))
+
+
+def cov(m, y=None):
+    m = asarray(m)
+    mu = mean(m)
+    if y != None:
+        m = concatenate((m, y))
+    sum_cov = 0.0
+    for v in m:
+        sum_cov = sum_cov+multiply.outer(v, v)
+    return (sum_cov-len(m)*multiply.outer(mu, mu))/(len(m)-1.0)
 
 # Added functions supplied by Travis Oliphant
 #import numpy.linalg.old as LinearAlgebra
+
+
 def squeeze(a):
     "squeeze(a) removes any ones from the shape of a"
     b = asarray(a.shape)
-    reshape (a, tuple (compress (not_equal (b, 1), b)))
+    reshape(a, tuple(compress(not_equal(b, 1), b)))
     return
 
-def kaiser(M,beta):
+
+def kaiser(M, beta):
     """kaiser(M, beta) returns a Kaiser window of length M with shape parameter
     beta. It depends on the cephes module for the modified bessel function i0.
     """
     import cephes
-    n = arange(0,M)
+    n = arange(0, M)
     alpha = (M-1)/2.0
     return cephes.i0(beta * sqrt(1-((n-alpha)/alpha)**2.0))/cephes.i0(beta)
+
 
 def blackman(M):
     """blackman(M) returns the M-point Blackman window.
     """
-    n = arange(0,M)
+    n = arange(0, M)
     return 0.42-0.5*cos(2.0*pi*n/M) + 0.08*cos(4.0*pi*n/M)
 
 
 def bartlett(M):
     """bartlett(M) returns the M-point Bartlett window.
     """
-    n = arange(0,M)
-    return where(less_equal(n,M/2.0),2.0*n/M,2.0-2.0*n/M)
+    n = arange(0, M)
+    return where(less_equal(n, M/2.0), 2.0*n/M, 2.0-2.0*n/M)
+
 
 def hanning(M):
     """hanning(M) returns the M-point Hanning window.
     """
-    n = arange(0,M)
+    n = arange(0, M)
     return 0.5-0.5*cos(2.0*pi*n/M)
+
 
 def hamming(M):
     """hamming(M) returns the M-point Hamming window.
     """
-    n = arange(0,M)
+    n = arange(0, M)
     return 0.54-0.46*cos(2.0*pi*n/M)
+
 
 def sinc(x):
     """sinc(x) returns sin(pi*x)/(pi*x) at all points of array x.
     """
-    return where(equal(x,0.0),1.0,sin(pi*x)/(pi*x))
+    return where(equal(x, 0.0), 1.0, sin(pi*x)/(pi*x))
 
-#def eig(v):
+# def eig(v):
 #    """[x,v] = eig(m) returns the the eigenvalues of m in x and the corresponding
 #    eigenvectors in the rows of v.
 #    """
 #    return LinearAlgebra.eigenvectors(v)
 
-#def svd(v):
+# def svd(v):
 #    """[u,x,v] = svd(m) return the singular value decomposition of m.
 #    """
 #    return LinearAlgebra.singular_value_decomposition(v)
@@ -5306,7 +5723,8 @@ def histogram(a, bins):
     n = concatenate([n, [len(a)]])
     return n[1:]-n[:-1]
 
-def cumhisto(a,da=1.,amin=[],amax=[]): # --DC
+
+def cumhisto(a, da=1., amin=[], amax=[]):  # --DC
     """
     Histogram of 'a' defined on the bin grid 'bins'
        Usage: h=histogram(p,xp)
@@ -5318,12 +5736,13 @@ def cumhisto(a,da=1.,amin=[],amax=[]): # --DC
     nnn = (amax - amin) / da
     if less(nnn - int(nnn), 1e-4):
         amax = amax + da
-    bins = arange(amin,amax+da,da)
-    n=searchsorted(sort(a),bins)
-    n=array(list(map(float,n)))
+    bins = arange(amin, amax+da, da)
+    n = searchsorted(sort(a), bins)
+    n = array(list(map(float, n)))
     return n[1:]
 
-def cumHisto(a,da=1.,amin=[],amax=[]): # --DC
+
+def cumHisto(a, da=1., amin=[], amax=[]):  # --DC
     if amin == []:
         amin = min(a)
     if amax == []:
@@ -5331,14 +5750,17 @@ def cumHisto(a,da=1.,amin=[],amax=[]): # --DC
     h = cumhisto(a, da, amin, amax)
     return Histogram(h, amin, da)
 
-def plotcumhisto(a,da=1.,amin=[],amax=[]): # --DC
+
+def plotcumhisto(a, da=1., amin=[], amax=[]):  # --DC
     p = FramedPlot()
     p.add(cumHisto(a, da, amin, amax))
     p.show()
     return p
 
 # from useful_coe.py
-def histo(a,da=1.,amin=[],amax=[]): # --DC
+
+
+def histo(a, da=1., amin=[], amax=[]):  # --DC
     """
     Histogram of 'a' defined on the bin grid 'bins'
        Usage: h=histogram(p,xp)
@@ -5350,17 +5772,18 @@ def histo(a,da=1.,amin=[],amax=[]): # --DC
     nnn = (amax - amin) / da
     if less(nnn - int(nnn), 1e-4):
         amax = amax + da
-    bins = arange(amin,amax+da,da)
-    n=searchsorted(sort(a),bins)
+    bins = arange(amin, amax+da, da)
+    n = searchsorted(sort(a), bins)
 #    n=concatenate([n,[len(a)]])
-    n=array(list(map(float,n)))
-##     print a
-##     print bins
-##     print n
+    n = array(list(map(float, n)))
+# print a
+# print bins
+# print n
     return n[1:]-n[:-1]
 #    return hist(a, bins)
 
-def Histo(a,da=1.,amin=[],amax=[], **other): # --DC
+
+def Histo(a, da=1., amin=[], amax=[], **other):  # --DC
     if amin == []:
         amin = min(a)
     if amax == []:
@@ -5369,18 +5792,20 @@ def Histo(a,da=1.,amin=[],amax=[], **other): # --DC
         amin = amin[0]
     except:
         pass
-##     print 'hi'
-##     print da
-##     print amin
-##     print amax
+# print 'hi'
+# print da
+# print amin
+# print amax
     h = histo(a, da, amin, amax)
-##     print h
+# print h
     return Histogram(h, amin, da, **other)
 
-def plothisto(a,da=1.,amin=[],amax=[]): # --DC
+
+def plothisto(a, da=1., amin=[], amax=[]):  # --DC
     p = FramedPlot()
     p.add(Histo(a, da, amin, amax))
     p.show()
+
 
 def bargraphbiggles(x, y, fill=1, color='black', **other):
     n = len(x)
@@ -5389,13 +5814,14 @@ def bargraphbiggles(x, y, fill=1, color='black', **other):
     z = array([0.])
     yy = concatenate([z, repeat(y, 2), z])
     zz = yy*0
-    
+
     p = FramedPlot()
     if fill:
         p.add(FillBetween(xx, yy, xx, zz, color=color))
     else:
         p.add(Curve(xx, yy, color=color, **other))
     p.show()
+
 
 def BarGraph(x, y, fill=1, color='black', bottom=0, **other):
     n = len(x)
@@ -5409,7 +5835,8 @@ def BarGraph(x, y, fill=1, color='black', bottom=0, **other):
     else:
         return Curve(xx, yy, color=color, **other)
 
-def histob(a,da=1.,amin=[],amax=[]): # --DC
+
+def histob(a, da=1., amin=[], amax=[]):  # --DC
     # NOTE searchsorted can't be counted on to act consistently
     #   when bin values are equal to data values
     # for example, neither 0.04 or 0.05 gets put in the 0.04-0.05 bin
@@ -5426,20 +5853,22 @@ def histob(a,da=1.,amin=[],amax=[]): # --DC
     # MAKE SURE 18 GOES IN THE 18-18.9999 bin (for da=1 anyway)
     amin = amin - 1e-4
     amax = amax + 1e-4
-    #if less(abs(amax - a[-1]), da*1e-4):
+    # if less(abs(amax - a[-1]), da*1e-4):
     nnn = (amax - amin) / da
     if less(nnn - int(nnn), 1e-4):
         amax = amax + da
     #bins = arange(amin,amax+da,da)
-    bins = arange(amin,amax+da,da)
-    n=searchsorted(sort(a),bins)
-    n=array(list(map(float,n)))
+    bins = arange(amin, amax+da, da)
+    n = searchsorted(sort(a), bins)
+    n = array(list(map(float, n)))
     n = n[1:]-n[:-1]
     return (bins, n)
+
 
 def Histob(a, da=1., amin=[], amax=[], fill=1, color='black', bottom=0):
     bins, n = histob(a, da, amin, amax)
     return BarGraph(bins, n, fill=fill, color=color, bottom=bottom)
+
 
 def histov(a, bins, v, presorted=0):
     """Total of values (v) in bins
@@ -5456,11 +5885,13 @@ def histov(a, bins, v, presorted=0):
     vb = vcumi[1:] - vcumi[:-1]
     return vb
 
-#def isNaN(x):
+# def isNaN(x):
 #    return (x == 1) and (x == 0)
+
 
 def isNaN(x):
     return not (x < 0) and not (x > 0) and (x != 0)
+
 
 def isnan(x):
     l = less(x, 0)
@@ -5469,21 +5900,23 @@ def isnan(x):
     n = logical_and(logical_not(l), logical_not(g))
     n = logical_and(n, logical_not(e))
     return n
-    
+
 #from coeplot2a import *
-#testinsidepoly()
-
-
+# testinsidepoly()
 
 
 pwd = os.getcwd
 die = sys.exit
 
+
 def color1to255(color):
-    return tuple((array(color) * 255. + 0.49).astype(int).tolist())  # CONVERT TO 0-255 SCALE
+    # CONVERT TO 0-255 SCALE
+    return tuple((array(color) * 255. + 0.49).astype(int).tolist())
+
 
 def color255to1(color):
     return tuple((array(color) / 255.).tolist())  # CONVERT TO 0-255 SCALE
+
 
 def color2hex(color):
     if 0:  # 0 < max(color) <= 1:  # 0-1 SCALE
@@ -5499,21 +5932,24 @@ def color2hex(color):
 
 ###
 
+
 def keyvals(k, keys, vals):
     """GIVEN {keys: vals}, RETURNS VALUES FOR k
     THERE MUST BE A BUILT-IN WAY OF DOING THIS!"""
     d = dict(list(zip(keys, vals)))
     d[0] = 0
-    f = lambda x: d[x]
+    def f(x): return d[x]
     v = list(map(f, ravel(k)))
     if type(k) == type(array([])):
         v = array(v)
         v.shape = k.shape
     return v
 
+
 def printmult(x, n):
     if not (x % n):
         print(x)
+
 
 def cd(dir):
     if len(dir) > 2:
@@ -5521,10 +5957,12 @@ def cd(dir):
             dir = os.path.join(home, dir[2:])
     os.chdir(dir)
 
+
 def cdmk(dir):
     if not os.path.exists(dir):
         os.mkdir(dir)
     os.chdir(dir)
+
 
 def splitparagraphs(txt):
     paragraphs = ['']
@@ -5537,11 +5975,12 @@ def splitparagraphs(txt):
         if line == '\n':
             paragraphs.append('')
         else:
-            #paragraphs[-1].append(line)
+            # paragraphs[-1].append(line)
             paragraphs[-1] += line
     if paragraphs[-1] == '':
         paragraphs = paragraphs[:-1]
     return paragraphs
+
 
 def echo(word):
     cmd = 'echo ' + word
@@ -5550,18 +5989,22 @@ def echo(word):
     out = out[0][:-1]  # LIST OF 1 STRING WITH \n AT END
     return out
 
+
 home = os.environ.get('HOME', '')
+
 
 def singlevalue(x):
     """IS x A SINGLE VALUE?  (AS OPPOSED TO AN ARRAY OR LIST)"""
     # return type(x) in [float, int]  THERE ARE MORE TYPECODES IN Numpy
-    return type(x) in [float, float32, float64, int, int0, int8, int16, int32, int64]  # THERE ARE MORE TYPECODES IN Numpy
-##     try:
+    # THERE ARE MORE TYPECODES IN Numpy
+    return type(x) in [float, float32, float64, int, int0, int8, int16, int32, int64]
+# try:
 ##         a = x[0]
 ##         singleval = False
-##     except:
+# except:
 ##         singleval = True
-##     return singleval
+# return singleval
+
 
 def comma(x, ndec=0):
     if ndec:
@@ -5582,6 +6025,7 @@ def comma(x, ndec=0):
 
 # print comma(9812345.67)
 
+
 def th(n):
     """RETURNS 0th, 1st, 2nd, 3rd, 4th, 5th, etc."""
     if n == 1:
@@ -5593,7 +6037,9 @@ def th(n):
     else:
         return '%dth' % n
 
+
 nth = th
+
 
 def num2str(x, max=3):
     try:
@@ -5604,6 +6050,7 @@ def num2str(x, max=3):
             return "%d" % x
     except:
         return x
+
 
 def str2num(stri, rf=0):
     """CONVERTS A STRING TO A NUMBER (INT OR FLOAT) IF POSSIBLE
@@ -5627,6 +6074,7 @@ def str2num(stri, rf=0):
     else:
         return num
 
+
 def minmax(x, range=None):
     if range:
         lo, hi = range
@@ -5641,20 +6089,22 @@ def minmax(x, range=None):
 # NEED TO MAKE size GLOBAL (I THINK) OTHERWISE, YOU CAN'T CHANGE IT!
 # COULD HAVE ALSO USED get_data IN ~txitxo/Python/useful.py
 
-def FltArr(n0,n1):
+
+def FltArr(n0, n1):
     """MAKES A 2-D FLOAT ARRAY"""
     #a = ones([n0,n1], dtype=float32)
-    a = ones([n0,n1], float32)
+    a = ones([n0, n1], float32)
     return(a[:])
 
 
-def IndArr(n0,n1):
+def IndArr(n0, n1):
     """MAKES A 2-D INTEGER ARRAY WITH INCREASING INDEX"""
     a = arange(n0*n1)
-    return resize(a, [n0,n1])
+    return resize(a, [n0, n1])
 
 #################################
 # STRINGS, INPUT
+
 
 def striskey(stri):
     """IS stri AN OPTION LIKE -C or -ker
@@ -5664,12 +6114,14 @@ def striskey(stri):
         if stri[0] == '-':
             iskey = 1
             if len(stri) > 1:
-                iskey = stri[1] not in ['0', '1', '2', '3', '4', '5', '6', '7', '8', '9', '.']
+                iskey = stri[1] not in ['0', '1', '2',
+                                        '3', '4', '5', '6', '7', '8', '9', '.']
     return iskey
-    
+
 
 def pause(text=''):
     inp = input(text)
+
 
 def wait(seconds):
     t0 = time()
@@ -5677,18 +6129,22 @@ def wait(seconds):
     while (t1 - t0) < seconds:
         t1 = time()
 
-def inputnum(question = ''):
+
+def inputnum(question=''):
     done = 0
     while not done:
         rinp = input(question)
-        try: 
+        try:
             x = rinp.atof()
             done = 1
-        except: 
+        except:
             pass
-    try: x = rinp.atoi()
-    except: pass
+    try:
+        x = rinp.atoi()
+    except:
+        pass
     return x
+
 
 def stringsplitatoi(stri, separator=''):
     if separator:
@@ -5700,6 +6156,7 @@ def stringsplitatoi(stri, separator=''):
         vals.append(word.atoi())
     return vals
 
+
 def stringsplitatof(stri, separator=''):
     if separator:
         words = stri.split(separator)
@@ -5710,10 +6167,11 @@ def stringsplitatof(stri, separator=''):
         vals.append(word.atof())
     return vals
 
+
 def stringsplitstrip(stri, separator=''):
     # SPLITS BUT ALSO STRIPS EACH ITEM OF WHITESPACE
     if separator:
-        words = stri.split( separator)
+        words = stri.split(separator)
     else:
         words = stri.split()
     vals = []
@@ -5721,11 +6179,14 @@ def stringsplitstrip(stri, separator=''):
         vals.append(word.strip())
     return vals
 
+
 def strbegin(stri, phr):
     return stri[:len(phr)] == phr
 
+
 def strend(stri, phr):
     return stri[-len(phr):] == phr
+
 
 def strfindall(stri, phr):
     """FIND ALL INSTANCES OF phr IN stri
@@ -5740,6 +6201,7 @@ def strfindall(stri, phr):
         else:
             break
     return pos
+
 
 def strbtw1(s, left, right=None):
     """RETURNS THE PART OF STRING s BETWEEN left & right
@@ -5760,6 +6222,7 @@ def strbtw1(s, left, right=None):
     #out = string.split(s, left)[1]
     #out = string.split(out, right)[0]
     return out
+
 
 def strbtw(s, left, right=None, r=False):
     """RETURNS THE PART OF STRING s BETWEEN left & right
@@ -5785,6 +6248,7 @@ def strbtw(s, left, right=None, r=False):
     #out = string.split(out, right)[0]
     return out
 
+
 def getanswer(question=''):
     ans = -1
     while ans == -1:
@@ -5796,10 +6260,12 @@ def getanswer(question=''):
                 ans = 0
     return ans
 
+
 ask = getanswer
 
 #################################
 # LISTS
+
 
 def putids(selfvalues, selfids, ids, values):
     """ selfvalues = INITIAL ARRAY -OR- A DEFAULT VALUE FOR UNput ELEMENTS """
@@ -5814,11 +6280,13 @@ def putids(selfvalues, selfids, ids, values):
     put(selfvalues, indices, values)
     return selfvalues
 
+
 def takelist(a, ind):
     l = []
     for i in ind:
         l.append(a[i])
     return l
+
 
 def common(id1, id2):
     # ASSUME NO IDS ARE NEGATIVE
@@ -5835,6 +6303,8 @@ def common(id1, id2):
     return ids
 
 # FROM sparse.py ("sparse3")
+
+
 def census(a, returndict=1):
     a = sort(ravel(a))
     if returndict:
@@ -5861,6 +6331,8 @@ def census(a, returndict=1):
         return s
 
 # ALSO CONSIDER: set(all) - set(ids)
+
+
 def invertselection(ids, all):
     if type(all) == int:  # size input
         all = arange(all) + 1
@@ -5870,10 +6342,11 @@ def invertselection(ids, all):
     else:
         out = []
         for val in all:
-            #if val not in ids:
+            # if val not in ids:
             if not floatin(val, ids):
                 out.append(val)
         return out
+
 
 def mergeids(id1, id2):
     # ASSUME NO IDS ARE NEGATIVE
@@ -5893,10 +6366,11 @@ def findmatch1(x, xsearch, tol=1e-4):
     else:
         return i
 
+
 def findmatch(x, y, xsearch, ysearch, dtol=4, silent=0, returndist=0, xsorted=0):
     """FINDS AN OBJECT GIVEN A LIST OF POSITIONS AND SEARCH COORDINATE
     RETURNS INDEX OF THE OBJECT OR n IF NOT FOUND"""
-    
+
     n = len(x)
     if silent < 0:
         print('n=', n)
@@ -5906,11 +6380,11 @@ def findmatch(x, y, xsearch, ysearch, dtol=4, silent=0, returndist=0, xsorted=0)
         y = take(y, SI)
     else:
         SI = arange(n)
-    
+
     dist = 99  # IN CASE NO MATCH IS FOUND
-    
+
     # SKIP AHEAD IN CATALOG TO x[i] = xsearch - dtol
-    #print "SEARCHING..."
+    # print "SEARCHING..."
     if xsearch > dtol + max(x):
         done = 'too far'
     else:
@@ -5920,14 +6394,14 @@ def findmatch(x, y, xsearch, ysearch, dtol=4, silent=0, returndist=0, xsorted=0)
             if silent < 0:
                 print(i, xsearch, x[i])
             i = i + 1
-    
+
     while not done:
         if silent < 0:
             print(i, x[i], xsearch)
         if x[i] - xsearch > dtol:
             done = 'too far'
         else:
-            dist = sqrt( (x[i] - xsearch) ** 2 + (y[i] - ysearch) ** 2)
+            dist = sqrt((x[i] - xsearch) ** 2 + (y[i] - ysearch) ** 2)
             if dist < dtol:
                 done = 'found'
             elif i == n - 1:
@@ -5936,10 +6410,11 @@ def findmatch(x, y, xsearch, ysearch, dtol=4, silent=0, returndist=0, xsorted=0)
                 i = i + 1
         if silent < 0:
             print(done)
-    
+
     if done == 'found':
         if not silent:
-            print('MATCH FOUND %1.f PIXELS AWAY AT (%.1f, %.1f)' % (dist, x[i], y[i]))
+            print('MATCH FOUND %1.f PIXELS AWAY AT (%.1f, %.1f)' %
+                  (dist, x[i], y[i]))
         ii = SI[i]
     else:
         if not silent:
@@ -5950,6 +6425,7 @@ def findmatch(x, y, xsearch, ysearch, dtol=4, silent=0, returndist=0, xsorted=0)
     else:
         return ii
 
+
 def findmatches2(x1, y1, x2, y2):
     """MEASURES ALL DISTANCES, FINDS MINIMA
     SEARCHES FOR 2 IN 1
@@ -5957,13 +6433,13 @@ def findmatches2(x1, y1, x2, y2):
     dx = subtract.outer(x1, x2)
     dy = subtract.outer(y1, y2)
     d = sqrt(dx**2 + dy**2)
-    i = argmin(d,0)
-    
+    i = argmin(d, 0)
+
     n1 = len(x1)
     n2 = len(x2)
     j = arange(n2)
     di = n2*i + j
-    dmin = take(d,di)
+    dmin = take(d, di)
     return i, dmin
 
 
@@ -5997,7 +6473,8 @@ def takeid(data, id):
     i = 0
     while id != dataids[i]:
         i += 1
-    return data[:,i]
+    return data[:, i]
+
 
 def takeids(data, ids, idrow=0, keepzeros=0):
     """TAKES data COLUMNS CORRESPONDING TO ids.
@@ -6013,16 +6490,17 @@ def takeids(data, ids, idrow=0, keepzeros=0):
                 gotit = 1
                 break
         if gotit:
-            outdata.append(data[:,i])
+            outdata.append(data[:, i])
         elif keepzeros:
-            outdata.append(0. * data[:,0])
+            outdata.append(0. * data[:, 0])
     return transpose(array(outdata))
-    
+
 
 #################################
 # FLUX, BPZ
 
 bpzpath = os.environ.get('BPZPATH', '')
+
 
 def bpzsedname(tb, seds, interp=2):
     if type(seds) == stri:
@@ -6034,6 +6512,7 @@ def bpzsedname(tb, seds, interp=2):
         name = name[:-4] + '-' + seds[rb2-1]
     return name
 
+
 def bpztypename(tb, tbs, interp=2):
     rb = roundint(tb)
     name = tbs[rb-1]
@@ -6041,6 +6520,7 @@ def bpztypename(tb, tbs, interp=2):
         rb2 = roundint((tb - rb) * 3 + rb)
         name += '-' + tbs[rb2-1]
     return name
+
 
 def addmags(m1, m2, dm1=0, dm2=0):
     # F = 10 ** (-0.4 * m)
@@ -6065,24 +6545,24 @@ def addmags(m1, m2, dm1=0, dm2=0):
         #dF2 = 0.921034 * F2 * dm2
         #dF = sqrt(dF1 ** 2 + dF2 ** 2)
         #dm = dF / F / 0.921034
-        dm = sqrt( (F1 * dm1) ** 2 + (F2 * dm2) ** 2 ) / F
+        dm = sqrt((F1 * dm1) ** 2 + (F2 * dm2) ** 2) / F
     output = (m, dm)
-    
+
     return output
+
 
 def addfluxes(F1, F2, dF1=0, dF2=0):
     F = F1 + F2
     dF = sqrt(dF1 ** 2 + dF2 ** 2)
     output = (F, dF)
-    
-    return output
 
+    return output
 
 
 #################################
 # FROM Txitxo's bpz_tools.py
 
-def sex2bpzmags(f,ef,zp=0.,sn_min=1.):
+def sex2bpzmags(f, ef, zp=0., sn_min=1.):
     """
     This function converts a pair of flux, error flux measurements from SExtractor
     into a pair of magnitude, magnitude error which conform to BPZ input standards:
@@ -6092,29 +6572,31 @@ def sex2bpzmags(f,ef,zp=0.,sn_min=1.):
       characterized as mag=-99 errormag=0.
     """
 
-    nondetected=less_equal(f,0.)*greater(ef,0) #Flux <=0, meaningful phot. error
-    nonobserved=less_equal(ef,0.) #Negative errors
-    #Clip the flux values to avoid overflows
-    f=clip(f,1e-100,1e10)
-    ef=clip(ef,1e-100,1e10)
-    nonobserved+=equal(ef,1e10)
-    nondetected+=less_equal(f/ef,sn_min) #Less than sn_min sigma detections: consider non-detections
-    
-    detected=logical_not(nondetected+nonobserved)
+    # Flux <=0, meaningful phot. error
+    nondetected = less_equal(f, 0.)*greater(ef, 0)
+    nonobserved = less_equal(ef, 0.)  # Negative errors
+    # Clip the flux values to avoid overflows
+    f = clip(f, 1e-100, 1e10)
+    ef = clip(ef, 1e-100, 1e10)
+    nonobserved += equal(ef, 1e10)
+    # Less than sn_min sigma detections: consider non-detections
+    nondetected += less_equal(f/ef, sn_min)
 
-    m=zeros(len(f), float)
-    em=zeros(len(ef), float)
+    detected = logical_not(nondetected+nonobserved)
 
-    m = where(detected,-2.5*log10(f)+zp,m)
-    m = where(nondetected,99.,m)
-    m = where(nonobserved,-99.,m)
+    m = zeros(len(f), float)
+    em = zeros(len(ef), float)
 
-    em = where(detected,2.5*log10(1.+ef/f),em)
+    m = where(detected, -2.5*log10(f)+zp, m)
+    m = where(nondetected, 99., m)
+    m = where(nonobserved, -99., m)
+
+    em = where(detected, 2.5*log10(1.+ef/f), em)
     #em = where(nondetected,2.5*log10(ef)-zp,em)
-    em = where(nondetected,zp-2.5*log10(ef),em)
-    #print "NOW WITH CORRECT SIGN FOR em"
-    em = where(nonobserved,0.,em)
-    return m,em
+    em = where(nondetected, zp-2.5*log10(ef), em)
+    # print "NOW WITH CORRECT SIGN FOR em"
+    em = where(nonobserved, 0., em)
+    return m, em
 
 
 # NOTE PLACEMENT OF THIS LINE IS IMPORTANT
@@ -6122,4 +6604,3 @@ def sex2bpzmags(f,ef,zp=0.,sn_min=1.):
 # SO TO AVOID AN INFINITE LOOP, coeio ONLY LOADS FROM coetools
 #  THOSE FUNCTIONS DEFINED BEFORE coeio IS LOADED
 #from smooth import *
-

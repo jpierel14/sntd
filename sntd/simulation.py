@@ -1,5 +1,6 @@
-import sncosmo,os
-from copy import deepcopy,copy
+import sncosmo
+import os
+from copy import deepcopy, copy
 from collections import OrderedDict
 
 from astropy.io import ascii
@@ -9,10 +10,10 @@ from scipy.interpolate import interp1d
 from sncosmo.utils import alias_map
 
 from .util import _filedir_
-from .curve_io import image_lc,MISN
+from .curve_io import image_lc, MISN
 from .ml import *
 
-__all__=['createMultiplyImagedSN']
+__all__ = ['createMultiplyImagedSN']
 
 OBSERVATIONS_REQUIRED_ALIASES = ('time', 'band', 'zp', 'zpsys', 'gain',
                                  'skynoise')
@@ -26,31 +27,35 @@ OBSERVATIONS_ALIASES = OrderedDict([
     ('skynoise', set(['skynoise']))
 ])
 
+
 def _getAbsoluteDist():
-    absolutes=ascii.read(os.path.join(_filedir_,'sim','data','absolutes.ref'))
-    total=float(np.sum(absolutes['N'][absolutes['type']!='Ia']))
-    absDict=dict([])
+    absolutes = ascii.read(os.path.join(
+        _filedir_, 'sim', 'data', 'absolutes.ref'))
+    total = float(np.sum(absolutes['N'][absolutes['type'] != 'Ia']))
+    absDict = dict([])
     for row in absolutes:
-        if row['type']=='Ia':
-            frac=1
+        if row['type'] == 'Ia':
+            frac = 1
         else:
-            frac=float(row['N'])/total
-        absDict[row['type']]={'dist':(row['mean'],row['sigma']),'frac':frac}
+            frac = float(row['N'])/total
+        absDict[row['type']] = {
+            'dist': (row['mean'], row['sigma']), 'frac': frac}
     return(absDict)
 
+
 def _getAbsFromDist(dist):
-    mu,sigma=dist
-    return(np.random.normal(mu,sigma))
+    mu, sigma = dist
+    return(np.random.normal(mu, sigma))
 
 
 def createMultiplyImagedSN(
-        sourcename, snType, redshift,z_lens=None, telescopename='telescope',
-        objectName='object', time_delays=[10., 50.], magnifications=[2., 1.],sn_params={},av_dists={},
-        numImages=2, cadence=5, epochs=30, clip_time=[-30,150],bands=['F105W', 'F160W'],start_time=None,
-        gain=200., skynoiseRange=(1, 1.1), timeArr=None,zpsys='ab', zp=None,hostr_v=3.1,lensr_v=3.1,
-        microlensing_type=None, microlensing_params=[],ml_loc=[None,None],
-        dust_model='CCM89Dust', av_host=.3, av_lens=0,fix_luminosity=False,
-        minsnr=0.0, scatter=True,snrFunc=None):
+        sourcename, snType, redshift, z_lens=None, telescopename='telescope',
+        objectName='object', time_delays=[10., 50.], magnifications=[2., 1.], sn_params={}, av_dists={},
+        numImages=2, cadence=5, epochs=30, clip_time=[-30, 150], bands=['F105W', 'F160W'], start_time=None,
+        gain=200., skynoiseRange=(1, 1.1), timeArr=None, zpsys='ab', zp=None, hostr_v=3.1, lensr_v=3.1,
+        microlensing_type=None, microlensing_params=[], ml_loc=[None, None],
+        dust_model='CCM89Dust', av_host=.3, av_lens=0, fix_luminosity=False,
+        minsnr=0.0, scatter=True, snrFunc=None):
     """
     Generate a multiply-imaged SN light curve set, with user-specified time
     delays and magnifications.
@@ -156,34 +161,34 @@ def createMultiplyImagedSN(
     """
 
     if timeArr is not None:
-        times=timeArr
+        times = timeArr
     else:
-        times=np.linspace(0,int(cadence*epochs),int(epochs))
+        times = np.linspace(0, int(cadence*epochs), int(epochs))
         if start_time is not None:
-            times+=start_time
-    leading_peak=times[0]
-    bandList=np.array([np.tile(b,len(times)) for b in bands]).flatten()
-    ms=sncosmo.get_magsystem(zpsys)
+            times += start_time
+    leading_peak = times[0]
+    bandList = np.array([np.tile(b, len(times)) for b in bands]).flatten()
+    ms = sncosmo.get_magsystem(zpsys)
 
     if zp is None:
-        zpList=[ms.band_flux_to_mag(1,b) for b in bandList]
-    elif isinstance(zp,(list,tuple)):
-        zpList=np.array([np.tile(z,len(times)) for z in zp]).flatten()
+        zpList = [ms.band_flux_to_mag(1, b) for b in bandList]
+    elif isinstance(zp, (list, tuple)):
+        zpList = np.array([np.tile(z, len(times)) for z in zp]).flatten()
     else:
-        zpList=[zp for i in range(len(bandList))]
+        zpList = [zp for i in range(len(bandList))]
 
-    #set up object to be filled by simulations
-    curve_obj=MISN(telescopename=telescopename,object=objectName)
+    # set up object to be filled by simulations
+    curve_obj = MISN(telescopename=telescopename, object=objectName)
     curve_obj.bands = set(bandList)
 
-    #make sncosmo obs table
-    obstable = Table({'time':np.tile(times,len(bands)), 'band':bandList,
-                      'zpsys':[zpsys.upper() for i in range(len(bandList))],
-                      'zp':zpList,
-                      'skynoise':np.random.uniform(
-                          skynoiseRange[0],skynoiseRange[1],len(bandList)),
-                      'gain':[gain for i in range(len(bandList))]})
-    absolutes=_getAbsoluteDist()
+    # make sncosmo obs table
+    obstable = Table({'time': np.tile(times, len(bands)), 'band': bandList,
+                      'zpsys': [zpsys.upper() for i in range(len(bandList))],
+                      'zp': zpList,
+                      'skynoise': np.random.uniform(
+                          skynoiseRange[0], skynoiseRange[1], len(bandList)),
+                      'gain': [gain for i in range(len(bandList))]})
+    absolutes = _getAbsoluteDist()
 
     # Set up the dust_model extinction effects in the host galaxy and lens plane
     # TODO allow additional dust screens, not in the host or lens plane?
@@ -194,7 +199,7 @@ def createMultiplyImagedSN(
     dust_frames = []
     dust_names = []
     dust_effect_list = []
-    if dust_model and (av_lens or av_host or len(av_dists)>0):
+    if dust_model and (av_lens or av_host or len(av_dists) > 0):
         dust_effect = {'CCM89Dust': sncosmo.CCM89Dust,
                        'OD94Dust': sncosmo.OD94Dust,
                        'F99Dust': sncosmo.F99Dust}[dust_model]()
@@ -209,53 +214,52 @@ def createMultiplyImagedSN(
 
     # The following is not needed, but may be resurrected when we allow user
     # to provide additional dust screens.
-    #if not isinstance(dust_names, (list, tuple)):
+    # if not isinstance(dust_names, (list, tuple)):
     #    dust_names=[dust_names]
-    #if not isinstance(dust_frames, (list, tuple)):
+    # if not isinstance(dust_frames, (list, tuple)):
     #    dust_frames=[dust_frames]
 
     # The sncosmo Model is initially set up with only dust effects, because
     # as currently constructed, dust has the same effect on all images.
     # Microlensing effects are added separately for each SN image below.
 
-    model=sncosmo.Model(source=sourcename, effects=dust_effect_list,
-                        effect_names=dust_names, effect_frames=dust_frames)
+    model = sncosmo.Model(source=sourcename, effects=dust_effect_list,
+                          effect_names=dust_names, effect_frames=dust_frames)
     model.set(z=redshift)
-    #set absolute magnitude in b or r band based on literature
-    if snType in ['IIP','IIL','IIn']:
-        absBand='bessellb'
+    # set absolute magnitude in b or r band based on literature
+    if snType in ['IIP', 'IIL', 'IIn']:
+        absBand = 'bessellb'
     else:
-        absBand='bessellr'
+        absBand = 'bessellr'
     if model.param_names[2] not in sn_params.keys():
         if fix_luminosity:
             model.set_source_peakabsmag(absolutes[snType]['dist'][0],
                                         absBand, zpsys)
         else:
             model.set_source_peakabsmag(_getAbsFromDist(absolutes[snType]['dist']),
-                                    absBand, zpsys)
+                                        absBand, zpsys)
     else:
-        model.parameters[2]=sn_params[model.param_names[2]]()
-    
+        model.parameters[2] = sn_params[model.param_names[2]]()
 
-    t0=leading_peak
-    if snType=='Ia':
-        x0=model.get('x0')
-        params={'z':redshift, 't0':t0, 'x0':x0}
+    t0 = leading_peak
+    if snType == 'Ia':
+        x0 = model.get('x0')
+        params = {'z': redshift, 't0': t0, 'x0': x0}
         if 'x1' not in sn_params.keys():
-            params['x1']=np.random.normal(0.,1.)
+            params['x1'] = np.random.normal(0., 1.)
         else:
-            params['x1']=sn_params['x1']() 
+            params['x1'] = sn_params['x1']()
         if 'c' not in sn_params.keys():
-            params['c']=np.random.normal(0.,.1)
+            params['c'] = np.random.normal(0., .1)
         else:
-            params['c']=sn_params['c']()
+            params['c'] = sn_params['c']()
     else:
-        amp=model.get('amplitude')
-        params={'z':redshift, 't0':t0, 'amplitude':amp}
+        amp = model.get('amplitude')
+        params = {'z': redshift, 't0': t0, 'amplitude': amp}
     model.set(**params)
     if av_host or 'host' in av_dists.keys():
         if 'host' in av_dists.keys():
-            av_host=av_dists['host']()
+            av_host = av_dists['host']()
         ebv_host = av_host/RV_host
         model.set(hostebv=ebv_host, hostr_v=RV_host)
     else:
@@ -265,7 +269,7 @@ def createMultiplyImagedSN(
             print('No z_lens set, assuming half of source z...')
             z_lens = redshift / 2.
         if 'lens' in av_dists.keys():
-            av_lens=av_dists['lens']()
+            av_lens = av_dists['lens']()
         ebv_lens = av_lens/RV_lens
         model.set(lensz=z_lens, lensebv=ebv_lens, lensr_v=RV_lens)
     else:
@@ -278,9 +282,9 @@ def createMultiplyImagedSN(
         # can be reflected in the model_i parameters and propagate correctly
         # into realize_lcs for flux uncertainties
         model_i = deepcopy(model)
-        model_i._flux=_mlFlux
+        model_i._flux = _mlFlux
         params_i = deepcopy(params)
-        if snType=='Ia':
+        if snType == 'Ia':
             params_i['x0'] *= mu
         else:
             params_i['amplitude'] *= mu
@@ -295,20 +299,22 @@ def createMultiplyImagedSN(
                 nanchor, sigmadm, nspl = microlensing_params
                 if microlensing_type.lower().startswith('achromatic'):
                     ml_spline_func = sncosmo.AchromaticSplineMicrolensing
-                else :
+                else:
                     ml_spline_func = ChromaticSplineMicrolensing
                 ml_effect = ml_spline_func(nanchor=nanchor, sigmadm=sigmadm,
                                            nspl=nspl)
             else:
-                #get magnification curve from the defined microcaustic
-                mlTime=np.arange(0,times[-1]/(1+redshift)-model_i._source._phase[0]+5,1)
+                # get magnification curve from the defined microcaustic
+                mlTime = np.arange(
+                    0, times[-1]/(1+redshift)-model_i._source._phase[0]+5, 1)
 
-                time,dmag=microcaustic_field_to_curve(microlensing_params,mlTime,z_lens,redshift,loc=ml_loc[imnum])
-                dmag/=np.mean(dmag) #to remove overall magnification
+                time, dmag = microcaustic_field_to_curve(
+                    microlensing_params, mlTime, z_lens, redshift, loc=ml_loc[imnum])
+                dmag /= np.mean(dmag)  # to remove overall magnification
 
                 ml_effect = AchromaticMicrolensing(
-                    time+model_i._source._phase[0],dmag, magformat='multiply')
-                
+                    time+model_i._source._phase[0], dmag, magformat='multiply')
+
             model_i.add_effect(ml_effect, 'microlensing', 'rest')
         else:
             ml_effect = None
@@ -318,47 +324,49 @@ def createMultiplyImagedSN(
         model_i.set(**params_i)
 
         table_i = realize_lcs(
-            obstable , model_i, [params_i],
-            trim_observations=True, scatter=scatter,thresh=minsnr,snrFunc=snrFunc)
-        tried=0
-        while (len(table_i)==0 or len(table_i[0])<numImages) and tried<50:
+            obstable, model_i, [params_i],
+            trim_observations=True, scatter=scatter, thresh=minsnr, snrFunc=snrFunc)
+        tried = 0
+        while (len(table_i) == 0 or len(table_i[0]) < numImages) and tried < 50:
             table_i = realize_lcs(
-                obstable , model_i, [params_i],
-                trim_observations=True, scatter=scatter,thresh=minsnr,snrFunc=snrFunc)
-            tried+=1
-        if tried==50:
-            #this arbitrary catch is here in case your minsnr and observation parameters
-            #result in a "non-detection"
+                obstable, model_i, [params_i],
+                trim_observations=True, scatter=scatter, thresh=minsnr, snrFunc=snrFunc)
+            tried += 1
+        if tried == 50:
+            # this arbitrary catch is here in case your minsnr and observation parameters
+            # result in a "non-detection"
             print("Your survey parameters detected no supernovae.")
             return None
-        table_i=table_i[0]
+        table_i = table_i[0]
         if timeArr is None:
-            table_i=table_i[table_i['time']<model_i.get('t0')+clip_time[1]*(1+model_i.get('z'))]
-            table_i=table_i[table_i['time']>model_i.get('t0')+clip_time[0]*(1+model_i.get('z'))]
-        #create is curve with all parameters and add it to the overall MISN object from above
-        curve_i=image_lc()
-        curve_i.object=None
-        curve_i.zpsys=zpsys
-        curve_i.table=deepcopy(table_i)
-        curve_i.bands=list(set(table_i['band']))
-        curve_i.simMeta=deepcopy(table_i.meta)
-        curve_i.simMeta['sourcez']=redshift
-        curve_i.simMeta['model']=copy(model_i)
-        curve_i.simMeta['hostebv']=ebv_host
-        curve_i.simMeta['lensebv']=ebv_lens
-        curve_i.simMeta['lensz']=z_lens
-        curve_i.simMeta['mu']=mu
-        curve_i.simMeta['td']=td
+            table_i = table_i[table_i['time'] < model_i.get(
+                't0')+clip_time[1]*(1+model_i.get('z'))]
+            table_i = table_i[table_i['time'] > model_i.get(
+                't0')+clip_time[0]*(1+model_i.get('z'))]
+        # create is curve with all parameters and add it to the overall MISN object from above
+        curve_i = image_lc()
+        curve_i.object = None
+        curve_i.zpsys = zpsys
+        curve_i.table = deepcopy(table_i)
+        curve_i.bands = list(set(table_i['band']))
+        curve_i.simMeta = deepcopy(table_i.meta)
+        curve_i.simMeta['sourcez'] = redshift
+        curve_i.simMeta['model'] = copy(model_i)
+        curve_i.simMeta['hostebv'] = ebv_host
+        curve_i.simMeta['lensebv'] = ebv_lens
+        curve_i.simMeta['lensz'] = z_lens
+        curve_i.simMeta['mu'] = mu
+        curve_i.simMeta['td'] = td
         curve_i.simMeta['microlensing'] = ml_effect
         curve_i.simMeta['microlensing_type'] = microlensing_type
 
-        if microlensing_type=='AchromaticSplineMicrolensing':
+        if microlensing_type == 'AchromaticSplineMicrolensing':
             curve_i.simMeta['microlensing_params'] = microlensing_params
         elif microlensing_type is not None:
-            curve_i.simMeta['microlensing_params'] = interp1d(time+model_i._source._phase[0],dmag)
+            curve_i.simMeta['microlensing_params'] = interp1d(
+                time+model_i._source._phase[0], dmag)
 
         curve_obj.add_image_lc(curve_i)
-
 
     # Store the un-lensed model as a component of the lensed SN object.
     model.set(**params)
@@ -366,8 +374,9 @@ def createMultiplyImagedSN(
 
     return(curve_obj)
 
+
 def realize_lcs(observations, model, params, thresh=None,
-                trim_observations=False, scatter=True,snrFunc=None):
+                trim_observations=False, scatter=True, snrFunc=None):
     """***A copy of SNCosmo's function, just to add a SNR function
     Realize data for a set of SNe given a set of observations.
 
@@ -421,7 +430,6 @@ def realize_lcs(observations, model, params, thresh=None,
     # Copy model so we don't mess up the user's model.
     model = copy(model)
 
-
     # get observations as a Table
     if not isinstance(observations, Table):
         if isinstance(observations, np.ndarray):
@@ -459,13 +467,15 @@ def realize_lcs(observations, model, params, thresh=None,
                               zp=snobs[colname['zp']],
                               zpsys=snobs[colname['zpsys']])
         if snrFunc is not None:
-            if isinstance(snrFunc,dict):
-                fluxerr=np.ones(len(flux))
+            if isinstance(snrFunc, dict):
+                fluxerr = np.ones(len(flux))
                 for b in snobs[colname['band']]:
-                    inds=np.where(snobs[colname['band']]==b)[0]
-                    fluxerr[inds]=np.abs(flux[inds]/snrFunc[b](-2.5*np.log10(flux[inds])+snobs[colname['zp']][inds]))
+                    inds = np.where(snobs[colname['band']] == b)[0]
+                    fluxerr[inds] = np.abs(
+                        flux[inds]/snrFunc[b](-2.5*np.log10(flux[inds])+snobs[colname['zp']][inds]))
             else:
-                fluxerr=np.abs(flux/snrFunc(-2.5*np.log10(flux)+snobs[colname['zp']]))
+                fluxerr = np.abs(
+                    flux/snrFunc(-2.5*np.log10(flux)+snobs[colname['zp']]))
         else:
             fluxerr = np.sqrt(snobs[colname['skynoise']]**2 +
                               np.abs(flux) / snobs[colname['gain']])
@@ -482,7 +492,7 @@ def realize_lcs(observations, model, params, thresh=None,
             if not np.any(flux/fluxerr > thresh):
                 continue
             else:
-                inds=np.where(flux/fluxerr>thresh)[0]
+                inds = np.where(flux/fluxerr > thresh)[0]
 
         data = [snobs[colname['time']][inds], snobs[colname['band']][inds], flux[inds], fluxerr[inds],
                 snobs[colname['zp']][inds], snobs[colname['zpsys']][inds]]
