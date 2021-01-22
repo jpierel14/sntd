@@ -950,8 +950,10 @@ def _fitColor(all_args):
                                                   ].fits.model._source.name
 
     if not args['curves'].quality_check(min_n_bands=2,
-                                        min_n_points_per_band=args['min_points_per_band'], clip=False, method='parallel'):
-        print("Curve(s) not passing quality check.")
+                                        min_n_points_per_band=args['min_points_per_band'], 
+                                        clip=False, method='parallel'):
+        if args['verbose']:
+            print("Curve(s) not passing quality check.")
         return
     all_fit_dict = {}
     if args['fast_model_selection'] and len(np.array(args['models']).flatten()) > 1:
@@ -2054,7 +2056,7 @@ def _fitseries(all_args):
 
     if args['microlensing'] is not None:
         tempTable = deepcopy(args['curves'].series.table)
-        micro, sigma, x_pred, y_pred, samples = fit_micro(args['curves'].series.fits.model, tempTable,
+        micro, sigma, x_pred, y_pred, samples, x_resid, y_resid, err_resid = fit_micro(args['curves'].series.fits.model, tempTable,
                                                           tempTable['zpsys'][0], args['nMicroSamples'],
                                                           micro_type=args['microlensing'], kernel=args['kernel'])
 
@@ -2073,17 +2075,28 @@ def _fitseries(all_args):
             args['curves'].series.t_peaks[args['refImage']]
         temp_bounds = {b: temp_bounds[b] for b in temp_bounds.keys(
         ) if b != args['curves'].series.fits.model.param_names[2]}
+
+        args['curves'].series.microlensing = newDict()
+        args['curves'].series.microlensing.micro_propagation_effect = micro
+        args['curves'].series.microlensing.micro_x = x_pred
+        args['curves'].series.microlensing.micro_y = y_pred
+        args['curves'].series.microlensing.samples_y = samples
+        args['curves'].series.microlensing.sigma = sigma
+        args['curves'].series.microlensing.resid_x = x_resid
+        args['curves'].series.microlensing.resid_y = y_resid
+        args['curves'].series.microlensing.resid_err = err_resid
+
         try:
-            t0s = pyParz.foreach(samples.T, _micro_uncertainty,
-                                 [args['curves'].series.fits.model, np.array(tempTable), tempTable.colnames,
-                                  x_pred, temp_vparam_names,
-                                  temp_bounds, None, args.get('minsnr', 0), args.get('maxcall', None)])
+            t0s=pyParz.foreach(samples.T,_micro_uncertainty,
+                           [args['curves'].series.fits.model,np.array(tempTable),tempTable.colnames,
+                            x_pred,temp_vparam_names,
+                            temp_bounds,None,args.get('minsnr',0),args.get('maxcall',None),args['npoints']])
         except:
             if args['verbose']:
-                print('Issue with microlensing identification, skipping...')
+                print('Issue with series microlensing identification, skipping...')
             return args['curves']
-        else:
-            return args['curves']
+        t0s = np.array(t0s)
+        t0s = t0s[np.isfinite(t0s)]
         mu, sigma = scipy.stats.norm.fit(t0s)
 
         args['curves'].series.param_quantiles['micro'] = np.sqrt((args['curves'].series.fits.model.get('t0')-mu)**2
@@ -3018,14 +3031,13 @@ def _micro_uncertainty(args):
     sample, other = args
     nest_fit, data, colnames, x_pred, vparam_names, bounds, priors, minsnr, maxcall, npoints = other
     data = Table(data, names=colnames)
-    #temp_nest_mod = deepcopy(nest_fit)
     tempMicro = AchromaticMicrolensing(
         x_pred/(1+nest_fit.get('z')), sample, magformat='multiply')
     # Assumes achromatic
     temp = tempMicro.propagate((data['time']-nest_fit.get('t0'))/(1+nest_fit.get('z')), [], 
                                np.atleast_2d(np.array(data['flux'])))
     data['flux'] = temp[0]
-    #temp_nest_mod.add_effect(tempMicro, 'microlensing', 'rest')
+
     try:
         tempRes, tempMod = nest_lc(data, nest_fit, vparam_names=vparam_names, bounds=bounds, 
                                minsnr=minsnr, maxcall=maxcall,
@@ -3086,8 +3098,7 @@ def fit_micro(fit, dat, zpsys, nsamples, micro_type='achromatic', kernel='RBF', 
             allTime[b] = tempTime
 
     if kernel == 'RBF':
-        #kernel = RBF(10., (20., 50.))
-        kernel = RBF(.1, (.001, 20.))
+        kernel = RBF(0.1, (.001, 20.))
 
     if achromatic:
         gp = GaussianProcessRegressor(kernel=kernel, alpha=allErr ** 2,

@@ -14,7 +14,7 @@ warnings.simplefilter('ignore')
 
 _NOSBATCH_ = True
 _GOFAST_ = False
-_PARONLY_ = True
+_PARONLY_ = False
 
 np.random.seed(3)
 
@@ -25,7 +25,7 @@ class TestMicrolensing(unittest.TestCase):
     """
 
     def setUp(self):
-        self.myML = sntd.realizeMicro(nray=10, kappas=1, kappac=.3, gamma=.4)
+        self.myML = sntd.realizeMicro(nray=50, kappas=1, kappac=.3, gamma=.4)
         self.myMISN_ml = sntd.createMultiplyImagedSN(sourcename='salt2-extended', snType='Ia', redshift=.5, z_lens=.2,
                                                      bands=[
                                                          'bessellb', 'bessellr'],
@@ -38,14 +38,14 @@ class TestMicrolensing(unittest.TestCase):
         fitCurves = sntd.fit_data(self.myMISN_ml, snType='Ia', models='salt2-extended', bands=['bessellb', 'bessellr'],
                                   params=['x0', 'x1', 't0', 'c'], constants={'z': .5}, bounds={'t0': (-20, 20), 'x1': (-2, 2), 'c': (-1, 1)},
                                   method='parallel', microlensing='achromatic', 
-                                  nMicroSamples=50, maxcall=None, npoints=50, minsnr=0, micro_fit_bands='bessellb')
+                                  nMicroSamples=5, maxcall=None, npoints=50, minsnr=0, micro_fit_bands='bessellb')
 
     @unittest.skipIf(_GOFAST_ or _PARONLY_, "Skipping slow `test_fit_lc_Micro_series`")
     def test_fit_lc_Micro_series(self):
         fitCurves = sntd.fit_data(self.myMISN_ml, snType='Ia', models='salt2-extended', bands=['bessellb', 'bessellr'],
                                   params=['t0', 'x0', 'x1', 'c'], constants={'z': .5}, bounds={'t0': (-15, 15), 'x1': (-2, 2), 'c': (-1, 1), 'td': (-15, 15), 'mu': (.5, 2)},
-                                  method='series', microlensing='achromatic', t0_guess={'image_1': 10, 'image_2': 70},
-                                  nMicroSamples=5, maxcall=100, npoints=25, minsnr=0)
+                                  method='series', microlensing='achromatic',
+                                  nMicroSamples=5, maxcall=None, npoints=50, minsnr=0)
 
 
 class TestSimulation(unittest.TestCase):
@@ -171,8 +171,8 @@ def test_loader(loader):
 
 if __name__ == '__main__':
     # TEST LIST
-    #test_cases = 'ALL'
-    test_cases = [TestMicrolensing]
+    test_cases = 'ALL'
+    #x`test_cases = [TestMicrolensing]
 
     if test_cases == 'ALL':
         unittest.main()
