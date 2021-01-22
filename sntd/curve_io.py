@@ -1,11 +1,11 @@
-from collections import OrderedDict as odict
-
 import numpy as np
 import os
 import string
 import sncosmo
 import sys
 import corner
+import math
+from collections import OrderedDict as odict
 from astropy.io import ascii
 from astropy.table import Table, vstack, Column
 from scipy.stats import mode
@@ -13,6 +13,8 @@ from copy import deepcopy, copy
 import matplotlib.pyplot as plt
 from sncosmo.snanaio import read_snana_fits
 from mpl_toolkits.axes_grid1.axes_divider import make_axes_locatable
+import matplotlib.gridspec as gridspec
+
 try:
     import pickle
 except:
@@ -75,6 +77,8 @@ class image_lc(dict):
         """@type: :class:`~sntd.fitting.newDict`
             Contains fit information from fit_data"""
 
+        self.microlensing = newDict()
+
     # these three functions allow you to access the MISN via "dot" notation
     __setattr__ = dict.__setitem__
     __delattr__ = dict.__delitem__
@@ -105,7 +109,7 @@ class MISN(dict):
     def __deepcopy__(self, memo):
         return deepcopy(dict(self))
 
-    def __init__(self, telescopename="Unknown", object="Unknown"):
+    def __init__(self, telescopename="Unknown", object_name="Unknown"):
         """
         Constructor for MISN class. Inherits from the dictionary class,
         and is the main object of organization used by SNTD.
@@ -114,7 +118,7 @@ class MISN(dict):
         ----------
         telescopename : str
             Name of the telescope that the data were gathered from
-        object : str
+        object_name : str
             Name of object of interest
 
         Returns
@@ -142,7 +146,7 @@ class MISN(dict):
         @type: str
             Name of the telescope that the data were gathered from
         """
-        self.object = object
+        self.object = object_name
         """
         @type: str
             Object of interest
@@ -152,7 +156,7 @@ class MISN(dict):
         self.parallel = image_lc()
         self.series = image_lc()
         self.color = image_lc()
-        self.constants = {}
+        self.constants = dict([])
 
     # these three functions allow you to access the MISN via "dot" notation
     __setattr__ = dict.__setitem__
@@ -546,6 +550,82 @@ class MISN(dict):
             sys.exit(1)
 
         return True
+
+    def plot_microlensing_fit(self,show_all_samples = False):
+        """
+        Shows a plot of the best-fit microlensing curve from GPR.
+
+        Parameters
+        ----------
+        show_all_samples: bool
+            If True, show all GPR samples.
+        
+        Returns
+        -------
+        figure object: :class:`~matplotlib.pyplot.figure`
+        """
+
+        if len(self.images['image_1'].microlensing) == 0:
+            print('Have not yet run microlensing fit.')
+            return
+
+        fig=plt.figure(figsize = (12,12))
+        gs = gridspec.GridSpec(math.ceil(len(self.images.keys())/2),2)
+        i = 0
+        j = 0
+        axes = []
+        row_ax = []
+
+        for im in self.images.keys():
+            if j==2:
+                i += 1
+                j = 0
+                axes.append(row_ax)
+                row_ax = []
+            temp_ax = fig.add_subplot(gs[i,j])
+            if show_all_samples:
+                for k in range(self.images[im].microlensing.samples_y.shape[1]):
+                    if k == 0:
+                        temp_ax.plot(self.images[im].microlensing.micro_x, 
+                                self.images[im].microlensing.samples_y[:, k], 
+                                alpha = .1, label = 'Posterior Samples', color = 'b')
+                    else:
+                        temp_ax.plot(self.images[im].microlensing.micro_x, 
+                                self.images[im].microlensing.samples_y[:, k], 
+                                alpha = .1, color = 'b')
+
+            temp_ax.errorbar(self.images[im].microlensing.resid_x,
+                        self.images[im].microlensing.resid_y, 
+                        self.images[im].microlensing.resid_err, fmt = 'r.',
+                        markersize = 10, label = 'Observation Residuals')
+
+            temp_ax.plot(self.images[im].microlensing.micro_x, 
+                    self.images[im].microlensing.micro_y - 1 * self.images[im].microlensing.sigma, '--g')
+            temp_ax.plot(self.images[im].microlensing.micro_x, 
+                    self.images[im].microlensing.micro_y + 1 * self.images[im].microlensing.sigma, '--g', 
+                    label = r'$1\sigma$ Bounds')
+            temp_ax.plot(self.images[im].microlensing.micro_x, 
+                    self.images[im].microlensing.micro_y, 'k-.', 
+                    label = "GPR Prediction")
+            temp_ax.set_ylim(np.array([np.min(self.images[im].microlensing.micro_y - 1 * \
+                                              self.images[im].microlensing.sigma),
+                                       np.max(self.images[im].microlensing.micro_y + 1 * \
+                                              self.images[im].microlensing.sigma)]))
+
+            if 'simMeta' in self.images[im].keys():
+                z = self.images[im].simMeta['z']
+                temp_ax.plot(self.images[im].microlensing.micro_x, 
+                             self.images[im].simMeta['microlensing_params'](self.images[im].microlensing.micro_x/(1+z)), 'k', 
+                             label = r'True $\mu$-Lensing')
+            temp_ax.legend(fontsize = 10)
+            row_ax.append(temp_ax)
+            j += 1
+            #ax.set_ylabel(r'Magnification ($\mu$)')
+            #ax.set_xlabel('Observer Frame Time (Days)')
+             
+            
+            
+        return fig,axes
 
     def plot_fit(self, method='parallel', par_image=None):
         """

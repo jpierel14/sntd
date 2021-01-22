@@ -178,7 +178,7 @@ def createMultiplyImagedSN(
         zpList = [zp for i in range(len(bandList))]
 
     # set up object to be filled by simulations
-    curve_obj = MISN(telescopename=telescopename, object=objectName)
+    curve_obj = MISN(telescopename=telescopename, object_name=objectName)
     curve_obj.bands = set(bandList)
 
     # make sncosmo obs table
@@ -345,7 +345,7 @@ def createMultiplyImagedSN(
                 't0')+clip_time[0]*(1+model_i.get('z'))]
         # create is curve with all parameters and add it to the overall MISN object from above
         curve_i = image_lc()
-        curve_i.object = None
+        curve_i.object_name = None
         curve_i.zpsys = zpsys
         curve_i.table = deepcopy(table_i)
         curve_i.bands = list(set(table_i['band']))

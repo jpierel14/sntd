@@ -41,36 +41,6 @@ _thetaL_ = ['t0', 'amplitude', 'screenebv', 'dt0',
 _needs_bounds = {'z'}
 
 
-class newDict(dict):
-    """
-    This is just a dictionary replacement class that allows the use of a normal dictionary but with the ability
-    to access via "dot" notation.
-    """
-
-    def __init__(self):
-        super(newDict, self).__init__()
-
-    # these three functions allow you to access the dict via "dot" notation
-    __setattr__ = dict.__setitem__
-    __delattr__ = dict.__delitem__
-    __getattr__ = dict.__getitem__
-
-    def _getstate_(self):
-        """
-        A function necessary for pickling
-        :return: self
-        """
-        return self
-
-    def _setstate_(self, d):
-        """
-        A function necessary for pickling
-        :param d: A value
-        :return: self._dict_
-        """
-        self.__dict__ = d
-
-
 def fit_data(curves=None, snType='Ia', bands=None, models=None, params=None, bounds={}, ignore=None, constants={}, ignore_models=[],
              method='parallel', t0_guess=None, effect_names=[], effect_frames=[], batch_init=None, cut_time=None, force_positive_param=[],
              dust=None, microlensing=None, fitOrder=None, color_bands=None, color_param_ignore=[], min_points_per_band=3, identify_micro=False,
@@ -78,7 +48,7 @@ def fit_data(curves=None, snType='Ia', bands=None, models=None, params=None, bou
              fit_prior=None, par_or_batch='parallel', batch_partition=None, nbatch_jobs=None, batch_python_path=None, n_per_node=None, fast_model_selection=True,
              wait_for_batch=False, band_order=None, set_from_simMeta={}, guess_amplitude=True, trial_fit=True, clip_data=False, use_MLE=False,
              kernel='RBF', refImage='image_1', nMicroSamples=100, color_curve=None, warning_supress=True,
-             verbose=True, **kwargs):
+             micro_fit_bands='all',verbose=True, **kwargs):
     """The main high-level fitting function.
 
     Parameters
@@ -192,6 +162,8 @@ def fit_data(curves=None, snType='Ia', bands=None, models=None, params=None, bou
         A color curve to define the relationship between bands for parameterized light curve model.
     warning_supress: bool
         Turns on or off warnings
+    micro_fit_bands: str or list of str
+        The band(s) to fit microlensing. All assumes achromatic, and will fit all bands together.
     verbose: bool
         Turns on/off the verbosity flag
     Returns
@@ -237,6 +209,7 @@ def fit_data(curves=None, snType='Ia', bands=None, models=None, params=None, bou
             args['bands'] = list(curves.bands) if not isinstance(
                 curves, (list, tuple, np.ndarray)) and not isinstance(args['curves'][0], str) else None
 
+    # get together the model(s) needed for fitting
     models = [models] if models is not None and not isinstance(
         models, (tuple, list, np.ndarray)) else models
     if models is None:
@@ -274,6 +247,7 @@ def fit_data(curves=None, snType='Ia', bands=None, models=None, params=None, bou
 
     if warning_supress:
         warnings.simplefilter('ignore')
+
     if identify_micro and not args['parlist']:
         all_bands, color_bands = identify_micro_func(args)
         args['color_bands'] = color_bands
@@ -292,7 +266,7 @@ def fit_data(curves=None, snType='Ia', bands=None, models=None, params=None, bou
     if isinstance(method, (list, np.ndarray, tuple)):
         if len(method) == 1:
             method = method[0]
-        elif 'parallel' in method and fit_prior == True:
+        elif 'parallel' in method and fit_prior == True: # Run parallel first if using as prior
             method = np.append(
                 ['parallel'], [x for x in method if x != 'parallel'])
         if args['parlist']:
@@ -819,6 +793,8 @@ def fit_data(curves=None, snType='Ia', bands=None, models=None, params=None, bou
 
 
 def _fitColor(all_args):
+
+    # Check if parallelized or single fit
     if isinstance(all_args, (list, tuple, np.ndarray)):
         curves, args = all_args
         if isinstance(args, list):
@@ -857,7 +833,8 @@ def _fitColor(all_args):
         raise RuntimeError(
             "If you want to analyze color curves, you need two bands!")
     else:
-        if args['fit_colors'] is None:
+        if args['fit_colors'] is None: 
+            # Try and determine the best bands to use in the fit
             final_bands = []
             for band in np.unique(args['curves'].images[args['refImage']].table['band']):
                 to_add = True
@@ -927,8 +904,7 @@ def _fitColor(all_args):
 
                 else:
                     args['bounds'][param] = np.array(
-                        args['bounds']['td'])  # +time_delays[im]
-
+                        args['bounds']['td'])  
         elif args['fit_prior'] is not None:
             par_ref = args['fit_prior'].parallel.fitOrder[0]
             if param not in args['fit_prior'].images[par_ref].param_quantiles.keys():
@@ -975,6 +951,7 @@ def _fitColor(all_args):
 
     if not args['curves'].quality_check(min_n_bands=2,
                                         min_n_points_per_band=args['min_points_per_band'], clip=False, method='parallel'):
+        print("Curve(s) not passing quality check.")
         return
     all_fit_dict = {}
     if args['fast_model_selection'] and len(np.array(args['models']).flatten()) > 1:
@@ -2797,9 +2774,18 @@ def _fitparallel(all_args):
     if args['microlensing'] is not None:
         for k in args['curves'].images.keys():
             tempTable = deepcopy(args['curves'].images[k].table)
-            micro, sigma, x_pred, y_pred, samples = fit_micro(args['curves'].images[k].fits.model, tempTable,
-                                                              args['curves'].images[k].zpsys, args['nMicroSamples'],
-                                                              micro_type=args['microlensing'], kernel=args['kernel'])
+            micro, sigma, x_pred, y_pred, samples, x_resid, y_resid, err_resid = fit_micro(args['curves'].images[k].fits.model, 
+                                                            tempTable, args['curves'].images[k].zpsys, args['nMicroSamples'],
+                                                            micro_type=args['microlensing'], kernel=args['kernel'],
+                                                            bands=args['micro_fit_bands'])
+            args['curves'].images[k].microlensing.micro_propagation_effect = micro
+            args['curves'].images[k].microlensing.micro_x = x_pred
+            args['curves'].images[k].microlensing.micro_y = y_pred
+            args['curves'].images[k].microlensing.samples_y = samples
+            args['curves'].images[k].microlensing.sigma = sigma
+            args['curves'].images[k].microlensing.resid_x = x_resid
+            args['curves'].images[k].microlensing.resid_y = y_resid
+            args['curves'].images[k].microlensing.resid_err = err_resid
 
             try:
 
@@ -2809,11 +2795,13 @@ def _fitparallel(all_args):
                                       {p: args['curves'].images[k].param_quantiles[p][[0, 2]]
                                          for p in args['curves'].images[k].fits.res.vparam_names if p !=
                                          args['curves'].images[k].fits.model.param_names[2]}, None,
-                                      args.get('minsnr', 0), args.get('maxcall', None)], numThreads=args['npar_cores'])
+                                      args.get('minsnr', 0), args.get('maxcall', None),args['npoints']], numThreads=args['npar_cores'])
             except:
                 if args['verbose']:
                     print('Issue with microlensing identification, skipping...')
                 return args['curves']
+            t0s = np.array(t0s)
+            t0s = t0s[np.isfinite(t0s)]
             mu, sigma = scipy.stats.norm.fit(t0s)
             args['curves'].images[k].param_quantiles['micro'] = np.sqrt((args['curves'].images[k].fits.model.get('t0')-mu)**2
                                                                         + sigma**2)
@@ -2942,7 +2930,7 @@ def nest_parallel_lc(data, model, prev_res, bounds, guess_amplitude_bound=False,
         if modelcov:
             cov = np.diag(data['fluxerr']*data['fluxerr'])
             _, mcov = model.bandfluxcov(data['band'], data['time'],
-                                        zp=zp, zpsys=zp)
+                                        zp=zp, zpsys=zpsys)
 
             cov = cov + mcov
             invcov = np.linalg.pinv(cov)
@@ -3028,27 +3016,33 @@ def nest_parallel_lc(data, model, prev_res, bounds, guess_amplitude_bound=False,
 
 def _micro_uncertainty(args):
     sample, other = args
-    nest_fit, data, colnames, x_pred, vparam_names, bounds, priors, minsnr, maxcall = other
+    nest_fit, data, colnames, x_pred, vparam_names, bounds, priors, minsnr, maxcall, npoints = other
     data = Table(data, names=colnames)
-
-    temp_nest_mod = deepcopy(nest_fit)
+    #temp_nest_mod = deepcopy(nest_fit)
     tempMicro = AchromaticMicrolensing(
         x_pred/(1+nest_fit.get('z')), sample, magformat='multiply')
-    temp_nest_mod.add_effect(tempMicro, 'microlensing', 'rest')
-    tempRes, tempMod = nest_lc(data, temp_nest_mod, vparam_names=vparam_names, bounds=bounds, minsnr=minsnr, maxcall=maxcall,
-                               guess_amplitude_bound=True, maxiter=None, npoints=200, priors=priors)
+    # Assumes achromatic
+    temp = tempMicro.propagate((data['time']-nest_fit.get('t0'))/(1+nest_fit.get('z')), [], 
+                               np.atleast_2d(np.array(data['flux'])))
+    data['flux'] = temp[0]
+    #temp_nest_mod.add_effect(tempMicro, 'microlensing', 'rest')
+    try:
+        tempRes, tempMod = nest_lc(data, nest_fit, vparam_names=vparam_names, bounds=bounds, 
+                               minsnr=minsnr, maxcall=maxcall,
+                               guess_amplitude_bound=True, maxiter=None, npoints=npoints, 
+                               priors=priors)
+    except:
+        return(np.nan)
 
     return float(tempMod.get('t0'))
 
 
-def fit_micro(fit, dat, zpsys, nsamples, micro_type='achromatic', kernel='RBF'):
+def fit_micro(fit, dat, zpsys, nsamples, micro_type='achromatic', kernel='RBF', bands='all'):
     t0 = fit.get('t0')
     fit.set(t0=t0)
     data = deepcopy(dat)
     data['time'] -= t0
 
-    data = data[data['time'] <= 40.]
-    data = data[data['time'] >= -15.]
     if len(data) == 0:
         data = deepcopy(dat)
 
@@ -3061,26 +3055,39 @@ def fit_micro(fit, dat, zpsys, nsamples, micro_type='achromatic', kernel='RBF'):
         allResid = dict([])
         allErr = dict([])
         allTime = dict([])
-    for b in np.unique(data['band']):
+    if bands == 'all':
+        bands = np.unique(data['band'])
+    elif isinstance(bands,str):
+        bands = [bands]
+    for b in bands:
         tempData = data[data['band'] == b]
-        tempData = tempData[tempData['flux'] > .1]
-        tempTime = tempData['time']
+        tempData = tempData[tempData['flux']>0]
+        tempTime = copy(tempData['time'])
+
         mod = fit.bandflux(b, tempTime+t0, zpsys=zpsys, zp=tempData['zp'])
+        _, mcov = fit.bandfluxcov(b, tempTime,
+                                        zp=tempData['zp'], zpsys=zpsys)
+
         residual = tempData['flux']/mod
+
         tempData = tempData[~np.isnan(residual)]
         residual = residual[~np.isnan(residual)]
         tempTime = tempTime[~np.isnan(residual)]
         if achromatic:
             allResid = np.append(allResid, residual)
+            totalErr = np.abs(residual*np.sqrt((tempData['fluxerr']/tempData['flux']**2+\
+                       np.array([mcov[i][i] for i in range(len(tempData))])/mod**2)))
             allErr = np.append(
-                allErr, residual*tempData['fluxerr']/tempData['flux'])
+                allErr, totalErr)
             allTime = np.append(allTime, tempTime)
         else:
             allResid[b] = residual
             allErr[b] = residual*tempData['fluxerr']/tempData['flux']
             allTime[b] = tempTime
+
     if kernel == 'RBF':
-        kernel = RBF(10., (20., 50.))
+        #kernel = RBF(10., (20., 50.))
+        kernel = RBF(.1, (.001, 20.))
 
     if achromatic:
         gp = GaussianProcessRegressor(kernel=kernel, alpha=allErr ** 2,
@@ -3091,8 +3098,9 @@ def fit_micro(fit, dat, zpsys, nsamples, micro_type='achromatic', kernel='RBF'):
         except:
             temp = np.atleast_2d(allTime).T
             temp2 = allResid.ravel()
-            temp = temp[~np.isnan(temp2)]
-            temp2 = temp2[~np.isnan(temp2)]
+            temp = temp[np.isfinite(temp2)]
+            temp2 = temp2[np.isfinite(temp2)]
+
             gp.fit(temp, temp2)
 
         X = np.atleast_2d(np.linspace(
@@ -3101,71 +3109,19 @@ def fit_micro(fit, dat, zpsys, nsamples, micro_type='achromatic', kernel='RBF'):
         y_pred, sigma = gp.predict(X, return_std=True)
         samples = gp.sample_y(X, nsamples)
 
-        if False:
-            plt.close()
-            fig = plt.figure()
-            ax = fig.gca()
-            for i in range(samples.shape[1]):
-                if i == 0:
-                    ax.plot(X, samples[:, i], alpha=.1,
-                            label='Posterior Samples', color='b')
-                else:
-                    ax.plot(X, samples[:, i], alpha=.1, color='b')
-            ax.errorbar(allTime.ravel(), allResid, allErr, fmt='r.',
-                        markersize=10, label=u'Observations')
-
-            ax.plot(X, y_pred - 3 * sigma, '--g')
-            ax.plot(X, y_pred + 3 * sigma, '--g', label='$3\sigma$ Bounds')
-            ax.plot(X, y_pred, 'k-.', label="GPR Prediction")
-
-            ax.set_ylabel('Magnification ($\mu$)')
-            ax.set_xlabel('Observer Frame Time (Days)')
-            ax.plot(X, curves.images['image_2'].simMeta['microlensing_params'](X/(1+1.33))/np.median(
-                curves.images['image_2'].simMeta['microlensing_params'](X/(1+1.33))), 'k', label='True $\mu$-Lensing')
-            ax.legend(fontsize=10)
-            plt.show()
-            plt.close()
-
         tempX = X[:, 0]
         tempX = np.append([fit._source._phase[0]*(1+fit.get('z'))],
                           np.append(tempX, [fit._source._phase[-1]*(1+fit.get('z'))]))
-        y_pred = np.append([1.], np.append(y_pred, [1.]))
-        sigma = np.append([0.], np.append(sigma, [0.]))
+        temp_y_pred = np.append([1.], np.append(y_pred, [1.]))
+        temp_sigma = np.append([0.], np.append(sigma, [0.]))
         result = AchromaticMicrolensing(
-            tempX/(1+fit.get('z')), y_pred, magformat='multiply')
-
-        '''
-        fig=plt.figure()
-        ax=fig.gca()
-        #plt.plot(X, resid, 'r:', label=u'$f(x) = x\,\sin(x)$')
-        ax.errorbar(allTime.ravel(), allResid, allErr, fmt='r.', markersize=10, label=u'Observations')
-        #for c in np.arange(0,1.01,.1):
-        #    for d in np.arange(-np.max(sigma),np.max(sigma),np.max(sigma)/10):
-        #        plt.plot(X, 1+(y_pred[1:-1]-1)*c+d, 'b-')#, label=u'Prediction')
-        ax.plot(X, y_pred[1:-1], 'b-' ,label=u'Prediction')
-
-        ax.fill(np.concatenate([X, X[::-1]]),
-                 np.concatenate([y_pred[1:-1] - 1.9600 * sigma[1:-1],
-                                 (y_pred[1:-1] + 1.9600 * sigma[1:-1])[::-1]]),
-                 alpha=.5, fc='b', ec='None', label='95% confidence interval')
-        ax.set_xlabel('$x$')
-        ax.set_ylabel('$f(x)$')
-        #plt.xlim(-10, 50)
-        #plt.ylim(.8, 1.4)
-
-        ax.legend(loc='upper left')
-        #plt.show()
-        #plt.show()
-        #figures.append(ax)
-        #plt.clf()
-        plt.close()
-        '''
+            tempX/(1+fit.get('z')), temp_y_pred, magformat='multiply')
 
     else:
         pass
         # TODO make chromatic microlensing a thing
 
-    return result, sigma, X[:, 0], y_pred[1:-1], samples
+    return result, sigma, X[:, 0], y_pred, samples, allTime, allResid, allErr
 
 
 def param_fit(args, modName, fit=False):

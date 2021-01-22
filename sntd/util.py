@@ -93,6 +93,36 @@ _sncosmo_snana = [('snana-2004fe', 'SN Ic', 'CSP-2004fe.SED'),
                   ('s11-2006jl', 'SN IIP', 'S11_SDSS-014599.SED')]
 
 
+class newDict(dict):
+    """
+    This is just a dictionary replacement class that allows the use of a normal dictionary but with the ability
+    to access via "dot" notation.
+    """
+
+    def __init__(self):
+        super(newDict, self).__init__()
+
+    # these three functions allow you to access the dict via "dot" notation
+    __setattr__ = dict.__setitem__
+    __delattr__ = dict.__delitem__
+    __getattr__ = dict.__getitem__
+
+    def _getstate_(self):
+        """
+        A function necessary for pickling
+        :return: self
+        """
+        return self
+
+    def _setstate_(self, d):
+        """
+        A function necessary for pickling
+        :param d: A value
+        :return: self._dict_
+        """
+        self.__dict__ = d
+
+
 def get_models_by_sntype(snType):
     mod, types = np.loadtxt(os.path.join(
         _filedir_, 'data', 'sncosmo', 'models.ref'), dtype='str', unpack=True)

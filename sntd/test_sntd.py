@@ -13,8 +13,8 @@ import sntd
 warnings.simplefilter('ignore')
 
 _NOSBATCH_ = True
-_GOFAST_ = True
-_PARONLY_ = False
+_GOFAST_ = False
+_PARONLY_ = True
 
 np.random.seed(3)
 
@@ -36,11 +36,11 @@ class TestMicrolensing(unittest.TestCase):
     @unittest.skipIf(_GOFAST_, "Skipping slow `test_fit_lc_Micro_parallel`")
     def test_fit_lc_Micro_parallel(self):
         fitCurves = sntd.fit_data(self.myMISN_ml, snType='Ia', models='salt2-extended', bands=['bessellb', 'bessellr'],
-                                  params=['x0', 'x1', 't0', 'c'], constants={'z': .5}, bounds={'t0': (-1, 1), 'x1': (-2, 2), 'c': (-1, 1)},
-                                  method='parallel', microlensing='achromatic', t0_guess={'image_1': 10, 'image_2': 70},
-                                  nMicroSamples=5, maxcall=None, npoints=50, minsnr=0)
+                                  params=['x0', 'x1', 't0', 'c'], constants={'z': .5}, bounds={'t0': (-20, 20), 'x1': (-2, 2), 'c': (-1, 1)},
+                                  method='parallel', microlensing='achromatic', 
+                                  nMicroSamples=50, maxcall=None, npoints=50, minsnr=0, micro_fit_bands='bessellb')
 
-    @unittest.skipIf(_GOFAST_, "Skipping slow `test_fit_lc_Micro_series`")
+    @unittest.skipIf(_GOFAST_ or _PARONLY_, "Skipping slow `test_fit_lc_Micro_series`")
     def test_fit_lc_Micro_series(self):
         fitCurves = sntd.fit_data(self.myMISN_ml, snType='Ia', models='salt2-extended', bands=['bessellb', 'bessellr'],
                                   params=['t0', 'x0', 'x1', 'c'], constants={'z': .5}, bounds={'t0': (-15, 15), 'x1': (-2, 2), 'c': (-1, 1), 'td': (-15, 15), 'mu': (.5, 2)},
