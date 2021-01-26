@@ -190,7 +190,7 @@ Add a prior that assumes perfect knowledge of all other parameters
 
 .. rst-class:: sphx-glr-timing
 
-   **Total running time of the script:** ( 0 minutes  16.117 seconds)
+   **Total running time of the script:** ( 0 minutes  15.501 seconds)
 
 
 .. _sphx_glr_download_examples_plot_d_survey.py:

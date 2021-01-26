@@ -5,6 +5,25 @@ Examples using ``sntd.fit_data``
 
 .. raw:: html
 
+    <div class="sphx-glr-thumbcontainer" tooltip="Simulate and fit for microlensing.">
+
+.. only:: html
+
+ .. figure:: /examples/images/thumb/sphx_glr_plot_a_micro_thumb.png
+     :alt: Microlensing Analysis
+
+     :ref:`sphx_glr_examples_plot_a_micro.py`
+
+.. raw:: html
+
+    </div>
+
+.. only:: not html
+
+ * :ref:`sphx_glr_examples_plot_a_micro.py`
+
+.. raw:: html
+
     <div class="sphx-glr-thumbcontainer" tooltip="A series of examples demonstrating various fitting options/features with SNTD.">
 
 .. only:: html

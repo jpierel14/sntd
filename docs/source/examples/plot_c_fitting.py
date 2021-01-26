@@ -7,7 +7,7 @@ A series of examples demonstrating various fitting options/features
 with SNTD.
 """
 
-##################################################################################################
+#################################################################################################
 # There are 3 methods built into SNTD to measure time delays
 # (parallel, series, color). They are accessed by the same 
 # function: :py:func:`~sntd.fitting.fit_data` . 

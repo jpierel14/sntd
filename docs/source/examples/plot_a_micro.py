@@ -6,7 +6,7 @@ Microlensing Analysis
 Simulate and fit for microlensing.
 """
 
-#####################################################################################
+####################################################################################
 # This notebook gives examples on creating microlensing for simulations,
 # including microlensing in light curves, and fitting for a microlensing uncertainty.
 # 

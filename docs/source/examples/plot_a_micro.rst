@@ -145,8 +145,8 @@ details. We start by assuming the correct shape/color parameters.
  .. code-block:: none
 
     Time Delays: {'image_1': 0, 'image_2': 19.10361601481741}
-    image_1 Microlensing Uncertainty: 0.009892439050248412  Days
-    image_2 Microlensing Uncertainty: 0.029416461837781974  Days
+    image_1 Microlensing Uncertainty: 0.010268162214037983  Days
+    image_2 Microlensing Uncertainty: 0.028788219176668055  Days
 
     (<Figure size 1200x1200 with 2 Axes>, [])
 
@@ -193,7 +193,7 @@ close to the true value of 20 days.
 
 .. rst-class:: sphx-glr-timing
 
-   **Total running time of the script:** ( 4 minutes  11.959 seconds)
+   **Total running time of the script:** ( 4 minutes  29.920 seconds)
 
 
 .. _sphx_glr_download_examples_plot_a_micro.py:

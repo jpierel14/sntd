@@ -7,7 +7,7 @@ Simulate cosmological constraints
 from a sample of lensed SN.
 """
 		
-##########################################################################################################
+###########################################################################################################
 # All of these cosmology tools are based on `Coe & Moustakas 2009 <https://arxiv.org/pdf/0906.4108.pdf>`_.
 # and Dan Coe's `Fisher matrix starter paper <https://arxiv.org/pdf/0906.4123.pdf>`_. 
 # 
