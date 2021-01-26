@@ -4,18 +4,15 @@ import glob
 import sys
 import subprocess
 import time
-from astropy.io import ascii
+import scipy
+import tarfile
+import pickle
+import matplotlib.pyplot as plt
 import numpy as np
 from collections import OrderedDict as odict
-import scipy
-import matplotlib.pyplot as plt
-
-
+from astropy.io import ascii
 from scipy.interpolate import splrep, splev
 from copy import copy
-import tarfile
-import os
-import pickle
 from scipy.stats import rv_continuous
 
 
@@ -121,7 +118,6 @@ class newDict(dict):
         :return: self._dict_
         """
         self.__dict__ = d
-
 
 def get_models_by_sntype(snType):
     mod, types = np.loadtxt(os.path.join(
