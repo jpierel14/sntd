@@ -10,8 +10,15 @@ Welcome to SuperNova Time Delays (SNTD)!
 .. toctree::
    :maxdepth: 1
    :titlesonly:
+   :caption: Getting Started
 
    install
+
+.. toctree::
+   :maxdepth: 1
+   :titlesonly:
+   :caption: Examples
+	     
    examples
 
 .. raw:: html
@@ -23,6 +30,7 @@ Welcome to SuperNova Time Delays (SNTD)!
 .. toctree::
    :hidden:
    :titlesonly:
+   :caption: More Info
 
    api
    contributors
