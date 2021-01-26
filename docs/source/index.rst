@@ -24,7 +24,6 @@ Welcome to SuperNova Time Delays (SNTD)!
    :hidden:
    :titlesonly:
 
-   examples/index
    api
    contributors
 

@@ -2336,6 +2336,7 @@ def _fitparallel(all_args):
         args['curves'], args['bands'], args['min_points_per_band'])
     args['curves'].bands = args['bands']
     if len(args['bands']) == 0:
+        print('Not enough data based on cuts.')
         return(None)
 
     for d in args['curves'].images.keys():
@@ -2809,7 +2810,7 @@ def _fitparallel(all_args):
                                          for p in args['curves'].images[k].fits.res.vparam_names if p !=
                                          args['curves'].images[k].fits.model.param_names[2]}, None,
                                       args.get('minsnr', 0), args.get('maxcall', None),args['npoints']], numThreads=args['npar_cores'])
-            except:
+            except RuntimeError:
                 if args['verbose']:
                     print('Issue with microlensing identification, skipping...')
                 return args['curves']
@@ -2888,12 +2889,15 @@ def nest_parallel_lc(data, model, prev_res, bounds, guess_amplitude_bound=False,
     # so iparam_names must also be.
 
     if prev_res is not None:
-        doPrior = True
+        
         prior_inds = [i for i in range(
             len(vparam_names)) if vparam_names[i] in _thetaSN_]
-        # ,np.min(prev_res.samples),np.max(prev_res.samples))
-        prior_dist = NDposterior('temp')
-        prior_func = prior_dist._logpdf([tuple(prev_res.samples[i, prior_inds]) for i in range(prev_res.samples.shape[0])],
+        if len(prior_inds) == 0:
+            doPrior = False
+        else:
+            doPrior = True
+            prior_dist = NDposterior('temp')
+            prior_func = prior_dist._logpdf([tuple(prev_res.samples[i, prior_inds]) for i in range(prev_res.samples.shape[0])],
                                         prev_res.weights)
 
     else:
@@ -3077,20 +3081,21 @@ def fit_micro(fit, dat, zpsys, nsamples, micro_type='achromatic', kernel='RBF', 
         tempTime = copy(tempData['time'])
 
         mod = fit.bandflux(b, tempTime+t0, zpsys=zpsys, zp=tempData['zp'])
-        _, mcov = fit.bandfluxcov(b, tempTime,
-                                        zp=tempData['zp'], zpsys=zpsys)
-
         residual = tempData['flux']/mod
 
         tempData = tempData[~np.isnan(residual)]
         residual = residual[~np.isnan(residual)]
         tempTime = tempTime[~np.isnan(residual)]
+        _, mcov = fit.bandfluxcov(b, tempTime,
+                                        zp=tempData['zp'], zpsys=zpsys)
+
+        
         if achromatic:
             allResid = np.append(allResid, residual)
-            totalErr = np.abs(residual*np.sqrt((tempData['fluxerr']/tempData['flux']**2+\
-                       np.array([mcov[i][i] for i in range(len(tempData))])/mod**2)))
+            totalErr = np.abs(residual*np.sqrt((tempData['fluxerr']/tempData['flux'])**2+\
+                       np.array([mcov[i][i] for i in range(len(tempData))])/mod**2))
             allErr = np.append(
-                allErr, totalErr)
+                allErr, residual*tempData['fluxerr']/tempData['flux'])
             allTime = np.append(allTime, tempTime)
         else:
             allResid[b] = residual
@@ -3099,18 +3104,24 @@ def fit_micro(fit, dat, zpsys, nsamples, micro_type='achromatic', kernel='RBF', 
 
     if kernel == 'RBF':
         kernel = RBF(0.1, (.001, 20.))
-
+    good_inds = np.where(np.logical_and(np.isfinite(allResid),
+                                        np.logical_and(np.isfinite(allErr),
+                                                       np.isfinite(allTime))))
+    allResid = allResid[good_inds]
+    allErr = allErr[good_inds]
+    allTime = allTime[good_inds]
     if achromatic:
         gp = GaussianProcessRegressor(kernel=kernel, alpha=allErr ** 2,
                                       n_restarts_optimizer=100)
 
         try:
             gp.fit(np.atleast_2d(allTime).T, allResid.ravel())
-        except:
+        except RuntimeError:
             temp = np.atleast_2d(allTime).T
             temp2 = allResid.ravel()
             temp = temp[np.isfinite(temp2)]
             temp2 = temp2[np.isfinite(temp2)]
+
 
             gp.fit(temp, temp2)
 

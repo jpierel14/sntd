@@ -473,9 +473,13 @@ class NDposterior(rv_continuous):
         #                                pdf/np.max(pdf),fill_value=0,bounds_error=False)
         # func=scipy.interpolate.interp1d(samples,np.log(weights/np.sum(weights)),
         #    fill_value=-np.inf,bounds_error=False)
-
-        func = scipy.interpolate.LinearNDInterpolator(samples,
+        if len(samples[0])>1:
+            func = scipy.interpolate.LinearNDInterpolator(samples,
                                                       np.log(weights/np.sum(weights)), fill_value=-np.inf)
+        else:
+            samples = np.array([x[0] for x in samples])
+            func = scipy.interpolate.interp1d(samples,
+                                                      np.log(weights/np.sum(weights)), fill_value=-np.inf,bounds_error=False)
         return(func)
 
     def _argcheck(self, *args):

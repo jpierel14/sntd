@@ -13,7 +13,7 @@ import sntd
 warnings.simplefilter('ignore')
 
 _NOSBATCH_ = True
-_GOFAST_ = False
+_GOFAST_ = True
 _PARONLY_ = False
 
 np.random.seed(3)
@@ -32,6 +32,8 @@ class TestMicrolensing(unittest.TestCase):
                                                      zp=[25, 25], cadence=5., epochs=35., time_delays=[10., 70.], magnifications=[20, 20],
                                                      objectName='My Type Ia SN', telescopename='HST', microlensing_type='AchromaticMicrolensing',
                                                      microlensing_params=self.myML)
+    def test_sim_microlensing(self):
+    	pass
 
     @unittest.skipIf(_GOFAST_, "Skipping slow `test_fit_lc_Micro_parallel`")
     def test_fit_lc_Micro_parallel(self):
@@ -171,8 +173,8 @@ def test_loader(loader):
 
 if __name__ == '__main__':
     # TEST LIST
-    test_cases = 'ALL'
-    #x`test_cases = [TestMicrolensing]
+    #test_cases = 'ALL'
+    test_cases = [TestMicrolensing]
 
     if test_cases == 'ALL':
         unittest.main()

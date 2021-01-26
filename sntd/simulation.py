@@ -306,8 +306,7 @@ def createMultiplyImagedSN(
             else:
                 # get magnification curve from the defined microcaustic
                 mlTime = np.arange(
-                    0, times[-1]/(1+redshift)-model_i._source._phase[0]+5, 1)
-
+                    0, times[-1]/(1+redshift)-model_i._source._phase[0]+5, .1)
                 time, dmag = microcaustic_field_to_curve(
                     microlensing_params, mlTime, z_lens, redshift, loc=ml_loc[imnum])
                 dmag /= np.mean(dmag)  # to remove overall magnification
@@ -364,7 +363,7 @@ def createMultiplyImagedSN(
             curve_i.simMeta['microlensing_params'] = microlensing_params
         elif microlensing_type is not None:
             curve_i.simMeta['microlensing_params'] = interp1d(
-                time+model_i._source._phase[0], dmag)
+                time+model_i._source._phase[0], dmag, fill_value=1,bounds_error=False)
 
         curve_obj.add_image_lc(curve_i)
 

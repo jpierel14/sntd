@@ -11,12 +11,12 @@ Examples
 
 .. raw:: html
 
-    <div class="sphx-glr-thumbcontainer" tooltip="Simulate a microlensing microcaustic.">
+    <div class="sphx-glr-thumbcontainer" tooltip="Simulate and fit for microlensing.">
 
 .. only:: html
 
  .. figure:: /examples/images/thumb/sphx_glr_plot_a_micro_thumb.png
-     :alt: Simulate Microlensing
+     :alt: Microlensing Analysis
 
      :ref:`sphx_glr_examples_plot_a_micro.py`
 

@@ -19,29 +19,32 @@
 
 
 =====================
-Simulate Microlensing
+Microlensing Analysis
 =====================
 
-Simulate a microlensing microcaustic.
+Simulate and fit for microlensing.
 
-.. GENERATED FROM PYTHON SOURCE LINES 10-15
+.. GENERATED FROM PYTHON SOURCE LINES 10-16
 
-This notebook gives examples on creating microlensing for simulations
+This notebook gives examples on creating microlensing for simulations,
+including microlensing in light curves, and fitting for an microlensing uncertainty
 
 ----------------------------------------------------------------------------------------------------------------------------------------
 `Run this notebook with Google Colab <https://colab.research.google.com/github/jpierel14/sntd/blob/master/notebooks/docs_micro.ipynb>`_.
 ----------------------------------------------------------------------------------------------------------------------------------------
 
-.. GENERATED FROM PYTHON SOURCE LINES 15-22
+.. GENERATED FROM PYTHON SOURCE LINES 16-25
 
 .. code-block:: default
 
 
     import sntd
     import numpy as np
-       
-    myML=sntd.realizeMicro(nray=50,kappas=1,kappac=.3,gamma=.4)
-    time,dmag=sntd.microcaustic_field_to_curve(field=myML,time=np.arange(0,100,1),zl=.5,zs=1.33,plot=True)
+    from sklearn.gaussian_process.kernels import RBF
+    np.random.seed(3)
+
+    myML=sntd.realizeMicro(nray=100,kappas=1,kappac=.3,gamma=.4)
+    time,dmag=sntd.microcaustic_field_to_curve(field=myML,time=np.arange(0,200,.1),zl=.5,zs=1.5,plot=True,loc=[550,750])
 
 
 
@@ -51,36 +54,28 @@ This notebook gives examples on creating microlensing for simulations
     :class: sphx-glr-single-img
 
 
-.. rst-class:: sphx-glr-script-out
-
- Out:
-
- .. code-block:: none
-
-    /Users/jpierel/miniconda3/envs/py37/lib/python3.7/site-packages/sntd/ml.py:241: MatplotlibDeprecationWarning: Passing parameters norm and vmin/vmax simultaneously is deprecated since 3.3 and will become an error two minor releases later. Please pass vmin/vmax directly to the norm when creating it.
-      vmin=-2, vmax=2, origin='lower')
 
 
 
-
-.. GENERATED FROM PYTHON SOURCE LINES 23-29
+.. GENERATED FROM PYTHON SOURCE LINES 26-32
 
 **Including Microlensing in Simulations**
 Now we can take the simulated microcaustic 
 and use it to include microlensing in a 
 multiply-imaged supernova simulation. See the
 :ref:`sphx_glr_examples_plot_b_sim.py` example for more simulation
-examples.
+details.
 
-.. GENERATED FROM PYTHON SOURCE LINES 29-33
+.. GENERATED FROM PYTHON SOURCE LINES 32-37
 
 .. code-block:: default
 
 
-    myMISN = sntd.createMultiplyImagedSN(sourcename='salt2-extended', snType='Ia', redshift=1.2,z_lens=.5, bands=['F110W','F160W'],
-                       zp=[26.8,26.2], cadence=5., epochs=35.,time_delays=[10., 70.], magnifications=[7,3.5],
-           objectName='My Type Ia SN',telescopename='HST', microlensing_type='AchromaticMicrolensing',microlensing_params=myML)
+    myMISN = sntd.createMultiplyImagedSN(sourcename='salt2-extended', snType='Ia', redshift=1.5,z_lens=.5, bands=['F110W','F125W','F160W'],
+            zp=[26.8,26.5,26.2], cadence=4., epochs=25.,time_delays=[20., 40.], magnifications=[12,8],ml_loc=[[600,800],[550,750]],
+            objectName='My Type Ia SN',telescopename='HST', microlensing_type='AchromaticMicrolensing',microlensing_params=myML)
     myMISN.plot_object(showMicro=True)
+
 
 
 .. image:: /examples/images/sphx_glr_plot_a_micro_002.png
@@ -95,14 +90,109 @@ examples.
  .. code-block:: none
 
 
-    <Figure size 1000x1000 with 4 Axes>
+    <Figure size 1000x1000 with 6 Axes>
+
+
+
+.. GENERATED FROM PYTHON SOURCE LINES 38-43
+
+**Measuring Addition Microlensing Uncertainty**
+Now we can take the simulated light curve with microlensing 
+and fit for an additional microlensing uncertainty term. See the
+:ref:`sphx_glr_examples_plot_c_fitting.py` example for fitting
+details. We start by assuming the correct shape/color parameters.
+
+.. GENERATED FROM PYTHON SOURCE LINES 43-56
+
+.. code-block:: default
+
+    fitCurves = sntd.fit_data(myMISN, snType='Ia', models='salt2-extended', bands=['F110W','F125W', 'F160W'],
+                                      params=['x0', 't0'], 
+                                      constants={'z': 1.5,'x1':myMISN.images['image_1'].simMeta['x1'],'c':myMISN.images['image_1'].simMeta['c']}, 
+                                      bounds={'t0': (-40, 40),'c': (-1, 1), 'x1': (-2, 2), },
+                                      method='parallel', microlensing='achromatic',
+                                      nMicroSamples=40, npoints=100, minsnr=5,kernel=RBF(1.,(.0001,1000)))
+    print('Time Delays:',fitCurves.parallel.time_delays)
+    fitCurves.plot_object(showFit=True,showMicro=True)
+    for image in fitCurves.images.keys():
+    	print(image,'Microlensing Uncertainty:',fitCurves.images[image].param_quantiles['micro'],' Days')
+
+    fitCurves.plot_microlensing_fit(show_all_samples=True)
+
+
+
+
+.. rst-class:: sphx-glr-horizontal
+
+
+    *
+
+      .. image:: /examples/images/sphx_glr_plot_a_micro_003.png
+          :alt: Multiply-Imaged SN "My Type Ia SN"--HST
+          :class: sphx-glr-multi-img
+
+    *
+
+      .. image:: /examples/images/sphx_glr_plot_a_micro_004.png
+          :alt: Image 1, Image 2
+          :class: sphx-glr-multi-img
+
+
+.. rst-class:: sphx-glr-script-out
+
+ Out:
+
+ .. code-block:: none
+
+    Time Delays: {'image_1': 0, 'image_2': 19.10361601481741}
+    image_1 Microlensing Uncertainty: 0.010459133290021565  Days
+    image_2 Microlensing Uncertainty: 0.029424557727282516  Days
+
+    (<Figure size 1200x1200 with 2 Axes>, [])
+
+
+
+.. GENERATED FROM PYTHON SOURCE LINES 57-60
+
+We see that this extra uncertainty is quite small here, and indeed
+when fitting for x1/c as well, the time delay measurement is very
+close to the true value of 20 days. 
+
+.. GENERATED FROM PYTHON SOURCE LINES 60-67
+
+.. code-block:: default
+
+    fitCurves = sntd.fit_data(myMISN, snType='Ia', models='salt2-extended', bands=['F110W','F125W', 'F160W'],
+                                      params=['x0', 't0','x1','c'], 
+                                      constants={'z': 1.5},
+                                      bounds={'t0': (-40, 40),'c': (-1, 1), 'x1': (-2, 2)},
+                                      method='parallel', microlensing=None,
+                                      npoints=100, minsnr=5)
+    print('Time Delays:',fitCurves.parallel.time_delays)
+    fitCurves.plot_object(showFit=True,showMicro=True)
+
+
+.. image:: /examples/images/sphx_glr_plot_a_micro_005.png
+    :alt: Multiply-Imaged SN "My Type Ia SN"--HST
+    :class: sphx-glr-single-img
+
+
+.. rst-class:: sphx-glr-script-out
+
+ Out:
+
+ .. code-block:: none
+
+    Time Delays: {'image_1': 0, 'image_2': 19.55887430479142}
+
+    <Figure size 1000x1000 with 6 Axes>
 
 
 
 
 .. rst-class:: sphx-glr-timing
 
-   **Total running time of the script:** ( 0 minutes  18.377 seconds)
+   **Total running time of the script:** ( 4 minutes  12.739 seconds)
 
 
 .. _sphx_glr_download_examples_plot_a_micro.py:

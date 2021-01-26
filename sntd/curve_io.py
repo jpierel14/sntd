@@ -573,6 +573,7 @@ class MISN(dict):
         gs = gridspec.GridSpec(math.ceil(len(self.images.keys())/2),2)
         i = 0
         j = 0
+        nimage = 1
         axes = []
         row_ax = []
 
@@ -600,31 +601,48 @@ class MISN(dict):
                         markersize = 10, label = 'Observation Residuals')
 
             temp_ax.plot(self.images[im].microlensing.micro_x, 
-                    self.images[im].microlensing.micro_y - 1 * self.images[im].microlensing.sigma, '--g')
+                    self.images[im].microlensing.micro_y - 3 * self.images[im].microlensing.sigma, '--g')
             temp_ax.plot(self.images[im].microlensing.micro_x, 
-                    self.images[im].microlensing.micro_y + 1 * self.images[im].microlensing.sigma, '--g', 
-                    label = r'$1\sigma$ Bounds')
+                    self.images[im].microlensing.micro_y + 3 * self.images[im].microlensing.sigma, '--g', 
+                    label = r'$3\sigma$ Bounds')
             temp_ax.plot(self.images[im].microlensing.micro_x, 
                     self.images[im].microlensing.micro_y, 'k-.', 
                     label = "GPR Prediction")
-            temp_ax.set_ylim(np.array([np.min(self.images[im].microlensing.micro_y - 1 * \
+            pred_range = np.array([np.min(self.images[im].microlensing.micro_y - 3 * \
                                               self.images[im].microlensing.sigma),
-                                       np.max(self.images[im].microlensing.micro_y + 1 * \
-                                              self.images[im].microlensing.sigma)]))
-
+                                       np.max(self.images[im].microlensing.micro_y + 3 * \
+                                              self.images[im].microlensing.sigma)])
+            temp_ax.set_ylim(pred_range)
             if 'simMeta' in self.images[im].keys():
-                z = self.images[im].simMeta['z']
-                temp_ax.plot(self.images[im].microlensing.micro_x, 
-                             self.images[im].simMeta['microlensing_params'](self.images[im].microlensing.micro_x/(1+z)), 'k', 
+                z = self.images[im].simMeta['sourcez']
+                time_model = np.arange(self.images[im].table['time'].min(),
+                                       self.images[im].table['time'].max(),
+                                       0.1)
+                time_model -= self.images[im].fits.model.get('t0')
+                true_micro = self.images[im].simMeta['microlensing_params'](
+                                time_model/(1+z))
+                true_range = np.array([np.min(true_micro),np.max(true_micro)])
+                temp_ax.plot(time_model, 
+                             true_micro, 'k', 
                              label = r'True $\mu$-Lensing')
+                temp_ax.set_ylim([np.min([pred_range[0],true_range[0]]),
+                                  np.max([pred_range[1],true_range[1]])])
             temp_ax.legend(fontsize = 10)
+            if j == 0:
+                temp_ax.set_ylabel('Magnification',fontsize=20)
+
+            if i == math.ceil(len(self.images.keys())/2):
+                temp_ax.set_xlabel('Observer Days (-%.1f)'%self.images[im].fits.model.get('t0'),
+                                fontsize=20)
+            temp_ax.set_title('Image %i'%nimage,fontsize=15)
             row_ax.append(temp_ax)
+
             j += 1
-            #ax.set_ylabel(r'Magnification ($\mu$)')
-            #ax.set_xlabel('Observer Frame Time (Days)')
+            nimage += 1
+
              
             
-            
+        plt.tight_layout()    
         return fig,axes
 
     def plot_fit(self, method='parallel', par_image=None):
@@ -1110,12 +1128,14 @@ class MISN(dict):
                                 "bottom", size="25%", pad=.4)
                             if b == list(bands)[0]:
                                 ax_ml.set_ylabel(
-                                    'Microlensing ($\mu$)', fontsize='large')
+                                    r'Microlensing ($\mu$)', fontsize='large')
                             microAx[b] = ax_ml
                         else:
                             ax_ml = microAx[b]
+
                         ax_ml.plot(time_model, self.images[lc].simMeta['microlensing_params'](
-                            time_model/(1+self.images[lc].simMeta['sourcez'])), color=colors[i], linewidth=3)
+                            (time_model-self.images[lc].simMeta['t0'])/\
+                                (1+self.images[lc].simMeta['sourcez'])), color=colors[i], linewidth=3)
 
                     if showModel:
                         # Plot the underlying model, including dust and lensing

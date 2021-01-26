@@ -1,6 +1,4 @@
-from __future__ import print_function
 import os
-from astropy.tests.helper import TestRunner
 
 from .curve_io import *
 from .simulation import *

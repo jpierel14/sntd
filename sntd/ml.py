@@ -71,6 +71,8 @@ def realizeMicro(arand=.25, debug=0, kappas=.75, kappac=.15, gamma=.76, eps=.6, 
         os.remove(os.path.join(_filedir_, 'microlens', 'dat.'+str(num)))
     except:
         pass
+
+    np.savetxt(os.path.join(_filedir_, 'microlens', 'jobnum'), [num], fmt='%s')
     os.chdir(os.path.join(_filedir_, 'microlens'))
     if verbose:
         subprocess.call(r'./microlens')
@@ -78,7 +80,7 @@ def realizeMicro(arand=.25, debug=0, kappas=.75, kappac=.15, gamma=.76, eps=.6, 
         with open(os.devnull, 'w') as f:
             subprocess.call(r'./microlens', stdout=f)
 
-    np.savetxt(os.path.join(_filedir_, 'microlens', 'jobnum'), [num], fmt='%s')
+    
 
     try:
         fitsFile = fits.open(os.path.join(
@@ -86,7 +88,7 @@ def realizeMicro(arand=.25, debug=0, kappas=.75, kappac=.15, gamma=.76, eps=.6, 
         lensPlane = fitsFile[0].data
         fitsFile.close()
 
-    except RuntimeError:
+    except:
         print('There was an error with the inputs of your microcaustic.')
         sys.exit()
     os.chdir(_current_dir_)
@@ -247,7 +249,7 @@ def mu_from_image(image, center, sizes, brightness, plot, time, ax, showCurve, r
 
         ax.imshow(-2.5*np.log10(image), aspect='equal', interpolation='nearest', cmap=cm.bwr,
                   norm=MidpointNormalize(vmin=-2, vmax=2, midpoint=0),
-                  vmin=-2, vmax=2, origin='lower')
+                  origin='lower')
 
         # ,tuple(np.linspace(0,width_in_einstein_radii,5).astype(str)))
         ax.set_xticks(tuple(np.linspace(0, image.shape[0], 5)))
@@ -319,7 +321,7 @@ def mu_from_image(image, center, sizes, brightness, plot, time, ax, showCurve, r
             for tick in ax_ml.yaxis.get_major_ticks():
                 tick.label.set_fontsize(14)
             ax_ml.plot(time, dmag, ls='-', marker=' ', color='#004949')
-            ax_ml.set_ylabel(r'$\Delta m$ (mag)', fontsize=18)
+            ax_ml.set_ylabel('Magnitude Shift', fontsize=18)
             ax_ml.set_xlabel('Time from Explosion (days)', fontsize=18)
             ax_ml.invert_yaxis()
         # ax.plot(sizes[10:-10],dmag[10:-10])
