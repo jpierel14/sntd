@@ -11,7 +11,7 @@ import time
 import tarfile
 import numpy as np
 import matplotlib.pyplot as plt
-from copy import deepcopy, copy
+from copy import copy
 from scipy import stats
 from astropy.table import Table
 import nestle
@@ -407,7 +407,7 @@ def fit_data(curves=None, snType='Ia', bands=None, models=None, params=None, bou
                 return run_sbatch(folder_name, script_name_init, script_name, total_jobs, max_batch_jobs, n_per_node, wait_for_batch, parallelize, len(args['curves']), verbose)
 
         else:
-            initBounds = deepcopy(args['bounds'])
+            initBounds = copy(args['bounds'])
             if 'parallel' in method:
                 if verbose:
                     print('Starting parallel method...')
@@ -965,9 +965,9 @@ def _fitColor(all_args):
                 args['bounds'][b] = np.array([0, np.inf])
 
         minchisq = np.inf
-        init_inds = deepcopy(inds)
+        init_inds = copy(inds)
         for mod in np.array(args['models']).flatten():
-            inds = deepcopy(init_inds)
+            inds = copy(init_inds)
             if isinstance(mod, str):
                 if mod.upper() in ['BAZIN', 'BAZINSOURCE']:
                     mod = 'BAZINSOURCE'
@@ -1066,7 +1066,7 @@ def _fitColor(all_args):
                             args['curves'].images[im].table['band'] == b)[0])
                     temp_inds = temp_bands.astype(int)
 
-                    res, fit = sncosmo.fit_lc(deepcopy(args['curves'].images[im].table[temp_inds]), tempMod,
+                    res, fit = sncosmo.fit_lc(copy(args['curves'].images[im].table[temp_inds]), tempMod,
                                               [x for x in args['params'] if x in tempMod.param_names]+[tempMod.param_names[2]] +
                                               [x for x in tempMod.param_names if x in args['bounds'].keys(
                                               )],
@@ -1379,7 +1379,7 @@ def nest_color_lc(data, model, nimage, colors, vparam_names, bounds, ref='image_
                  ] = np.array(data[color[0]+'-'+color[1]+'_err'][col_inds])
 
     zpsys = data['zpsys'][0]
-
+    from copy import deepcopy
     def chisq_likelihood(parameters):
         model.set(**{model_param_names[k]: parameters[model_idx[k]]
                      for k in range(len(model_idx))})
@@ -1390,7 +1390,7 @@ def nest_color_lc(data, model, nimage, colors, vparam_names, bounds, ref='image_
         for color in colors:
             obs = obs_dict[color[0]+'-'+color[1]]
             err = err_dict[color[0]+'-'+color[1]]
-            time = deepcopy(time_dict[color[0]+'-'+color[1]])
+            time = copy(time_dict[color[0]+'-'+color[1]])
             for i in range(len(td_idx)):
                 time[im_dict[color[0]+'-'+color[1]]
                      [td_params[i][-1]]] -= parameters[td_idx[i]]
@@ -1424,9 +1424,7 @@ def nest_color_lc(data, model, nimage, colors, vparam_names, bounds, ref='image_
             else:
                 chi = (obs-mod_color)/err
                 chisq += np.dot(chi, chi)
-                if chisq == 0:
-                    print(chisq, chi, obs, mod_color)
-                    sys.exit()
+                
 
         return chisq
 
@@ -1630,9 +1628,9 @@ def _fitseries(all_args):
                 args['bounds'][b] = np.array([0, np.inf])
 
         minchisq = np.inf
-        init_inds = deepcopy(inds)
+        init_inds = copy(inds)
         for mod in np.array(args['models']).flatten():
-            inds = deepcopy(init_inds)
+            inds = copy(init_inds)
             if isinstance(mod, str):
                 if mod.upper() in ['BAZIN', 'BAZINSOURCE']:
                     mod = 'BAZINSOURCE'
@@ -1745,8 +1743,8 @@ def _fitseries(all_args):
                         temp_bands = np.append(temp_bands, np.where(
                             args['curves'].images[im].table['band'] == b)[0])
                     temp_inds = temp_bands.astype(int)
-                    print([x for x in args['params'] if x in tempMod.param_names])
-                    res, fit = sncosmo.fit_lc(deepcopy(args['curves'].images[im].table[temp_inds]), tempMod, [x for x in args['params'] if x in tempMod.param_names],
+
+                    res, fit = sncosmo.fit_lc(copy(args['curves'].images[im].table[temp_inds]), tempMod, [x for x in args['params'] if x in tempMod.param_names],
                                               bounds={b: args['bounds'][b] for b in args['bounds'].keys() if b not in [
                                                   't0', tempMod.param_names[2]]},
                                               minsnr=args.get('minsnr', 0))
@@ -2055,7 +2053,7 @@ def _fitseries(all_args):
     args['curves'].series.fits['res'] = finalres
 
     if args['microlensing'] is not None:
-        tempTable = deepcopy(args['curves'].series.table)
+        tempTable = copy(args['curves'].series.table)
         micro, sigma, x_pred, y_pred, samples, x_resid, y_resid, err_resid = fit_micro(args['curves'].series.fits.model, tempTable,
                                                           tempTable['zpsys'][0], args['nMicroSamples'],
                                                           micro_type=args['microlensing'], kernel=args['kernel'])
@@ -2206,8 +2204,8 @@ def nest_series_lc(data, model, nimage, vparam_names, bounds, ref='image_1', use
     def chisq_likelihood(parameters):
         model.parameters[model_param_index] = parameters[model_idx]
 
-        tempTime = deepcopy(time)
-        tempFlux = deepcopy(flux)
+        tempTime = copy(time)
+        tempFlux = copy(flux)
         for i in range(len(im_indices)):
             tempTime[im_indices[i]] -= parameters[td_idx[i]]
             if doMu:
@@ -2336,7 +2334,8 @@ def _fitparallel(all_args):
         args['curves'], args['bands'], args['min_points_per_band'])
     args['curves'].bands = args['bands']
     if len(args['bands']) == 0:
-        print('Not enough data based on cuts.')
+        if args['verbose']:
+            print('Not enough data based on cuts.')
         return(None)
 
     for d in args['curves'].images.keys():
@@ -2375,7 +2374,7 @@ def _fitparallel(all_args):
         best_bands = args['bands']
         inds = np.arange(
             0, len(args['curves'].images[args['fitOrder'][0]].table), 1).astype(int)
-    initial_bounds = deepcopy(args['bounds'])
+    initial_bounds = copy(args['bounds'])
     finallogz = -np.inf
     if args['dust'] is not None:
         if isinstance(args['dust'], str):
@@ -2416,9 +2415,9 @@ def _fitparallel(all_args):
                 args['bounds'][b] = np.array([0, np.inf])
 
         minchisq = np.inf
-        init_inds = deepcopy(inds)
+        init_inds = copy(inds)
         for mod in np.array(args['models']).flatten():
-            inds = deepcopy(init_inds)
+            inds = copy(init_inds)
             if isinstance(mod, str):
                 if mod.upper() in ['BAZIN', 'BAZINSOURCE']:
                     mod = 'BAZINSOURCE'
@@ -2527,7 +2526,7 @@ def _fitparallel(all_args):
                         args['curves'].images[args['fitOrder'][0]].table['band'] == b)[0])
                 temp_inds = temp_bands.astype(int)
             else:
-                temp_inds = deepcopy(inds)
+                temp_inds = copy(inds)
             res, fit = sncosmo.fit_lc(args['curves'].images[args['fitOrder'][0]].table[temp_inds], tempMod, [x for x in args['params'] if x in tempMod.param_names],
                                       bounds={b: args['bounds'][b]+(args['bounds'][b]-np.median(
                                           args['bounds'][b]))*2 for b in args['bounds'].keys() if b not in ['t0', tempMod.param_names[2]]},
@@ -2576,7 +2575,7 @@ def _fitparallel(all_args):
                     im=args['fitOrder'][0], minsnr=args.get('minsnr', 0))
             fit_table = args['curves'].images[args['fitOrder'][0]].table
         elif args['cut_time'] is not None:
-            fit_table = deepcopy(
+            fit_table = copy(
                 args['curves'].images[args['fitOrder'][0]].table)
             fit_table = fit_table[inds]
             fit_table = fit_table[fit_table['time'] >=
@@ -2587,7 +2586,7 @@ def _fitparallel(all_args):
                                   fit_table['fluxerr'] >= args.get('minsnr', 0)]
 
         else:
-            fit_table = deepcopy(
+            fit_table = copy(
                 args['curves'].images[args['fitOrder'][0]].table)
             fit_table = fit_table[inds]
         for b in args['force_positive_param']:
@@ -2648,7 +2647,7 @@ def _fitparallel(all_args):
             inds = np.arange(
                 0, len(args['curves'].images[d].table), 1).astype(int)
         args['curves'].images[d].fits = newDict()
-        initial_bounds['t0'] = deepcopy(t0Bounds)
+        initial_bounds['t0'] = copy(t0Bounds)
 
         if args['t0_guess'] is not None:
             if 't0' in args['bounds']:
@@ -2673,7 +2672,7 @@ def _fitparallel(all_args):
         if args['clip_data']:
             fit_table = args['curves'].images[d].table[minds]
         else:
-            fit_table = deepcopy(args['curves'].images[d].table)
+            fit_table = copy(args['curves'].images[d].table)
             fit_table = fit_table[minds]
 
         if args['trial_fit'] and args['t0_guess'] is None:
@@ -2685,7 +2684,7 @@ def _fitparallel(all_args):
                         args['curves'].images[d].table['band'] == b)[0])
                 temp_inds = temp_bands.astype(int)
             else:
-                temp_inds = deepcopy(inds)
+                temp_inds = copy(inds)
             res, fit = sncosmo.fit_lc(args['curves'].images[d].table[temp_inds], args['curves'].images[args['fitOrder'][0]].fits['model'],
                                       ['t0', args['curves'].images[args['fitOrder']
                                                                    [0]].fits['model'].param_names[2]],
@@ -2694,7 +2693,7 @@ def _fitparallel(all_args):
                 't0') for b in initial_bounds.keys()}
             guess_t0_start = False
         else:
-            image_bounds = deepcopy(initial_bounds)
+            image_bounds = copy(initial_bounds)
             if args['t0_guess'] is None:
                 guess_t0_start = True
             else:
@@ -2787,7 +2786,7 @@ def _fitparallel(all_args):
 
     if args['microlensing'] is not None:
         for k in args['curves'].images.keys():
-            tempTable = deepcopy(args['curves'].images[k].table)
+            tempTable = copy(args['curves'].images[k].table)
             micro, sigma, x_pred, y_pred, samples, x_resid, y_resid, err_resid = fit_micro(args['curves'].images[k].fits.model, 
                                                             tempTable, args['curves'].images[k].zpsys, args['nMicroSamples'],
                                                             micro_type=args['microlensing'], kernel=args['kernel'],
@@ -3056,11 +3055,11 @@ def _micro_uncertainty(args):
 def fit_micro(fit, dat, zpsys, nsamples, micro_type='achromatic', kernel='RBF', bands='all'):
     t0 = fit.get('t0')
     fit.set(t0=t0)
-    data = deepcopy(dat)
+    data = copy(dat)
     data['time'] -= t0
 
     if len(data) == 0:
-        data = deepcopy(dat)
+        data = copy(dat)
 
     achromatic = micro_type.lower() == 'achromatic'
     if achromatic:
