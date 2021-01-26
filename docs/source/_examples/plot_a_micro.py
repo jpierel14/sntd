@@ -8,7 +8,7 @@ Simulate and fit for microlensing.
 
 #####################################################################################
 # This notebook gives examples on creating microlensing for simulations,
-# including microlensing in light curves, and fitting for an microlensing uncertainty
+# including microlensing in light curves, and fitting for a microlensing uncertainty.
 # 
 # ----------------------------------------------------------------------------------------------------------------------------------------
 # `Run this notebook with Google Colab <https://colab.research.google.com/github/jpierel14/sntd/blob/master/notebooks/docs_micro.ipynb>`_.

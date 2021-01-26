@@ -1745,7 +1745,7 @@ def _fitseries(all_args):
                         temp_bands = np.append(temp_bands, np.where(
                             args['curves'].images[im].table['band'] == b)[0])
                     temp_inds = temp_bands.astype(int)
-
+                    print([x for x in args['params'] if x in tempMod.param_names])
                     res, fit = sncosmo.fit_lc(deepcopy(args['curves'].images[im].table[temp_inds]), tempMod, [x for x in args['params'] if x in tempMod.param_names],
                                               bounds={b: args['bounds'][b] for b in args['bounds'].keys() if b not in [
                                                   't0', tempMod.param_names[2]]},

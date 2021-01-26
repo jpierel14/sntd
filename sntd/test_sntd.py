@@ -73,7 +73,6 @@ class TestFitting(unittest.TestCase):
 
     def setUp(self):
         self.myMISN = sntd.load_example_misn()
-
     @unittest.skipIf(_PARONLY_, "Skipping non-parallel fit.")
     def test_quality_check(self):
         for method in ['parallel', 'series', 'color']:
@@ -85,7 +84,7 @@ class TestFitting(unittest.TestCase):
 
     def test_parallel_fit(self):
         fitCurves = sntd.fit_data(self.myMISN, snType='Ia', models='salt2-extended', bands=['F110W', 'F160W'],
-                                  params=['x0', 'x1', 't0', 'c'], bounds={'t0': (-15, 15), 'x1': (-2, 2), 'c': (-1, 1), 'td': (-30, 30), 'mu': (.5, 2)},
+                                  params=['x0', 'x1', 't0', 'c'], bounds={'t0': (-15, 15), 'x1': (-2, 2), 'c': (-1, 1)},
                                   color_param_ignore=['x1'], use_MLE=False, refImage='image_1', cut_time=[-40, 20],
                                   method='parallel', microlensing=None, maxcall=None, npoints=100, minsnr=0,
                                   set_from_simMeta={'z': 'z'}, t0_guess={'image_1': 20, 'image_2': 70},verbose=False)

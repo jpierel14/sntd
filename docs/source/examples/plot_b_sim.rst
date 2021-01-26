@@ -73,16 +73,16 @@ supernova. The function being used in these examples is
 
     ------------------
     Image: image_1:
-    Bands: ['F110W', 'F160W']
+    Bands: ['F160W', 'F110W']
     Date Range: 0.00000->138.97059
-    Number of points: 55
+    Number of points: 56
 
     Metadata:
        z:1.4
        t0:20.0
-       x0:5.695695190248835e-06
-       x1:-2.6772106472991033
-       c:0.08149836255540946
+       x0:7.4284342255926815e-06
+       x1:2.019101332417667
+       c:0.013011852652871672
        sourcez:1.4
        hostebv:0
        lensebv:0
@@ -91,16 +91,16 @@ supernova. The function being used in these examples is
        td:20.0
     ------------------
     Image: image_2:
-    Bands: ['F110W', 'F160W']
+    Bands: ['F160W', 'F110W']
     Date Range: 25.73529->175.00000
-    Number of points: 56
+    Number of points: 60
 
     Metadata:
        z:1.4
        t0:70.0
-       x0:2.8478475951244173e-06
-       x1:-2.6772106472991033
-       c:0.08149836255540946
+       x0:3.7142171127963408e-06
+       x1:2.019101332417667
+       c:0.013011852652871672
        sourcez:1.4
        hostebv:0
        lensebv:0
@@ -156,16 +156,16 @@ in any way you want.
 
     ------------------
     Image: image_1:
-    Bands: ['F110W', 'F125W']
+    Bands: ['F125W', 'F110W']
     Date Range: 0.00000->123.52941
     Number of points: 50
 
     Metadata:
        z:1.33
        t0:10.0
-       x0:1.6395900043763892e-05
-       x1:0.663544782477016
-       c:-0.06970056572056446
+       x0:8.568001411019632e-06
+       x1:1.1484817848605395
+       c:-0.04867554337226663
        sourcez:1.33
        hostebv:0.0967741935483871
        lensebv:0
@@ -174,16 +174,16 @@ in any way you want.
        td:10.0
     ------------------
     Image: image_2:
-    Bands: ['F110W', 'F125W']
+    Bands: ['F125W', 'F110W']
     Date Range: 25.73529->175.00000
     Number of points: 59
 
     Metadata:
        z:1.33
        t0:70.0
-       x0:8.197950021881946e-06
-       x1:0.663544782477016
-       c:-0.06970056572056446
+       x0:4.284000705509816e-06
+       x1:1.1484817848605395
+       c:-0.04867554337226663
        sourcez:1.33
        hostebv:0.0967741935483871
        lensebv:0
@@ -237,37 +237,37 @@ in any way you want.
 
     ------------------
     Image: image_1:
-    Bands: ['F110W', 'F125W']
+    Bands: ['F125W', 'F110W']
     Date Range: 0.00000->123.52941
-    Number of points: 50
+    Number of points: 49
 
     Metadata:
        z:1.33
        t0:10.0
-       x0:1.3373838535688731e-05
-       x1:0.3814945380263072
-       c:-0.058295935495764506
+       x0:7.214112405852649e-06
+       x1:-0.8882771618402491
+       c:-0.042232782151609444
        sourcez:1.33
-       hostebv:0.20343713762863458
-       lensebv:0.2966161012913718
+       hostebv:0.16689443057432202
+       lensebv:0.22618067936405628
        lensz:0.53
        mu:7
        td:10.0
     ------------------
     Image: image_2:
-    Bands: ['F110W', 'F125W']
+    Bands: ['F125W', 'F110W']
     Date Range: 25.73529->175.00000
-    Number of points: 58
+    Number of points: 52
 
     Metadata:
        z:1.33
        t0:70.0
-       x0:6.686919267844366e-06
-       x1:0.3814945380263072
-       c:-0.058295935495764506
+       x0:3.6070562029263244e-06
+       x1:-0.8882771618402491
+       c:-0.042232782151609444
        sourcez:1.33
-       hostebv:0.20343713762863458
-       lensebv:0.2966161012913718
+       hostebv:0.16689443057432202
+       lensebv:0.22618067936405628
        lensz:0.53
        mu:3.5
        td:70.0
@@ -280,7 +280,7 @@ in any way you want.
 
 .. rst-class:: sphx-glr-timing
 
-   **Total running time of the script:** ( 0 minutes  0.657 seconds)
+   **Total running time of the script:** ( 0 minutes  0.563 seconds)
 
 
 .. _sphx_glr_download_examples_plot_b_sim.py:

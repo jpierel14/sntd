@@ -27,7 +27,7 @@ Simulate and fit for microlensing.
 .. GENERATED FROM PYTHON SOURCE LINES 10-16
 
 This notebook gives examples on creating microlensing for simulations,
-including microlensing in light curves, and fitting for an microlensing uncertainty
+including microlensing in light curves, and fitting for a microlensing uncertainty.
 
 ----------------------------------------------------------------------------------------------------------------------------------------
 `Run this notebook with Google Colab <https://colab.research.google.com/github/jpierel14/sntd/blob/master/notebooks/docs_micro.ipynb>`_.
@@ -145,8 +145,8 @@ details. We start by assuming the correct shape/color parameters.
  .. code-block:: none
 
     Time Delays: {'image_1': 0, 'image_2': 19.10361601481741}
-    image_1 Microlensing Uncertainty: 0.010459133290021565  Days
-    image_2 Microlensing Uncertainty: 0.029424557727282516  Days
+    image_1 Microlensing Uncertainty: 0.009892439050248412  Days
+    image_2 Microlensing Uncertainty: 0.029416461837781974  Days
 
     (<Figure size 1200x1200 with 2 Axes>, [])
 
@@ -158,7 +158,7 @@ We see that this extra uncertainty is quite small here, and indeed
 when fitting for x1/c as well, the time delay measurement is very
 close to the true value of 20 days. 
 
-.. GENERATED FROM PYTHON SOURCE LINES 60-67
+.. GENERATED FROM PYTHON SOURCE LINES 60-68
 
 .. code-block:: default
 
@@ -170,6 +170,7 @@ close to the true value of 20 days.
                                       npoints=100, minsnr=5)
     print('Time Delays:',fitCurves.parallel.time_delays)
     fitCurves.plot_object(showFit=True,showMicro=True)
+
 
 
 .. image:: /examples/images/sphx_glr_plot_a_micro_005.png
@@ -192,7 +193,7 @@ close to the true value of 20 days.
 
 .. rst-class:: sphx-glr-timing
 
-   **Total running time of the script:** ( 4 minutes  12.739 seconds)
+   **Total running time of the script:** ( 4 minutes  11.959 seconds)
 
 
 .. _sphx_glr_download_examples_plot_a_micro.py:

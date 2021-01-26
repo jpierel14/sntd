@@ -42,10 +42,9 @@ You can batch process (with sbatch or multiprocessing) using any or all of these
 
 **Parallel:**
 
-.. GENERATED FROM PYTHON SOURCE LINES 25-42
+.. GENERATED FROM PYTHON SOURCE LINES 25-41
 
 .. code-block:: default
-
 
     import sntd
 
@@ -53,7 +52,7 @@ You can batch process (with sbatch or multiprocessing) using any or all of these
 
     fitCurves=sntd.fit_data(myMISN,snType='Ia', models='salt2-extended',bands=['F110W','F160W'],
                     params=['x0','t0','x1','c'],constants={'z':1.4},refImage='image_1',cut_time=[-30,40],
-                    bounds={'t0':(-20,20),'x1':(-3,3),'c':(-1,1),'mu':(.5,2)},fitOrder=['image_1','image_2'],
+                    bounds={'t0':(-20,20),'x1':(-2,2),'c':(-1,1),'mu':(.5,2)},fitOrder=['image_1','image_2'],
                     method='parallel',microlensing=None,modelcov=False,npoints=100)
     print(fitCurves.parallel.time_delays)
     print(fitCurves.parallel.time_delay_errors)
@@ -78,13 +77,13 @@ You can batch process (with sbatch or multiprocessing) using any or all of these
     *
 
       .. image:: /examples/images/sphx_glr_plot_c_fitting_002.png
-          :alt: t0 = ${19.62}_{-0.79}^{+0.51}$, x0 = ${0.00}_{-0.00}^{+0.00}$, x1 = ${-0.26}_{-0.28}^{+0.31}$, c = ${0.11}_{-0.03}^{+0.03}$
+          :alt: t0 = ${19.30}_{-0.67}^{+0.52}$, x0 = ${0.00}_{-0.00}^{+0.00}$, x1 = ${-2.64}_{-0.37}^{+0.37}$, c = ${-0.09}_{-0.04}^{+0.04}$
           :class: sphx-glr-multi-img
 
     *
 
       .. image:: /examples/images/sphx_glr_plot_c_fitting_003.png
-          :alt: t0 = ${69.41}_{-1.12}^{+1.03}$, x0 = ${0.00}_{-0.00}^{+0.00}$, x1 = ${-0.01}_{-0.29}^{+0.26}$, c = ${0.09}_{-0.03}^{+0.04}$
+          :alt: t0 = ${69.56}_{-0.95}^{+1.10}$, x0 = ${0.00}_{-0.00}^{+0.00}$, x1 = ${-1.77}_{-0.17}^{+0.04}$, c = ${-0.06}_{-0.03}^{+0.02}$
           :class: sphx-glr-multi-img
 
 
@@ -94,16 +93,16 @@ You can batch process (with sbatch or multiprocessing) using any or all of these
 
  .. code-block:: none
 
-    {'image_1': 0, 'image_2': 49.839224841981796}
-    {'image_1': array([0, 0]), 'image_2': array([-1.1706755 ,  1.27356472])}
-    {'image_1': 1, 'image_2': 0.5216958795576582}
-    {'image_1': array([0, 0]), 'image_2': array([-0.03045439,  0.02518114])}
+    {'image_1': 0, 'image_2': 50.321097373738766}
+    {'image_1': array([0, 0]), 'image_2': array([-1.11577914,  1.16680626])}
+    {'image_1': 1, 'image_2': 0.4949032133139622}
+    {'image_1': array([0, 0]), 'image_2': array([-0.02698931,  0.02832406])}
 
     <Figure size 970x970 with 16 Axes>
 
 
 
-.. GENERATED FROM PYTHON SOURCE LINES 43-49
+.. GENERATED FROM PYTHON SOURCE LINES 42-48
 
 Note that the bounds for the 't0' parameter are not absolute, the actual peak time will be estimated (unless t0_guess is defined)
 and the defined bounds will be added to this value. Similarly for amplitude, where bounds are multiplicative
@@ -112,7 +111,7 @@ Other methods are called in a similar fashion, with a couple of extra arguments:
 
 **Series:**
 
-.. GENERATED FROM PYTHON SOURCE LINES 49-64
+.. GENERATED FROM PYTHON SOURCE LINES 48-63
 
 .. code-block:: default
 
@@ -120,7 +119,7 @@ Other methods are called in a similar fashion, with a couple of extra arguments:
 
     fitCurves=sntd.fit_data(myMISN,snType='Ia', models='salt2-extended',bands=['F110W','F160W'],
             params=['x0','t0','x1','c'],constants={'z':1.4},refImage='image_1',cut_time=[-30,40],
-            bounds={'t0':(-20,20),'td':(-20,20),'mu':(.5,2),'x1':(-3,3),'c':(-.5,.5)},
+            bounds={'t0':(-20,20),'td':(-20,20),'mu':(.5,2),'x1':(-2,2),'c':(-.5,.5)},
             method='series',npoints=100)
         
 
@@ -146,7 +145,7 @@ Other methods are called in a similar fashion, with a couple of extra arguments:
     *
 
       .. image:: /examples/images/sphx_glr_plot_c_fitting_005.png
-          :alt: x0 = ${0.00}_{-0.00}^{+0.00}$, t0 = ${19.52}_{-0.65}^{+0.61}$, x1 = ${0.24}_{-0.24}^{+0.23}$, c = ${0.10}_{-0.03}^{+0.02}$, dt_2 = ${50.13}_{-0.80}^{+0.84}$, mu_2 = ${0.54}_{-0.01}^{+0.01}$
+          :alt: x0 = ${0.00}_{-0.00}^{+0.00}$, t0 = ${19.33}_{-0.57}^{+0.59}$, x1 = ${-1.89}_{-0.08}^{+0.14}$, c = ${-0.09}_{-0.03}^{+0.02}$, dt_2 = ${50.31}_{-0.72}^{+0.87}$, mu_2 = ${0.55}_{-0.01}^{+0.01}$
           :class: sphx-glr-multi-img
 
 
@@ -156,23 +155,25 @@ Other methods are called in a similar fashion, with a couple of extra arguments:
 
  .. code-block:: none
 
-    {'image_1': 0, 'image_2': 50.12517657858812}
-    {'image_1': array([0, 0]), 'image_2': array([-0.7998957 ,  0.83977423])}
-    {'image_1': 1, 'image_2': 0.5403141907894311}
-    {'image_1': array([0, 0]), 'image_2': array([-0.01268087,  0.01272975])}
+    ['x0', 't0', 'x1', 'c']
+    ['x0', 't0', 'x1', 'c']
+    {'image_1': 0, 'image_2': 50.303633365748645}
+    {'image_1': array([0, 0]), 'image_2': array([-0.72281844,  0.86110785])}
+    {'image_1': 1, 'image_2': 0.5515833569306144}
+    {'image_1': 1, 'image_2': array([-0.01364027,  0.01363401])}
 
     <Figure size 1390x1390 with 36 Axes>
 
 
 
-.. GENERATED FROM PYTHON SOURCE LINES 65-69
+.. GENERATED FROM PYTHON SOURCE LINES 64-68
 
 **Color:**
 By default, this will attempt to fit every combination of colors possible from
 the bands present in the data. You can define specific colors using the "fit_colors"
 argument.
 
-.. GENERATED FROM PYTHON SOURCE LINES 69-82
+.. GENERATED FROM PYTHON SOURCE LINES 68-81
 
 .. code-block:: default
 
@@ -204,7 +205,7 @@ argument.
     *
 
       .. image:: /examples/images/sphx_glr_plot_c_fitting_007.png
-          :alt: t0 = ${17.05}_{-3.90}^{+3.22}$, c = ${0.12}_{-0.03}^{+0.03}$, dt_2 = ${52.17}_{-4.93}^{+5.96}$
+          :alt: t0 = ${16.62}_{-2.87}^{+3.18}$, c = ${-0.13}_{-0.04}^{+0.04}$, dt_2 = ${51.40}_{-5.79}^{+5.34}$
           :class: sphx-glr-multi-img
 
 
@@ -214,18 +215,18 @@ argument.
 
  .. code-block:: none
 
-    {'image_1': 0, 'image_2': 52.14063928027035}
-    {'image_1': array([0, 0]), 'image_2': array([-4.9281695 ,  5.98184409])}
+    {'image_1': 0, 'image_2': 51.40247329945853}
+    {'image_1': array([0, 0]), 'image_2': array([-5.79422017,  5.34498865])}
 
     <Figure size 760x760 with 9 Axes>
 
 
 
-.. GENERATED FROM PYTHON SOURCE LINES 83-84
+.. GENERATED FROM PYTHON SOURCE LINES 82-83
 
 You can include your fit from the parallel method as a prior on light curve and time delay parameters in the series/color methods with the "fit_prior" command:
 
-.. GENERATED FROM PYTHON SOURCE LINES 84-102
+.. GENERATED FROM PYTHON SOURCE LINES 83-101
 
 .. code-block:: default
 
@@ -257,15 +258,15 @@ You can include your fit from the parallel method as a prior on light curve and 
 
  .. code-block:: none
 
-    {'image_1': 0, 'image_2': 49.9071432680179}
-    {'image_1': array([0, 0]), 'image_2': array([-1.22501342,  1.14244589])}
-    {'image_1': 0, 'image_2': 49.734025619756856}
-    {'image_1': array([0, 0]), 'image_2': array([-2.38861668,  2.36446144])}
+    {'image_1': 0, 'image_2': 50.217207403073296}
+    {'image_1': array([0, 0]), 'image_2': array([-1.02403472,  1.0730326 ])}
+    {'image_1': 0, 'image_2': 50.16042627734959}
+    {'image_1': array([0, 0]), 'image_2': array([-2.13094381,  2.12267965])}
 
 
 
 
-.. GENERATED FROM PYTHON SOURCE LINES 103-108
+.. GENERATED FROM PYTHON SOURCE LINES 102-107
 
 **Fitting Using Extra Propagation Effects**
 
@@ -273,7 +274,7 @@ You might also want to include other propagation effects in your fitting model, 
 simply adding effects to an SNCosmo model, in the same way as if you were fitting a single SN with SNCosmo. First we can add some
 extreme dust in the source and lens frames (your final simulations may look slightly different as **c** is chosen randomly):
 
-.. GENERATED FROM PYTHON SOURCE LINES 108-119
+.. GENERATED FROM PYTHON SOURCE LINES 107-118
 
 .. code-block:: default
 
@@ -298,16 +299,16 @@ extreme dust in the source and lens frames (your final simulations may look slig
 
  .. code-block:: none
 
-    lensebv: 0.48387096774193544 hostebv: 0.3225806451612903 c: 0.1016798306073721
+    lensebv: 0.48387096774193544 hostebv: 0.3225806451612903 c: 0.058016565532566636
 
 
 
 
-.. GENERATED FROM PYTHON SOURCE LINES 120-121
+.. GENERATED FROM PYTHON SOURCE LINES 119-120
 
 Okay, now we can fit the MISN first without taking these effects into account:
 
-.. GENERATED FROM PYTHON SOURCE LINES 121-132
+.. GENERATED FROM PYTHON SOURCE LINES 120-131
 
 .. code-block:: default
 
@@ -336,21 +337,21 @@ Okay, now we can fit the MISN first without taking these effects into account:
 
  .. code-block:: none
 
-    {'image_1': 0, 'image_2': 50.27016628281137}
-    {'image_1': array([0, 0]), 'image_2': array([-0.6758891 ,  0.62439854])}
-    c: 0.8420233853618283
+    {'image_1': 0, 'image_2': 50.98515591871442}
+    {'image_1': array([0, 0]), 'image_2': array([-0.52104959,  0.57699602])}
+    c: 0.7213042300965847
 
     <Figure size 1000x1000 with 2 Axes>
 
 
 
-.. GENERATED FROM PYTHON SOURCE LINES 133-136
+.. GENERATED FROM PYTHON SOURCE LINES 132-135
 
 We can see that the fitter has done reasonably well, and the time delay is still accurate (True delay is 50 days). 
 However, one issue is that the measured value for **c** is vastly different than the actual value 
 as it attempts to compensate for extinction without a propagation effect. Now let's add in the propagation effects:
 
-.. GENERATED FROM PYTHON SOURCE LINES 136-151
+.. GENERATED FROM PYTHON SOURCE LINES 135-150
 
 .. code-block:: default
 
@@ -383,15 +384,15 @@ as it attempts to compensate for extinction without a propagation effect. Now le
 
  .. code-block:: none
 
-    {'image_1': 0, 'image_2': 50.18345984845832}
-    {'image_1': array([0, 0]), 'image_2': array([-0.60232825,  0.66840882])}
-    c: 0.2999239138302293 lensebv: -0.5021916426516561 hostebv: 0.9013926581359335
+    {'image_1': 0, 'image_2': 51.58447982008553}
+    {'image_1': array([0, 0]), 'image_2': array([-0.57008513,  0.57655508])}
+    c: 0.2664093395289217 lensebv: 0.40588524448591173 hostebv: 0.13790678619731303
 
     <Figure size 1000x1000 with 2 Axes>
 
 
 
-.. GENERATED FROM PYTHON SOURCE LINES 152-154
+.. GENERATED FROM PYTHON SOURCE LINES 151-153
 
 Now the measured value for **c** is much closer to reality, and the measured times of peak are somewhat
 more accurate. 
@@ -399,7 +400,7 @@ more accurate.
 
 .. rst-class:: sphx-glr-timing
 
-   **Total running time of the script:** ( 2 minutes  29.665 seconds)
+   **Total running time of the script:** ( 3 minutes  9.188 seconds)
 
 
 .. _sphx_glr_download_examples_plot_c_fitting.py:

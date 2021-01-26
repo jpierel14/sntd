@@ -5,14 +5,14 @@ Examples using ``sntd.createMultiplyImagedSN``
 
 .. raw:: html
 
-    <div class="sphx-glr-thumbcontainer" tooltip="Simulate and fit for microlensing.">
+    <div class="sphx-glr-thumbcontainer" tooltip="A series of examples demonstrating various fitting options/features with SNTD.">
 
 .. only:: html
 
- .. figure:: /examples/images/thumb/sphx_glr_plot_a_micro_thumb.png
-     :alt: Microlensing Analysis
+ .. figure:: /examples/images/thumb/sphx_glr_plot_c_fitting_thumb.png
+     :alt: Measure Time Delays
 
-     :ref:`sphx_glr_examples_plot_a_micro.py`
+     :ref:`sphx_glr_examples_plot_c_fitting.py`
 
 .. raw:: html
 
@@ -20,4 +20,4 @@ Examples using ``sntd.createMultiplyImagedSN``
 
 .. only:: not html
 
- * :ref:`sphx_glr_examples_plot_a_micro.py`
+ * :ref:`sphx_glr_examples_plot_c_fitting.py`

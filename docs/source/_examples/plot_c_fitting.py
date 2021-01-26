@@ -7,7 +7,7 @@ A series of examples demonstrating various fitting options/features
 with SNTD.
 """
 
-###############################################################
+##################################################################################################
 # There are 3 methods built into SNTD to measure time delays
 # (parallel, series, color). They are accessed by the same 
 # function: :py:func:`~sntd.fitting.fit_data` . 
@@ -22,14 +22,13 @@ with SNTD.
 # ------------------------------------------------------------------------------------------------------------------------------------------
 # 
 # **Parallel:**
-
 import sntd
 
 myMISN=sntd.load_example_misn()
 
 fitCurves=sntd.fit_data(myMISN,snType='Ia', models='salt2-extended',bands=['F110W','F160W'],
                 params=['x0','t0','x1','c'],constants={'z':1.4},refImage='image_1',cut_time=[-30,40],
-                bounds={'t0':(-20,20),'x1':(-3,3),'c':(-1,1),'mu':(.5,2)},fitOrder=['image_1','image_2'],
+                bounds={'t0':(-20,20),'x1':(-2,2),'c':(-1,1),'mu':(.5,2)},fitOrder=['image_1','image_2'],
                 method='parallel',microlensing=None,modelcov=False,npoints=100)
 print(fitCurves.parallel.time_delays)
 print(fitCurves.parallel.time_delay_errors)
@@ -50,7 +49,7 @@ fitCurves.plot_fit(method='parallel',par_image='image_2')
 
 fitCurves=sntd.fit_data(myMISN,snType='Ia', models='salt2-extended',bands=['F110W','F160W'],
         params=['x0','t0','x1','c'],constants={'z':1.4},refImage='image_1',cut_time=[-30,40],
-        bounds={'t0':(-20,20),'td':(-20,20),'mu':(.5,2),'x1':(-3,3),'c':(-.5,.5)},
+        bounds={'t0':(-20,20),'td':(-20,20),'mu':(.5,2),'x1':(-2,2),'c':(-.5,.5)},
         method='series',npoints=100)
         
 
