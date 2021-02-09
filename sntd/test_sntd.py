@@ -13,7 +13,7 @@ import sntd
 warnings.simplefilter('ignore')
 
 _NOSBATCH_ = True
-_GOFAST_ = True
+_GOFAST_ = False
 _PARONLY_ = False
 
 np.random.seed(3)
@@ -86,7 +86,7 @@ class TestFitting(unittest.TestCase):
         fitCurves = sntd.fit_data(self.myMISN, snType='Ia', models='salt2-extended', bands=['F110W', 'F160W'],
                                   params=['x0', 'x1', 't0', 'c'], bounds={'t0': (-15, 15), 'x1': (-2, 2), 'c': (-1, 1)},
                                   color_param_ignore=['x1'], use_MLE=False, refImage='image_1', 
-                                  method='parallel', microlensing=None, maxcall=None, npoints=100, minsnr=0,
+                                  method='parallel', microlensing=None, maxcall=None, npoints=25, minsnr=0,
                                   set_from_simMeta={'z': 'z'}, t0_guess={'image_1': 20, 'image_2': 70},verbose=False)
         
 
@@ -95,7 +95,7 @@ class TestFitting(unittest.TestCase):
         fitCurves = sntd.fit_data(self.myMISN, snType='Ia', models='salt2-extended', bands=['F110W', 'F160W'],
                                   params=['x0', 'x1', 't0', 'c'], bounds={'t0': (-15, 15), 'x1': (-2, 2), 'c': (-1, 1), 'td': (-30, 30), 'mu': (.5, 2)},
                                   color_param_ignore=['x1'], use_MLE=False, refImage='image_1',
-                                  method='series', microlensing=None, maxcall=None, npoints=100, minsnr=0,
+                                  method='series', microlensing=None, maxcall=None, npoints=25, minsnr=0,
                                   set_from_simMeta={'z': 'z'}, t0_guess={'image_1': 20, 'image_2': 70},verbose=False)
 
     @unittest.skipIf(_PARONLY_, "Skipping non-parallel fit.")
@@ -103,7 +103,7 @@ class TestFitting(unittest.TestCase):
         fitCurves = sntd.fit_data(self.myMISN, snType='Ia', models='salt2-extended', bands=['F110W', 'F160W'],
                                   params=['x0', 'x1', 't0', 'c'], bounds={'t0': (-15, 15), 'x1': (-2, 2), 'c': (-1, 1), 'td': (-30, 30), 'mu': (.5, 2)},
                                   use_MLE=False, refImage='image_1',
-                                  method='color', microlensing=None, maxcall=None, npoints=100, minsnr=0,
+                                  method='color', microlensing=None, maxcall=None, npoints=25, minsnr=0,
                                   set_from_simMeta={'z': 'z'}, t0_guess={'image_1': 20, 'image_2': 70},verbose=False)
 
 
@@ -173,8 +173,8 @@ def test_loader(loader):
 
 if __name__ == '__main__':
     # TEST LIST
-    #test_cases = 'ALL'
-    test_cases = [TestFitting]
+    test_cases = 'ALL'
+    #test_cases = [TestFitting]
 
     if test_cases == 'ALL':
         unittest.main()
