@@ -1238,7 +1238,7 @@ class MISN(dict):
         return fig
 
 
-def table_factory(tables, telescopename="Unknown", object_name=None):
+def table_factory(tables, telescopename="Unknown", object_name='Unknown'):
     """This function will create a new curve object using an astropy table or tables.
 
     Parameters

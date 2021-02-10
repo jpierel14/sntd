@@ -1,5 +1,6 @@
 import sncosmo
 import numpy as np
+from copy import copy
 from astropy.table import Table
 from scipy.interpolate import CubicSpline, interp1d
 from sncosmo.utils import integration_grid
@@ -7,9 +8,106 @@ from sncosmo.constants import HC_ERG_AA, MODEL_BANDFLUX_SPACING
 from scipy.stats import exponnorm
 from collections import Counter
 
+__all__ = ['unresolvedMISN']
 
-__all__ = ['BazinSource']
+class unresolvedSource(sncosmo.Source):
+    def __init__(self,model_list):
+        super(unresolvedSource, self).__init__()
+        self.source_list = [model._source for model in model_list]
+        self.name = self.source_list[0].name
+        self.version = self.source_list[0].version
+        self._phase = self.source_list[0]._phase
+        self._wave = self.source_list[0]._wave
+        self._parameters = self.source_list[0]._parameters
+        self._param_names = self.source_list[0]._param_names
+        self.param_names_latex = self.source_list[0].param_names_latex
+        try:
+            self._model_flux = self.source_list[0]._model_flux
+            self._zero_before = self.source_list[0]._zero_before
+        except:
+            pass
 
+    def _flux(self,phase,wave):
+        return(np.sum([source._flux(phase,wave) for source in self.source_list],axis=0))
+
+class unresolvedMISN(sncosmo.Model):
+    """
+    Wrapper class of SNCosmo.Model to provide support for unresolved lensed SN fitting.
+    """
+    def __init__(self,curve_models,delays=None,magnifications=None):
+        """
+        Parameters
+        ----------
+        curve_models: list of `~sncosmo.Model`
+            List of models representing each (unresolved) image
+        delays: list of float
+            A list of relative delays between models
+        magnifications: list of float
+            A list of relative magnifications between models
+        """
+        super(unresolvedMISN, self).__init__(curve_models[0]._source)
+        self.model_list=curve_models
+        self._source = unresolvedSource(self.model_list)
+        if delays is not None:
+            self.set_delays(delays)
+        if magnifications is not None:
+            self.set_magnifications(magnifications)
+        self.delays = delays
+        self.magnifications = magnifications
+        self.nparams = len(self.param_names)
+        self.current_parameters = np.array(list(self._parameters))
+        self.param_indices = {p:self.param_names.index(p) for p in self.param_names}
+
+    def __copy__(self):
+        new = unresolvedMISN([copy(model) for model in self.model_list],self.delays,self.magnifications)
+        new._parameters = self._parameters.copy()
+        return new
+
+    def set_delays(self,delays):
+        """
+        Set the relative delays between blended image models. 
+
+        Parameters
+        ----------
+        delays: list of float
+            A list of relative delays between models
+        """
+        if len(delays) != len(self.model_list):
+            print('Cannot set delays, must match length of model list.')
+        for i in range(len(delays)):
+            self.model_list[i].parameters[1] += delays[i]
+
+    def set_magnifications(self,magnifications):
+        """
+        Set the relative magnifications between blended image models. 
+
+        Parameters
+        ----------
+        magnifications: list of float
+            A list of relative magnifications between models
+        """
+        if len(magnifications) != len(self.model_list):
+            print('Cannot set magnifications, must match length of model list.')
+        for i in range(len(magnifications)):
+            self.model_list[i].parameters[2] *= magnifications[i]
+
+    def _flux(self,phase,wave):
+        self.set(**{self.param_names[i]:self.parameters[i] for i in range(self.nparams)})
+        return(np.sum([model._flux(phase,wave) for model in self.model_list],axis=0))
+
+    def set(self,**param_dict):
+        for key in param_dict.keys():
+            if key == 't0':
+                for model in self.model_list:
+                    model.parameters[1] += (param_dict[key]-self.current_parameters[self.param_indices[key]])
+            elif key == self.param_names[2]:
+                for model in self.model_list:
+                    model.parameters[2] *= (param_dict[key]/self.current_parameters[self.param_indices[key]])
+            else:
+                for model in self.model_list:
+                    model.update({key:param_dict[key]})
+        self.update(param_dict)
+        self.current_parameters[:] = self.parameters
 
 def _param_to_source(source, wave, color_curve=None, band1=None, band2=None, ref_color=False):
     band = None

@@ -27,7 +27,7 @@ from collections import OrderedDict
 from .util import *
 from .util import _filedir_, _current_dir_
 from .curve_io import _sntd_deepcopy
-from .models import *
+from .models import BazinSource
 from .ml import *
 
 __all__ = ['fit_data']
@@ -46,7 +46,7 @@ def fit_data(curves=None, snType='Ia', bands=None, models=None, params=None, bou
              dust=None, microlensing=None, fitOrder=None, color_bands=None, color_param_ignore=[], min_points_per_band=3, identify_micro=False,
              min_n_bands=1, max_n_bands=None, n_cores_per_node=1, npar_cores=4, max_batch_jobs=199, max_cadence=None, fit_colors=None,
              fit_prior=None, par_or_batch='parallel', batch_partition=None, nbatch_jobs=None, batch_python_path=None, n_per_node=None, fast_model_selection=True,
-             wait_for_batch=False, band_order=None, set_from_simMeta={}, guess_amplitude=True, trial_fit=True, clip_data=False, use_MLE=False,
+             wait_for_batch=False, band_order=None, set_from_simMeta={}, guess_amplitude=True, trial_fit=False, clip_data=False, use_MLE=False,
              kernel='RBF', refImage='image_1', nMicroSamples=100, color_curve=None, warning_supress=True,
              micro_fit_bands='all', verbose=True, **kwargs):
     """The main high-level fitting function.
@@ -2606,7 +2606,7 @@ def _fitparallel(all_args):
                                     effect_names=effect_names, effect_frames=effect_frames)
         else:
             tempMod = copy(mod)
-
+        
         tempMod.set(**{k: args['constants'][k]
                        for k in args['constants'].keys() if k in tempMod.param_names})
         if args['set_from_simMeta'] is not None:
@@ -2708,7 +2708,6 @@ def _fitparallel(all_args):
                                    rstate=args.get('rstate', None), guess_amplitude_bound=False,
                                    zpsys=args['curves'].images[args['fitOrder'][0]].zpsys,
                                    maxiter=args.get('maxiter', None), npoints=args.get('npoints', 100))
-
         all_fit_dict[mod] = [copy(fit), copy(res)]
 
         if finallogz < res.logz:

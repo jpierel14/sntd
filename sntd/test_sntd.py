@@ -106,7 +106,7 @@ class TestFitting(unittest.TestCase):
                                   method='color', microlensing=None, maxcall=None, npoints=25, minsnr=0,
                                   set_from_simMeta={'z': 'z'}, t0_guess={'image_1': 20, 'image_2': 70},verbose=False)
 
-
+    	
 class TestCosmology(unittest.TestCase):
     """
     Test SNTD cosmology tools.

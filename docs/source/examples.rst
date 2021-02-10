@@ -275,3 +275,83 @@ Out::
     :align: center
     :height: 600px
     :alt: alternate text
+
+
+***************************
+Unresolved Lensed SN Models
+***************************
+
+SNTD now includes an option for fitting unresolved multiply-imaged light curves. Here is an example of an unresolved light curve of a doubly-imaged SN Ia:
+
+.. image:: _static/unresolved.png
+    :width: 600px
+    :align: center
+    :height: 600px
+    :alt: alternate text
+
+
+This object has only a single image, whose table is the combined light curve shown above. Simply create SNCosmo models for each blended image, and combine them in the following way:
+
+.. code-block:: python
+
+    image_1 = sncosmo.Model('salt2-extended')
+	image_2 = sncosmo.Model('salt2-extended')
+	unresolved=sntd.unresolvedMISN([image_1,image_2])
+
+You can set the time delays and magnifications with two simple functions:
+
+.. code-block:: python
+
+    unresolved.set_delays([10,55])
+	unresolved.set_magnifications([4,1])
+	print(unresolved.model_list[0].parameters)
+	print(unresolved.model_list[1].parameters)
+
+Out::
+
+    [ 0. 10. 4. 0. 0. ]
+    [ 0. 55. 1. 0. 0. ]
+
+You may now set parameters as you would for a normal model. SN parameters (i.e. z, x1, c, etc.) will set across all models, "lens" parameters (i.e. t0, x0/amplitude, etc.) will shift each model by that amount. For example (note the time delays above):
+
+.. code-block:: python
+
+	unresolved.set(z=1.4)
+	unresolved.set(t0=10)
+	print(unresolved.parameters)
+	print(unresolved.model_list[0].parameters)
+	print(unresolved.model_list[1].parameters)
+
+Out::
+
+    [ 1.4 10.   1.   0.   0. ]
+    [ 1.4 20.   4.   0.   0. ]
+    [ 1.4 65.   1.   0.   0. ]
+
+Now this unresolved model can be simply used in the SNTD fitting methods as normal:
+
+.. code-block:: python
+
+    fitCurves=sntd.fit_data(combined_MISN,snType='Ia',models=unresolved,bands=['F110W','F160W'],
+                        params=['x0','x1','t0','c'],constants={'z':1.4},
+        				bounds={'t0':(-20,20),'x1':(-2,2),'c':(-.5,.5)},
+        				method='parallel',npoints=100)
+
+    print(list(zip(fitCurves.images['image_1'].fits.model.param_names,
+	  fitCurves.images['image_1'].fits.model.parameters)))
+    fitCurves.plot_object()
+    plt.show()
+
+Out::
+
+    [('z', 1.4), ('t0', 0.030856743802949414), ('x0', 1.361414978820235e-05), ('x1', -1.96606343354532), ('c', 0.09777031933936466)]
+
+.. image:: _static/unresolved_fit.png
+    :width: 600px
+    :align: center
+    :height: 600px
+    :alt: alternate text
+
+Here the true parameters were t0=0 (the input time delays were correct, and t0 is fitting for a global offset in the model), x1=-2, c=.09, and x0 is somewhat arbitrary here as the magnifications were also correct based on the sim. 
+
+Note that you can add individual propagation effects to each images model at the outset (such as lens plane dust or microlensing models), or you could add a single propagation effect to the unresolved model that will impact the combined model (such as host galaxy dust).

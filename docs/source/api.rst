@@ -17,6 +17,7 @@ Summary
 	sntd.curve_io.table_factory
 	sntd.ml.realizeMicro
 	sntd.ml.microcaustic_field_to_curve
+	sntd.models.unresolvedMISN
 
 |
 
@@ -59,4 +60,11 @@ Microlensing
 ************
 
 .. automodule:: sntd.ml
+   :members:
+
+******
+Models
+******
+
+.. automodule:: sntd.models
    :members:
