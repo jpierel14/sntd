@@ -294,7 +294,7 @@ This object has only a single image, whose table is the combined light curve sho
 
 .. code-block:: python
 
-    image_1 = sncosmo.Model('salt2-extended')
+	image_1 = sncosmo.Model('salt2-extended')
 	image_2 = sncosmo.Model('salt2-extended')
 	unresolved=sntd.unresolvedMISN([image_1,image_2])
 
@@ -302,7 +302,7 @@ You can set the time delays and magnifications with two simple functions:
 
 .. code-block:: python
 
-    unresolved.set_delays([10,55])
+	unresolved.set_delays([10,55])
 	unresolved.set_magnifications([4,1])
 	print(unresolved.model_list[0].parameters)
 	print(unresolved.model_list[1].parameters)
