@@ -39,6 +39,8 @@ class unresolvedMISN(sncosmo.Model):
 
     def __init__(self, curve_models, delays=None, magnifications=None):
         """
+        Constructor for the unresolvedMISN class.
+        
         Parameters
         ----------
         curve_models: list of `~sncosmo.Model`
