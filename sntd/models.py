@@ -40,7 +40,7 @@ class unresolvedMISN(sncosmo.Model):
     def __init__(self, curve_models, delays=None, magnifications=None):
         """
         Constructor for the unresolvedMISN class.
-        
+
         Parameters
         ----------
         curve_models: list of `~sncosmo.Model`
@@ -68,6 +68,7 @@ class unresolvedMISN(sncosmo.Model):
         new = unresolvedMISN(
             [copy(model) for model in self.model_list], self.delays, self.magnifications)
         new._parameters = self._parameters.copy()
+        new.current_parameters = np.array(list(new._parameters))
         return new
 
     def set_delays(self, delays):
@@ -116,8 +117,10 @@ class unresolvedMISN(sncosmo.Model):
             else:
                 for model in self.model_list:
                     model.update({key: param_dict[key]})
+            self.current_parameters[self.param_indices[key]] = param_dict[key]
         self.update(param_dict)
-        self.current_parameters[:] = self.parameters
+
+        
 
 
 def _param_to_source(source, wave, color_curve=None, band1=None, band2=None, ref_color=False):

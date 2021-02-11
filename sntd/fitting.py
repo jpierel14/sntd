@@ -2724,7 +2724,6 @@ def _fitparallel(all_args):
                         i in range(len(first_res[2].vparam_names))]
         first_res[1].set(**{first_res[2].vparam_names[k]: first_params[k][1]
                             for k in range(len(first_res[2].vparam_names))})
-
     args['curves'].images[args['fitOrder'][0]].fits = newDict()
     args['curves'].images[args['fitOrder'][0]].fits['model'] = first_res[1]
     args['curves'].images[args['fitOrder'][0]].fits['res'] = first_res[2]
@@ -2926,7 +2925,6 @@ def _fitparallel(all_args):
                                                                         + sigma**2)
     fit_end = time.time()
     args['curves'].parallel.fit_time = fit_end - fit_start
-
     return args['curves']
 
 

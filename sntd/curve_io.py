@@ -734,7 +734,8 @@ class MISN(dict):
 
     def plot_object(self, bands='all', savefig=False, plot3D=False,
                     filename='mySN', orientation='horizontal', method='separate',
-                    showModel=False, showFit=False, showMicro=False, **kwargs):
+                    showModel=False, showFit=False, showMicro=False, 
+                    plot_unresolved=False,**kwargs):
         """Plot the multiply-imaged SN light curves and show/save to a file.
             Each subplot shows a single-band light curve, for all images of the SN.
 
@@ -762,6 +763,8 @@ class MISN(dict):
         showMicro : bool
             If true and it exists, the simulated microlensing is plotted
             as well
+        plot_unresolved: bool
+            If true the individual models of an unresolved fit will be plotted
 
         Returns
         -------
@@ -1113,6 +1116,13 @@ class MISN(dict):
                         else:
                             ax.plot(time_model, flux_model,
                                     linestyle='-', color=colors[i])
+                            if plot_unresolved:
+                                for im_mod in self.images[lc].fits.model.model_list:
+                                    im_flux_model = im_mod.bandflux(b, time_model,
+                                                                    self.images[lc].table['zp'][self.images[lc].table['band'] == b][0],
+                                                                    self.images[lc].table['zpsys'][self.images[lc].table['band'] == b][0])
+                                    ax.plot(time_model, im_flux_model,
+                                                linestyle='-', color='cyan')
                     if not plot3D:
                         ax.text(0.95, 0.95, b.upper(), fontsize='large',
                                 transform=ax.transAxes, ha='right', va='top')
@@ -1235,6 +1245,7 @@ class MISN(dict):
                          '"--'+self.telescopename, fontsize=16)
             if savefig:
                 plt.savefig(filename+'.pdf', format='pdf', overwrite=True)
+
         return fig
 
 
