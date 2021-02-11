@@ -346,7 +346,7 @@ Now this unresolved model can be simply used in the SNTD fitting methods as norm
 
 Out::
 
-    [('z', 1.4), ('t0', -1.0278361916823293), ('x0', 7.765488459076104e-07), ('x1', 1.3974800481087788), ('c', -0.13893966031920527), ('dt_1', 20.0), ('mu_1', 2.0), ('dt_2', 55.0), ('mu_2', 0.5)]
+    [('z', 1.4), ('t0', -0.7620832162021888), ('x0', 7.298888590029448e-07), ('x1', 1.4960457248192203), ('c', -0.08384340717738858), ('dt_1', 20.0), ('mu_1', 4.0), ('dt_2', 55.0), ('mu_2', 1.0)]
 
 .. image:: _static/unresolved_fit_const.png
     :width: 600px
@@ -375,7 +375,7 @@ Additionally, we can attempt to fit for relative time delays/magnifications of t
 
 Out::
 
-	[('z', 1.4), ('t0', 19.049520197844256), ('x0', 3.8810696411265204e-07), ('x1', 1.3824022599265968), ('c', -0.14136857807706724), ('dt_1', 0.0), ('mu_1', 4.0), ('dt_2', 35.79664673433084), ('mu_2', 1.0)]
+	[('z', 1.4), ('t0', 19.203237085466867), ('x0', 7.349261421179482e-07), ('x1', 1.682206180032783), ('c', -0.0909991294403899), ('dt_1', 0.0), ('mu_1', 4.0), ('dt_2', 38.205546125150704), ('mu_2', 1.0)]
 
 .. image:: _static/unresolved_fit.png
     :width: 600px
@@ -390,17 +390,18 @@ Out::
 				params=['x0','x1','t0','c','mu_1',dt_2','mu_2'],
 				constants={'z':1.4},
 				bounds={'t0':(-20,20),'mu_1':(3.5,4.5),'mu_2':(.5,1.5),
-						'dt_2':(20,40),'x1':(-2,2),'c':(-.5,.5)},
+						'dt_2':(20,80),'x1':(-3,3),'c':(-.5,.5)},
 				method='parallel',npoints=100)
 
 	print(list(zip(fitCurves.images['image_1'].fits.model.param_names,
 	  fitCurves.images['image_1'].fits.model.parameters)))
 	fitCurves.plot_object(showFit=True,plot_unresolved=True)
+	fitCurves.plot_fit()
 	plt.show()
 
 Out::
 
-	[('z', 1.4), ('t0', 18.431232800011088), ('x0', 3.9075786259221787e-07), ('x1', 1.2688381944357372), ('c', -0.14628116855828782), ('dt_1', 0.0), ('mu_1', 3.949339295648203), ('dt_2', 35.9501709954891), ('mu_2', 1.1224548128661398)]
+	[('z', 1.4), ('t0', 19.49243682866722), ('x0', 7.43527262511094e-07), ('x1', 1.7221753624460694), ('c', -0.08879485874943827), ('dt_1', 0.0), ('mu_1', 3.980681598438305), ('dt_2', 38.91567004151568), ('mu_2', 0.9718061929858269)]
 
 .. image:: _static/unresolved_fit_mu.png
     :width: 600px
@@ -408,4 +409,10 @@ Out::
     :height: 600px
     :alt: alternate text
 
-For these last two examples, there is a lot of parameter degeneracy but we still do reasonably well. The true values are t0=20,dt_2=35,mu_1=4,mu_2=1. Here the time delay measurement remains accurate, although the time of peak measurement degrades somewhat. 
+.. image:: _static/unresolved_corner.png
+    :width: 600px
+    :align: center
+    :height: 600px
+    :alt: alternate text
+
+For these last two examples, there is a lot of parameter degeneracy but we still do reasonably well. The true values are t0=20,dt_2=35,mu_1=4,mu_2=1, c=-0.02., x1=1.33 
