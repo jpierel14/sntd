@@ -354,7 +354,7 @@ Out::
     :height: 600px
     :alt: alternate text
 
-Here the true parameters were t0=0 (the input time delays were correct, and t0 is fitting for a global offset in the model), x1=-2, c=.09, and x0 is somewhat arbitrary here as the magnifications were also correct based on the sim. 
+Here the true parameters were t0=0 (the input time delays were correct, and t0 is fitting for a global offset in the model), x1=-1.33, c=-.02, and x0 is somewhat arbitrary here as the magnifications were also correct based on the sim. 
 
 Note that you can add individual propagation effects to each images model at the outset (such as lens plane dust or microlensing models), or you could add a single propagation effect to the unresolved model that will impact the combined model (such as host galaxy dust).
 
