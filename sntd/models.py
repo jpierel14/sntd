@@ -51,6 +51,8 @@ class unresolvedMISN(sncosmo.Model):
             A list of relative magnifications between models
         """
         super(unresolvedMISN, self).__init__(curve_models[0]._source)
+        self._param_names = list(np.append(self._param_names,[['dt_%i'%(i+1),'mu_%i'%(i+1)] for i in range(len(curve_models))]).flatten())
+        self._parameters = np.append(self._parameters,[[0,1] for i in range(len(curve_models))]).flatten()
         self.model_list = curve_models
         self._source = unresolvedSource(self.model_list)
         if delays is not None:
@@ -63,15 +65,18 @@ class unresolvedMISN(sncosmo.Model):
         self.current_parameters = np.array(list(self._parameters))
         self.param_indices = {p: self.param_names.index(
             p) for p in self.param_names}
+        self.nimages = len(self.model_list)
 
     def __copy__(self):
         new = unresolvedMISN(
-            [copy(model) for model in self.model_list], self.delays, self.magnifications)
+            [copy(model) for model in self.model_list])
         new._parameters = self._parameters.copy()
         new.current_parameters = np.array(list(new._parameters))
+        new.set_delays(self.delays,base_t0=self.parameters[1])
+        new.set_magnifications(self.magnifications,base_x0=self.parameters[2])
         return new
 
-    def set_delays(self, delays):
+    def set_delays(self, delays, base_t0=0):
         """
         Set the relative delays between blended image models. 
 
@@ -83,9 +88,13 @@ class unresolvedMISN(sncosmo.Model):
         if len(delays) != len(self.model_list):
             print('Cannot set delays, must match length of model list.')
         for i in range(len(delays)):
-            self.model_list[i].parameters[1] += delays[i]
+            self.model_list[i].parameters[1] = delays[i] + base_t0
+            self.parameters[self.param_indices['dt_%i'%(i+1)]] = delays[i]
+            self.current_parameters[self.param_indices['dt_%i'%(i+1)]] = delays[i]
+        self.delays = delays
 
-    def set_magnifications(self, magnifications):
+
+    def set_magnifications(self, magnifications,base_x0=1):
         """
         Set the relative magnifications between blended image models. 
 
@@ -97,14 +106,25 @@ class unresolvedMISN(sncosmo.Model):
         if len(magnifications) != len(self.model_list):
             print('Cannot set magnifications, must match length of model list.')
         for i in range(len(magnifications)):
-            self.model_list[i].parameters[2] *= magnifications[i]
+            self.model_list[i].parameters[2] = magnifications[i] * base_x0
+            self.parameters[self.param_indices['mu_%i'%(i+1)]] = magnifications[i]
+            self.current_parameters[self.param_indices['mu_%i'%(i+1)]] = magnifications[i]
+        self.magnifications = magnifications
 
     def _flux(self, phase, wave):
-        self.set(**{self.param_names[i]: self.parameters[i]
-                    for i in range(self.nparams)})
+        #for model in self.model_list:
+        #    print(model.parameters)
+        param_dict = {self.param_names[i]: self.parameters[i]
+                    for i in range(self.nparams) if self.parameters[i] != self.current_parameters[i]}
+        if len(param_dict) > 0:
+            self.set(**param_dict)
+        #for model in self.model_list:
+        #    print(model.parameters)
         return(np.sum([model._flux(phase, wave) for model in self.model_list], axis=0))
 
     def set(self, **param_dict):
+        do_delays = False
+        do_mags = False
         for key in param_dict.keys():
             if key == 't0':
                 for model in self.model_list:
@@ -114,10 +134,23 @@ class unresolvedMISN(sncosmo.Model):
                 for model in self.model_list:
                     model.parameters[2] *= (param_dict[key] /
                                             self.current_parameters[self.param_indices[key]])
+            elif 'dt_' in key:
+                do_delays = True
+                pass
+            elif 'mu_' in key:
+                do_mags = True
+                pass
             else:
                 for model in self.model_list:
                     model.update({key: param_dict[key]})
             self.current_parameters[self.param_indices[key]] = param_dict[key]
+        if do_delays:
+            self.set_delays([param_dict['dt_%i'%(i+1)] if 'dt_%i'%(i+1) in param_dict.keys() else 0 for i in range(self.nimages)],
+                        base_t0=self.current_parameters[1])
+        if do_mags:
+            self.set_magnifications([param_dict['mu_%i'%(i+1)] if 'mu_%i'%(i+1) in param_dict.keys() else 0 for i in range(self.nimages)],
+                                base_x0=self.current_parameters[2])
+        
         self.update(param_dict)
 
         

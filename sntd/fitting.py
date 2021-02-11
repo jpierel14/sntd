@@ -2708,6 +2708,7 @@ def _fitparallel(all_args):
                                    rstate=args.get('rstate', None), guess_amplitude_bound=False,
                                    zpsys=args['curves'].images[args['fitOrder'][0]].zpsys,
                                    maxiter=args.get('maxiter', None), npoints=args.get('npoints', 100))
+        
         all_fit_dict[mod] = [copy(fit), copy(res)]
 
         if finallogz < res.logz:
@@ -2727,7 +2728,7 @@ def _fitparallel(all_args):
     args['curves'].images[args['fitOrder'][0]].fits = newDict()
     args['curves'].images[args['fitOrder'][0]].fits['model'] = first_res[1]
     args['curves'].images[args['fitOrder'][0]].fits['res'] = first_res[2]
-
+    
     t0ind = first_res[2].vparam_names.index('t0')
     ampind = first_res[2].vparam_names.index(first_res[1].param_names[2])
 

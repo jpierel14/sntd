@@ -302,14 +302,14 @@ You can set the time delays and magnifications with two simple functions:
 
 .. code-block:: python
 
-	unresolved.set_delays([10,55])
+	unresolved.set_delays([20,55])
 	unresolved.set_magnifications([4,1])
 	print(unresolved.model_list[0].parameters)
 	print(unresolved.model_list[1].parameters)
 
 Out::
 
-    [ 0. 10. 4. 0. 0. ]
+    [ 0. 20. 4. 0. 0. ]
     [ 0. 55. 1. 0. 0. ]
 
 You may now set parameters as you would for a normal model. SN parameters (i.e. z, x1, c, etc.) will set across all models, "lens" parameters (i.e. t0, x0/amplitude, etc.) will shift each model by that amount. For example (note the time delays above):
@@ -318,35 +318,37 @@ You may now set parameters as you would for a normal model. SN parameters (i.e. 
 
 	unresolved.set(z=1.4)
 	unresolved.set(t0=10)
+	print(unresolved.param_names)
 	print(unresolved.parameters)
 	print(unresolved.model_list[0].parameters)
 	print(unresolved.model_list[1].parameters)
 
 Out::
 
-    [ 1.4 10.   1.   0.   0. ]
-    [ 1.4 20.   4.   0.   0. ]
-    [ 1.4 65.   1.   0.   0. ]
+	['z', 't0', 'x0', 'x1', 'c', 'dt_1', 'mu_1', 'dt_2', 'mu_2']
+	[ 1.4 10.   1.   0.   0. 20. 4. 55. 1. ]
+	[ 1.4 30.   4.   0.   0. ]
+	[ 1.4 65.   1.   0.   0. ]
 
 Now this unresolved model can be simply used in the SNTD fitting methods as normal:
 
 .. code-block:: python
 
-    fitCurves=sntd.fit_data(combined_MISN,snType='Ia',models=unresolved,bands=['F110W','F160W'],
-                        params=['x0','x1','t0','c'],constants={'z':1.4},
-        				bounds={'t0':(-20,20),'x1':(-2,2),'c':(-.5,.5)},
-        				method='parallel',npoints=100)
+	fitCurves=sntd.fit_data(combined_MISN,snType='Ia',models=unresolved,bands=['F110W','F160W'],
+				params=['x0','x1','t0','c'],constants={'z':1.4},
+				bounds={'t0':(-20,20),'x1':(-2,2),'c':(-.5,.5)},
+				method='parallel',npoints=100)
 
-    print(list(zip(fitCurves.images['image_1'].fits.model.param_names,
+	print(list(zip(fitCurves.images['image_1'].fits.model.param_names,
 	  fitCurves.images['image_1'].fits.model.parameters)))
-    fitCurves.plot_object()
-    plt.show()
+	fitCurves.plot_object(showFit=True,plot_unresolved=True)
+	plt.show()
 
 Out::
 
-    [('z', 1.4), ('t0', 0.030856743802949414), ('x0', 1.361414978820235e-05), ('x1', -1.96606343354532), ('c', 0.09777031933936466)]
+    [('z', 1.4), ('t0', -1.0278361916823293), ('x0', 7.765488459076104e-07), ('x1', 1.3974800481087788), ('c', -0.13893966031920527), ('dt_1', 20.0), ('mu_1', 2.0), ('dt_2', 55.0), ('mu_2', 0.5)]
 
-.. image:: _static/unresolved_fit.png
+.. image:: _static/unresolved_fit_const.png
     :width: 600px
     :align: center
     :height: 600px
@@ -355,3 +357,55 @@ Out::
 Here the true parameters were t0=0 (the input time delays were correct, and t0 is fitting for a global offset in the model), x1=-2, c=.09, and x0 is somewhat arbitrary here as the magnifications were also correct based on the sim. 
 
 Note that you can add individual propagation effects to each images model at the outset (such as lens plane dust or microlensing models), or you could add a single propagation effect to the unresolved model that will impact the combined model (such as host galaxy dust).
+
+Additionally, we can attempt to fit for relative time delays/magnifications of the unresolved images.
+
+.. code-block:: python
+
+	fitCurves=sntd.fit_data(combined_MISN,snType='Ia',models=unresolved,bands=['F110W','F160W'],
+				params=['x0','x1','t0','c','dt_2'],
+				constants={'z':1.4,'mu_1':2,'mu_2':.5},
+				bounds={'t0':(-20,20),'dt_2':(20,40),'x1':(-2,2),'c':(-.5,.5)},
+				method='parallel',npoints=100)
+
+	print(list(zip(fitCurves.images['image_1'].fits.model.param_names,
+	  fitCurves.images['image_1'].fits.model.parameters)))
+	fitCurves.plot_object(showFit=True,plot_unresolved=True)
+	plt.show()
+
+Out::
+
+	[('z', 1.4), ('t0', 19.049520197844256), ('x0', 3.8810696411265204e-07), ('x1', 1.3824022599265968), ('c', -0.14136857807706724), ('dt_1', 0.0), ('mu_1', 4.0), ('dt_2', 35.79664673433084), ('mu_2', 1.0)]
+
+.. image:: _static/unresolved_fit.png
+    :width: 600px
+    :align: center
+    :height: 600px
+    :alt: alternate text
+
+
+.. code-block:: python
+
+	fitCurves=sntd.fit_data(combined_MISN,snType='Ia',models=unresolved,bands=['F110W','F160W'],
+				params=['x0','x1','t0','c','mu_1',dt_2','mu_2'],
+				constants={'z':1.4},
+				bounds={'t0':(-20,20),'mu_1':(3.5,4.5),'mu_2':(.5,1.5),
+						'dt_2':(20,40),'x1':(-2,2),'c':(-.5,.5)},
+				method='parallel',npoints=100)
+
+	print(list(zip(fitCurves.images['image_1'].fits.model.param_names,
+	  fitCurves.images['image_1'].fits.model.parameters)))
+	fitCurves.plot_object(showFit=True,plot_unresolved=True)
+	plt.show()
+
+Out::
+
+	[('z', 1.4), ('t0', 18.431232800011088), ('x0', 3.9075786259221787e-07), ('x1', 1.2688381944357372), ('c', -0.14628116855828782), ('dt_1', 0.0), ('mu_1', 3.949339295648203), ('dt_2', 35.9501709954891), ('mu_2', 1.1224548128661398)]
+
+.. image:: _static/unresolved_fit_mu.png
+    :width: 600px
+    :align: center
+    :height: 600px
+    :alt: alternate text
+
+For these last two examples, there is a lot of parameter degeneracy but we still do reasonably well. The true values are t0=20,dt_2=35,mu_1=4,mu_2=1. Here the time delay measurement remains accurate, although the time of peak measurement degrades somewhat. 
