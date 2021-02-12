@@ -40,9 +40,6 @@ class image_lc(dict):
     SNTD class that describes each image light curve of a MISN
     """
 
-    def __deepcopy__(self, memo):
-        return deepcopy(dict(self))
-
     def __init__(self, zpsys='AB'):
         """
         Constructor for curve class
@@ -99,7 +96,54 @@ class image_lc(dict):
         """
         self.__dict__ = d
 
+    @property
+    def chisq(self):
+        """
+        A property that calculates the chisq based on your best fit model.
+        """
+        if self.fits is None:
+            return None
+        
+        model_observations = self.fits.model.bandflux(self.table['band'], self.table['time'],
+                                            zp=self.table['zp'], zpsys=self.table['zpsys'])
+        chi = (self.table['flux']-model_observations)/self.table['fluxerr']
+        chisq = np.dot(chi, chi)
+        return chisq
 
+    @property
+    def reduced_chisq(self):
+        """
+        A property that calculates the reduced chisq based on your best fit model.
+        """
+        if self.fits is None:
+            return None
+        return self.chisq/(len(self.table)+len(self.fits.res.vparam_names)-1)
+    
+    def __str__(self):
+        """
+        A replacement for the print method of the class, so that when you run print(image_lc()), 
+        this is how it shows up.
+        """
+        print('SNTD MISN Image')
+        print('------------------')
+        print('Number of bands: %d' % len(self.bands))
+        print('Bands: {}'.format(self.bands))
+        print('Date Range: %.5f->%.5f' % (
+            min(self.table[get_default_prop_name('time')]),
+            max(self.table[get_default_prop_name('time')])))
+        print('Number of points: %d' % len(self.table))
+        if self.simMeta.keys():
+            print('')
+            print('Metadata:')
+            print('\n'.join('   {}:{}'.format(*t) for t in zip(self.simMeta.keys(
+            ), self.simMeta.values()) if isinstance(t[1], (str, float, int))))
+        if self.fits is not None:
+            print('Best fit model: %s (reduced chisq = %.2f)'%(self.fits.model._source.name,self.reduced_chisq))
+            print('Parameters:')
+            for i in range(len(self.fits.model.parameters)):
+                print('     %s: %.2f'%(self.fits.model.param_names[i],
+                                       self.fits.model.parameters[i]))
+        return ''
 class MISN(dict):
     """
     The main object for SNTD. This organizes a MISN, containing
@@ -183,6 +227,8 @@ class MISN(dict):
         A replacement for the print method of the class, so that when you run print(MISN()), this is how it shows
         up.
         """
+        print('SNTD MISN')
+        print('------------------')
         print('Telescope: %s' % self.telescopename)
         print('Object: %s' % self.object)
         print('Number of bands: %d' % len(self.bands))
@@ -201,6 +247,56 @@ class MISN(dict):
                 print('\n'.join('   {}:{}'.format(*t) for t in zip(self.images[c].simMeta.keys(
                 ), self.images[c].simMeta.values()) if isinstance(t[1], (str, float, int))))
         return '------------------'
+
+    @property
+    def series_chisq(self):
+        """
+        A property that calculates the chisq based on your best fit series model.
+        """
+        if self.series is None:
+            return None
+        
+        model_observations = self.series.fits.model.bandflux(self.series.table['band'], 
+                                        self.series.table['time'],
+                                        zp=self.series.table['zp'], 
+                                        zpsys=self.series.table['zpsys'])
+        chi = (self.series.table['flux']-model_observations)/self.series.table['fluxerr']
+        chisq = np.dot(chi, chi)
+        return chisq
+
+    @property
+    def series_reduced_chisq(self):
+        """
+        A property that calculates the reduced chisq based on your best fit series model.
+        """
+        if self.series is None:
+            return None
+        return self.chisq/(len(self.series.table)+len(self.series.fits.res.vparam_names)-1)
+
+    @property
+    def color_chisq(self):
+        """
+        A property that calculates the chisq based on your best fit color model.
+        """
+        if self.color is None:
+            return None
+        
+        model_observations = self.color.fits.model.bandflux(self.color.table['band'], 
+                                        self.color.table['time'],
+                                        zp=self.color.table['zp'], 
+                                        zpsys=self.color.table['zpsys'])
+        chi = (self.color.table['flux']-model_observations)/self.color.table['fluxerr']
+        chisq = np.dot(chi, chi)
+        return chisq
+
+    @property
+    def color_reduced_chisq(self):
+        """
+        A property that calculates the reduced chisq based on your best fit color model.
+        """
+        if self.color is None:
+            return None
+        return self.chisq/(len(self.color.table)+len(self.color.fits.res.vparam_names)-1)
 
     def add_image_lc(self, myImage, key=None):
         """Adds an image_lc object to the existing MISN (i.e. adds
@@ -234,7 +330,7 @@ class MISN(dict):
         else:
             myImage.zpsys = myImage.table['zpsys'][0]
 
-        tempMISN = _sntd_deepcopy(myImage)
+        tempMISN = copy(myImage)
 
         self.images[myImage.object] = tempMISN
 
