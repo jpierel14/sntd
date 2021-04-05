@@ -2634,6 +2634,7 @@ def _fitparallel(all_args):
                 temp_inds = temp_bands.astype(int)
             else:
                 temp_inds = copy(inds)
+            print(tempMod.parameters,tempMod.param_names,tempMod.minwave(),tempMod.maxwave())
             res, fit = sncosmo.fit_lc(args['curves'].images[args['fitOrder'][0]].table[temp_inds], tempMod, [x for x in args['params'] if x in tempMod.param_names],
                                       bounds={b: args['bounds'][b]+(args['bounds'][b]-np.median(
                                           args['bounds'][b]))*2 for b in args['bounds'].keys() if b not in ['t0', tempMod.param_names[2]]},
