@@ -1424,7 +1424,8 @@ def nest_color_lc(data, model, nimage, colors, vparam_names, bounds, ref='image_
                     time[im_dict[color[0]+'-'+color[1]]
                          [td_params[i][-1]]] -= parameters[td_idx[i]]
 
-            mod_color = model.color(color[0], color[1], zpsys, time)
+            timesort = np.argsort(time)
+            mod_color = model.color(color[0], color[1], zpsys, time[timesort])
             if np.any(np.isnan(mod_color)):
                 return(-np.inf)
 
@@ -1432,18 +1433,18 @@ def nest_color_lc(data, model, nimage, colors, vparam_names, bounds, ref='image_
 
                 for b in color:
                     _, mcov = model.bandfluxcov(b,
-                                                time,
+                                                time[timesort],
                                                 zp=zp_dict[b],
                                                 zpsys=zpsys)
 
                     cov_dict[b] = mcov
 
-                cov = np.diag(err)
+                cov = np.diag(err[timesort])
 
-                mcov1 = cov_dict[color[0]][:, np.array(color_inds1)[good_obs]]
-                mcov1 = mcov1[np.array(color_inds1)[good_obs], :]
-                mcov2 = cov_dict[color[1]][:, np.array(color_inds2)[good_obs]]
-                mcov2 = mcov2[np.array(color_inds2)[good_obs], :]
+                mcov1 = cov_dict[color[0]][:, np.array(color_inds1)[timesort]]
+                mcov1 = mcov1[np.array(color_inds1)[timesort], :]
+                mcov2 = cov_dict[color[1]][:, np.array(color_inds2)[timesort]]
+                mcov2 = mcov2[np.array(color_inds2)[timesort], :]
 
                 cov = cov + np.sqrt(mcov1**2+mcov2**2)
                 invcov = np.linalg.pinv(cov)
@@ -1451,7 +1452,7 @@ def nest_color_lc(data, model, nimage, colors, vparam_names, bounds, ref='image_
                 chisq += np.dot(np.dot(diff, invcov), diff)
 
             else:
-                chi = (obs-mod_color)/err
+                chi = (obs[timesort]-mod_color)/err[timesort]
                 chisq += np.dot(chi, chi)
 
         return chisq
@@ -2302,7 +2303,7 @@ def nest_series_lc(data, model, nimage, vparam_names, bounds, ref='image_1', use
     flux = np.array(data['flux'])
     fluxerr = np.array(data['fluxerr'])
     band = np.array(data['band'])
-
+    print(bounds,time)
     def chisq_likelihood(parameters):
         model.parameters[model_param_index] = parameters[model_idx]
 
@@ -2313,22 +2314,22 @@ def nest_series_lc(data, model, nimage, vparam_names, bounds, ref='image_1', use
                 tempTime[im_indices[i]] -= parameters[td_idx[i]]
             if doMu:
                 tempFlux[im_indices[i]] /= parameters[amp_idx[i]]
-
-        model_observations = model.bandflux(band, tempTime,
+        timesort = np.argsort(tempTime)
+        model_observations = model.bandflux(band, tempTime[timesort],
                                             zp=zp, zpsys=zpsys)
         if modelcov:
 
-            _, mcov = model.bandfluxcov(band, tempTime,
+            _, mcov = model.bandfluxcov(band, tempTime[timesort],
                                         zp=zp, zpsys=zpsys)
 
-            cov = cov + mcov
+            cov = cov[timesort,timesort] + mcov
             invcov = np.linalg.pinv(cov)
 
-            diff = tempFlux-model_observations
+            diff = tempFlux[timesort]-model_observations
             chisq = np.dot(np.dot(diff, invcov), diff)
 
         else:
-            chi = (tempFlux-model_observations)/np.array(fluxerr)
+            chi = (tempFlux[timesort]-model_observations)/np.array(fluxerr[timesort])
             chisq = np.dot(chi, chi)
         return chisq
 
@@ -2397,6 +2398,7 @@ def getBandSNR(curves, bands, min_points_per_band):
 
     band_SNR = {k: np.array(final_bands)[np.flip(
         np.argsort(band_SNR[k]))] for k in band_SNR.keys()}
+
     return(np.array(final_bands), band_SNR, band_dict)
 
 
@@ -2438,6 +2440,7 @@ def _fitparallel(all_args):
     args['bands'], band_SNR, band_dict = getBandSNR(
         args['curves'], args['bands'], args['min_points_per_band'])
     args['curves'].bands = args['bands']
+    print(args['curves'].images['image_1'].table)
     if len(args['bands']) == 0:
         if args['verbose']:
             print('Not enough data based on cuts.')
@@ -2708,7 +2711,7 @@ def _fitparallel(all_args):
                                    rstate=args.get('rstate', None), guess_amplitude_bound=False,
                                    zpsys=args['curves'].images[args['fitOrder'][0]].zpsys,
                                    maxiter=args.get('maxiter', None), npoints=args.get('npoints', 100))
-        
+
         all_fit_dict[mod] = [copy(fit), copy(res)]
 
         if finallogz < res.logz:
@@ -2802,6 +2805,7 @@ def _fitparallel(all_args):
                 guess_t0_start = True
             else:
                 guess_t0_start = False
+
         par_output = nest_parallel_lc(fit_table, first_res[1], first_res[2], image_bounds, min_n_bands=args['min_n_bands'],
                                       min_n_points_per_band=args[
                                           'min_points_per_band'], guess_t0_start=guess_t0_start, use_MLE=args['use_MLE'],
@@ -3066,44 +3070,13 @@ def nest_parallel_lc(data, model, prev_res, bounds, guess_amplitude_bound=False,
             chisq = np.dot(chi, chi)
         return chisq
 
-    lower_minval_dict = {}
-    upper_minval_dict = {}
-    lower_minloc_dict = {}
-    upper_minloc_dict = {}
-    all_finite = np.where(np.isfinite(np.log(prev_res.weights)))[0]
-    for i in range(len(prior_inds)):
-        lower_ind = prev_res.samples[all_finite, prior_inds[i]].argmin()
-        lower_minloc_dict[vparam_names[prior_inds[i]]
-                          ] = prev_res.samples[all_finite, prior_inds[i]][lower_ind]
-        upper_ind = prev_res.samples[all_finite, prior_inds[i]].argmax()
-        upper_minloc_dict[vparam_names[prior_inds[i]]
-                          ] = prev_res.samples[all_finite, prior_inds[i]][upper_ind]
-        lower_minval_dict[vparam_names[prior_inds[i]]] = np.log(
-            prev_res.weights[all_finite][lower_ind])
-        upper_minval_dict[vparam_names[prior_inds[i]]] = np.log(
-            prev_res.weights[all_finite][upper_ind])
-
-    bound_lims = {b: np.median(bounds[b]) for b in bounds.keys()}
-
     def loglike(parameters):
         if doPrior:
             prior_val = prior_func(*parameters[prior_inds])
         else:
             prior_val = 0
-        if not np.isfinite(prior_val):
-            tanhRes = []
-            for i in range(len(prior_inds)):
-                if parameters[prior_inds[i]] < bound_lims[vparam_names[prior_inds[i]]]:
-                    tanhRes.append(math.tanh(float(parameters[prior_inds[i]] +
-                                                   lower_minloc_dict[vparam_names[prior_inds[i]]]+2)+(lower_minval_dict[vparam_names[prior_inds[i]]]-1)))
-                else:
-                    tanhRes.append(-math.tanh(float(parameters[prior_inds[i]] +
-                                                    upper_minloc_dict[vparam_names[prior_inds[i]]]+2)+(upper_minval_dict[vparam_names[prior_inds[i]]]-1)))
-
-            prior_val = np.mean(tanhRes)
 
         chisq = chisq_likelihood(parameters)
-
         return(prior_val-.5*chisq)
 
     res = nestle.sample(loglike, prior_transform, ndim, npdim=npdim,

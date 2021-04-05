@@ -1453,8 +1453,11 @@ def _read_pickle(filename, telescopename="Unknown", object="Unknown", **kwargs):
 
 def standardize_table_colnames(table):
     for col in table.colnames:
+        if isinstance(table[col][0],str):
+            table[col] = [x.lower() for x in table[col]]
         if col != get_default_prop_name(col.lower()):
             table.rename_column(col, get_default_prop_name(col.lower()))
+
     return table
 
 

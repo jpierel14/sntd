@@ -673,12 +673,13 @@ class Survey(object):
 
                 line_name = self.name
 
-            ax.plot(self.cosmo_truths[params[0]], self.cosmo_truths[params[1]],
-                    marker='o', mec='k', mfc='w', ms=6)
+            
             ax.axhline(self.cosmo_truths[params[1]]
-                       * consty, ls='--', color='0.6', lw=0.8)
+                       * consty, ls='--', color='0.6', lw=3.5)
             ax.axvline(self.cosmo_truths[params[0]]
-                       * constx, ls='--', color='0.6', lw=0.8)
+                       * constx, ls='--', color='0.6', lw=3.5)
+            ax.plot(self.cosmo_truths[params[0]], self.cosmo_truths[params[1]],
+                    marker='o', mec='k', mfc='k', ms=10)
             ax.set_xlabel(math_labels[0], fontsize=20)
             ax.set_ylabel(math_labels[1], fontsize=20)
 

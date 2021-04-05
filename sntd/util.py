@@ -443,7 +443,8 @@ class posterior(rv_continuous):
         # func=scipy.interpolate.interp1d([(edges[i]+edges[i+1])/2 for i in range(len(edges)-1)],
         #                                pdf/np.max(pdf),fill_value=0,bounds_error=False)
         func = scipy.interpolate.interp1d(samples, np.log(weights/np.sum(weights)),
-                                          fill_value=-np.inf, bounds_error=False)
+                                          fill_value=-np.min(np.log(weights/np.sum(weights))), 
+                                          bounds_error=False)
         return(func)
 
     def _argcheck(self, *args):
