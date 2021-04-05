@@ -208,7 +208,8 @@ def fit_data(curves=None, snType='Ia', bands=None, models=None, params=None, bou
         if args['bands'] is None:
             args['bands'] = list(curves.bands) if not isinstance(
                 curves, (list, tuple, np.ndarray)) and not isinstance(args['curves'][0], str) else None
-    args['bands'] = [x.lower() for x in args['bands']]
+
+    args['bands'] = _bandCheck(args['curves'],args['bands'])
     # get together the model(s) needed for fitting
     models = [models] if models is not None and not isinstance(
         models, (tuple, list, np.ndarray)) else models
@@ -790,6 +791,21 @@ def fit_data(curves=None, snType='Ia', bands=None, models=None, params=None, bou
             curves = _fitColor(args)
 
     return curves
+
+def _bandCheck(curves,bands):
+    final_bands = []
+    for b in bands:
+        for im in curves.images.keys():
+            if b in curves.images[im].table['band']:
+                final_bands.append(b)
+                break
+            elif b.upper() in curves.images[im].table['band']:
+                final_bands.append(b.upper())
+                break
+            elif b.lower() in curves.images[im].table['band']:
+                final_bands.append(b.lower())
+                break
+    return final_bands
 
 
 def _fitColor(all_args):
