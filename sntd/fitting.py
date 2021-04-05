@@ -2303,7 +2303,6 @@ def nest_series_lc(data, model, nimage, vparam_names, bounds, ref='image_1', use
     flux = np.array(data['flux'])
     fluxerr = np.array(data['fluxerr'])
     band = np.array(data['band'])
-    print(bounds,time)
     def chisq_likelihood(parameters):
         model.parameters[model_param_index] = parameters[model_idx]
 
@@ -2440,7 +2439,7 @@ def _fitparallel(all_args):
     args['bands'], band_SNR, band_dict = getBandSNR(
         args['curves'], args['bands'], args['min_points_per_band'])
     args['curves'].bands = args['bands']
-    print(args['curves'].images['image_1'].table)
+
     if len(args['bands']) == 0:
         if args['verbose']:
             print('Not enough data based on cuts.')
@@ -2806,6 +2805,7 @@ def _fitparallel(all_args):
             else:
                 guess_t0_start = False
 
+
         par_output = nest_parallel_lc(fit_table, first_res[1], first_res[2], image_bounds, min_n_bands=args['min_n_bands'],
                                       min_n_points_per_band=args[
                                           'min_points_per_band'], guess_t0_start=guess_t0_start, use_MLE=args['use_MLE'],
@@ -3047,7 +3047,6 @@ def nest_parallel_lc(data, model, prev_res, bounds, guess_amplitude_bound=False,
     zp = np.array(data['zp'])
     zpsys = np.array(data['zpsys'])
     chi1 = flux/fluxerr
-
     def chisq_likelihood(parameters):
 
         model.parameters[model_idx] = parameters
