@@ -208,7 +208,7 @@ def fit_data(curves=None, snType='Ia', bands=None, models=None, params=None, bou
         if args['bands'] is None:
             args['bands'] = list(curves.bands) if not isinstance(
                 curves, (list, tuple, np.ndarray)) and not isinstance(args['curves'][0], str) else None
-
+    args['bands'] = [x.lower() for x in args['bands']]
     # get together the model(s) needed for fitting
     models = [models] if models is not None and not isinstance(
         models, (tuple, list, np.ndarray)) else models
@@ -2303,6 +2303,7 @@ def nest_series_lc(data, model, nimage, vparam_names, bounds, ref='image_1', use
     flux = np.array(data['flux'])
     fluxerr = np.array(data['fluxerr'])
     band = np.array(data['band'])
+
     def chisq_likelihood(parameters):
         model.parameters[model_param_index] = parameters[model_idx]
 
@@ -2316,6 +2317,7 @@ def nest_series_lc(data, model, nimage, vparam_names, bounds, ref='image_1', use
         timesort = np.argsort(tempTime)
         model_observations = model.bandflux(band, tempTime[timesort],
                                             zp=zp, zpsys=zpsys)
+
         if modelcov:
 
             _, mcov = model.bandfluxcov(band, tempTime[timesort],
@@ -2330,6 +2332,7 @@ def nest_series_lc(data, model, nimage, vparam_names, bounds, ref='image_1', use
         else:
             chi = (tempFlux[timesort]-model_observations)/np.array(fluxerr[timesort])
             chisq = np.dot(chi, chi)
+
         return chisq
 
     def loglike(parameters):
@@ -2634,7 +2637,7 @@ def _fitparallel(all_args):
                 temp_inds = temp_bands.astype(int)
             else:
                 temp_inds = copy(inds)
-            print(tempMod.parameters,tempMod.param_names,tempMod.minwave(),tempMod.maxwave())
+
             res, fit = sncosmo.fit_lc(args['curves'].images[args['fitOrder'][0]].table[temp_inds], tempMod, [x for x in args['params'] if x in tempMod.param_names],
                                       bounds={b: args['bounds'][b]+(args['bounds'][b]-np.median(
                                           args['bounds'][b]))*2 for b in args['bounds'].keys() if b not in ['t0', tempMod.param_names[2]]},
