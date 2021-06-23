@@ -50,7 +50,17 @@ class unresolvedMISN(sncosmo.Model):
         magnifications: list of float
             A list of relative magnifications between models
         """
+        self.nimages = len(curve_models)
         super(unresolvedMISN, self).__init__(curve_models[0]._source)
+        for model in curve_models:
+            for effect_name,effect_frame in zip(model.effect_names,model._effect_frames):
+                if effect_frame != 'free':
+                    continue
+                effect_params = [x for x in model.param_names if effect_name in x]
+                self._param_names = list(np.append(self._param_names,effect_params))
+                print(list(zip(effect_params,[model.get(p) for p in effect_params])))
+                self._parameters = np.append(self._parameters,[model.get(p) for p in effect_params])
+
         self._param_names = list(np.append(self._param_names,[['dt_%i'%(i+1),'mu_%i'%(i+1)] for i in range(len(curve_models))]).flatten())
         self._parameters = np.append(self._parameters,[[0,1] for i in range(len(curve_models))]).flatten()
         self.model_list = curve_models
@@ -65,8 +75,7 @@ class unresolvedMISN(sncosmo.Model):
         self.current_parameters = np.array(list(self._parameters))
         self.param_indices = {p: self.param_names.index(
             p) for p in self.param_names}
-        self.nimages = len(self.model_list)
-
+        
     def __copy__(self):
         new = unresolvedMISN(
             [copy(model) for model in self.model_list])
@@ -112,14 +121,10 @@ class unresolvedMISN(sncosmo.Model):
         self.magnifications = magnifications
 
     def _flux(self, phase, wave):
-        #for model in self.model_list:
-        #    print(model.parameters)
         param_dict = {self.param_names[i]: self.parameters[i]
                     for i in range(self.nparams) if self.parameters[i] != self.current_parameters[i]}
         if len(param_dict) > 0:
             self.set(**param_dict)
-        #for model in self.model_list:
-        #    print(model.parameters)
         return(np.sum([model._flux(phase, wave) for model in self.model_list], axis=0))
 
     def set(self, **param_dict):
@@ -142,7 +147,8 @@ class unresolvedMISN(sncosmo.Model):
                 pass
             else:
                 for model in self.model_list:
-                    model.update({key: param_dict[key]})
+                    if key in model.param_names:
+                        model.update({key: param_dict[key]})
             self.current_parameters[self.param_indices[key]] = param_dict[key]
         if do_delays:
             self.set_delays([param_dict['dt_%i'%(i+1)] if 'dt_%i'%(i+1) in param_dict.keys() else 0 for i in range(self.nimages)],
@@ -152,6 +158,73 @@ class unresolvedMISN(sncosmo.Model):
                                 base_x0=self.current_parameters[2])
         
         self.update(param_dict)
+
+    def add_effect(self, effect, name, frame):
+        """
+        Add a PropagationEffect to the model.
+
+        Parameters
+        ----------
+        effect : `~sncosmo.PropagationEffect`
+            Propagation effect.
+        name : str
+            Name of the effect.
+        frame : {'rest', 'obs', 'free'}
+        """
+        self._add_effect_partial(effect, name, frame)
+        self._sync_parameter_arrays_effects()
+        self._update_description()
+        self.current_parameters = np.array(list(self._parameters))
+        self.param_indices = {p: self.param_names.index(
+            p) for p in self.param_names}
+        for model in self.model_list:
+            model.add_effect(effect, name, frame)
+
+    def _sync_parameter_arrays_effects(self):
+        # save a reference to old parameter values, in case there are
+        # effect redshifts that have been set.
+        old_parameters = self._parameters
+        # Calculate total length of model's parameter array
+        l = len(old_parameters)
+        for effect, frame in zip(self._effects, self._effect_frames):
+            l += (frame == 'free') + len(effect._parameters)
+
+        # allocate new array (zeros so that new 'free' effects redshifts
+        # initialize to 0)
+        self._parameters = np.zeros(l, dtype=np.float)
+
+        # copy old parameters: we do this to make sure we copy
+        # non-default values of any parameters that the model alone
+        # holds, such as z, t0 and effect redshifts.
+        self._parameters[0:len(old_parameters)] = old_parameters
+
+        # cross-reference source's parameters
+        pos = 2
+        l = len(self._source._parameters)
+        self._parameters[pos:pos+l] = self._source._parameters  # copy
+        self._source._parameters = self._parameters[pos:pos+l]  # reference
+        pos = len(old_parameters)#+= l
+
+        # initialize a list of ints that keeps track of where the redshift
+        # parameter of each effect is. Value is 0 if effect_frame is not 'free'
+        self._effect_zindicies = []
+
+        # for each effect, cross-reference the effect's parameters
+        for i in range(len(self._effects)):
+            effect = self._effects[i]
+
+            # for 'free' effects, add a redshift parameter
+            if self._effect_frames[i] == 'free':
+                self._effect_zindicies.append(pos)
+                pos += 1
+            else:
+                self._effect_zindicies.append(-1)
+
+            # add all of this effect's parameters
+            l = len(effect._parameters)
+            self._parameters[pos:pos+l] = effect._parameters  # copy
+            effect._parameters = self._parameters[pos:pos+l]  # reference
+            pos += l
 
         
 

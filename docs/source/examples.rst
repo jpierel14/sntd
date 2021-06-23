@@ -356,8 +356,6 @@ Out::
 
 Here the true parameters were t0=0 (the input time delays were correct, and t0 is fitting for a global offset in the model), x1=-1.33, c=-.02, and x0 is somewhat arbitrary here as the magnifications were also correct based on the sim. 
 
-Note that you can add individual propagation effects to each images model at the outset (such as lens plane dust or microlensing models), or you could add a single propagation effect to the unresolved model that will impact the combined model (such as host galaxy dust).
-
 Additionally, we can attempt to fit for relative time delays/magnifications of the unresolved images.
 
 .. code-block:: python
@@ -415,4 +413,39 @@ Out::
     :height: 600px
     :alt: alternate text
 
-For these last two examples, there is a lot of parameter degeneracy but we still do reasonably well. The true values are t0=20,dt_2=35,mu_1=4,mu_2=1, c=-0.02., x1=1.33 
+For these last two examples, there is a lot of parameter degeneracy but we still do reasonably well. The true values are t0=20,dt_2=35,mu_1=4,mu_2=1, c=-0.02., x1=1.33.
+
+Note that you can add individual propagation effects to each images model at the outset (such as lens plane dust or microlensing models), or you could add a single propagation effect to the unresolved model that will impact the combined model (such as host galaxy dust):
+
+.. code-block:: python
+	
+	dust = sncosmo.F99Dust()
+	image_1 = sncosmo.Model('salt2-extended',effects=[dust],
+                                           effect_names=['lens_1'],
+                                           effect_frames=['free'])
+	image_2 = sncosmo.Model('salt2-extended')
+	unresolved=sntd.unresolvedMISN([image_1,image_2])
+	print(list(zip(unresolved.param_names,unresolved.parameters)))
+
+Out::
+
+	[('z', 0.0), ('t0', 0.0), ('x0', 1.0), ('x1', 0.0), ('c', 0.0), ('lens_1z', 0.0), ('lens_1ebv', 0.0), ('lens_1r_v', 3.1), ('dt_1', 0.0), ('mu_1', 1.0), ('dt_2', 0.0), ('mu_2', 1.0)]
+
+.. code-block:: python
+	
+	unresolved.set(lens_1ebv=.5)
+	print(unresolved.get('lens_1ebv'))
+	unresolved.add_effect(dust,'host','rest')
+	print(list(zip(unresolved.param_names,unresolved.parameters)))
+	unresolved.set(hostebv=.3)
+	print(unresolved.get('hostebv'))
+	print(unresolved.model_list[0].effect_names)
+
+Out::
+
+	0.5
+	[('z', 0.0), ('t0', 0.0), ('x0', 1.0), ('x1', 0.0), ('c', 0.0), ('lens_1z', 0.0), ('lens_1ebv', 0.5), ('lens_1r_v', 3.1), ('dt_1', 0.0), ('mu_1', 1.0), ('dt_2', 0.0), ('mu_2', 1.0), ('hostebv', 0.0), ('hostr_v', 3.1)]
+	0.3
+	['lens_1', 'host']
+
+Note that the number of parameters is getting extremely long (and this is only 2 images!), so it's recommended to fix as many of these parameters by other means as possible (i.e., the dust parameters will be difficult to constrain simultaneously with the light curve and time delay parameters).
