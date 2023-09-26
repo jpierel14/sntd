@@ -48,7 +48,8 @@ def fit_data(curves=None, snType='Ia', bands=None, models=None, params=None, bou
              fit_prior=None, par_or_batch='parallel', batch_partition=None, nbatch_jobs=None, batch_python_path=None, n_per_node=None, fast_model_selection=True,
              wait_for_batch=False, band_order=None, set_from_simMeta={}, guess_amplitude=True, trial_fit=False, clip_data=False, use_MLE=False,
              kernel='RBF', refImage='image_1', nMicroSamples=100, color_curve=None, warning_supress=True,
-             micro_fit_bands='all', verbose=True, **kwargs):
+             micro_fit_bands='all', verbose=True,micro_color_offset={},upper_limit_dict={},
+             differential_extinction=False,use_bayesn_epsilon=False, **kwargs):
     """The main high-level fitting function.
 
     Parameters
@@ -209,7 +210,7 @@ def fit_data(curves=None, snType='Ia', bands=None, models=None, params=None, bou
             args['bands'] = list(curves.bands) if not isinstance(
                 curves, (list, tuple, np.ndarray)) and not isinstance(args['curves'][0], str) else None
 
-    args['bands'] = _bandCheck(args['curves'],args['bands'])
+    args['bands'] = _bandCheck(args['curves'],args['bands'],upper_limit_dict)
     # get together the model(s) needed for fitting
     models = [models] if models is not None and not isinstance(
         models, (tuple, list, np.ndarray)) else models
@@ -263,6 +264,9 @@ def fit_data(curves=None, snType='Ia', bands=None, models=None, params=None, bou
         if nbatch_jobs is None:
             print('Must set n_per_node node and/or nbatch_jobs')
         n_per_node = math.ceil(len(args['curves'])/nbatch_jobs)
+
+    args['curves'].micro_color_offset = micro_color_offset
+    args['curves'].upper_limit_dict = upper_limit_dict
 
     if isinstance(method, (list, np.ndarray, tuple)):
         if len(method) == 1:
@@ -792,7 +796,7 @@ def fit_data(curves=None, snType='Ia', bands=None, models=None, params=None, bou
 
     return curves
 
-def _bandCheck(curves,bands):
+def _bandCheck(curves,bands,limits):
     final_bands = []
     for b in bands:
         for im in curves.images.keys():
@@ -804,6 +808,12 @@ def _bandCheck(curves,bands):
                 break
             elif b.lower() in curves.images[im].table['band']:
                 final_bands.append(b.lower())
+                break
+            elif im in limits.keys() and b.lower() in limits[im]['band']:
+                final_bands.append(b.lower())
+                break
+            elif im in limits.keys() and b.upper() in limits[im]['band']:
+                final_bands.append(b.upper())
                 break
     return final_bands
 
@@ -852,13 +862,15 @@ def _fitColor(all_args):
         if args['fit_colors'] is None:
             # Try and determine the best bands to use in the fit
             final_bands = []
-            for band in np.unique(args['curves'].images[args['refImage']].table['band']):
+            for band in args['bands']:
+                print(band,len(np.where(args['curves'].images[im].table['band'] == band)[0]), args['min_points_per_band'])
                 to_add = True
                 for im in args['curves'].images.keys():
                     if len(np.where(args['curves'].images[im].table['band'] == band)[0]) < args['min_points_per_band']:
                         to_add = False
                 if to_add:
                     final_bands.append(band)
+            print(final_bands)
             if np.any([x not in final_bands for x in args['bands']]):
                 all_SNR = []
                 for band in final_bands:
@@ -899,6 +911,16 @@ def _fitColor(all_args):
     snParams = ['dt_%s' % i for i in imnums if i != refnum]
     all_vparam_names = np.append(args['params'],
                                  snParams).flatten()
+
+    if args['differential_extinction'] and 'lensebv' in all_vparam_names:
+        ebv_ind = list(all_vparam_names).index('lensebv')
+        all_vparam_names = np.append(all_vparam_names[:ebv_ind+1],
+                                np.append(['lensebv_%s'%i for i in imnums if i!=refnum],
+                                        all_vparam_names[ebv_ind+1:]))
+        for i in imnums:
+            if 'lensebv_%s'%i not in args['bounds'].keys():
+                args['bounds']['lensebv_%s'%i] = args['bounds']['lensebv']
+
 
     if 'td' in args['constants'].keys():
         all_vparam_names = np.array(
@@ -1058,7 +1080,8 @@ def _fitColor(all_args):
                            for k in args['fit_prior'].parallel.fitOrder}
 
             args['curves'].color_table([x[0] for x in colors_to_fit], [x[1] for x in colors_to_fit], time_delays={im: 0 for im in args['curves'].images.keys()},
-                                       minsnr=args.get('minsnr', 0))
+                                       minsnr=args.get('minsnr', 0),micro_color_offset=args['curves']['micro_color_offset'],
+                                       upper_limits=args['curves']['upper_limit_dict'])
             args['curves'].color.meta['reft0'] = args['fit_prior'].images[par_ref].fits.model.get(
                 't0')
             args['curves'].color.meta['td'] = temp_delays
@@ -1126,7 +1149,8 @@ def _fitColor(all_args):
                         args['bounds']['td'])/2+args['curves'].color.meta['reft0']
 
                 args['curves'].color_table([x[0] for x in colors_to_fit], [x[1] for x in colors_to_fit], time_delays={im: 0 for im in args['curves'].images.keys()},
-                                           minsnr=args.get('minsnr', 0))
+                                           minsnr=args.get('minsnr', 0),
+                                           micro_color_offset=args['curves']['micro_color_offset'],upper_limits=args['curves']['upper_limit_dict'])
                 args['curves'].color.meta['td'] = temp_delays
 
             else:
@@ -1135,12 +1159,16 @@ def _fitColor(all_args):
                                                referenceImage=args['refImage'], static=True, model=tempMod,
                                                minsnr=args.get('minsnr', 0),
                                                time_delays={im: args['t0_guess'][im]-args['t0_guess'][args['refImage']] for
-                                                            im in args['t0_guess'].keys()})
+                                                            im in args['t0_guess'].keys()},
+                                                micro_color_offset=args['curves']['micro_color_offset'],
+                                                upper_limits=args['curves']['upper_limit_dict'])
                     args['curves'].color.meta['reft0'] = args['t0_guess'][args['refImage']]
                 else:
                     args['curves'].color_table([x[0] for x in colors_to_fit], [x[1] for x in colors_to_fit],
                                                referenceImage=args['refImage'], static=True, model=tempMod,
-                                               minsnr=args.get('minsnr', 0))
+                                               minsnr=args.get('minsnr', 0),
+                                               micro_color_offset=args['curves']['micro_color_offset'],
+                                               upper_limits=args['curves']['upper_limit_dict'])
                 for b in args['bounds']:
                     if b.startswith('dt_'):
                         args['bounds'][b] = np.array(
@@ -1158,7 +1186,9 @@ def _fitColor(all_args):
             args['curves'].color_table([x[0] for x in colors_to_fit], [x[1] for x in colors_to_fit],
                                        referenceImage=args['refImage'], static=False, model=tempMod,
                                        minsnr=args.get('minsnr', 0),
-                                       time_delays=args['constants']['td'])
+                                       time_delays=args['constants']['td'],
+                                       micro_color_offset=args['curves']['micro_color_offset'],
+                                       upper_limits=args['curves']['upper_limit_dict'])
 
         if args['cut_time'] is not None:
 
@@ -1186,14 +1216,17 @@ def _fitColor(all_args):
                                             min_n_points_per_band=args['min_points_per_band'], clip=args['clip_data'], method='color'):
             print("Error: Did not pass quality check.")
             return
+        
+
 
         params, res, model = nest_color_lc(args['curves'].color.table, tempMod, nimage, colors=colors_to_fit,
-                                           bounds=args['bounds'], use_MLE=args['use_MLE'],
-                                           vparam_names=[x for x in all_vparam_names if x in tempMod.param_names or x in snParams], ref=par_ref,
+                                           bounds=args['bounds'], use_MLE=args['use_MLE'],ref=args['refImage'],
+                                           vparam_names=all_vparam_names,#[x for x in all_vparam_names if x in tempMod.param_names or x in snParams or x in ext_params], ref=par_ref,
                                            minsnr=args.get('minsnr', 5.), priors=args.get('priors', None), ppfs=args.get('ppfs', None),
                                            method=args.get('nest_method', 'single'), maxcall=args.get('maxcall', None),
                                            modelcov=args.get('modelcov', None), rstate=args.get('rstate', None),
-                                           maxiter=args.get('maxiter', None), npoints=args.get('npoints', 100))
+                                           maxiter=args.get('maxiter', None), npoints=args.get('npoints', 100),
+                                           use_bayesn_epsilon=args['use_bayesn_epsilon'])
         if finallogz < res.logz:
             finallogz = res.logz
             finalres, finalmodel = res, model
@@ -1310,14 +1343,52 @@ def _fitColor(all_args):
     finalmodel.set(t0=args['curves'].color.t_peaks[args['refImage']])
 
     args['curves'].color_table([x[0] for x in colors_to_fit], [x[1] for x in colors_to_fit],
-                               time_delays=args['curves'].color.time_delays, minsnr=args.get('minsnr', 0))
+                               time_delays=args['curves'].color.time_delays, minsnr=args.get('minsnr', 0),
+                               micro_color_offset=args['curves']['micro_color_offset'],
+                               upper_limits=args['curves']['upper_limit_dict'])
+
+    args['curves'].color.fits = newDict()
+    if args['differential_extinction'] and 'lensebv' in finalres.vparam_names:
+        ext_dict = {}
+        ext_idx = [finalres.vparam_names.index(p) for p in finalres.vparam_names if 'lensebv_' in p]
+        lensebv_idx = finalmodel.param_names.index('lensebv')
+        lensebv = finalmodel.parameters[lensebv_idx]
+        lens_effect = finalmodel._effect_names.index('lens')
+        for col in args['curves'].color.table.colnames:
+            if '-' in col and 'err' not in col:
+                
+                
+                for i in range(len(ext_idx)):
+                    finalmodel.parameters[lensebv_idx] = lensebv
+                    inds = np.where(args['curves'].color.table['image']=='image_'+\
+                                 finalres.vparam_names[ext_idx[i]][-1])[0]
+                    base = finalmodel.color(col.split('-')[0],col.split('-')[1],
+                        args['curves'].color.table['zpsys'][inds][0],
+                        args['curves'].color.table['time'][inds])
+                    if not args['use_MLE']:
+                        quants = weighted_quantile(
+                            finalres.samples[:, ext_idx[i]], [.16,.5,.84], finalres.weights)
+                        val = quants[1]
+                        ext_dict[finalres.vparam_names[ext_idx[i]]] = quants
+                    else:
+                        val = finalres.samples[finalres.weights.argmax(),ext_idx[i]]
+                    finalmodel.parameters[lensebv_idx] = val
+                    
+                    ext_col = finalmodel.color(col.split('-')[0],col.split('-')[1],
+                        args['curves'].color.table['zpsys'][inds][0],
+                        args['curves'].color.table['time'][inds])
+                    colarr = np.array(args['curves'].color.table[col])
+                    colarr[inds]-=(ext_col-base)
+                    args['curves'].color.table[col] = colarr
+        args['curves'].color.fits.differential_extinction = ext_dict
+        finalmodel.parameters[lensebv_idx] = lensebv
     args['curves'].color.meta['td'] = time_delays
     args['curves'].color.meta['fit_colors'] = colors_to_fit
     args['curves'].color.refImage = args['refImage']
     args['curves'].color.priorImage = par_ref
     args['curves'].color.bands = args['bands']
 
-    args['curves'].color.fits = newDict()
+    
     args['curves'].color.fits['model'] = finalmodel
     args['curves'].color.fits['res'] = finalres
     fit_end = time.time()
@@ -1328,12 +1399,12 @@ def _fitColor(all_args):
 def nest_color_lc(data, model, nimage, colors, vparam_names, bounds, ref='image_1', use_MLE=False,
                   minsnr=5., priors=None, ppfs=None, npoints=100, method='single',
                   maxiter=None, maxcall=None, modelcov=False, rstate=None,
-                  verbose=False, warn=True, **kwargs):
+                  verbose=False, warn=True,use_bayesn_epsilon=False, **kwargs):
     # Taken from SNCosmo nest_lc
 
     # experimental parameters
     tied = kwargs.get("tied", None)
-
+    
     vparam_names = list(vparam_names)
     if ppfs is None:
         ppfs = {}
@@ -1395,11 +1466,27 @@ def nest_color_lc(data, model, nimage, colors, vparam_names, bounds, ref='image_
     else:
         doTd = False
         nTdParam = 0
+    
     model_param_names = [
-        x for x in vparam_names[:len(vparam_names)-nTdParam]]
+        x for x in vparam_names[:len(vparam_names)-nTdParam] if 'lensebv_' not in x]
 
     model_idx = np.array([vparam_names.index(name)
                           for name in model_param_names])
+
+    if np.any(['lensebv_' in x for x in vparam_names]):
+        differential_extinction = True
+        NextParam = nimage
+        lens_effect = model._effect_names.index('lens')
+        lens_idx = model.param_names.index('lensebv')
+        vlens_idx = vparam_names.index('lensebv')
+        
+    else:
+        differential_extinction = False
+        NextParam = 0
+        lens_effect = None
+        lens_idx = None
+        vlens_idx = None
+
     td_params = [x for x in vparam_names[len(
         vparam_names)-nimage:] if x.startswith('dt')]
     td_idx = np.array([vparam_names.index(name) for name in td_params])
@@ -1407,22 +1494,73 @@ def nest_color_lc(data, model, nimage, colors, vparam_names, bounds, ref='image_
     im_indices = [np.where(data['image'] == i)[0]
                   for i in np.unique(data['image']) if i != ref]
 
+    ext_params = [x for x in vparam_names if x.startswith('lensebv_')]
+    ext_idx = np.array([vparam_names.index(name) for name in ext_params])
+
+
     obs_dict = {}
     err_dict = {}
-    zp_dict = {}
+    zp_dict = {b[3:]:np.nanmedian(data[b]) for b in data.colnames if 'zp_' in b}
     time_dict = {}
     im_dict = {}
-    for color in colors:
-        col_inds = np.where(~np.isnan(data[color[0]+'-'+color[1]]))[0]
-        time_dict[color[0]+'-'+color[1]] = np.array(data['time'][col_inds])
-        im_dict[color[0]+'-'+color[1]] = {i[i.find('_')+1:]: np.where(data[col_inds]['image'] == i)[0] for
-                                          i in np.unique(data[col_inds]['image']) if i != ref}
-        obs_dict[color[0]+'-'+color[1]
-                 ] = np.array(data[color[0]+'-'+color[1]][col_inds])
-        err_dict[color[0]+'-'+color[1]
-                 ] = np.array(data[color[0]+'-'+color[1]+'_err'][col_inds])
-
+    limits = []
+    ext_dict = {}
+    all_epsilon = []
+    all_eps_prob = []
+    all_eps_flux = {}
     zpsys = data['zpsys'][0]
+    model._source._epsilon = 0
+    all_time = np.linspace(model.mintime(),model.maxtime(),1000)
+    base_colors = [model.color(color[0],color[1],zpsys,all_time) for color in colors]
+    if use_bayesn_epsilon:
+        import scipy
+        for i in range(100):
+            model._source._epsilon = model._source._model.sample_epsilon(1)
+            all_epsilon.append(model._source._epsilon)
+            all_eps_prob.append(model._source._model.get_epsilon_prior(model._source._epsilon))
+            for n,color in enumerate(colors):
+                if color not in all_eps_flux.keys():
+                    all_eps_flux[color] = []
+                elif len(all_eps_flux[color])==i+1:
+                    continue
+                
+                all_eps_flux[color].append(scipy.interpolate.interp1d(all_time,
+                    model.color(color[0],color[1],zpsys,all_time)-base_colors[n],fill_value=0,bounds_error=False))
+        all_eps_prob = np.array(all_eps_prob)
+            
+        model._source._epsilon = 0
+    
+    for color in colors:
+        
+        if color[0]+'-'+color[1] in data.colnames:
+            
+            add_key = color[0]+'-'+color[1]
+            col_inds = np.where(~np.isnan(data[add_key]))[0]
+        
+            time_dict[add_key] = np.array(data['time'][col_inds])
+            im_dict[add_key] = {i[i.find('_')+1:]: np.where(data[col_inds]['image'] == i)[0] for
+                                          i in np.unique(data[col_inds]['image']) if i != ref}
+            obs_dict[add_key
+                 ] = np.array(data[add_key][col_inds])
+            err_dict[add_key
+                 ] = np.array(data[add_key+'_err'][col_inds])
+            
+        if 'lim_'+color[0]+'-'+color[1] in data.colnames:
+            limits.append(color[0]+'-'+color[1])
+            add_key = 'lim_'+color[0]+'-'+color[1]
+            col_inds = np.where(~np.isnan(data[add_key]))[0]
+            time_dict[add_key] = np.array(data['time'][col_inds])
+            im_dict[add_key] = {i[i.find('_')+1:]: np.where(data[col_inds]['image'] == i)[0] for
+                                          i in np.unique(data[col_inds]['image']) if i != ref}
+            obs_dict[add_key
+                 ] = np.array(data[add_key][col_inds])
+            err_dict[add_key
+                 ] = np.array(data[add_key+'_err'][col_inds])   
+
+        if color[0] not in ext_dict:
+            ext_dict[color[0]] = np.array([sncosmo.get_bandpass(color[0]).wave_eff])
+        if color[1] not in ext_dict:
+            ext_dict[color[1]] = np.array([sncosmo.get_bandpass(color[1]).wave_eff])
 
     def chisq_likelihood(parameters):
         model.set(**{model_param_names[k]: parameters[model_idx[k]]
@@ -1431,53 +1569,205 @@ def nest_color_lc(data, model, nimage, colors, vparam_names, bounds, ref='image_
         mod_dict = {}
         cov_dict = {}
         chisq = 0
-        for color in colors:
-            obs = obs_dict[color[0]+'-'+color[1]]
-            err = err_dict[color[0]+'-'+color[1]]
-            time = copy(time_dict[color[0]+'-'+color[1]])
+        nc = 0
+        chiplot = False
+        if use_bayesn_epsilon:
+            #fig1 = plt.figure()
+            #ax1 = fig1.gca()
+            #fig2 = plt.figure()
+            #ax2 = fig2.gca()
+            #fig3 = plt.figure()
+            #ax3 = fig3.gca()
+            #axes = [ax1,ax2,ax3]
+            bayesn_chis = np.zeros(len(all_eps_prob))
+        #print({model_param_names[k]: parameters[model_idx[k]]
+        #             for k in range(len(model_idx))})
+        for key in obs_dict.keys():
+            nc+=1
+            
+            if key.startswith('lim'):
+                color = tuple(key[key.find('_')+1:].split('-'))
+            else:
+                color = tuple(key.split('-'))
+            #print(color)
+            obs = copy(obs_dict[key])
+            err = err_dict[key]
+            time = copy(time_dict[key])
+
             if doTd:
                 for i in range(len(td_idx)):
-                    time[im_dict[color[0]+'-'+color[1]]
-                         [td_params[i][-1]]] -= parameters[td_idx[i]]
+                    if td_params[i][-1] in im_dict[key].keys():
+                        time[im_dict[key]
+                             [td_params[i][-1]]] -= parameters[td_idx[i]]
 
             timesort = np.argsort(time)
+            # remove
+            
+
+            # mod_color = model.color(color[0], color[1], zpsys, time[timesort])
+            # plt.errorbar(time[timesort],obs[timesort],yerr=err[timesort],fmt='.')
+            # time2 = np.linspace(np.min(time)-10,np.max(time)+10,100)
+            # plt.plot(time2,model.color(color[0],color[1],zpsys,time2))
+            # plt.gca().invert_yaxis()
+            # plt.show()
+            # ##
+            # print(obs[timesort])
+            if differential_extinction:
+                #print(key)
+                #print(model.parameters[lens_idx],parameters[vlens_idx])
+
+                #print(model._effects[lens_effect])
+                #base1 = model._effects[lens_effect].propagate(0,ext_dict[color[0]],[1])
+                #base2 = model._effects[lens_effect].propagate(0,ext_dict[color[1]],[1])
+                
+                
+                #print(list(zip(vparam_names,parameters)))
+                #print(base1,base2)
+                for i in range(len(ext_idx)):
+                    model.parameters[lens_idx] = parameters[vlens_idx]
+                    basecol = model.color(color[0],color[1],zpsys,time[im_dict[key][ext_params[i][-1]]])
+                    #print(i,ext_idx[i],parameters[ext_idx[i]],ext_params[i],im_dict[key])
+                    if ext_params[i][-1] in im_dict[key].keys():
+                        #print(model.parameters[lens_idx])
+                        model.parameters[lens_idx] = parameters[ext_idx[i]]
+                        #print(model._effects[lens_effect])
+                        #print(ext_idx[i],model.parameters[lens_idx])
+                        #col1_ext = model._effects[lens_effect].propagate(0,ext_dict[color[0]],[1])
+                        #col2_ext = model._effects[lens_effect].propagate(0,ext_dict[color[1]],[1])
+                        ext_col = model.color(color[0],color[1],zpsys,time[im_dict[key][ext_params[i][-1]]])
+                        #print(model.get('lensebv'),model._effects[lens_effect])
+                        #print(i,col1_ext,col2_ext)
+                        
+                        #total_ext = col1_ext+col2_ext
+                        #print(obs[im_dict[key][ext_params[i][-1]]])
+                        #obs[im_dict[key][ext_params[i][-1]]] = obs[im_dict[key][ext_params[i][-1]]]+\
+                        #    -2.5*np.log10(base1*col2_ext)+2.5*np.log10(col1_ext*base2)
+                        #print(-2.5*np.log10(base1*col2_ext)+2.5*np.log10(col1_ext*base2))
+                        obs[im_dict[key][ext_params[i][-1]]]-=(ext_col-basecol)
+                        #sys.exit()
+                model.parameters[lens_idx] = parameters[vlens_idx]
+                #sys.exit()
+            
+            obs = obs[timesort]
+            #print(obs)
+            err = err[timesort]
             mod_color = model.color(color[0], color[1], zpsys, time[timesort])
+            #print(time[timesort])
+            #print(mod_color)
+            #print(color)
+            #sys.exit()
+            #plt.errorbar(time[timesort],obs,yerr=err,fmt='.')
+            #time2 = np.linspace(np.min(time)-10,np.max(time)+10,100)
+            #plt.plot(time2,model.color(color[0], color[1], zpsys, time2))
+            #plt.gca().invert_yaxis()
+            #plt.show()
+            # sys.exit()
             if np.any(np.isnan(mod_color)):
+                print('nan')
                 return(-np.inf)
+            if key.startswith('lim'):
+                err = np.array([err[i][0] if mod_color[i]<=obs[i] else err[i][1] for i in range(len(err))])
 
-            if modelcov:
-
-                for b in color:
-                    _, mcov = model.bandfluxcov(b,
-                                                time[timesort],
-                                                zp=zp_dict[b],
-                                                zpsys=zpsys)
-
-                    cov_dict[b] = mcov
-
-                cov = np.diag(err[timesort])
-
-                mcov1 = cov_dict[color[0]][:, np.array(color_inds1)[timesort]]
-                mcov1 = mcov1[np.array(color_inds1)[timesort], :]
-                mcov2 = cov_dict[color[1]][:, np.array(color_inds2)[timesort]]
-                mcov2 = mcov2[np.array(color_inds2)[timesort], :]
-
-                cov = cov + np.sqrt(mcov1**2+mcov2**2)
-                invcov = np.linalg.pinv(cov)
-                diff = obs-model_observations
-                chisq += np.dot(np.dot(diff, invcov), diff)
-
+            if use_bayesn_epsilon:
+                #chi = (obs-mod_color)/err
+                #chisq += np.dot(chi, chi)
+                #print(color,chisq)
+                # if chisq/nc<100 or chiplot:
+                #     chiplot = True
+                #     plt.errorbar(time[timesort],obs,yerr=err,fmt='.')
+                #     time2 = np.linspace(np.min(time)-10,np.max(time)+10,100)
+                #     plt.plot(time2,model.color(color[0], color[1], zpsys, time2))
+                #     plt.gca().invert_yaxis()
+                #     plt.title(color[0]+'-'+color[1])
+                #     plt.show()
+                #print('init',chisq)
+                #model_observations = np.atleast_2d(mod_color)
+                #print(all_eps_flux[color][0])
+                model_observations_eps = mod_color+\
+                    np.array([e(time[timesort]-model.get('t0')) for e in all_eps_flux[color]])
+                
+                if False:#(np.any(chisq/nc)<100 or chiplot) and model.get('AV')>0:
+                    chiplot = True
+                    axes[nc-1].errorbar(time[timesort],obs,yerr=err,fmt='.')
+                    time2 = np.linspace(np.min(time)-10,np.max(time)+10,100)
+                    axes[nc-1].plot(time2,model.color(color[0], color[1], zpsys, time2),linewidth=3)
+                    for i in range(20):
+                       axes[nc-1].plot(time2,model.color(color[0], color[1], zpsys, time2)+all_eps_flux[color][i](time2-model.get('t0')),color='k')
+                    axes[nc-1].invert_yaxis()
+                    axes[nc-1].set_title(color[0]+'-'+color[1])
+                    #plt.show()
+                    #sys.exit()
+                #model_observations_eps = model_observations+all_eps_flux[color][:,timesort]
+                #print(model_observations.shape,model_observations_eps.shape)
+                chi = (obs-model_observations_eps)/err
+                #print(chi.shape)
+                #chisq = np.dot(chi, chi)
+                chisq = np.sum(chi**2,axis=1)
+                #print(all_eps_prob)
+                #chisq += all_eps_prob
+                bayesn_chis+=chisq
+                #best_chi = chisq.argmin()
+                #best_eps = None
+                #for eps_flux,logprob,eps in all_epsilon:
+                #    model_observations_eps = model_observations+eps_flux[timesort]
+            
+                     
+                #    chi = (tempFlux[timesort]-model_observations_eps)/np.array(tempFluxerr[timesort])
+                #    chisq = np.dot(chi, chi)
+                #    chisq += logprob
+                #    print(chisq)
+                #    if chisq<best_chi:
+                #        best_chi = chisq
+                #        best_eps = eps
+                #print(chisq[best_chi])
+                #sys.exit()
+                
             else:
-                chi = (obs[timesort]-mod_color)/err[timesort]
-                chisq += np.dot(chi, chi)
+                if modelcov:
 
-        return chisq
+                    for b in color:
+                        mf, mcov = model.bandfluxcov(b,
+                                                    time[timesort],
+                                                    zp=zp_dict[b],
+                                                    zpsys=zpsys)
+
+                        cov_dict[b] = (mf,mcov)
+
+                    cov = np.diag(err**2)
+                    mf1,mcov1 = cov_dict[color[0]]#[:, np.array(color_inds1)[timesort]]
+                    #mcov1 = mcov1[np.array(color_inds1)[timesort], :]
+                    mf2,mcov2 = cov_dict[color[1]]#[:, np.array(color_inds2)[timesort]]
+                    #mcov2 = mcov2[np.array(color_inds2)[timesort], :]
+                    cov = cov + (mf1/mf2)**2*(mcov1/mf1**2 + mcov2/mf2**2)
+                    invcov = np.linalg.pinv(cov)
+                    diff = obs-mod_color
+                    chisq += np.dot(np.dot(diff, invcov), diff)
+
+                else:
+                    chi = (obs-mod_color)/err
+                    chisq += np.dot(chi, chi)
+        if use_bayesn_epsilon:
+
+            best_chi = (-.5*bayesn_chis+all_eps_prob).argmax()
+            #time2 = np.linspace(np.min(time)-10,np.max(time)+10,100)
+            #for nc,key in enumerate(list(obs_dict.keys())):
+            #    color = tuple(key.split('-'))
+            #    axes[nc].plot(time2,model.color(color[0], color[1], zpsys, time2)+all_eps_flux[color][best_chi](time2-model.get('t0')),
+            #        linewidth=4,color='r')
+            #plt.show()
+            #plt.hist(bayesn_chis)
+            #plt.show()
+            #sys.exit()
+            #print(bayesn_chis[best_chi],all_eps_prob[best_chi],-.5*bayesn_chis[best_chi]+all_eps_prob[best_chi])
+            return bayesn_chis[best_chi],all_epsilon[best_chi],all_eps_prob[best_chi]
+        else:
+            return chisq,None,0
 
     def loglike(parameters):
-        chisq = chisq_likelihood(parameters)
+        chisq,_,logpriorprob = chisq_likelihood(parameters)
         if not np.isfinite(chisq):
             return -np.inf
-        return(-.5*chisq)
+        return(-.5*chisq+logpriorprob)
 
     res = nestle.sample(loglike, prior_transform, ndim, npdim=npdim,
                         npoints=npoints, method=method, maxiter=maxiter,
@@ -1508,6 +1798,10 @@ def nest_color_lc(data, model, nimage, colors, vparam_names, bounds, ref='image_
 
     model.set(**{model_param_names[k]: params[model_idx[k]][1]
                  for k in range(len(model_idx))})
+
+    if use_bayesn_epsilon:
+        _,best_eps,_ = chisq_likelihood(np.array([x[1] for x in params]))
+        model._source._epsilon = best_eps
     return params, res, model
 
 
@@ -1545,6 +1839,7 @@ def _fitseries(all_args):
 
     args['bands'], band_SNR, _ = getBandSNR(
         args['curves'], args['bands'], args['min_points_per_band'])
+
     args['curves'].series.bands = args['bands'][:args['max_n_bands']
                                                 ]if args['max_n_bands'] is not None else args['bands']
 
@@ -1849,10 +2144,16 @@ def _fitseries(all_args):
                         referenceImage=args['refImage'], static=True, model=tempMod, minsnr=args.get('minsnr', 0))
 
                 if args['t0_guess'] is not None:
-                    args['curves'].series.meta['td'] = {
+                    guess_td = {
                         im: args['t0_guess'][im]-args['t0_guess'][args['refImage']] for im in args['t0_guess'].keys()}
-                    if 'reft0' not in args['curves'].series.meta.keys():
-                        args['curves'].series.meta['reft0'] = args['t0_guess'][args['refImage']]
+
+                    args['curves'].combine_curves(
+                        referenceImage=args['refImage'], static=True, model=tempMod, minsnr=args.get('minsnr', 0),
+                        time_delays=guess_td)
+                    
+                    args['curves'].series.meta['reft0'] = args['t0_guess'][args['refImage']]
+
+
                 elif 'reft0' not in args['curves'].series.meta.keys():
                     guess_t0, guess_amp = sncosmo.fitting.guess_t0_and_amplitude(sncosmo.photdata.photometric_data(
                         args['curves'].series.table),
@@ -1923,12 +2224,15 @@ def _fitseries(all_args):
         vparam_names_final = [
             x for x in all_vparam_names if x in tempMod.param_names or x in np.array(snParams).flatten()]
 
+        #print(args['bounds'])
+        #sys.exit()
         params, res, model = nest_series_lc(args['curves'].series.table, tempMod, nimage, bounds=args['bounds'], use_MLE=args['use_MLE'],
                                             vparam_names=vparam_names_final, ref=par_ref,
                                             minsnr=args.get('minsnr', 5.), priors=args.get('priors', None), ppfs=args.get('ppfs', None),
                                             method=args.get('nest_method', 'single'), maxcall=args.get('maxcall', None),
                                             modelcov=args.get('modelcov', None), rstate=args.get('rstate', None),
-                                            maxiter=args.get('maxiter', None), npoints=args.get('npoints', 100))
+                                            maxiter=args.get('maxiter', None), npoints=args.get('npoints', 100),
+                                            use_bayesn_epsilon=args['use_bayesn_epsilon'])
         if finallogz < res.logz:
             finallogz = res.logz
             final_param_quantiles, finalres, finalmodel = params, res, model
@@ -2217,7 +2521,7 @@ def _fitseries(all_args):
 def nest_series_lc(data, model, nimage, vparam_names, bounds, ref='image_1', use_MLE=False,
                    minsnr=5., priors=None, ppfs=None, npoints=100, method='single',
                    maxiter=None, maxcall=None, modelcov=False, rstate=None,
-                   verbose=False, warn=True, **kwargs):
+                   verbose=False, warn=True,use_bayesn_epsilon=False, **kwargs):
 
     # Taken from SNCosmo nest_lc
     # experimental parameters
@@ -2291,6 +2595,7 @@ def nest_series_lc(data, model, nimage, vparam_names, bounds, ref='image_1', use
         doTd = False
         nParams -= 1
 
+
     model_param_names = [
         x for x in vparam_names[:len(vparam_names)-(nimage-1)*nParams]]
 
@@ -2319,41 +2624,123 @@ def nest_series_lc(data, model, nimage, vparam_names, bounds, ref='image_1', use
     flux = np.array(data['flux'])
     fluxerr = np.array(data['fluxerr'])
     band = np.array(data['band'])
+    print(bounds)
+    if use_bayesn_epsilon:
+        import scipy
+        all_time = np.linspace(model.mintime(),model.maxtime(),1000)
+        all_epsilon = []
+        all_eps_flux = {}
+        all_eps_prob = []
+        model._source._epsilon = 0
+        base_fluxes = [model.bandflux(band[i],all_time,zp=zp[i],zpsys=zpsys[i]) for i in range(len(band))]
 
+        for j in range(100):
+            model._source._epsilon = model._source._model.sample_epsilon(1)
+            all_epsilon.append(model._source._epsilon)
+            all_eps_prob.append(model._source._model.get_epsilon_prior(model._source._epsilon))
+            for i in range(len(band)):
+            
+                if band[i] not in all_eps_flux.keys():
+                    
+                    all_eps_flux[band[i]] = []
+                    
+                elif len(all_eps_flux[band[i]])==j+1:
+                    continue
+                
+                all_eps_flux[band[i]].append(scipy.interpolate.interp1d(all_time,
+                                model.bandflux(band[i],all_time,zp=zp[i],zpsys=zpsys[i])-base_fluxes[i]))
+        
+        
+        all_eps_prob = np.array(all_eps_prob)
+        #sys.exit()
+        model._source._epsilon = 0
     def chisq_likelihood(parameters):
         model.parameters[model_param_index] = parameters[model_idx]
-
+        #print(parameters)
+        #print(model.parameters)
         tempTime = copy(time)
         tempFlux = copy(flux)
+        tempFluxerr = copy(fluxerr)
+        #sncosmo.plot_lc(Table([tempTime,band,tempFlux,tempFluxerr,zp,zpsys],
+        #    names=['time','band','flux','fluxerr','zp','zpsys']))
+        #plt.show()
         for i in range(len(im_indices)):
             if doTd:
                 tempTime[im_indices[i]] -= parameters[td_idx[i]]
             if doMu:
                 tempFlux[im_indices[i]] /= parameters[amp_idx[i]]
+                tempFluxerr[im_indices[i]] /= parameters[amp_idx[i]]
+        #sncosmo.plot_lc(Table([tempTime,band,tempFlux,tempFluxerr,zp,zpsys],
+        #    names=['time','band','flux','fluxerr','zp','zpsys']))
+        #plt.show()
         timesort = np.argsort(tempTime)
-        model_observations = model.bandflux(band, tempTime[timesort],
-                                            zp=zp, zpsys=zpsys)
+        model_observations = model.bandflux(band[timesort], tempTime[timesort],
+                                            zp=zp[timesort], zpsys=zpsys[timesort])
+        #chi = (tempFlux[timesort]-model_observations)/np.array(tempFluxerr[timesort])
+        
+        #chisq = np.dot(chi, chi)
+        #print('init',chisq,np.sum(chi**2,axis=0))
 
-        if modelcov:
+        if use_bayesn_epsilon:
+            model_observations = np.atleast_2d(model_observations)
+            model_observations_eps = model_observations+\
+                np.array([[e(tempTime[timesort][i]-model.get('t0')) for e in all_eps_flux[band[timesort][i]]] for i in range(len(band))]).T
+            #print(model_observations.shape,model_observations_eps.shape)
+            chi = (np.atleast_2d(tempFlux[timesort])-model_observations_eps)/np.atleast_2d(tempFluxerr[timesort])
+            #print(chi.shape)
+            #chisq = np.dot(chi, chi)
+            chisq = np.sum(chi**2,axis=1)
+            #print(all_eps_prob)
+            #chisq += all_eps_prob
 
-            _, mcov = model.bandfluxcov(band, tempTime[timesort],
-                                        zp=zp, zpsys=zpsys)
-
-            cov = cov[timesort,timesort] + mcov
-            invcov = np.linalg.pinv(cov)
-
-            diff = tempFlux[timesort]-model_observations
-            chisq = np.dot(np.dot(diff, invcov), diff)
-
+            best_chi = chisq.argmin()
+            #best_eps = None
+            #for eps_flux,logprob,eps in all_epsilon:
+            #    model_observations_eps = model_observations+eps_flux[timesort]
+        
+                 
+            #    chi = (tempFlux[timesort]-model_observations_eps)/np.array(tempFluxerr[timesort])
+            #    chisq = np.dot(chi, chi)
+            #    chisq += logprob
+            #    print(chisq)
+            #    if chisq<best_chi:
+            #        best_chi = chisq
+            #        best_eps = eps
+            #print(chisq[best_chi])
+            #sys.exit()
+            return chisq[best_chi],all_epsilon[best_chi],all_eps_prob[best_chi]
         else:
-            chi = (tempFlux[timesort]-model_observations)/np.array(fluxerr[timesort])
-            chisq = np.dot(chi, chi)
+            model_observations = model.bandflux(band[timesort], tempTime[timesort],
+                                            zp=zp[timesort], zpsys=zpsys[timesort])
+        
+            if modelcov:
+                cov = np.diag(tempFluxerr**2)
+                _, mcov = model.bandfluxcov(band[timesort], tempTime[timesort],
+                                            zp=zp[timesort], zpsys=zpsys[timesort])
 
-        return chisq
+                cov = cov[timesort,timesort] + mcov
+                invcov = np.linalg.pinv(cov)
+
+                diff = tempFlux[timesort]-model_observations
+                chisq = np.dot(np.dot(diff, invcov), diff)
+
+            else:
+                chi = (tempFlux[timesort]-model_observations)/np.array(tempFluxerr[timesort])
+                chisq = np.dot(chi, chi)
+            #print(chisq,list(zip(vparam_names,parameters)))
+            #sncosmo.plot_lc(Table([band[timesort],tempTime[timesort],tempFlux[timesort],tempFluxerr[timesort],
+            #    zp[timesort],zpsys[timesort]],names=['band','time','flux','fluxerr','zp','zpsys']),model)
+            #plt.show()
+            #sys.exit()
+            return chisq,None,0
+
+    import time as timeit
 
     def loglike(parameters):
-        chisq = chisq_likelihood(parameters)
-        return(-.5*chisq)
+        #t1 = timeit.time()
+        chisq,_,logpriorprob = chisq_likelihood(parameters)
+        #print(timeit.time()-t1)
+        return(-.5*chisq+logpriorprob)
 
     res = nestle.sample(loglike, prior_transform, ndim, npdim=npdim,
                         npoints=npoints, method=method, maxiter=maxiter,
@@ -2386,7 +2773,10 @@ def nest_series_lc(data, model, nimage, vparam_names, bounds, ref='image_1', use
 
     model.set(**{model_param_names[k]: params[model_idx[k]][1]
                  for k in range(len(model_idx))})
-
+    if use_bayesn_epsilon:
+        print([x[1] for x in params])
+        _,best_eps,_ = chisq_likelihood(np.array([x[1] for x in params]))
+        model._source._epsilon = best_eps
     return params, res, model
 
 

@@ -406,6 +406,7 @@ class MISN(dict):
             if not static:
                 temp['time'] -= time_delays[k]
                 temp['flux'] /= magnifications[k]
+                temp['fluxerr']/= magnifications[k]
             temp.meta = dict([])
 
             self.series.table = vstack([self.series.table, temp])
@@ -420,7 +421,7 @@ class MISN(dict):
         return(self)
 
     def color_table(self, band1s, band2s, time_delays=None, referenceImage='image_1', ignore_images=[],
-                    static=False, model=None, minsnr=0.0):
+                    static=False, model=None, minsnr=0.0,micro_color_offset={},upper_limits={}):
         """
         Takes the multiple images in self.images and combines
         the data into a single color curve using defined
@@ -454,12 +455,17 @@ class MISN(dict):
             ignore_images, (list, tuple)) else ignore_images
         names = ['time', 'image', 'zpsys']
         dtype = [self.table.dtype[x] for x in names]
-        names = np.append(names, np.append(np.array([[band1+'-'+band2, band1+'-'+band2+'_err'] for band1, band2 in zip(band1s, band2s)]).flatten(),
+        names = np.append(names, np.append(np.concatenate([np.array([band1+'-'+band2, band1+'-'+band2+'_err']) if\
+             not np.any([band1 in upper_limits[im]['band'] or band2 in upper_limits[im]['band'] for im in upper_limits.keys()]) else\
+             np.array(['lim_'+band1+'-'+band2, 'lim_'+band1+'-'+band2+'_err']) if\
+             np.all([band1 in upper_limits[im]['band'] or band2 in upper_limits[im]['band'] for im in upper_limits.keys()]) else\
+             np.array([band1+'-'+band2, band1+'-'+band2+'_err','lim_'+band1+'-'+band2, 'lim_'+band1+'-'+band2+'_err']) for band1, band2 in zip(band1s, band2s)]).ravel(),
                                            np.unique([['flux_%s' % band1, 'fluxerr_%s' % band1, 'flux_%s' % band2, 'fluxerr_%s' % band2, 'zp_%s' % band1, 'zp_%s' % band2]
-                                                      for band1, band2 in zip(band1s, band2s)]).flatten()))
-        dtype = np.append(dtype, [dtype[0]]*(len(names)-len(dtype)))
-        self.color.table = Table(names=names, dtype=dtype)
+                                                      for band1, band2 in zip(band1s, band2s)]).ravel()))
+        dtype = np.append(dtype, [dtype[0] if not (names[i].startswith('lim') and names[i].endswith('err')) else (dtype[0],2) for\
+            i in range(len(dtype),len(names))])
 
+        self.color.table = Table(names=names, dtype=dtype)
         if time_delays is None:
             if model is not None:
                 time_delays = {}
@@ -481,26 +487,42 @@ class MISN(dict):
 
         self.color.meta['td'] = time_delays
         for im in [x for x in self.images.keys() if x not in ignore_images]:
-
             for band1, band2 in zip(band1s, band2s):
+                is_lim = False
                 to_add = {}
-                temp2 = deepcopy(
-                    self.images[im].table[self.images[im].table['band'] == band2])
-                temp1 = deepcopy(
-                    self.images[im].table[self.images[im].table['band'] == band1])
+                if im in upper_limits.keys() and band1 in upper_limits[im]['band']:
+                    is_lim = True
+                    temp1 = deepcopy(upper_limits[im][upper_limits[im]['band']==band1])
+                else:
+                    temp1 = deepcopy(
+                        self.images[im].table[self.images[im].table['band'] == band1])
+                    temp1 = temp1[temp1['flux'] > 0]
+                    temp1 = temp1[temp1['flux']/temp1['fluxerr'] > minsnr]
+                    temp1['mag'] = -2.5*np.log10(temp1['flux'])+temp1['zp']
+                    temp1['magerr'] = 1.0857*temp1['fluxerr']/temp1['flux']
 
-                temp1 = temp1[temp1['flux'] > 0]
-                temp2 = temp2[temp2['flux'] > 0]
-                temp1 = temp1[temp1['flux']/temp1['fluxerr'] > minsnr]
-                temp2 = temp2[temp2['flux']/temp2['fluxerr'] > minsnr]
+                if im in upper_limits.keys() and band2 in upper_limits[im]['band']:
+                    if is_lim:
+                        print(f'Removing {band1},{band2} color, both are limits.')
+                        continue
+                    is_lim = True
+                    temp1 = deepcopy(upper_limits[im][upper_limits[im]['band']==band2])
+                else:
+                    temp2 = deepcopy(
+                        self.images[im].table[self.images[im].table['band'] == band2])
+                    temp2 = temp2[temp2['flux'] > 0]
+                
+                    temp2 = temp2[temp2['flux']/temp2['fluxerr'] > minsnr]
+                    temp2['mag'] = -2.5*np.log10(temp2['flux'])+temp2['zp']
+                    temp2['magerr'] = 1.0857*temp2['fluxerr']/temp2['flux']
+                
+                
                 if not static:
                     temp1['time'] -= time_delays[im]
                     temp2['time'] -= time_delays[im]
 
-                temp2['mag'] = -2.5*np.log10(temp2['flux'])+temp2['zp']
-                temp2['magerr'] = 1.0857*temp2['fluxerr']/temp2['flux']
-                temp1['mag'] = -2.5*np.log10(temp1['flux'])+temp1['zp']
-                temp1['magerr'] = 1.0857*temp1['fluxerr']/temp1['flux']
+                
+                
                 temp1 = temp1[~np.isnan(temp1['mag'])]
                 temp2 = temp2[~np.isnan(temp2['mag'])]
                 temp1_remove = [i for i in range(
@@ -510,16 +532,25 @@ class MISN(dict):
                     len(temp2)) if temp2['time'][i] not in temp1['time']]
                 temp2.remove_rows(temp2_remove)
 
-                temp1['magerr'] = np.sqrt(
-                    temp2['magerr']**2+temp1['magerr']**2)
+                if im in upper_limits.keys() and band1 in upper_limits[im]['band']:
+                    temp1['magerr'] = [[temp2['magerr'][i],10] for i in range(len(temp1))]
+                elif im in upper_limits.keys() and band2 in upper_limits[im]['band']:
+                    temp1['magerr'] = [[10,temp2['magerr'][i]] for i in range(len(temp1))]
+                else:
+                    temp1['magerr'] = np.sqrt(
+                        temp2['magerr']**2+temp1['magerr']**2)
 
                 temp1['mag'] -= temp2['mag']
 
                 to_add['time'] = temp1['time']
                 to_add['image'] = [im]*len(temp1)
                 to_add['zpsys'] = temp1['zpsys']
-                to_add[band1+'-'+band2] = temp1['mag']
-                to_add[band1+'-'+band2+'_err'] = temp1['magerr']
+                if is_lim:
+                    add_key = 'lim_'+band1+'-'+band2
+                else:
+                    add_key = band1+'-'+band2
+                to_add[add_key] = temp1['mag']
+                to_add[add_key+'_err'] = temp1['magerr']
                 to_add['flux_%s' % band1] = temp1['flux']
                 to_add['fluxerr_%s' % band1] = temp1['fluxerr']
                 to_add['flux_%s' % band2] = temp2['flux']
@@ -527,11 +558,21 @@ class MISN(dict):
                 to_add['zp_%s' % band1] = temp1['zp']
                 to_add['zp_%s' % band2] = temp2['zp']
                 for col in [x for x in names if x not in to_add.keys()]:
-                    to_add[col] = [np.nan]*len(temp1)
+                    if col.startswith('lim') and col.endswith('err'):
+                        to_add[col] = [[np.nan,np.nan]]*len(temp1)
+                        print(col,to_add[col])
+                    else:
+                        to_add[col] = [np.nan]*len(temp1)
 
                 for i in range(len(temp1)):
                     self.color.table.add_row(
                         {k: to_add[k][i] for k in to_add.keys()})
+
+
+        for col in micro_color_offset.keys():
+            if col.lower() in self.color.table.colnames:
+                self.color.table[col.lower()+'_err'] = np.sqrt(self.color.table[col.lower()+'_err']**2+\
+                                                        micro_color_offset[col]**2)
         self.color.table.meta = {}
 
         self.color.table.sort('time')

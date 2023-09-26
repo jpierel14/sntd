@@ -203,7 +203,7 @@ class unresolvedMISN(sncosmo.Model):
         l = len(self._source._parameters)
         self._parameters[pos:pos+l] = self._source._parameters  # copy
         self._source._parameters = self._parameters[pos:pos+l]  # reference
-        pos = len(old_parameters)#+= l
+        pos = len(old_parameters)
 
         # initialize a list of ints that keeps track of where the redshift
         # parameter of each effect is. Value is 0 if effect_frame is not 'free'
