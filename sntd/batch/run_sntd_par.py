@@ -2,6 +2,7 @@ import pickle,sys,sntd,os,traceback
 from optparse import OptionParser
 from copy import copy
 import numpy as np
+import sncosmo
 
 nlcs_per=nlcsreplace
 parser = OptionParser()

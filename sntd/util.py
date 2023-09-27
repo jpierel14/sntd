@@ -104,14 +104,14 @@ class newDict(dict):
     __delattr__ = dict.__delitem__
     __getattr__ = dict.__getitem__
 
-    def _getstate_(self):
+    def __getstate__(self):
         """
         A function necessary for pickling
         :return: self
         """
         return self
 
-    def _setstate_(self, d):
+    def __setstate__(self, d):
         """
         A function necessary for pickling
         :param d: A value
