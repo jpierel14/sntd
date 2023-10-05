@@ -22,7 +22,7 @@ class BAYESNSource(sncosmo.Source):
 	param_names_latex = ['amplitude', 'AV', 'theta', 'ebv_mw', 'RV']
 
 	def __init__(self, filter_yaml,load_model='85day_model', 
-				 name=None, version=None,z=1.78,use_epsilon=True):
+				 name=None, version=None,z=1.78,use_epsilon=False):
 
 		self.name = name
 		self.version = version

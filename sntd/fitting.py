@@ -1575,11 +1575,13 @@ def nest_color_lc(data, model, nimage, colors, vparam_names, bounds, ref='image_
 			ext_dict[color[0]] = np.array([sncosmo.get_bandpass(color[0]).wave_eff])
 		if color[1] not in ext_dict:
 			ext_dict[color[1]] = np.array([sncosmo.get_bandpass(color[1]).wave_eff])
-
+	#print(list(zip(data['time'],data['image'],data['f090w-f150w'])))
+	#print(list(zip(data['time'],data['image'],data['f150w-f277w'])))
 	def chisq_likelihood(parameters):
 		model.set(**{model_param_names[k]: parameters[model_idx[k]]
 					 for k in range(len(model_idx))})
 
+		#print(parameters)
 		mod_dict = {}
 		cov_dict = {}
 		chisq = 0
@@ -1677,8 +1679,8 @@ def nest_color_lc(data, model, nimage, colors, vparam_names, bounds, ref='image_
 			#plt.show()
 			# sys.exit()
 			if np.any(np.isnan(mod_color)):
-				print('nan')
-				return(-np.inf)
+				#print('nan')
+				return(-np.inf,None,0)
 			if key.startswith('lim'):
 				err = np.array([err[i][0] if mod_color[i]<=obs[i] else err[i][1] for i in range(len(err))])
 
@@ -1759,6 +1761,7 @@ def nest_color_lc(data, model, nimage, colors, vparam_names, bounds, ref='image_
 
 				else:
 					chi = (obs-mod_color)/err
+					#print(color,np.dot(chi, chi))
 					chisq += np.dot(chi, chi)
 		if use_bayesn_epsilon:
 
@@ -1775,26 +1778,65 @@ def nest_color_lc(data, model, nimage, colors, vparam_names, bounds, ref='image_
 			#print(bayesn_chis[best_chi],all_eps_prob[best_chi],-.5*bayesn_chis[best_chi]+all_eps_prob[best_chi])
 			return bayesn_chis[best_chi],all_epsilon[best_chi],all_eps_prob[best_chi]
 		else:
+			#print(chisq)
 			return chisq,None,0
 
 	def loglike(parameters):
 		chisq,_,logpriorprob = chisq_likelihood(parameters)
+		#print(chisq,logpriorprob)
 		if not np.isfinite(chisq):
 			return -np.inf
 		return(-.5*chisq+logpriorprob)
 
+
+	#import emcee
+	#from scipy.optimize import minimize
+	#os.environ["OMP_NUM_THREADS"] = "1"
+	#from multiprocessing import Pool
+
+	#print('init')
+	#nll = lambda *args: -loglike(*args)
+	#initial = np.array([np.sum(bounds[b])/2 for b in vparam_names])
+	#soln = minimize(nll,initial,bounds=[bounds[b] for b in vparam_names])
+	#print(soln.x)
+	#pos = soln.x + 1e-4 * np.random.randn(32,ndim)
+	
+	#pos = np.array([np.linspace(bounds[b][0],bounds[b][1],2*len(vparam_names)*2+1) for b in vparam_names]).T
+	#nwalkers,ndim = pos.shape
+	#with Pool() as pool:
+	#sampler = emcee.EnsembleSampler(nwalkers,ndim,loglike)
+	#sampler.run_mcmc(pos,1000,progress=True,skip_initial_state_check=True)
+	#flat_samples = sampler.get_chain(discard=0,thin=1,flat=True)
+	#print(flat_samples.shape)
+	#print(flat_samples)
+	#res = sncosmo.utils.Result(samples=flat_samples,
+	#						 weights=np.ones(flat_samples.shape[0]),
+	#						 logl=sampler.get_log_prob(discard=0,flat=True),
+	#						 errors=None,
+	#						 logz=1,
+	#						 vparam_names=copy(vparam_names),
+	#						 bounds=bounds)
+
+	#params = [np.percentile(res.samples[:,i],[16,50,84]) for i in range(len(vparam_names))]
+	#if use_MLE:
+	#	best_ind = res.logl.argmax()
+	#	for i in range(len(vparam_names)):
+	#		params[i][1] = res.samples[best_ind,i]
+	#res.errors = OrderedDict(zip(vparam_names,[(params[i][2]-params[i][0])/2 for i in range(len(vparam_names))]))
+	verbose = True
+	print('why not printing')
 	res = nestle.sample(loglike, prior_transform, ndim, npdim=npdim,
-						npoints=npoints, method=method, maxiter=maxiter,
-						maxcall=maxcall, rstate=rstate,
-						callback=(nestle.print_progress if verbose else None))
+	 					npoints=npoints, method=method, maxiter=maxiter,
+	 					maxcall=maxcall, rstate=rstate,callback=nestle.print_progress,verbose=True)
+	 					#callback=(nestle.print_progress if verbose else None))
 	vparameters, cov = nestle.mean_and_cov(res.samples, res.weights)
 	res = sncosmo.utils.Result(niter=res.niter,
-							   ncall=res.ncall,
-							   logz=res.logz,
-							   logzerr=res.logzerr,
-							   h=res.h,
-							   samples=res.samples,
-							   weights=res.weights,
+	 						   ncall=res.ncall,
+	 						   logz=res.logz,
+	 						   logzerr=res.logzerr,
+	 						   h=res.h,
+	 						   samples=res.samples,
+	 						   weights=res.weights,
 							   logvol=res.logvol,
 							   logl=res.logl,
 							   errors=OrderedDict(zip(vparam_names,
