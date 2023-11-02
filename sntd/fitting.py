@@ -49,7 +49,7 @@ def fit_data(curves=None, snType='Ia', bands=None, models=None, params=None, bou
 			 wait_for_batch=False, band_order=None, set_from_simMeta={}, guess_amplitude=True, trial_fit=False, clip_data=False, use_MLE=False,
 			 kernel='RBF', refImage='image_1', nMicroSamples=100, color_curve=None, warning_supress=True,
 			 micro_fit_bands='all', verbose=True,micro_color_offset={},upper_limit_dict={},
-			 differential_extinction=False,use_bayesn_epsilon=False, **kwargs):
+			 differential_extinction=False,use_bayesn_epsilon=False,band_phase_weights={}, **kwargs):
 	"""The main high-level fitting function.
 
 	Parameters
@@ -1240,7 +1240,8 @@ def _fitColor(all_args):
 										   method=args.get('nest_method', 'single'), maxcall=args.get('maxcall', None),
 										   modelcov=args.get('modelcov', None), rstate=args.get('rstate', None),
 										   maxiter=args.get('maxiter', None), npoints=args.get('npoints', 100),
-										   use_bayesn_epsilon=args['use_bayesn_epsilon'])
+										   use_bayesn_epsilon=args['use_bayesn_epsilon'],
+										   band_phase_weights=args['band_phase_weights'])
 		if finallogz < res.logz:
 			finallogz = res.logz
 			finalres, finalmodel = res, model
@@ -1413,7 +1414,7 @@ def _fitColor(all_args):
 def nest_color_lc(data, model, nimage, colors, vparam_names, bounds, ref='image_1', use_MLE=False,
 				  minsnr=5., priors=None, ppfs=None, npoints=100, method='single',
 				  maxiter=None, maxcall=None, modelcov=False, rstate=None,
-				  verbose=False, warn=True,use_bayesn_epsilon=False, **kwargs):
+				  verbose=False, warn=True,use_bayesn_epsilon=False,band_phase_weights={}, **kwargs):
 	# Taken from SNCosmo nest_lc
 
 	# experimental parameters
@@ -1544,10 +1545,15 @@ def nest_color_lc(data, model, nimage, colors, vparam_names, bounds, ref='image_
 			
 		model._source._epsilon = 0
 	
+	color_phase_weights = {}
 	for color in colors:
 		
 		if color[0]+'-'+color[1] in data.colnames:
-			
+			if color[0] in band_phase_weights.keys() and color[1] in band_phase_weights.keys():
+				color_phase_weights[color] = 1./(band_phase_weights[color[0]][1]**2+band_phase_weights[color[1]][1]**2)
+				color_phase_weights[color]/= np.sum(color_phase_weights[color])
+				color_phase_weights[color] = scipy.interpolate.interp1d(band_phase_weights[color][0],
+																		color_phase_weights[color])
 			add_key = color[0]+'-'+color[1]
 			col_inds = np.where(~np.isnan(data[add_key]))[0]
 		
@@ -1761,6 +1767,8 @@ def nest_color_lc(data, model, nimage, colors, vparam_names, bounds, ref='image_
 
 				else:
 					chi = (obs-mod_color)/err
+					if color in color_phase_weights.keys():
+						chi*=color_phase_weights[color](time[timesort]-model.get('t0'))
 					#print(color,np.dot(chi, chi))
 					chisq += np.dot(chi, chi)
 		if use_bayesn_epsilon:
