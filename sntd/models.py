@@ -21,7 +21,8 @@ from astropy.table import Table
 class BAYESNSource(sncosmo.SALT2Source):
     _param_names = ['amplitude', 'theta', 'AV','RV']
     param_names_latex = ['amplitude', r'\theta', 'A_V','R_V']
-    def __init__(self, modeldir=None,
+    def __init__(self, modeldir=os.path.join(os.path.dirname(os.path.realpath(__file__)),
+    							'data','sncosmo','bayesn_sncosmo'),
                  m0file='bayesn_template_0.dat',
                  m1file='bayesn_template_1.dat',
                  clfile='bayesn_color_correction.dat',
