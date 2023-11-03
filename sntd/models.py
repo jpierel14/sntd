@@ -16,12 +16,12 @@ import scipy
 __all__ = ['unresolvedMISN','BAYESNSource']
 
 
+import os
+from astropy.table import Table
 class BAYESNSource(sncosmo.SALT2Source):
     _param_names = ['amplitude', 'theta', 'AV','RV']
-    param_names_latex = ['amplitude', '\theta', 'A_V','R_V']
-
-    def __init__(self, modeldir=os.path.join(os.path.dirname(os.path.realpath(__file__)),
-    							'data','sncosmo','bayesn_sncosmo'),
+    param_names_latex = ['amplitude', r'\theta', 'A_V','R_V']
+    def __init__(self, modeldir=None,
                  m0file='bayesn_template_0.dat',
                  m1file='bayesn_template_1.dat',
                  clfile='bayesn_color_correction.dat',
@@ -46,7 +46,6 @@ class BAYESNSource(sncosmo.SALT2Source):
         for key in ['M0', 'M1']:
             phase, wave, values = sncosmo.read_griddata_ascii(names_or_objs[key])
             self._model[key] = sncosmo.salt2utils.BicubicInterpolator(phase, wave, values)
-
             # The "native" phases and wavelengths of the model are those
             # of the first model component.
             if key == 'M0':
@@ -66,7 +65,7 @@ class BAYESNSource(sncosmo.SALT2Source):
     def _flux(self, phase, wave):
         m0 = self._model['M0'](phase, wave)
         m1 = self._model['M1'](phase, wave)
-        return (self._parameters[0] * (m0 + self._parameters[1] * m1) *
+        return (self._parameters[0] * (m0 * 10**(-.4*(self._parameters[1] * m1))) *
                 10. ** (-0.4 * self._colorlaw(wave) * self._parameters[2]))
 
 class unresolvedSource(sncosmo.Source):
