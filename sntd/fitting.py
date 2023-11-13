@@ -1843,21 +1843,23 @@ def nest_color_lc(data, model, nimage, colors, vparam_names, bounds, ref='image_
 	print('why not printing')
 
 	use_dynesty=True
-	
+	use_multi = False
 
 	if use_dynesty:
 		import dynesty
 		import multiprocessing
 		from dynesty import utils as dyfunc
 		#pool = MPIPool()
-		with dynesty.pool.Pool(10, loglike, prior_transform) as pool:
-		    sampler = dynesty.NestedSampler(pool.loglike, pool.prior_transform,
-		                            ndim, pool = pool)
-		    sampler.run_nested(maxiter=maxiter,
+		if use_multi:
+			with dynesty.pool.Pool(10, loglike, prior_transform) as pool:
+			    sampler = dynesty.NestedSampler(pool.loglike, pool.prior_transform,
+			                            ndim, pool = pool)
+			    sampler.run_nested(maxiter=maxiter,
+							maxcall=maxcall)
+		else:
+			sampler = dynesty.NestedSampler(loglike, prior_transform, ndim, nlive = npoints)
+			sampler.run_nested(maxiter=maxiter,
 						maxcall=maxcall)
-		#sampler = dynesty.NestedSampler(loglike, prior_transform, ndim, nlive = npoints)
-		#sampler.run_nested(maxiter=maxiter,
-		#				maxcall=maxcall)
 		res = sampler.results
 		samples = res.samples  # samples
 		weights = res.importance_weights()
