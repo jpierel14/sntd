@@ -1746,7 +1746,8 @@ def nest_color_lc(data, model, nimage, colors, vparam_names, bounds, ref='image_
 				
 			else:
 				if modelcov:
-
+					cov = np.diag(err**2)
+					cov_dict = {}
 					for b in color:
 						mf, mcov = model.bandfluxcov(b,
 													time[timesort],
@@ -1755,22 +1756,28 @@ def nest_color_lc(data, model, nimage, colors, vparam_names, bounds, ref='image_
 
 						cov_dict[b] = (mf,mcov)
 
-					cov = np.diag(err**2)
+					
 					mf1,mcov1 = cov_dict[color[0]]#[:, np.array(color_inds1)[timesort]]
 					#mcov1 = mcov1[np.array(color_inds1)[timesort], :]
 					mf2,mcov2 = cov_dict[color[1]]#[:, np.array(color_inds2)[timesort]]
 					#mcov2 = mcov2[np.array(color_inds2)[timesort], :]
+					#print(color,cov.shape,np.diagonal(cov))
 					cov = cov + (mf1/mf2)**2*(mcov1/mf1**2 + mcov2/mf2**2)
+					#print(np.diagonal(cov),mf1,mf2,mcov1,mcov2)
 					invcov = np.linalg.pinv(cov)
 					diff = obs-mod_color
-					chisq += np.dot(np.dot(diff, invcov), diff)
+					#print(diff)
 
+					chisq += np.dot(np.dot(diff, invcov), diff)
+					#print(chisq)
+					#sys.exit()
 				else:
 					chi = (obs-mod_color)/err
 					if color in color_phase_weights.keys():
 						chi*=color_phase_weights[color](time[timesort]-model.get('t0'))
 					#print(color,np.dot(chi, chi))
 					chisq += np.dot(chi, chi)
+
 		if use_bayesn_epsilon:
 
 			best_chi = (-.5*bayesn_chis+all_eps_prob).argmax()
@@ -1786,6 +1793,7 @@ def nest_color_lc(data, model, nimage, colors, vparam_names, bounds, ref='image_
 			#print(bayesn_chis[best_chi],all_eps_prob[best_chi],-.5*bayesn_chis[best_chi]+all_eps_prob[best_chi])
 			return bayesn_chis[best_chi],all_epsilon[best_chi],all_eps_prob[best_chi]
 		else:
+			#print(chisq)
 			#print(chisq)
 			return chisq,None,0
 
@@ -1833,18 +1841,59 @@ def nest_color_lc(data, model, nimage, colors, vparam_names, bounds, ref='image_
 	#res.errors = OrderedDict(zip(vparam_names,[(params[i][2]-params[i][0])/2 for i in range(len(vparam_names))]))
 	verbose = True
 	print('why not printing')
-	res = nestle.sample(loglike, prior_transform, ndim, npdim=npdim,
-	 					npoints=npoints, method=method, maxiter=maxiter,
-	 					maxcall=maxcall, rstate=rstate,callback=nestle.print_progress,verbose=True)
-	 					#callback=(nestle.print_progress if verbose else None))
-	vparameters, cov = nestle.mean_and_cov(res.samples, res.weights)
-	res = sncosmo.utils.Result(niter=res.niter,
-	 						   ncall=res.ncall,
-	 						   logz=res.logz,
-	 						   logzerr=res.logzerr,
-	 						   h=res.h,
-	 						   samples=res.samples,
-	 						   weights=res.weights,
+
+	use_dynesty=True
+	
+
+	if use_dynesty:
+		import dynesty
+		import multiprocessing
+		from dynesty import utils as dyfunc
+		#pool = MPIPool()
+		with dynesty.pool.Pool(10, loglike, prior_transform) as pool:
+		    sampler = dynesty.NestedSampler(pool.loglike, pool.prior_transform,
+		                            ndim, pool = pool)
+		    sampler.run_nested(maxiter=maxiter,
+						maxcall=maxcall)
+		#sampler = dynesty.NestedSampler(loglike, prior_transform, ndim, nlive = npoints)
+		#sampler.run_nested(maxiter=maxiter,
+		#				maxcall=maxcall)
+		res = sampler.results
+		samples = res.samples  # samples
+		weights = res.importance_weights()
+
+		# Compute weighted mean and covariance.
+		vparameters, cov = dyfunc.mean_and_cov(samples, weights)
+
+		
+		res = sncosmo.utils.Result(niter=res.niter,
+							   ncall=res.ncall,
+							   logz=np.max(res.logz),
+							   logzerr=res.logzerr,
+							   #h=res.h,
+							   samples=res.samples,
+							   weights=weights,
+							   logvol=res.logvol,
+							   logl=res.logl,
+							   errors=OrderedDict(zip(vparam_names,
+													  np.sqrt(np.diagonal(cov)))),
+							   vparam_names=copy(vparam_names),
+							   bounds=bounds,
+							   dynasty_res=res)
+	else:
+		res = nestle.sample(loglike, prior_transform, ndim, npdim=npdim,
+						npoints=npoints, method=method, maxiter=maxiter,
+						maxcall=maxcall, rstate=rstate,callback=nestle.print_progress,verbose=True)
+						#callback=(nestle.print_progress if verbose else None))
+
+		vparameters, cov = nestle.mean_and_cov(res.samples, res.weights)
+		res = sncosmo.utils.Result(niter=res.niter,
+							   ncall=res.ncall,
+							   logz=res.logz,
+							   logzerr=res.logzerr,
+							   h=res.h,
+							   samples=res.samples,
+							   weights=res.weights,
 							   logvol=res.logvol,
 							   logl=res.logl,
 							   errors=OrderedDict(zip(vparam_names,
@@ -2778,7 +2827,7 @@ def nest_series_lc(data, model, nimage, vparam_names, bounds, ref='image_1', use
 											zp=zp[timesort], zpsys=zpsys[timesort])
 		
 			if modelcov:
-				cov = np.diag(tempFluxerr**2)
+				cov = np.diag(tempFluxerr[timesort]**2)
 				_, mcov = model.bandfluxcov(band[timesort], tempTime[timesort],
 											zp=zp[timesort], zpsys=zpsys[timesort])
 
@@ -2787,7 +2836,6 @@ def nest_series_lc(data, model, nimage, vparam_names, bounds, ref='image_1', use
 
 				diff = tempFlux[timesort]-model_observations
 				chisq = np.dot(np.dot(diff, invcov), diff)
-
 			else:
 				chi = (tempFlux[timesort]-model_observations)/np.array(tempFluxerr[timesort])
 				chisq = np.dot(chi, chi)
@@ -2806,14 +2854,55 @@ def nest_series_lc(data, model, nimage, vparam_names, bounds, ref='image_1', use
 		#print(timeit.time()-t1)
 		return(-.5*chisq+logpriorprob)
 
-	res = nestle.sample(loglike, prior_transform, ndim, npdim=npdim,
+
+
+	use_dynesty=True
+	
+
+	if use_dynesty:
+		import dynesty
+		import multiprocessing
+		from dynesty import utils as dyfunc
+		#pool = MPIPool()
+		with dynesty.pool.Pool(10, loglike, prior_transform) as pool:
+		    sampler = dynesty.NestedSampler(pool.loglike, pool.prior_transform,
+		                            ndim, pool = pool)
+		    sampler.run_nested(maxiter=maxiter,
+						maxcall=maxcall)
+		#sampler = dynesty.NestedSampler(loglike, prior_transform, ndim, nlive = npoints)
+		#sampler.run_nested(maxiter=maxiter,
+		#				maxcall=maxcall)
+		res = sampler.results
+		samples = res.samples  # samples
+		weights = res.importance_weights()
+
+		# Compute weighted mean and covariance.
+		vparameters, cov = dyfunc.mean_and_cov(samples, weights)
+
+		
+		res = sncosmo.utils.Result(niter=res.niter,
+							   ncall=res.ncall,
+							   logz=np.max(res.logz),
+							   logzerr=res.logzerr,
+							   #h=res.h,
+							   samples=res.samples,
+							   weights=weights,
+							   logvol=res.logvol,
+							   logl=res.logl,
+							   errors=OrderedDict(zip(vparam_names,
+													  np.sqrt(np.diagonal(cov)))),
+							   vparam_names=copy(vparam_names),
+							   bounds=bounds,
+							   dynasty_res=res)
+	else:
+		res = nestle.sample(loglike, prior_transform, ndim, npdim=npdim,
 						npoints=npoints, method=method, maxiter=maxiter,
 						maxcall=maxcall, rstate=rstate,
 						callback=(nestle.print_progress if verbose else None))
 
-	vparameters, cov = nestle.mean_and_cov(res.samples, res.weights)
+		vparameters, cov = nestle.mean_and_cov(res.samples, res.weights)
 
-	res = sncosmo.utils.Result(niter=res.niter,
+		res = sncosmo.utils.Result(niter=res.niter,
 							   ncall=res.ncall,
 							   logz=res.logz,
 							   logzerr=res.logzerr,
