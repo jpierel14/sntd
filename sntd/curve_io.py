@@ -347,8 +347,7 @@ class MISN(dict):
 			self.table = copy(tempMISN.table)
 		return(self)
 
-	def combine_curves(self, time_delays=None, magnifications=None, referenceImage='image_1', static=False,
-					   model=None, minsnr=0):
+	def series_table(self, minsnr=0):
 		"""
 		Takes the multiple images in self.images and combines
 		the data into a single light curve using defined
@@ -356,20 +355,6 @@ class MISN(dict):
 
 		Parameters
 		----------
-		time_delays: :class:`dict`
-			Dictionary with image names as keys and relative time
-			delays as values (e.g. {'image_1':0,'image_2':20}). Guessed if None.
-		magnifications: :class:`dict`
-			Dictionary with image names as keys and relative magnifications
-			as values (e.g. {'image_1':0,'image_2':20}). Guessed if None.
-		referenceImage: str
-			The image you want to be the reference (e.g. image_1, image_2, etc.)
-		ignore_images: :class:`~list`
-			List of images you do not want to include in the color curve.
-		static: bool
-			Make the color curve, don't shift the data
-		model: :class:`~sncosmo.Model`
-			If you want to use an sncosmo Model (and the guess_t0_amplitude method) to guess time delays
 		minsnr: float
 			Cut data that don't meet this threshold before making the color curve.
 
@@ -381,54 +366,22 @@ class MISN(dict):
 			print("Not enough curves to combine!")
 			return(self)
 
-		if time_delays is None:
-			if model is not None:
-				time_delays = {}
-				magnifications = {}
-				model = sncosmo.Model(model) if isinstance(
-					model, str) else model
-				ref_t0, ref_amp = sncosmo.fitting.guess_t0_and_amplitude(sncosmo.photdata.photometric_data(
-					self.images[referenceImage].table), model, minsnr)
-				self.series.meta['reft0'] = ref_t0
-				self.series.meta['refamp'] = ref_amp
-				time_delays[referenceImage] = 0
-				magnifications[referenceImage] = 1
-				for k in self.images.keys():
-					if k == referenceImage:
-						continue
-					guess_t0, guess_amp = sncosmo.fitting.guess_t0_and_amplitude(sncosmo.photdata.photometric_data(
-						self.images[k].table), model, minsnr)
-					time_delays[k] = guess_t0-ref_t0
-					magnifications[k] = guess_amp/ref_amp
-			else:
-				# TODO fix these guessing functions
-				time_delays = guess_time_delays(self, referenceImage)
-		if magnifications is None:
-			magnifications = guess_magnifications(self, referenceImage)
 
 		self.series.table = Table(names=self.table.colnames, dtype=[
 								  self.table.dtype[x] for x in self.table.colnames])
 		for k in np.sort(list(self.images.keys())):
 			temp = deepcopy(self.images[k].table)
-			if not static:
-				temp['time'] -= time_delays[k]
-				temp['flux'] /= magnifications[k]
-				temp['fluxerr']/= magnifications[k]
 			temp.meta = dict([])
 
 			self.series.table = vstack([self.series.table, temp])
 
 		self.series.table.sort('time')
 		self.series.bands = self.bands
-		self.series.meta['td'] = {
-			k: float(time_delays[k]) for k in time_delays.keys()}
-		self.series.meta['mu'] = {
-			k: float(magnifications[k]) for k in magnifications.keys()}
 
 		return(self)
 
-	def color_table(self, band1s, band2s, time_delays=None, referenceImage='image_1', ignore_images=[],
-					static=False, model=None, minsnr=0.0,micro_color_offset={},upper_limits={}):
+	def color_table(self, band1s, band2s, ignore_images=[],
+			 minsnr=0.0,micro_color_offset={},upper_limits={}):
 		"""
 		Takes the multiple images in self.images and combines
 		the data into a single color curve using defined
@@ -440,17 +393,8 @@ class MISN(dict):
 			The first band(s) for color curve(s)
 		band2s: str or list
 			The second band(s) for color curve(s)
-		time_delays: :class:`dict`
-			Dictionary with image names as keys and relative time
-			delays as values (e.g. {'image_1':0,'image_2':20}). Guessed if None.
-		referenceImage: str
-			The image you want to be the reference (e.g. image_1, image_2, etc.)
 		ignore_images: :class:`~list`
 			List of images you do not want to include in the color curve.
-		static: bool
-			Make the color curve, don't shift the data
-		model: :class:`~sncosmo.Model`
-			If you want to use an sncosmo Model (and the guess_t0_amplitude method) to guess time delays
 		minsnr: float
 			Cut data that don't meet this threshold before making the color curve.
 
@@ -473,26 +417,7 @@ class MISN(dict):
 			i in range(len(dtype),len(names))])
 
 		self.color.table = Table(names=names, dtype=dtype)
-		if time_delays is None:
-			if model is not None:
-				time_delays = {}
-				model = sncosmo.Model(model) if isinstance(
-					model, str) else model
-				ref_t0, ref_amp = sncosmo.fitting.guess_t0_and_amplitude(sncosmo.photdata.photometric_data(
-					self.images[referenceImage].table), model, minsnr)
-				self.color.meta['reft0'] = ref_t0
-				time_delays[referenceImage] = 0
-				for k in self.images.keys():
-					if k == referenceImage:
-						continue
-					guess_t0, guess_amp = sncosmo.fitting.guess_t0_and_amplitude(sncosmo.photdata.photometric_data(
-						self.images[k].table), model, minsnr)
-					time_delays[k] = guess_t0-ref_t0
-			else:
-				# TODO fix these guessing functions
-				time_delays = guess_time_delays(self, referenceImage)
-
-		self.color.meta['td'] = time_delays
+		
 		for im in [x for x in self.images.keys() if x not in ignore_images]:
 			for band1, band2 in zip(band1s, band2s):
 				is_lim = False
@@ -524,10 +449,6 @@ class MISN(dict):
 					temp2['magerr'] = 1.0857*temp2['fluxerr']/temp2['flux']
 				
 				
-				if not static:
-					temp1['time'] -= time_delays[im]
-					temp2['time'] -= time_delays[im]
-
 				
 				
 				temp1 = temp1[~np.isnan(temp1['mag'])]
@@ -789,7 +710,7 @@ class MISN(dict):
 		plt.tight_layout()	  
 		return fig,axes
 
-	def plot_fit(self, method='parallel', par_image=None):
+	def plot_fit(self, method='parallel', par_image=None,minweight=0):
 		"""
 		Makes a corner plot based on one of the fitting methods
 
@@ -803,6 +724,7 @@ class MISN(dict):
 		figure object: :class:`~matplotlib.pyplot.figure`
 		"""
 		if method == 'parallel':
+			labels = res.vparam_names
 			if par_image is None:
 				par_image = self.parallel.fitOrder[0]
 			res = self.images[par_image].fits.res
@@ -813,9 +735,22 @@ class MISN(dict):
 			except:
 				truths = None
 		elif method == 'series':
-			res = self.series.fits.res
+			res = deepcopy(self.series.fits.res)
 			samples = res.samples
-
+			labels = res.vparam_names
+			t0_name = self.series.fits.model.param_names[1]
+			amp_name = self.series.fits.model.param_names[2]
+			ref_t0 = labels.index(t0_name+'_'+self.series.refImage)
+			ref_amp = labels.index(amp_name+'_'+self.series.refImage)
+			for im in self.images.keys():
+				if im==self.series.refImage:
+					continue
+				t0_ind = labels.index(t0_name+'_'+im)
+				amp_ind = labels.index(amp_name+'_'+im)
+				labels[t0_ind] = 'dt_'+im
+				labels[amp_ind] = 'mu_'+im
+				samples[:,t0_ind]-=samples[:,ref_t0]
+				samples[:,amp_ind]/=samples[:,ref_amp]
 			try:
 				truths = []
 				for p in res.vparam_names:
@@ -837,8 +772,18 @@ class MISN(dict):
 				truths = None
 
 		else:
-			res = self.color.fits.res
+			res = deepcopy(self.color.fits.res)
 			samples = res.samples
+			labels = res.vparam_names
+			t0_name = self.color.fits.model.param_names[1]
+			ref_t0 = labels.index(t0_name+'_'+self.color.refImage)
+			
+			for im in self.images.keys():
+				if im==self.color.refImage:
+					continue
+				t0_ind = labels.index(t0_name+'_'+im)
+				labels[t0_ind] = 'dt_'+im
+				samples[:,t0_ind]-=samples[:,ref_t0]
 
 			try:
 				truths = []
@@ -855,9 +800,9 @@ class MISN(dict):
 			except:
 				truths = None
 		fig = corner.corner(
-			samples,
-			weights=res.weights,
-			labels=res.vparam_names,
+			samples[res.weights>minweight,:],
+			weights=res.weights[res.weights>minweight],
+			labels=labels,
 			truths=truths,
 			quantiles=(0.16, .5, 0.84),
 			bins=30,

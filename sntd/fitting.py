@@ -11,7 +11,8 @@ import time
 import tarfile
 import numpy as np
 import matplotlib.pyplot as plt
-from copy import copy
+from copy import copy,deepcopy
+
 from scipy import stats
 from astropy.table import Table
 import nestle
@@ -22,7 +23,9 @@ import itertools
 from sncosmo import nest_lc
 from itertools import combinations
 from collections import OrderedDict
-
+import dynesty
+import multiprocessing
+from dynesty import utils as dyfunc
 
 from .util import *
 from .util import _filedir_, _current_dir_
@@ -30,7 +33,7 @@ from .curve_io import _sntd_deepcopy
 from .models import BazinSource, __all__ as __sntd_model_list__
 from .ml import *
 
-__all__ = ['fit_data']
+__all__ = ['fit_data','single_model_series_delays','single_model_color_delays']
 
 _thetaSN_ = ['z', 'hostebv', 'screenz',
 			 'rise', 'fall', 'sigma', 'k', 'x1', 'c']
@@ -39,6 +42,679 @@ _thetaL_ = ['t0', 'amplitude', 'screenebv', 'dt0',
 
 
 _needs_bounds = {'z'}
+
+def single_model_color_delays(curves,model,vparam_names,shared_parameters,referenceImage=None,fix_time=[],
+						bounds={},t0_guess={},band_systematics={},
+						nest_kwargs={},minsnr=0,**kwargs):
+
+	warnings.simplefilter('ignore')
+	if curves.series.table is None:
+		curves.series_table(minsnr)
+	colors_to_fit = [x for x in combinations(np.unique(curves.series.table['band']), 2)]
+	if curves.color.table is None:
+		
+
+		
+		curves.color_table([x[0] for x in colors_to_fit], [x[1] for x in colors_to_fit],minsnr=minsnr)
+	
+	if isinstance(model,str):
+		model = sncosmo.Model(model)
+
+	t0_name = model.param_names[1]
+	amp_name = model.param_names[2]
+	if amp_name in vparam_names:
+		vparam_names.remove(amp_name)
+	images = list(np.unique(curves.color.table['image']))
+	if referenceImage is None:
+		referenceImage = images[0]
+
+
+	curves.color.refImage = referenceImage
+	for p in vparam_names:
+		if p not in bounds.keys():
+			raise RuntimeError("Must supply bound for parameter %s."%p)
+		bounds[p] = np.array(bounds[p])
+	
+	
+
+	full_vparam_names = [x for x in vparam_names if x not in [t0_name]]
+	for im in images:
+		if im in t0_guess.keys():
+			t0 = t0_guess[im]
+		else:
+			t0 = 0.
+			
+		if t0_name in vparam_names and im not in fix_time:
+			full_vparam_names.append(t0_name+'_'+im)
+			bounds[t0_name+'_'+im] = bounds[t0_name]+t0
+
+	for im in band_systematics.keys():
+		for b in band_systematics[im]:
+			full_vparam_names.append(b+'_'+im+'_sys')
+			inds = np.where(curves.images[im].table['band']==b)[0]
+			b1 = np.min([bounds['band_sys'][1],np.nanmin(curves.images[im].table[inds]['flux'])])
+			bounds[b+'_'+im+'_sys'] = (bounds['band_sys'][0],b1)
+	
+	params,res,models = color_nest(curves.color.table,model,full_vparam_names,bounds,
+		shared_parameters,colors_to_fit,band_systematics=band_systematics,**kwargs)
+
+	curves.color.fits = newDict()
+
+	for i,im in enumerate(images):
+		curves.images[im].fits = newDict()
+		curves.images[im].fits['model'] = deepcopy(models[i])
+
+	for im in band_systematics.keys():
+		temp = {}
+		for b in band_systematics[im]:
+			temp[b] = weighted_quantile(res.samples[:,res.vparam_names.index(b+'_'+im+'_sys')],[.16,.5,.84],res.weights)
+			temp[b][0] -= temp[b][1]
+			temp[b][2] -= temp[b][1]
+		band_systematics[im] = temp
+
+	curves.color.fits.band_systematics = band_systematics
+	print(band_systematics)
+
+	curves.color.param_quantiles = {d:params[res.vparam_names.index(d)] for d in res.vparam_names}
+	curves.color.t_peaks = {im:params[res.vparam_names.index(t0_name+'_'+im)][1] for im in images}
+
+	curves.color.a_peaks = {}
+	curves.color.a_peak_errs = {}
+	for im in curves.images.keys():
+		temp_tab = deepcopy(curves.images[im].table)
+		flux = np.array(temp_tab['flux'])
+		if im in band_systematics.keys():
+			
+			for b in band_systematics[im].keys():
+				inds2 = np.where(np.logical_and(temp_tab['image']==im,
+												temp_tab['band']==b))[0]
+				flux[inds2]-=band_systematics[im][b][1]
+		temp_tab['flux'] = flux
+			
+		curves.images[im].fits.model.set(**{t0_name:curves.color.t_peaks[im]})
+		temp_res,fit = sncosmo.nest_lc(temp_tab,curves.images[im].fits.model,[curves.images[im].fits.model.param_names[2]],
+							  bounds={},guess_amplitude_bound=True,minsnr=-np.inf
+							 )
+
+		sort_weights = np.flip(np.argsort(temp_res.weights))
+		curves.images[im].fits.res = temp_res
+		curves.images[im].fits.model = fit
+		curves.images[im].fits.table = temp_tab
+		curves.color.a_peaks[im] = weighted_quantile(temp_res.samples[:,0],[.5],temp_res.weights)
+		curves.color.a_peak_errs[im] = weighted_quantile(temp_res.samples[:,0],[.16,.84],temp_res.weights)-curves.color.a_peaks[im]
+	td_quantiles = {im:weighted_quantile(res.samples[:,res.vparam_names.index(t0_name+'_'+im)]-\
+											res.samples[:,res.vparam_names.index(t0_name+'_'+referenceImage)],
+											[.16,.5,.84],res.weights) for im in images if im!=referenceImage}
+
+
+	curves.color.time_delays = {im:td_quantiles[im][1] for im in images if im!=referenceImage}
+	curves.color.time_delays[referenceImage] = 0
+	curves.color.time_delay_errors = {im:np.array([td_quantiles[im][0],td_quantiles[im][2]])-td_quantiles[im][1] for im in images if im!=referenceImage}
+	curves.color.time_delay_errors[referenceImage] = [0,0]
+
+
+	curves.color.magnifications = {im:curves.color.a_peaks[im]/curves.color.a_peaks[referenceImage] for im in images}
+	curves.color.magnifications[referenceImage] = 1
+	curves.color.magnification_errors = {im:curves.color.magnifications[im]*np.sqrt((curves.color.a_peak_errs[im]/curves.color.a_peaks[im])**2+\
+														(curves.color.a_peak_errs[referenceImage]/curves.color.a_peaks[referenceImage])**2) for im in images}
+	curves.color.magnification_errors[referenceImage] = [0,0]
+	curves.color.fits['model'] = models[images.index(referenceImage)]
+	curves.color.fits['model'].set(**{amp_name:curves.images[referenceImage].fits.model.get(amp_name)})
+	curves.color.fits['res'] = res
+	curves.color.fits.table = curves.series.table.copy()
+
+	time = np.array(curves.color.fits.table['time'])
+	flux = np.array(curves.color.fits.table['flux'])
+	fluxerr = np.array(curves.color.fits.table['fluxerr'])
+
+	for im in images:
+		
+		if im in band_systematics.keys():
+			for b in band_systematics[im].keys():
+				inds2 = np.where(np.logical_and(curves.color.fits.table['image']==im,
+												curves.color.fits.table['band']==b))[0]
+				flux[inds2]-=band_systematics[im][b][1]
+		inds = np.where(curves.color.fits.table['image']==im)[0]
+		time[inds]-=curves.color.time_delays[im]
+		flux[inds]/=curves.color.magnifications[im]
+		fluxerr[inds]/=curves.color.magnifications[im]
+		
+	curves.color.fits.table['time'] = time
+	curves.color.fits.table['flux'] = flux
+	curves.color.fits.table['fluxerr'] = fluxerr
+	curves.color.fits.table['mag'] = -2.5*np.log10(flux)+curves.color.fits.table['zp']
+	curves.color.fits.table['magerr'] = 1.0857*fluxerr/flux
+	return curves
+
+def single_model_series_delays(curves,model,vparam_names,shared_parameters,referenceImage=None,fix_time=[],fix_magnification=[],
+						bounds={},t0_guess={},magnification_guess={},band_systematics={},
+						nest_kwargs={},minsnr=0,**kwargs):
+
+	if curves.series.table is None:
+		curves.series_table(minsnr=minsnr)
+
+	if isinstance(model,str):
+		model = sncosmo.Model(model)
+
+	t0_name = model.param_names[1]
+	amp_name = model.param_names[2]
+
+	images = list(np.unique(curves.series.table['image']))
+	if referenceImage is None:
+		referenceImage = images[0]
+
+	if amp_name not in bounds.keys():
+		for im in np.append([referenceImage],[x for x in images if x!=referenceImage]):
+			guess_t0, guess_amp = sncosmo.fitting.guess_t0_and_amplitude(
+				sncosmo.photdata.photometric_data(
+					curves.images[im].table),
+				model, minsnr)
+			if im==referenceImage:
+				bounds[amp_name] = np.array([0.01,100])*guess_amp
+			elif im not in magnification_guess.keys():
+				magnification_guess[im] = guess_amp/np.mean(bounds[amp_name])
+
+
+	curves.series.refImage = referenceImage
+	for p in vparam_names:
+		if p not in bounds.keys():
+			raise RuntimeError("Must supply bound for parameter %s."%p)
+		bounds[p] = np.array(bounds[p])
+	
+	
+
+	full_vparam_names = [x for x in vparam_names if x not in [t0_name,amp_name]]
+	for im in images:
+		if im in magnification_guess.keys():
+			mag = magnification_guess[im]
+		else:
+			mag = 1.
+		if im in t0_guess.keys():
+			t0 = t0_guess[im]
+		else:
+			t0 = 0.
+
+		if amp_name in vparam_names and im not in fix_magnification:
+		
+			full_vparam_names.append(amp_name+'_'+im)
+			bounds[amp_name+'_'+im] = bounds[amp_name]*mag
+			
+		if t0_name in vparam_names and im not in fix_time:
+			full_vparam_names.append(t0_name+'_'+im)
+			bounds[t0_name+'_'+im] = bounds[t0_name]+t0
+
+
+	for im in band_systematics.keys():
+		for b in band_systematics[im]:
+			full_vparam_names.append(b+'_'+im+'_sys')
+
+			bounds[b+'_'+im+'_sys'] = bounds['band_sys']
+
+	params,res,models = series_nest(curves.series.table,model,full_vparam_names,bounds,shared_parameters,band_systematics=band_systematics,**kwargs)
+
+	curves.series.fits = newDict()
+
+
+	for im in band_systematics.keys():
+		temp = {}
+		for b in band_systematics[im]:
+			temp[b] = weighted_quantile(res.samples[:,res.vparam_names.index(b+'_'+im+'_sys')],[.16,.5,.84],res.weights)
+			temp[b][0] -= temp[b][1]
+			temp[b][2] -= temp[b][1]
+		band_systematics[im] = temp
+
+	for i,im in enumerate(images):
+		curves.images[im].fits = newDict()
+		curves.images[im].fits['model'] = models[i]
+
+	curves.series.fits.band_systematics = band_systematics
+
+	curves.series.param_quantiles = {d:params[res.vparam_names.index(d)] for d in res.vparam_names}
+	curves.series.t_peaks = {im:params[res.vparam_names.index(t0_name+'_'+im)][1] for im in images}
+	curves.series.a_peaks = {im:params[res.vparam_names.index(amp_name+'_'+im)][1] for im in images}
+
+	td_quantiles = {im:weighted_quantile(res.samples[:,res.vparam_names.index(t0_name+'_'+im)]-\
+											res.samples[:,res.vparam_names.index(t0_name+'_'+referenceImage)],
+											[.16,.5,.84],res.weights) for im in images if im!=referenceImage}
+
+	curves.series.time_delays = {im:td_quantiles[im][1] for im in images if im!=referenceImage}
+	curves.series.time_delays[referenceImage] = 0
+	curves.series.time_delay_errors = {im:np.array([td_quantiles[im][0],td_quantiles[im][2]])-td_quantiles[im][1] for im in images if im!=referenceImage}
+	curves.series.time_delay_errors[referenceImage] = [0,0]
+
+	mag_quantiles = {im:weighted_quantile(res.samples[:,res.vparam_names.index(amp_name+'_'+im)]/\
+											res.samples[:,res.vparam_names.index(amp_name+'_'+referenceImage)],
+											[.16,.5,.84],res.weights) for im in images if im!=referenceImage}
+
+	curves.series.magnifications = {im:mag_quantiles[im][1] for im in images if im!=referenceImage}
+	curves.series.magnifications[referenceImage] = 1
+	curves.series.magnification_errors = {im:np.array([mag_quantiles[im][0],mag_quantiles[im][2]])-mag_quantiles[im][1] for im in images if im!=referenceImage}
+	curves.series.magnification_errors[referenceImage] = [0,0]
+
+	curves.series.fits['model'] = models[images.index(referenceImage)]
+	curves.series.fits['res'] = res
+	curves.series.fits.table = curves.series.table.copy()
+
+	time = np.array(curves.series.fits.table['time'])
+	flux = np.array(curves.series.fits.table['flux'])
+	fluxerr = np.array(curves.series.fits.table['fluxerr'])
+
+	for im in images:
+		if im in band_systematics.keys():
+			for b in band_systematics[im].keys():
+				inds2 = np.where(np.logical_and(curves.series.fits.table['image']==im,
+												curves.series.fits.table['band']==b))[0]
+				flux[inds2]-=band_systematics[im][b][1]
+		if im!=referenceImage:
+			
+			inds = np.where(curves.series.fits.table['image']==im)[0]
+			time[inds]-=curves.series.time_delays[im]
+			flux[inds]/=curves.series.magnifications[im]
+			fluxerr[inds]/=curves.series.magnifications[im]
+		
+
+	curves.series.fits.table['time'] = time
+	curves.series.fits.table['flux'] = flux
+	curves.series.fits.table['fluxerr'] = fluxerr
+	curves.series.fits.table['mag'] = -2.5*np.log10(flux)+curves.series.fits.table['zp']
+	curves.series.fits.table['magerr'] = 1.0857*fluxerr/flux
+	return curves
+
+def color_nest(data,model,vparam_names,bounds,shared_parameters,colors,use_MLE=False,
+					band_systematics={},
+					minsnr=5., priors=None, ppfs=None, npoints=100, method='single',
+				   maxiter=None, maxcall=None, modelcov=False, rstate=None,
+				   verbose=False, warn=True,use_bayesn_epsilon=False, **kwargs):
+	
+	vparam_names = list(vparam_names)
+	if ppfs is None:
+		ppfs = {}
+	# Convert bounds/priors combinations into ppfs
+	if bounds is not None:
+		for key, val in bounds.items():
+			if key in ppfs:
+				continue  # ppfs take priority over bounds/priors
+			a, b = val
+			if priors is not None and key in priors:
+				# solve ppf at discrete points and return interpolating
+				# function
+				x_samples = np.linspace(0., 1., 101)
+				ppf_samples = sncosmo.utils.ppf(priors[key], x_samples, a, b)
+				f = sncosmo.utils.Interp1D(0., 1., ppf_samples)
+			else:
+				f = sncosmo.utils.Interp1D(0., 1., np.array([a, b]))
+			ppfs[key] = f
+
+	# NOTE: It is important that iparam_names is in the same order
+	# every time, otherwise results will not be reproducible, even
+	# with same random seed.  This is because iparam_names[i] is
+	# matched to u[i] below and u will be in a reproducible order,
+	# so iparam_names must also be.
+
+	iparam_names = [key for key in vparam_names if key in ppfs]
+
+	ppflist = [ppfs[key] for key in iparam_names]
+	npdim = len(iparam_names)  # length of u
+	ndim = len(vparam_names)  # length of v
+
+	# Check that all param_names either have a direct prior or are tied.
+	for name in vparam_names:
+		if name in iparam_names:
+			continue
+		if name in tied:
+			continue
+		raise ValueError("Must supply ppf or bounds or tied for parameter '{}'"
+						 .format(name))
+
+	def prior_transform(u):
+		d = {}
+		for i in range(npdim):
+			d[iparam_names[i]] = ppflist[i](u[i])
+		v = np.empty(ndim, dtype=float)
+		for i in range(ndim):
+			key = vparam_names[i]
+			if key in d:
+				v[i] = d[key]
+			else:
+				v[i] = tied[key](d)
+		return v
+
+	data.sort('time')
+	image_names = np.unique(data['image'])
+	
+	image_indices = [np.where(data['image']==im)[0] for im in image_names]
+	t0_name = model.param_names[1]
+	models = [copy(model) for i in range(len(image_names))]
+
+	image_data_dict = {}
+	sys_band_dict = {}
+	sys_band_params = {}
+	sys_band_zps = {}
+	do_band_sys = False
+	for inds,im in zip(image_indices,image_names):
+		image_data_dict[im] = {}
+		sys_band_params[im] = {}
+		sys_band_zps[im] = {}
+		if im in band_systematics.keys():
+			for b in band_systematics[im]:
+				do_band_sys = True
+				sys_band_params[im][b] = vparam_names.index(b+'_'+im+'_sys')
+				sys_band_zps[im][b] = np.nanmedian(data['zp_'+b][inds])
+		for color in colors:
+			colname = color[0]+'-'+color[1]
+			image_data_dict[im][colname] = {}
+			
+			
+			image_data_dict[im][colname]['zpsys'] = np.array(data['zpsys'][inds])
+			image_data_dict[im][colname]['time'] = np.array(data['time'][inds])
+			image_data_dict[im][colname]['col'] = np.array(data[colname][inds])
+			image_data_dict[im][colname]['col_err'] = np.array(data[colname+'_err'][inds])
+			image_data_dict[im][colname]['flux_col1'] = np.array(data['flux_'+color[0]][inds])
+			image_data_dict[im][colname]['flux_col2'] = np.array(data['flux_'+color[1]][inds])
+			image_data_dict[im][colname]['fluxerr_col1'] = np.array(data['fluxerr_'+color[0]][inds])
+			image_data_dict[im][colname]['fluxerr_col2'] = np.array(data['fluxerr_'+color[1]][inds])
+			image_data_dict[im][colname]['fluxerr_col'] = image_data_dict[im][colname]['flux_col1']/\
+														image_data_dict[im][colname]['flux_col2']*\
+														np.sqrt(np.array(data['fluxerr_'+color[0]][inds]/data['flux_'+color[0]][inds])**2+\
+														np.array(data['fluxerr_'+color[1]][inds]/data['flux_'+color[1]][inds])**2)
+		
+			image_data_dict[im][colname]['images'] = np.array(data['image'][inds])
+
+			good = np.where(~np.isnan(image_data_dict[im][colname]['col']))[0]
+			for c in ['zpsys','time','col','col_err','images',
+			'flux_col1','flux_col2','fluxerr_col1','fluxerr_col2','fluxerr_col']:
+				image_data_dict[im][colname][c] = image_data_dict[im][colname][c][good]
+
+	zpsys = np.unique(data['zpsys'])[0]
+
+
+	shared_vindices = np.array([vparam_names.index(p) for p in shared_parameters if p in vparam_names])
+	shared_indices = np.array([model.param_names.index(p) for p in vparam_names if p in shared_parameters])
+
+	t0_indices = np.array([vparam_names.index(t0_name+'_'+im) for im in image_names])
+	
+	import pdb
+	def chisq_likelihood(parameters):
+		chisq = 0
+
+		for i,mod in enumerate(models):
+			#print(image_names[i])
+			mod.parameters[shared_indices] = parameters[shared_vindices]
+			mod.parameters[1] = parameters[t0_indices[i]]
+			
+
+			for col in image_data_dict[image_names[i]].keys():
+				flux1 = copy(image_data_dict[image_names[i]][col]['flux_col1'])
+				flux2 = copy(image_data_dict[image_names[i]][col]['flux_col2'])
+				fluxerr1 = copy(image_data_dict[image_names[i]][col]['fluxerr_col1'])
+				fluxerr2 = copy(image_data_dict[image_names[i]][col]['fluxerr_col2'])
+				#print(col)
+				b1 = col.split('-')[0]
+				b2 = col.split('-')[1]
+				if do_band_sys or True:
+					f1 = mod.bandflux(b1,image_data_dict[image_names[i]][col]['time'],
+										zp=sys_band_zps[image_names[i]][b1],
+										zpsys=zpsys)
+					f2 = mod.bandflux(b2,image_data_dict[image_names[i]][col]['time'],
+										zp=sys_band_zps[image_names[i]][b2],
+										zpsys=zpsys)
+
+
+					#print(b1,b2,sys_band_zps[image_names[i]][b1],sys_band_zps[image_names[i]][b2],
+					#	image_data_dict[image_names[i]][col]['time'])
+
+					A = parameters[sys_band_params[image_names[i]][b1]]
+					B = parameters[sys_band_params[image_names[i]][b2]]
+
+					flux1-=A
+					flux2-=B
+
+
+					#snr = flux1/fluxerr1 = (flux1-A)/(fluxerr1+B)
+					fluxerr1+=((flux1-A)*fluxerr1/flux1-fluxerr1)
+					fluxerr2+=((flux1-A)*fluxerr2/flux2-fluxerr2)
+
+					flux_col = flux1/flux2
+					fluxerr_col = flux_col*np.sqrt((fluxerr1/flux1)**2+\
+														(fluxerr2/flux2)**2)
+					#print(b1,b2,sys_band_params[image_names[i]][b1],sys_band_params[image_names[i]][b2])
+					#-2.5*log(f1)+zp - (-2.5*log(f2)+zp)
+					#-2.5(log(f1-log(f2)))
+					#-2.5(log(f1/f2))
+					mod_color = f1/f2#(f1+A)/(f2+B)
+					#print(mod_color)
+					#print(f1,f2)
+					#mod_color = -2.5*np.log10(f1/f2)
+					#print(image_names[i],b1,b2,f1,f2,mod_color,mod.color(b1,b2,
+					#				zpsys,
+					#				image_data_dict[image_names[i]][col]['time']),
+					#mod.parameters)
+
+				else:
+					mod_color = mod.color(b1,b2,
+									zpsys,
+									image_data_dict[image_names[i]][col]['time'])
+				
+				
+				#nll = (image_data_dict[image_names[i]][col]['col']-mod_color) ** 2 / (2 * image_data_dict[image_names[i]][col]['col_err']**2)+ \
+        		#				np.log(image_data_dict[image_names[i]][col]['col_err'] * (10**(-.4*image_data_dict[image_names[i]][col]['col'])))+ \
+        		#							0.5 * np.log(2 * np.pi)
+				#chi = (image_data_dict[image_names[i]][col]['col']-mod_color)/image_data_dict[image_names[i]][col]['col_err']
+				chi = (flux_col-mod_color)/image_data_dict[image_names[i]][col]['fluxerr_col']
+				
+				chisq += np.dot(chi,chi)#np.sum(nll)#
+				if np.isnan(chisq):#np.any(np.isnan(nll)):
+					return np.inf
+				
+		#sys.exit()
+		return chisq
+	
+
+	def loglike(parameters):
+		chisq = chisq_likelihood(parameters)
+		return(-.5*chisq)
+
+	sampler = dynesty.NestedSampler(loglike, prior_transform, ndim, nlive = npoints)
+	sampler.run_nested(maxiter=maxiter,maxcall=maxcall)
+	res = sampler.results
+	samples = res.samples  # samples
+	weights = res.importance_weights()
+
+	vparameters, cov = dyfunc.mean_and_cov(samples, weights)
+
+	res = sncosmo.utils.Result(niter=res.niter,
+						   ncall=res.ncall,
+						   logz=np.max(res.logz),
+						   logzerr=res.logzerr,
+						   #h=res.h,
+						   samples=res.samples,
+						   weights=weights,
+						   logvol=res.logvol,
+						   logl=res.logl,
+						   errors=OrderedDict(zip(vparam_names,
+												  np.sqrt(np.diagonal(cov)))),
+						   vparam_names=copy(vparam_names),
+						   bounds=bounds,
+						   dynasty_res=res)
+
+	if use_MLE:
+		best_ind = res.logl.argmax()
+		params = [[res.samples[best_ind, i]-res.errors[vparam_names[i]], res.samples[best_ind, i], res.samples[best_ind, i]+res.errors[vparam_names[i]]]
+				  for i in range(len(vparam_names))]
+	else:
+		params = [weighted_quantile(
+			res.samples[:, i], [.16, .5, .84], res.weights) for i in range(len(vparam_names))]
+
+	best_params = np.array([x[1] for x in params])
+	for i,mod in enumerate(models):
+		mod.parameters[shared_indices] = best_params[shared_vindices]
+		mod.parameters[1] = best_params[t0_indices[i]]
+
+	return params, res, models
+
+def series_nest(data,model,vparam_names,bounds,shared_parameters,use_MLE=False,band_systematics={},
+					minsnr=5., priors=None, ppfs=None, npoints=100, method='single',
+				   maxiter=None, maxcall=None, modelcov=False, rstate=None,
+				   verbose=False, warn=True,use_bayesn_epsilon=False, **kwargs):
+	
+	vparam_names = list(vparam_names)
+	if ppfs is None:
+		ppfs = {}
+	# Convert bounds/priors combinations into ppfs
+	if bounds is not None:
+		for key, val in bounds.items():
+			if key in ppfs:
+				continue  # ppfs take priority over bounds/priors
+			a, b = val
+			if priors is not None and key in priors:
+				# solve ppf at discrete points and return interpolating
+				# function
+				x_samples = np.linspace(0., 1., 101)
+				ppf_samples = sncosmo.utils.ppf(priors[key], x_samples, a, b)
+				f = sncosmo.utils.Interp1D(0., 1., ppf_samples)
+			else:
+				f = sncosmo.utils.Interp1D(0., 1., np.array([a, b]))
+			ppfs[key] = f
+
+	# NOTE: It is important that iparam_names is in the same order
+	# every time, otherwise results will not be reproducible, even
+	# with same random seed.  This is because iparam_names[i] is
+	# matched to u[i] below and u will be in a reproducible order,
+	# so iparam_names must also be.
+
+	iparam_names = [key for key in vparam_names if key in ppfs]
+
+	ppflist = [ppfs[key] for key in iparam_names]
+	npdim = len(iparam_names)  # length of u
+	ndim = len(vparam_names)  # length of v
+
+	# Check that all param_names either have a direct prior or are tied.
+	for name in vparam_names:
+		if name in iparam_names:
+			continue
+		if name in tied:
+			continue
+		raise ValueError("Must supply ppf or bounds or tied for parameter '{}'"
+						 .format(name))
+
+	def prior_transform(u):
+		d = {}
+		for i in range(npdim):
+			d[iparam_names[i]] = ppflist[i](u[i])
+		v = np.empty(ndim, dtype=float)
+		for i in range(ndim):
+			key = vparam_names[i]
+			if key in d:
+				v[i] = d[key]
+			else:
+				v[i] = tied[key](d)
+		return v
+
+	data.sort('time')
+	image_names = np.unique(data['image'])
+	
+	image_indices = [np.where(data['image']==im)[0] for im in image_names]
+	t0_name = model.param_names[1]
+	amp_name = model.param_names[2]
+	models = [copy(model) for i in range(len(image_names))]
+
+	image_data_dict = {}
+	sys_band_dict = {}
+	sys_band_params = {}
+	for inds,im in zip(image_indices,image_names):
+		image_data_dict[im] = {}
+		image_data_dict[im]['cov'] = np.diag(data['fluxerr'][inds]**2)
+		image_data_dict[im]['zp'] = np.array(data['zp'][inds])
+		image_data_dict[im]['zpsys'] = np.array(data['zpsys'][inds])
+		image_data_dict[im]['time'] = np.array(data['time'][inds])
+		image_data_dict[im]['flux'] = np.array(data['flux'][inds])
+		image_data_dict[im]['fluxerr'] = np.array(data['fluxerr'][inds])
+		image_data_dict[im]['band'] = np.array(data['band'][inds])
+		image_data_dict[im]['images'] = np.array(data['image'][inds])
+
+		sys_band_dict[im] = {}
+		sys_band_params[im] = {}
+		if im in band_systematics.keys():
+			for b in band_systematics[im]:
+				sys_band_dict[im][b] = np.where(image_data_dict[im]['band']==b)[0]
+				sys_band_params[im][b] = vparam_names.index(b+'_'+im+'_sys')
+
+	shared_vindices = np.array([vparam_names.index(p) for p in shared_parameters if p in vparam_names])
+	shared_indices = np.array([model.param_names.index(p) for p in vparam_names if p in shared_parameters])
+
+	amp_indices = np.array([vparam_names.index(amp_name+'_'+im) for im in image_names])
+	t0_indices = np.array([vparam_names.index(t0_name+'_'+im) for im in image_names])
+	
+	
+	import pdb
+	def chisq_likelihood(parameters):
+		chisq = 0
+		for i,mod in enumerate(models):
+			mod.parameters[shared_indices] = parameters[shared_vindices]
+			mod.parameters[2] = parameters[amp_indices[i]]
+			mod.parameters[1] = parameters[t0_indices[i]]
+
+			mod_flux = mod.bandflux(image_data_dict[image_names[i]]['band'],
+									image_data_dict[image_names[i]]['time'],
+									zp=image_data_dict[image_names[i]]['zp'],
+									zpsys=image_data_dict[image_names[i]]['zpsys'])
+
+			for b in sys_band_dict[image_names[i]].keys():
+				#print(sys_band_params[image_names[i]][b],len(parameters),sys_band_dict[image_names[i]][b])
+				mod_flux[sys_band_dict[image_names[i]][b]]+=parameters[sys_band_params[image_names[i]][b]]
+
+			chi = (image_data_dict[image_names[i]]['flux']-mod_flux)/image_data_dict[image_names[i]]['fluxerr']
+			#print(chi)
+			chisq += np.dot(chi,chi)
+			#pdb.set_trace()
+		#print('chisq:',chisq)
+		return chisq
+	
+
+	def loglike(parameters):
+		chisq = chisq_likelihood(parameters)
+		return(-.5*chisq)
+
+	sampler = dynesty.NestedSampler(loglike, prior_transform, ndim, nlive = npoints)
+	sampler.run_nested(maxiter=maxiter,maxcall=maxcall)
+	res = sampler.results
+	samples = res.samples  # samples
+	weights = res.importance_weights()
+
+	vparameters, cov = dyfunc.mean_and_cov(samples, weights)
+
+	res = sncosmo.utils.Result(niter=res.niter,
+						   ncall=res.ncall,
+						   logz=np.max(res.logz),
+						   logzerr=res.logzerr,
+						   #h=res.h,
+						   samples=res.samples,
+						   weights=weights,
+						   logvol=res.logvol,
+						   logl=res.logl,
+						   errors=OrderedDict(zip(vparam_names,
+												  np.sqrt(np.diagonal(cov)))),
+						   vparam_names=copy(vparam_names),
+						   bounds=bounds,
+						   dynasty_res=res)
+
+	if use_MLE:
+		best_ind = res.logl.argmax()
+		params = [[res.samples[best_ind, i]-res.errors[vparam_names[i]], res.samples[best_ind, i], res.samples[best_ind, i]+res.errors[vparam_names[i]]]
+				  for i in range(len(vparam_names))]
+	else:
+		params = [weighted_quantile(
+			res.samples[:, i], [.16, .5, .84], res.weights) for i in range(len(vparam_names))]
+
+	best_params = np.array([x[1] for x in params])
+	for i,mod in enumerate(models):
+		mod.parameters[shared_indices] = best_params[shared_vindices]
+		mod.parameters[2] = best_params[amp_indices[i]]
+		mod.parameters[1] = best_params[t0_indices[i]]
+
+	return params, res, models
+
+
 
 
 def fit_data(curves=None, snType='Ia', bands=None, models=None, params=None, bounds={}, ignore=None, constants={}, ignore_models=[],
@@ -187,7 +863,7 @@ def fit_data(curves=None, snType='Ia', bands=None, models=None, params=None, bou
 		args[k] = kwargs[k]
 	if isinstance(curves, (list, tuple, np.ndarray)):
 
-		if isinstance(curves[0], str):	# then its a filename list
+		if isinstance(curves[0], str):  # then its a filename list
 			filelist = True
 		else:
 			filelist = False
@@ -1575,7 +2251,7 @@ def nest_color_lc(data, model, nimage, colors, vparam_names, bounds, ref='image_
 			obs_dict[add_key
 				 ] = np.array(data[add_key][col_inds])
 			err_dict[add_key
-				 ] = np.array(data[add_key+'_err'][col_inds])	
+				 ] = np.array(data[add_key+'_err'][col_inds])   
 
 		if color[0] not in ext_dict:
 			ext_dict[color[0]] = np.array([sncosmo.get_bandpass(color[0]).wave_eff])
@@ -1603,7 +2279,7 @@ def nest_color_lc(data, model, nimage, colors, vparam_names, bounds, ref='image_
 			#axes = [ax1,ax2,ax3]
 			bayesn_chis = np.zeros(len(all_eps_prob))
 		#print({model_param_names[k]: parameters[model_idx[k]]
-		#			  for k in range(len(model_idx))})
+		#             for k in range(len(model_idx))})
 		for key in obs_dict.keys():
 			nc+=1
 			
@@ -1663,7 +2339,7 @@ def nest_color_lc(data, model, nimage, colors, vparam_names, bounds, ref='image_
 						#total_ext = col1_ext+col2_ext
 						#print(obs[im_dict[key][ext_params[i][-1]]])
 						#obs[im_dict[key][ext_params[i][-1]]] = obs[im_dict[key][ext_params[i][-1]]]+\
-						#	 -2.5*np.log10(base1*col2_ext)+2.5*np.log10(col1_ext*base2)
+						#    -2.5*np.log10(base1*col2_ext)+2.5*np.log10(col1_ext*base2)
 						#print(-2.5*np.log10(base1*col2_ext)+2.5*np.log10(col1_ext*base2))
 						obs[im_dict[key][ext_params[i][-1]]]-=(ext_col-basecol)
 						#sys.exit()
@@ -1695,13 +2371,13 @@ def nest_color_lc(data, model, nimage, colors, vparam_names, bounds, ref='image_
 				#chisq += np.dot(chi, chi)
 				#print(color,chisq)
 				# if chisq/nc<100 or chiplot:
-				#	  chiplot = True
-				#	  plt.errorbar(time[timesort],obs,yerr=err,fmt='.')
-				#	  time2 = np.linspace(np.min(time)-10,np.max(time)+10,100)
-				#	  plt.plot(time2,model.color(color[0], color[1], zpsys, time2))
-				#	  plt.gca().invert_yaxis()
-				#	  plt.title(color[0]+'-'+color[1])
-				#	  plt.show()
+				#     chiplot = True
+				#     plt.errorbar(time[timesort],obs,yerr=err,fmt='.')
+				#     time2 = np.linspace(np.min(time)-10,np.max(time)+10,100)
+				#     plt.plot(time2,model.color(color[0], color[1], zpsys, time2))
+				#     plt.gca().invert_yaxis()
+				#     plt.title(color[0]+'-'+color[1])
+				#     plt.show()
 				#print('init',chisq)
 				#model_observations = np.atleast_2d(mod_color)
 				#print(all_eps_flux[color][0])
@@ -1731,16 +2407,16 @@ def nest_color_lc(data, model, nimage, colors, vparam_names, bounds, ref='image_
 				#best_chi = chisq.argmin()
 				#best_eps = None
 				#for eps_flux,logprob,eps in all_epsilon:
-				#	 model_observations_eps = model_observations+eps_flux[timesort]
+				#    model_observations_eps = model_observations+eps_flux[timesort]
 			
 					 
-				#	 chi = (tempFlux[timesort]-model_observations_eps)/np.array(tempFluxerr[timesort])
-				#	 chisq = np.dot(chi, chi)
-				#	 chisq += logprob
-				#	 print(chisq)
-				#	 if chisq<best_chi:
-				#		 best_chi = chisq
-				#		 best_eps = eps
+				#    chi = (tempFlux[timesort]-model_observations_eps)/np.array(tempFluxerr[timesort])
+				#    chisq = np.dot(chi, chi)
+				#    chisq += logprob
+				#    print(chisq)
+				#    if chisq<best_chi:
+				#        best_chi = chisq
+				#        best_eps = eps
 				#print(chisq[best_chi])
 				#sys.exit()
 				
@@ -1783,9 +2459,9 @@ def nest_color_lc(data, model, nimage, colors, vparam_names, bounds, ref='image_
 			best_chi = (-.5*bayesn_chis+all_eps_prob).argmax()
 			#time2 = np.linspace(np.min(time)-10,np.max(time)+10,100)
 			#for nc,key in enumerate(list(obs_dict.keys())):
-			#	 color = tuple(key.split('-'))
-			#	 axes[nc].plot(time2,model.color(color[0], color[1], zpsys, time2)+all_eps_flux[color][best_chi](time2-model.get('t0')),
-			#		 linewidth=4,color='r')
+			#    color = tuple(key.split('-'))
+			#    axes[nc].plot(time2,model.color(color[0], color[1], zpsys, time2)+all_eps_flux[color][best_chi](time2-model.get('t0')),
+			#        linewidth=4,color='r')
 			#plt.show()
 			#plt.hist(bayesn_chis)
 			#plt.show()
@@ -1826,18 +2502,18 @@ def nest_color_lc(data, model, nimage, colors, vparam_names, bounds, ref='image_
 	#print(flat_samples.shape)
 	#print(flat_samples)
 	#res = sncosmo.utils.Result(samples=flat_samples,
-	#						 weights=np.ones(flat_samples.shape[0]),
-	#						 logl=sampler.get_log_prob(discard=0,flat=True),
-	#						 errors=None,
-	#						 logz=1,
-	#						 vparam_names=copy(vparam_names),
-	#						 bounds=bounds)
+	#                        weights=np.ones(flat_samples.shape[0]),
+	#                        logl=sampler.get_log_prob(discard=0,flat=True),
+	#                        errors=None,
+	#                        logz=1,
+	#                        vparam_names=copy(vparam_names),
+	#                        bounds=bounds)
 
 	#params = [np.percentile(res.samples[:,i],[16,50,84]) for i in range(len(vparam_names))]
 	#if use_MLE:
-	#	best_ind = res.logl.argmax()
-	#	for i in range(len(vparam_names)):
-	#		params[i][1] = res.samples[best_ind,i]
+	#   best_ind = res.logl.argmax()
+	#   for i in range(len(vparam_names)):
+	#       params[i][1] = res.samples[best_ind,i]
 	#res.errors = OrderedDict(zip(vparam_names,[(params[i][2]-params[i][0])/2 for i in range(len(vparam_names))]))
 	verbose = True
 	print('why not printing')
@@ -1852,9 +2528,9 @@ def nest_color_lc(data, model, nimage, colors, vparam_names, bounds, ref='image_
 		#pool = MPIPool()
 		if use_multi:
 			with dynesty.pool.Pool(10, loglike, prior_transform) as pool:
-			    sampler = dynesty.NestedSampler(pool.loglike, pool.prior_transform,
-			                            ndim, pool = pool)
-			    sampler.run_nested(maxiter=maxiter,
+				sampler = dynesty.NestedSampler(pool.loglike, pool.prior_transform,
+										ndim, pool = pool)
+				sampler.run_nested(maxiter=maxiter,
 							maxcall=maxcall)
 		else:
 			sampler = dynesty.NestedSampler(loglike, prior_transform, ndim, nlive = npoints)
@@ -2777,7 +3453,7 @@ def nest_series_lc(data, model, nimage, vparam_names, bounds, ref='image_1', use
 		tempFlux = copy(flux)
 		tempFluxerr = copy(fluxerr)
 		#sncosmo.plot_lc(Table([tempTime,band,tempFlux,tempFluxerr,zp,zpsys],
-		#	 names=['time','band','flux','fluxerr','zp','zpsys']))
+		#    names=['time','band','flux','fluxerr','zp','zpsys']))
 		#plt.show()
 		for i in range(len(im_indices)):
 			if doTd:
@@ -2786,7 +3462,7 @@ def nest_series_lc(data, model, nimage, vparam_names, bounds, ref='image_1', use
 				tempFlux[im_indices[i]] /= parameters[amp_idx[i]]
 				tempFluxerr[im_indices[i]] /= parameters[amp_idx[i]]
 		#sncosmo.plot_lc(Table([tempTime,band,tempFlux,tempFluxerr,zp,zpsys],
-		#	 names=['time','band','flux','fluxerr','zp','zpsys']))
+		#    names=['time','band','flux','fluxerr','zp','zpsys']))
 		#plt.show()
 		timesort = np.argsort(tempTime)
 		model_observations = model.bandflux(band[timesort], tempTime[timesort],
@@ -2811,16 +3487,16 @@ def nest_series_lc(data, model, nimage, vparam_names, bounds, ref='image_1', use
 			best_chi = chisq.argmin()
 			#best_eps = None
 			#for eps_flux,logprob,eps in all_epsilon:
-			#	 model_observations_eps = model_observations+eps_flux[timesort]
+			#    model_observations_eps = model_observations+eps_flux[timesort]
 		
 				 
-			#	 chi = (tempFlux[timesort]-model_observations_eps)/np.array(tempFluxerr[timesort])
-			#	 chisq = np.dot(chi, chi)
-			#	 chisq += logprob
-			#	 print(chisq)
-			#	 if chisq<best_chi:
-			#		 best_chi = chisq
-			#		 best_eps = eps
+			#    chi = (tempFlux[timesort]-model_observations_eps)/np.array(tempFluxerr[timesort])
+			#    chisq = np.dot(chi, chi)
+			#    chisq += logprob
+			#    print(chisq)
+			#    if chisq<best_chi:
+			#        best_chi = chisq
+			#        best_eps = eps
 			#print(chisq[best_chi])
 			#sys.exit()
 			return chisq[best_chi],all_epsilon[best_chi],all_eps_prob[best_chi]
@@ -2843,7 +3519,7 @@ def nest_series_lc(data, model, nimage, vparam_names, bounds, ref='image_1', use
 				chisq = np.dot(chi, chi)
 			#print(chisq,list(zip(vparam_names,parameters)))
 			#sncosmo.plot_lc(Table([band[timesort],tempTime[timesort],tempFlux[timesort],tempFluxerr[timesort],
-			#	 zp[timesort],zpsys[timesort]],names=['band','time','flux','fluxerr','zp','zpsys']),model)
+			#    zp[timesort],zpsys[timesort]],names=['band','time','flux','fluxerr','zp','zpsys']),model)
 			#plt.show()
 			#sys.exit()
 			return chisq,None,0
@@ -2867,13 +3543,13 @@ def nest_series_lc(data, model, nimage, vparam_names, bounds, ref='image_1', use
 		from dynesty import utils as dyfunc
 		#pool = MPIPool()
 		with dynesty.pool.Pool(10, loglike, prior_transform) as pool:
-		    sampler = dynesty.NestedSampler(pool.loglike, pool.prior_transform,
-		                            ndim, pool = pool)
-		    sampler.run_nested(maxiter=maxiter,
+			sampler = dynesty.NestedSampler(pool.loglike, pool.prior_transform,
+									ndim, pool = pool)
+			sampler.run_nested(maxiter=maxiter,
 						maxcall=maxcall)
 		#sampler = dynesty.NestedSampler(loglike, prior_transform, ndim, nlive = npoints)
 		#sampler.run_nested(maxiter=maxiter,
-		#				maxcall=maxcall)
+		#               maxcall=maxcall)
 		res = sampler.results
 		samples = res.samples  # samples
 		weights = res.importance_weights()
@@ -3302,9 +3978,9 @@ def _fitparallel(all_args):
 	args['curves'].images[args['fitOrder'][0]].param_quantiles = {k: first_params[first_res[2].vparam_names.index(k)] for
 																  k in first_res[2].vparam_names}
 	# for i in range(len(first_res[2].vparam_names)):
-	#	if first_res[2].vparam_names[i]==first_res[1].param_names[2] or first_res[2].vparam_names[i]=='t0':
-	#		continue
-	#	initial_bounds[first_res[2].vparam_names[i]]=3*np.array([first_params[i][0],first_params[i][2]])-2*first_params[i][1]
+	#   if first_res[2].vparam_names[i]==first_res[1].param_names[2] or first_res[2].vparam_names[i]=='t0':
+	#       continue
+	#   initial_bounds[first_res[2].vparam_names[i]]=3*np.array([first_params[i][0],first_params[i][2]])-2*first_params[i][1]
 	for d in args['fitOrder'][1:]:
 		if args['max_n_bands'] is not None:
 			best_bands = band_SNR[d][:min(
@@ -3654,13 +4330,13 @@ def nest_parallel_lc(data, model, prev_res, bounds, guess_amplitude_bound=False,
 		from dynesty import utils as dyfunc
 		#pool = MPIPool()
 		with dynesty.pool.Pool(10, loglike, prior_transform) as pool:
-		    sampler = dynesty.NestedSampler(pool.loglike, pool.prior_transform,
-		                            ndim, pool = pool)
-		    sampler.run_nested(maxiter=maxiter,
+			sampler = dynesty.NestedSampler(pool.loglike, pool.prior_transform,
+									ndim, pool = pool)
+			sampler.run_nested(maxiter=maxiter,
 						maxcall=maxcall,print_progress=True)
 		#sampler = dynesty.NestedSampler(loglike, prior_transform, ndim, nlive = npoints)
 		#sampler.run_nested(maxiter=maxiter,
-		#				maxcall=maxcall)
+		#               maxcall=maxcall)
 		res = sampler.results
 		samples = res.samples  # samples
 		weights = res.importance_weights()
@@ -3941,24 +4617,24 @@ def identify_micro_func(args):
 	return(np.unique(final_all_bands), np.array(final_color_bands.split('-')))
 
 	# else:
-	#	print([[x for x in args['bands'] if x not in to_remove]]*2)
-	#	sys.exit()
-	#	return [[x for x in args['bands'] if x not in to_remove]]*2
+	#   print([[x for x in args['bands'] if x not in to_remove]]*2)
+	#   sys.exit()
+	#   return [[x for x in args['bands'] if x not in to_remove]]*2
 
 	# else:
-	#	best_bands=None
-	#	best_logz=-np.inf
-	#	for bands in res_dict.keys():
+	#   best_bands=None
+	#   best_logz=-np.inf
+	#   for bands in res_dict.keys():
 	#
-	#		if res_dict[bands].logz>best_logz:
-	#			best_bands=bands
-	#			best_logz=res_dict[bands].logz
+	#       if res_dict[bands].logz>best_logz:
+	#           best_bands=bands
+	#           best_logz=res_dict[bands].logz
 	#
-	#	return [best_bands.split('-')]*2
+	#   return [best_bands.split('-')]*2
 
 
 def calc_ev(res, nlive):
-	logZnestle = res.logz						  # value of logZ
+	logZnestle = res.logz                         # value of logZ
 	# value of the information gain in nats
 	infogainnestle = res.h
 	if not np.isfinite(infogainnestle):
