@@ -500,7 +500,7 @@ def color_nest(data,model,vparam_names,bounds,shared_parameters,colors,use_MLE=F
         		#				np.log(image_data_dict[image_names[i]][col]['col_err'] * (10**(-.4*image_data_dict[image_names[i]][col]['col'])))+ \
         		#							0.5 * np.log(2 * np.pi)
 				#chi = (image_data_dict[image_names[i]][col]['col']-mod_color)/image_data_dict[image_names[i]][col]['col_err']
-				chi = (flux_col-mod_color)/image_data_dict[image_names[i]][col]['fluxerr_col']
+				chi = (flux_col-mod_color)/fluxerr_col#image_data_dict[image_names[i]][col]['fluxerr_col']
 				
 				chisq += np.dot(chi,chi)#np.sum(nll)#
 				if np.isnan(chisq):#np.any(np.isnan(nll)):
