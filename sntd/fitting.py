@@ -3,6 +3,7 @@ import sncosmo
 import os
 import sys
 import pyParz
+import dill
 import dill as pickle
 import subprocess
 import glob
@@ -26,6 +27,7 @@ from collections import OrderedDict
 import dynesty
 import multiprocessing
 from dynesty import utils as dyfunc
+import dynesty.utils
 
 from .util import *
 from .util import _filedir_, _current_dir_
@@ -86,7 +88,10 @@ def single_model_color_delays(curves,model,vparam_names,shared_parameters,refere
 			
 		if t0_name in vparam_names and im not in fix_time:
 			full_vparam_names.append(t0_name+'_'+im)
-			bounds[t0_name+'_'+im] = bounds[t0_name]+t0
+			if im==referenceImage:
+				bounds[t0_name+'_'+im] = bounds[t0_name]+t0
+			else:
+				bounds[t0_name+'_'+im] = bounds['td']+t0
 
 	for im in band_systematics.keys():
 		for b in band_systematics[im]:
@@ -189,7 +194,7 @@ def single_model_color_delays(curves,model,vparam_names,shared_parameters,refere
 def single_model_series_delays(curves,model,vparam_names,shared_parameters,referenceImage=None,fix_time=[],fix_magnification=[],
 						bounds={},t0_guess={},magnification_guess={},band_systematics={},
 						nest_kwargs={},minsnr=0,**kwargs):
-
+	print(kwargs)
 	if curves.series.table is None:
 		curves.series_table(minsnr=minsnr)
 
@@ -241,7 +246,10 @@ def single_model_series_delays(curves,model,vparam_names,shared_parameters,refer
 			
 		if t0_name in vparam_names and im not in fix_time:
 			full_vparam_names.append(t0_name+'_'+im)
-			bounds[t0_name+'_'+im] = bounds[t0_name]+t0
+			if im==referenceImage:
+				bounds[t0_name+'_'+im] = bounds[t0_name]+t0
+			else:
+				bounds[t0_name+'_'+im] = bounds['td']+t0
 
 
 	for im in band_systematics.keys():
@@ -250,7 +258,8 @@ def single_model_series_delays(curves,model,vparam_names,shared_parameters,refer
 
 			bounds[b+'_'+im+'_sys'] = bounds['band_sys']
 
-	params,res,models = series_nest(curves.series.table,model,full_vparam_names,bounds,shared_parameters,band_systematics=band_systematics,**kwargs)
+	params,res,models = series_nest(curves.series.table,model,full_vparam_names,bounds,shared_parameters,band_systematics=band_systematics,
+										**kwargs)
 
 	curves.series.fits = newDict()
 
@@ -320,6 +329,56 @@ def single_model_series_delays(curves,model,vparam_names,shared_parameters,refer
 	curves.series.fits.table['magerr'] = 1.0857*fluxerr/flux
 	return curves
 
+def loglike_color(parameters,models,shared_indices,shared_vindices,t0_indices,
+					image_data_dict,image_names,sys_band_zps,sys_band_params,zpsys):
+	chisq = 0
+	mods = deepcopy(models)
+	for i,mod in enumerate(mods):
+		#print(image_names[i])
+		mod.parameters[shared_indices] = parameters[shared_vindices]
+		mod.parameters[1] = parameters[t0_indices[i]]
+		
+
+		for col in image_data_dict[image_names[i]].keys():
+			flux1 = copy(image_data_dict[image_names[i]][col]['flux_col1'])
+			flux2 = copy(image_data_dict[image_names[i]][col]['flux_col2'])
+			fluxerr1 = copy(image_data_dict[image_names[i]][col]['fluxerr_col1'])
+			fluxerr2 = copy(image_data_dict[image_names[i]][col]['fluxerr_col2'])
+			#print(col)
+			b1 = col.split('-')[0]
+			b2 = col.split('-')[1]
+			f1 = mod.bandflux(b1,image_data_dict[image_names[i]][col]['time'],
+									zp=sys_band_zps[image_names[i]][b1],
+									zpsys=zpsys)
+			f2 = mod.bandflux(b2,image_data_dict[image_names[i]][col]['time'],
+									zp=sys_band_zps[image_names[i]][b2],
+									zpsys=zpsys)
+			if b1 in sys_band_params[image_names[i]].keys():
+				
+				A = parameters[sys_band_params[image_names[i]][b1]]
+				flux1-=A
+				fluxerr1+=((flux1-A)*fluxerr1/flux1-fluxerr1)
+
+			if b2 in sys_band_params[image_names[i]].keys():
+				B = parameters[sys_band_params[image_names[i]][b2]]
+
+				flux2-=B
+				fluxerr2+=((flux1-B)*fluxerr2/flux2-fluxerr2)
+				
+
+			flux_col = flux1/flux2
+			fluxerr_col = flux_col*np.sqrt((fluxerr1/flux1)**2+\
+													(fluxerr2/flux2)**2)
+			mod_color = f1/f2#(f1+A)/(f2+B)
+				
+			chi = (flux_col-mod_color)/fluxerr_col#image_data_dict[image_names[i]][col]['fluxerr_col']
+			
+			chisq += np.dot(chi,chi)#np.sum(nll)#
+			if np.isnan(chisq):#np.any(np.isnan(nll)):
+				return np.inf
+			
+	#sys.exit()
+	return -.5*chisq
 def color_nest(data,model,vparam_names,bounds,shared_parameters,colors,use_MLE=False,
 					band_systematics={},
 					minsnr=5., priors=None, ppfs=None, npoints=100, method='single',
@@ -356,7 +415,7 @@ def color_nest(data,model,vparam_names,bounds,shared_parameters,colors,use_MLE=F
 	ppflist = [ppfs[key] for key in iparam_names]
 	npdim = len(iparam_names)  # length of u
 	ndim = len(vparam_names)  # length of v
-
+	tied = {}
 	# Check that all param_names either have a direct prior or are tied.
 	for name in vparam_names:
 		if name in iparam_names:
@@ -366,7 +425,7 @@ def color_nest(data,model,vparam_names,bounds,shared_parameters,colors,use_MLE=F
 		raise ValueError("Must supply ppf or bounds or tied for parameter '{}'"
 						 .format(name))
 
-	def prior_transform(u):
+	def prior_transform_inner(u):
 		d = {}
 		for i in range(npdim):
 			d[iparam_names[i]] = ppflist[i](u[i])
@@ -395,12 +454,18 @@ def color_nest(data,model,vparam_names,bounds,shared_parameters,colors,use_MLE=F
 		image_data_dict[im] = {}
 		sys_band_params[im] = {}
 		sys_band_zps[im] = {}
-		if im in band_systematics.keys():
-			for b in band_systematics[im]:
-				do_band_sys = True
-				sys_band_params[im][b] = vparam_names.index(b+'_'+im+'_sys')
-				sys_band_zps[im][b] = np.nanmedian(data['zp_'+b][inds])
+		
+			
+				
 		for color in colors:
+			sys_band_zps[im][color[0]] = np.nanmedian(data['zp_'+color[0]][inds])
+			if im in band_systematics.keys() and color[0] in band_systematics[im]:
+				do_band_sys = True
+				sys_band_params[im][color[0]] = vparam_names.index(color[0]+'_'+im+'_sys')
+			sys_band_zps[im][color[1]] = np.nanmedian(data['zp_'+color[1]][inds])
+			if im in band_systematics.keys() and color[1] in band_systematics[im]:
+				do_band_sys = True
+				sys_band_params[im][color[1]] = vparam_names.index(color[1]+'_'+im+'_sys')
 			colname = color[0]+'-'+color[1]
 			image_data_dict[im][colname] = {}
 			
@@ -434,6 +499,7 @@ def color_nest(data,model,vparam_names,bounds,shared_parameters,colors,use_MLE=F
 	t0_indices = np.array([vparam_names.index(t0_name+'_'+im) for im in image_names])
 	
 	import pdb
+	
 	def chisq_likelihood(parameters):
 		chisq = 0
 
@@ -451,55 +517,30 @@ def color_nest(data,model,vparam_names,bounds,shared_parameters,colors,use_MLE=F
 				#print(col)
 				b1 = col.split('-')[0]
 				b2 = col.split('-')[1]
-				if do_band_sys or True:
-					f1 = mod.bandflux(b1,image_data_dict[image_names[i]][col]['time'],
+				f1 = mod.bandflux(b1,image_data_dict[image_names[i]][col]['time'],
 										zp=sys_band_zps[image_names[i]][b1],
 										zpsys=zpsys)
-					f2 = mod.bandflux(b2,image_data_dict[image_names[i]][col]['time'],
+				f2 = mod.bandflux(b2,image_data_dict[image_names[i]][col]['time'],
 										zp=sys_band_zps[image_names[i]][b2],
 										zpsys=zpsys)
-
-
-					#print(b1,b2,sys_band_zps[image_names[i]][b1],sys_band_zps[image_names[i]][b2],
-					#	image_data_dict[image_names[i]][col]['time'])
-
+				if b1 in sys_band_params[image_names[i]].keys():
+					
 					A = parameters[sys_band_params[image_names[i]][b1]]
-					B = parameters[sys_band_params[image_names[i]][b2]]
-
 					flux1-=A
-					flux2-=B
-
-
-					#snr = flux1/fluxerr1 = (flux1-A)/(fluxerr1+B)
 					fluxerr1+=((flux1-A)*fluxerr1/flux1-fluxerr1)
-					fluxerr2+=((flux1-A)*fluxerr2/flux2-fluxerr2)
 
-					flux_col = flux1/flux2
-					fluxerr_col = flux_col*np.sqrt((fluxerr1/flux1)**2+\
+				if b2 in sys_band_params[image_names[i]].keys():
+					B = parameters[sys_band_params[image_names[i]][b2]]
+	
+					flux2-=B
+					fluxerr2+=((flux1-B)*fluxerr2/flux2-fluxerr2)
+					
+
+				flux_col = flux1/flux2
+				fluxerr_col = flux_col*np.sqrt((fluxerr1/flux1)**2+\
 														(fluxerr2/flux2)**2)
-					#print(b1,b2,sys_band_params[image_names[i]][b1],sys_band_params[image_names[i]][b2])
-					#-2.5*log(f1)+zp - (-2.5*log(f2)+zp)
-					#-2.5(log(f1-log(f2)))
-					#-2.5(log(f1/f2))
-					mod_color = f1/f2#(f1+A)/(f2+B)
-					#print(mod_color)
-					#print(f1,f2)
-					#mod_color = -2.5*np.log10(f1/f2)
-					#print(image_names[i],b1,b2,f1,f2,mod_color,mod.color(b1,b2,
-					#				zpsys,
-					#				image_data_dict[image_names[i]][col]['time']),
-					#mod.parameters)
-
-				else:
-					mod_color = mod.color(b1,b2,
-									zpsys,
-									image_data_dict[image_names[i]][col]['time'])
-				
-				
-				#nll = (image_data_dict[image_names[i]][col]['col']-mod_color) ** 2 / (2 * image_data_dict[image_names[i]][col]['col_err']**2)+ \
-        		#				np.log(image_data_dict[image_names[i]][col]['col_err'] * (10**(-.4*image_data_dict[image_names[i]][col]['col'])))+ \
-        		#							0.5 * np.log(2 * np.pi)
-				#chi = (image_data_dict[image_names[i]][col]['col']-mod_color)/image_data_dict[image_names[i]][col]['col_err']
+				mod_color = f1/f2#(f1+A)/(f2+B)
+					
 				chi = (flux_col-mod_color)/fluxerr_col#image_data_dict[image_names[i]][col]['fluxerr_col']
 				
 				chisq += np.dot(chi,chi)#np.sum(nll)#
@@ -507,15 +548,33 @@ def color_nest(data,model,vparam_names,bounds,shared_parameters,colors,use_MLE=F
 					return np.inf
 				
 		#sys.exit()
-		return chisq
+		return -.5*chisq
 	
+	
+	#def loglike(parameters):
+	#	chisq = chisq_likelihood(parameters)
+	#	return(-.5*chisq)
 
-	def loglike(parameters):
-		chisq = chisq_likelihood(parameters)
-		return(-.5*chisq)
+	dynesty.utils.pickle_module = dill
+	if kwargs.get('ncpu',multiprocessing.cpu_count())>1:
+		with dynesty.pool.Pool(kwargs.get('ncpu',multiprocessing.cpu_count()), loglike_color, prior_transform,
+			logl_args=(models,shared_indices,shared_vindices,t0_indices,
+					image_data_dict,image_names,sys_band_zps,sys_band_params,zpsys),
+			ptform_args=(npdim,ndim,iparam_names,ppflist,vparam_names,tied)) as pool:
+			sampler = dynesty.NestedSampler(pool.loglike, pool.prior_transform,
+								ndim, pool = pool,nlive=npoints)
+			
+			sampler.run_nested(maxiter=maxiter,maxcall=maxcall)
+	else:
 
-	sampler = dynesty.NestedSampler(loglike, prior_transform, ndim, nlive = npoints)
-	sampler.run_nested(maxiter=maxiter,maxcall=maxcall)
+		sampler = dynesty.NestedSampler(chisq_likelihood, prior_transform_inner, ndim, nlive = npoints)
+		sampler.run_nested(maxiter=maxiter,maxcall=maxcall)
+	#with dynesty.pool.Pool(kwargs.get('npcu',multiprocessing.cpu_count()), loglike, prior_transform) as pool:
+	#	sampler = dynesty.NestedSampler(pool.loglikehood, pool.prior_transform,
+	#						ndim, pool = pool,nlive=npoints)
+		#sampler.run_nested()
+		#sampler = dynesty.NestedSampler(loglike, prior_transform, ndim, nlive = npoints)
+	#	sampler.run_nested(maxiter=maxiter,maxcall=maxcall)
 	res = sampler.results
 	samples = res.samples  # samples
 	weights = res.importance_weights()
@@ -552,15 +611,68 @@ def color_nest(data,model,vparam_names,bounds,shared_parameters,colors,use_MLE=F
 
 	return params, res, models
 
+def loglike_series(parameters,models,shared_indices,shared_vindices,
+															amp_indices,t0_indices,image_data_dict,
+															sys_band_dict,image_names,sys_band_params):
+	chisq = 0
+	mods = deepcopy(models)
+		
+	for i,mod in enumerate(mods):
+		#print(parameters)
+		#print(shared_indices)
+		#print(shared_vindices)
+		#print(amp_indices)
+		#print(t0_indices)
+		#sys.exit()
+		mod.parameters[shared_indices] = parameters[shared_vindices]
+		mod.parameters[2] = parameters[amp_indices[i]]
+		mod.parameters[1] = parameters[t0_indices[i]]
+
+		mod_flux = mod.bandflux(image_data_dict[image_names[i]]['band'],
+								image_data_dict[image_names[i]]['time'],
+								zp=image_data_dict[image_names[i]]['zp'],
+								zpsys=image_data_dict[image_names[i]]['zpsys'])
+		
+		for b in sys_band_dict[image_names[i]].keys():
+			#print(sys_band_params[image_names[i]][b],len(parameters),sys_band_dict[image_names[i]][b])
+			mod_flux[sys_band_dict[image_names[i]][b]]+=parameters[sys_band_params[image_names[i]][b]]
+
+		chi = (image_data_dict[image_names[i]]['flux']-mod_flux)/image_data_dict[image_names[i]]['fluxerr']
+		#print(chi)
+		chisq += np.dot(chi,chi)
+		#pdb.set_trace()
+		#(chisq)#list(zip(mod.param_names,mod.parameters)),mod_flux)
+
+	#print(chisq)
+	return -.5*chisq
+def prior_transform(u,npdim,ndim,iparam_names,ppflist,vparam_names,tied):
+		d = {}
+		for i in range(npdim):
+			d[iparam_names[i]] = ppflist[i](u[i])
+		v = np.empty(ndim, dtype=float)
+		for i in range(ndim):
+			key = vparam_names[i]
+			if key in d:
+				v[i] = d[key]
+			else:
+				v[i] = tied[key](d)
+		return v
+
+
+#def loglike(parameters):
+#	chisq = chisq_likelihood(parameters)
+#	return(-.5*chisq)
 def series_nest(data,model,vparam_names,bounds,shared_parameters,use_MLE=False,band_systematics={},
 					minsnr=5., priors=None, ppfs=None, npoints=100, method='single',
 				   maxiter=None, maxcall=None, modelcov=False, rstate=None,
 				   verbose=False, warn=True,use_bayesn_epsilon=False, **kwargs):
 	
+	
 	vparam_names = list(vparam_names)
 	if ppfs is None:
 		ppfs = {}
 	# Convert bounds/priors combinations into ppfs
+	print(bounds)
 	if bounds is not None:
 		for key, val in bounds.items():
 			if key in ppfs:
@@ -587,7 +699,7 @@ def series_nest(data,model,vparam_names,bounds,shared_parameters,use_MLE=False,b
 	ppflist = [ppfs[key] for key in iparam_names]
 	npdim = len(iparam_names)  # length of u
 	ndim = len(vparam_names)  # length of v
-
+	tied = {}
 	# Check that all param_names either have a direct prior or are tied.
 	for name in vparam_names:
 		if name in iparam_names:
@@ -597,7 +709,7 @@ def series_nest(data,model,vparam_names,bounds,shared_parameters,use_MLE=False,b
 		raise ValueError("Must supply ppf or bounds or tied for parameter '{}'"
 						 .format(name))
 
-	def prior_transform(u):
+	def prior_transform_inner(u):
 		d = {}
 		for i in range(npdim):
 			d[iparam_names[i]] = ppflist[i](u[i])
@@ -647,7 +759,10 @@ def series_nest(data,model,vparam_names,bounds,shared_parameters,use_MLE=False,b
 	
 	
 	import pdb
-	def chisq_likelihood(parameters):
+	
+	def chisq_likelihood(parameters):#,models,shared_indices,shared_vindices,
+									#						amp_indices,t0_indices,image_data_dict,
+									#						sys_band_dict):
 		chisq = 0
 		for i,mod in enumerate(models):
 			mod.parameters[shared_indices] = parameters[shared_vindices]
@@ -668,15 +783,41 @@ def series_nest(data,model,vparam_names,bounds,shared_parameters,use_MLE=False,b
 			chisq += np.dot(chi,chi)
 			#pdb.set_trace()
 		#print('chisq:',chisq)
-		return chisq
+		return -.5*chisq
 	
+	
+	#def loglike(parameters):
+	#	chisq = chisq_likelihood(parameters)
+	#	return(-.5*chisq)
 
-	def loglike(parameters):
-		chisq = chisq_likelihood(parameters)
-		return(-.5*chisq)
+	dynesty.utils.pickle_module = dill
+	#from functools import partial
 
-	sampler = dynesty.NestedSampler(loglike, prior_transform, ndim, nlive = npoints)
-	sampler.run_nested(maxiter=maxiter,maxcall=maxcall)
+	# loglike_fn = partial(loglike, models=models,shared_indices=shared_indices,shared_vindices=shared_vindices,
+	# 														amp_indices=amp_indices,t0_indices=t0_indices,
+	# 														image_data_dict=image_data_dict,sys_band_dict=sys_band_dict,
+	# 														image_names=image_names,sys_band_params=sys_band_params)
+	# prior_fn = partial(prior_transform, npdim=npdim,ndim=ndim,iparam_names=iparam_names,ppflist=ppflist,
+	# 							vparam_names=vparam_names,tied=tied)
+	
+	if kwargs.get('ncpu',multiprocessing.cpu_count())>1:
+		with dynesty.pool.Pool(kwargs.get('ncpu',multiprocessing.cpu_count()), loglike_series, prior_transform,
+			logl_args=(models,shared_indices,shared_vindices,
+															amp_indices,t0_indices,image_data_dict,
+															sys_band_dict,image_names,sys_band_params),
+			ptform_args=(npdim,ndim,iparam_names,ppflist,vparam_names,tied)) as pool:
+			sampler = dynesty.NestedSampler(pool.loglike, pool.prior_transform,
+								ndim, pool = pool,nlive=npoints)
+			
+			sampler.run_nested(maxiter=maxiter,maxcall=maxcall)
+	else:
+
+		sampler = dynesty.NestedSampler(chisq_likelihood, prior_transform_inner, ndim, nlive = npoints)
+		sampler.run_nested(maxiter=maxiter,maxcall=maxcall)
+	#import dynesty.plotting as dyplot
+	# Plot the raw samples
+	#fig, axes = dyplot.cornerplot(sampler.results, show_titles=True)
+	#plt.show()
 	res = sampler.results
 	samples = res.samples  # samples
 	weights = res.importance_weights()
