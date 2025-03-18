@@ -2,6 +2,7 @@ import warnings
 import sncosmo
 import os
 import sys
+import pdb
 import pyParz
 import dill
 import dill as pickle
@@ -87,18 +88,28 @@ def single_model_color_delays(curves,model,vparam_names,shared_parameters,refere
 			t0 = 0.
 			
 		if t0_name in vparam_names and im not in fix_time:
-			full_vparam_names.append(t0_name+'_'+im)
+			
 			if im==referenceImage:
+				full_vparam_names.append(t0_name+'_'+im)
 				bounds[t0_name+'_'+im] = bounds[t0_name]+t0
 			else:
-				bounds[t0_name+'_'+im] = bounds['td']+t0
+				full_vparam_names.append('dt'+'_'+im)
+				
+			#else:
+			#	bounds['dt'+'_'+im] = bounds['td']
+			
+
 
 	for im in band_systematics.keys():
 		for b in band_systematics[im]:
 			full_vparam_names.append(b+'_'+im+'_sys')
-			inds = np.where(curves.images[im].table['band']==b)[0]
-			b1 = np.min([bounds['band_sys'][1],np.nanmin(curves.images[im].table[inds]['flux'])])
-			bounds[b+'_'+im+'_sys'] = (bounds['band_sys'][0],b1)
+			#pdb.set_trace()
+			if b+'_'+im+'_sys' not in bounds.keys():
+				inds = np.where(curves.images[im].table['band']==b)[0]
+				#b1 = np.min([bounds['band_sys'][1],np.nanmin(curves.images[im].table[inds]['flux'])])
+				b1 = np.nanmin(curves.images[im].table[inds]['flux'])
+				bounds[b+'_'+im+'_sys'] = (bounds['band_sys'][0]*b1,bounds['band_sys'][1]*b1)
+
 	
 	params,res,models = color_nest(curves.color.table,model,full_vparam_names,bounds,
 		shared_parameters,colors_to_fit,band_systematics=band_systematics,**kwargs)
@@ -118,10 +129,14 @@ def single_model_color_delays(curves,model,vparam_names,shared_parameters,refere
 		band_systematics[im] = temp
 
 	curves.color.fits.band_systematics = band_systematics
-	print(band_systematics)
+	#print(band_systematics)
 
 	curves.color.param_quantiles = {d:params[res.vparam_names.index(d)] for d in res.vparam_names}
-	curves.color.t_peaks = {im:params[res.vparam_names.index(t0_name+'_'+im)][1] for im in images}
+	curves.color.t_peaks = {referenceImage:params[res.vparam_names.index(t0_name+'_'+referenceImage)][1]}
+	for im in images:
+		if im!=referenceImage:
+			post = res.samples[:,res.vparam_names.index(t0_name+'_'+referenceImage)]-res.samples[:,res.vparam_names.index('dt_'+im)]
+			curves.color.t_peaks[im] = weighted_quantile(post,[.5],res.weights)
 
 	curves.color.a_peaks = {}
 	curves.color.a_peak_errs = {}
@@ -140,6 +155,8 @@ def single_model_color_delays(curves,model,vparam_names,shared_parameters,refere
 		temp_res,fit = sncosmo.nest_lc(temp_tab,curves.images[im].fits.model,[curves.images[im].fits.model.param_names[2]],
 							  bounds={},guess_amplitude_bound=True,minsnr=-np.inf
 							 )
+		#import pdb
+		#pdb.set_trace()
 
 		sort_weights = np.flip(np.argsort(temp_res.weights))
 		curves.images[im].fits.res = temp_res
@@ -147,8 +164,7 @@ def single_model_color_delays(curves,model,vparam_names,shared_parameters,refere
 		curves.images[im].fits.table = temp_tab
 		curves.color.a_peaks[im] = weighted_quantile(temp_res.samples[:,0],[.5],temp_res.weights)
 		curves.color.a_peak_errs[im] = weighted_quantile(temp_res.samples[:,0],[.16,.84],temp_res.weights)-curves.color.a_peaks[im]
-	td_quantiles = {im:weighted_quantile(res.samples[:,res.vparam_names.index(t0_name+'_'+im)]-\
-											res.samples[:,res.vparam_names.index(t0_name+'_'+referenceImage)],
+	td_quantiles = {im:weighted_quantile(res.samples[:,res.vparam_names.index('dt_'+im)],
 											[.16,.5,.84],res.weights) for im in images if im!=referenceImage}
 
 
@@ -255,8 +271,11 @@ def single_model_series_delays(curves,model,vparam_names,shared_parameters,refer
 	for im in band_systematics.keys():
 		for b in band_systematics[im]:
 			full_vparam_names.append(b+'_'+im+'_sys')
-
-			bounds[b+'_'+im+'_sys'] = bounds['band_sys']
+			if b+'_'+im+'_sys' not in bounds.keys():
+				inds = np.where(curves.images[im].table['band']==b)[0]
+				#bounds[b+'_'+im+'_sys'] = bounds['band_sys']
+				b1 = np.nanmin(curves.images[im].table[inds]['flux'])
+				bounds[b+'_'+im+'_sys'] = (bounds['band_sys'][0]*b1,bounds['band_sys'][1]*b1)
 
 	params,res,models = series_nest(curves.series.table,model,full_vparam_names,bounds,shared_parameters,band_systematics=band_systematics,
 										**kwargs)
@@ -330,20 +349,25 @@ def single_model_series_delays(curves,model,vparam_names,shared_parameters,refer
 	return curves
 
 def loglike_color(parameters,models,shared_indices,shared_vindices,t0_indices,
-					image_data_dict,image_names,sys_band_zps,sys_band_params,zpsys):
+					image_data_dict,image_names,sys_band_zps,sys_band_params,zpsys,ref_im):
 	chisq = 0
 	mods = deepcopy(models)
+	#print(parameters)
+	#print(ref_im)
 	for i,mod in enumerate(mods):
 		#print(image_names[i])
 		mod.parameters[shared_indices] = parameters[shared_vindices]
-		mod.parameters[1] = parameters[t0_indices[i]]
-		
+		if i==ref_im:
+			mod.parameters[1] = parameters[t0_indices[i]]
+		else:
+			mod.parameters[1] = parameters[t0_indices[ref_im]]-parameters[t0_indices[i]]
+		#print(i,mod.parameters[1])
 
 		for col in image_data_dict[image_names[i]].keys():
-			flux1 = copy(image_data_dict[image_names[i]][col]['flux_col1'])
-			flux2 = copy(image_data_dict[image_names[i]][col]['flux_col2'])
-			fluxerr1 = copy(image_data_dict[image_names[i]][col]['fluxerr_col1'])
-			fluxerr2 = copy(image_data_dict[image_names[i]][col]['fluxerr_col2'])
+			flux1 = deepcopy(image_data_dict[image_names[i]][col]['flux_col1'])
+			flux2 = deepcopy(image_data_dict[image_names[i]][col]['flux_col2'])
+			fluxerr1 = deepcopy(image_data_dict[image_names[i]][col]['fluxerr_col1'])
+			fluxerr2 = deepcopy(image_data_dict[image_names[i]][col]['fluxerr_col2'])
 			#print(col)
 			b1 = col.split('-')[0]
 			b2 = col.split('-')[1]
@@ -353,6 +377,7 @@ def loglike_color(parameters,models,shared_indices,shared_vindices,t0_indices,
 			f2 = mod.bandflux(b2,image_data_dict[image_names[i]][col]['time'],
 									zp=sys_band_zps[image_names[i]][b2],
 									zpsys=zpsys)
+			#pdb.set_trace()
 			if b1 in sys_band_params[image_names[i]].keys():
 				
 				A = parameters[sys_band_params[image_names[i]][b1]]
@@ -374,8 +399,9 @@ def loglike_color(parameters,models,shared_indices,shared_vindices,t0_indices,
 			chi = (flux_col-mod_color)/fluxerr_col#image_data_dict[image_names[i]][col]['fluxerr_col']
 			
 			chisq += np.dot(chi,chi)#np.sum(nll)#
+			#print(chisq)
 			if np.isnan(chisq):#np.any(np.isnan(nll)):
-				return np.inf
+				return -np.inf
 			
 	#sys.exit()
 	return -.5*chisq
@@ -496,7 +522,8 @@ def color_nest(data,model,vparam_names,bounds,shared_parameters,colors,use_MLE=F
 	shared_vindices = np.array([vparam_names.index(p) for p in shared_parameters if p in vparam_names])
 	shared_indices = np.array([model.param_names.index(p) for p in vparam_names if p in shared_parameters])
 
-	t0_indices = np.array([vparam_names.index(t0_name+'_'+im) for im in image_names])
+	t0_indices = np.array([vparam_names.index(t0_name+'_'+im) if t0_name+'_'+im in vparam_names else vparam_names.index('dt_'+im) for im in image_names])
+	ref_im = [i for i in range(len(image_names)) if t0_name+'_'+image_names[i] in vparam_names][0]
 	
 	import pdb
 	
@@ -545,7 +572,7 @@ def color_nest(data,model,vparam_names,bounds,shared_parameters,colors,use_MLE=F
 				
 				chisq += np.dot(chi,chi)#np.sum(nll)#
 				if np.isnan(chisq):#np.any(np.isnan(nll)):
-					return np.inf
+					return -np.inf
 				
 		#sys.exit()
 		return -.5*chisq
@@ -559,7 +586,7 @@ def color_nest(data,model,vparam_names,bounds,shared_parameters,colors,use_MLE=F
 	if kwargs.get('ncpu',multiprocessing.cpu_count())>1:
 		with dynesty.pool.Pool(kwargs.get('ncpu',multiprocessing.cpu_count()), loglike_color, prior_transform,
 			logl_args=(models,shared_indices,shared_vindices,t0_indices,
-					image_data_dict,image_names,sys_band_zps,sys_band_params,zpsys),
+					image_data_dict,image_names,sys_band_zps,sys_band_params,zpsys,ref_im),
 			ptform_args=(npdim,ndim,iparam_names,ppflist,vparam_names,tied)) as pool:
 			sampler = dynesty.NestedSampler(pool.loglike, pool.prior_transform,
 								ndim, pool = pool,nlive=npoints)

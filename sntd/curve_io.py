@@ -778,12 +778,12 @@ class MISN(dict):
 			t0_name = self.color.fits.model.param_names[1]
 			ref_t0 = labels.index(t0_name+'_'+self.color.refImage)
 			
-			for im in self.images.keys():
-				if im==self.color.refImage:
-					continue
-				t0_ind = labels.index(t0_name+'_'+im)
-				labels[t0_ind] = 'dt_'+im
-				samples[:,t0_ind]-=samples[:,ref_t0]
+			# for im in self.images.keys():
+			# 	if im==self.color.refImage:
+			# 		continue
+			# 	t0_ind = labels.index(t0_name+'_'+im)
+			# 	labels[t0_ind] = 'dt_'+im
+			# 	samples[:,t0_ind]-=samples[:,ref_t0]
 
 			try:
 				truths = []
