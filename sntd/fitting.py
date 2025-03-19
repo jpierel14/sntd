@@ -261,11 +261,12 @@ def single_model_series_delays(curves,model,vparam_names,shared_parameters,refer
 			bounds[amp_name+'_'+im] = bounds[amp_name]*mag
 			
 		if t0_name in vparam_names and im not in fix_time:
-			full_vparam_names.append(t0_name+'_'+im)
+			
 			if im==referenceImage:
+				full_vparam_names.append(t0_name+'_'+im)
 				bounds[t0_name+'_'+im] = bounds[t0_name]+t0
 			else:
-				bounds[t0_name+'_'+im] = bounds['td']+t0
+				full_vparam_names.append('dt'+'_'+im)
 
 
 	for im in band_systematics.keys():
@@ -298,12 +299,18 @@ def single_model_series_delays(curves,model,vparam_names,shared_parameters,refer
 	curves.series.fits.band_systematics = band_systematics
 
 	curves.series.param_quantiles = {d:params[res.vparam_names.index(d)] for d in res.vparam_names}
-	curves.series.t_peaks = {im:params[res.vparam_names.index(t0_name+'_'+im)][1] for im in images}
+	#curves.series.t_peaks = {im:params[res.vparam_names.index(t0_name+'_'+im)][1] for im in images}
+	curves.series.t_peaks = {referenceImage:params[res.vparam_names.index(t0_name+'_'+referenceImage)][1]}
+	for im in images:
+		if im!=referenceImage:
+			post = res.samples[:,res.vparam_names.index(t0_name+'_'+referenceImage)]-res.samples[:,res.vparam_names.index('dt_'+im)]
+			curves.series.t_peaks[im] = weighted_quantile(post,[.5],res.weights)
 	curves.series.a_peaks = {im:params[res.vparam_names.index(amp_name+'_'+im)][1] for im in images}
 
-	td_quantiles = {im:weighted_quantile(res.samples[:,res.vparam_names.index(t0_name+'_'+im)]-\
-											res.samples[:,res.vparam_names.index(t0_name+'_'+referenceImage)],
-											[.16,.5,.84],res.weights) for im in images if im!=referenceImage}
+	#td_quantiles = {im:weighted_quantile(res.samples[:,res.vparam_names.index(t0_name+'_'+im)]-\
+	#										res.samples[:,res.vparam_names.index(t0_name+'_'+referenceImage)],
+	#										[.16,.5,.84],res.weights) for im in images if im!=referenceImage}
+	td_quantiles = {im:weighted_quantile(res.samples[:,res.vparam_names.index('dt_'+im)],[.16,.5,.84],res.weights) for im in images if im!=referenceImage}
 
 	curves.series.time_delays = {im:td_quantiles[im][1] for im in images if im!=referenceImage}
 	curves.series.time_delays[referenceImage] = 0
@@ -640,7 +647,7 @@ def color_nest(data,model,vparam_names,bounds,shared_parameters,colors,use_MLE=F
 
 def loglike_series(parameters,models,shared_indices,shared_vindices,
 															amp_indices,t0_indices,image_data_dict,
-															sys_band_dict,image_names,sys_band_params):
+															sys_band_dict,image_names,sys_band_params,ref_im):
 	chisq = 0
 	mods = deepcopy(models)
 		
@@ -653,7 +660,10 @@ def loglike_series(parameters,models,shared_indices,shared_vindices,
 		#sys.exit()
 		mod.parameters[shared_indices] = parameters[shared_vindices]
 		mod.parameters[2] = parameters[amp_indices[i]]
-		mod.parameters[1] = parameters[t0_indices[i]]
+		if i==ref_im:
+			mod.parameters[1] = parameters[t0_indices[i]]
+		else:
+			mod.parameters[1] = parameters[t0_indices[ref_im]]-parameters[t0_indices[i]]
 
 		mod_flux = mod.bandflux(image_data_dict[image_names[i]]['band'],
 								image_data_dict[image_names[i]]['time'],
@@ -782,7 +792,9 @@ def series_nest(data,model,vparam_names,bounds,shared_parameters,use_MLE=False,b
 	shared_indices = np.array([model.param_names.index(p) for p in vparam_names if p in shared_parameters])
 
 	amp_indices = np.array([vparam_names.index(amp_name+'_'+im) for im in image_names])
-	t0_indices = np.array([vparam_names.index(t0_name+'_'+im) for im in image_names])
+	#t0_indices = np.array([vparam_names.index(t0_name+'_'+im) for im in image_names])
+	t0_indices = np.array([vparam_names.index(t0_name+'_'+im) if t0_name+'_'+im in vparam_names else vparam_names.index('dt_'+im) for im in image_names])
+	ref_im = [i for i in range(len(image_names)) if t0_name+'_'+image_names[i] in vparam_names][0]
 	
 	
 	import pdb
@@ -794,7 +806,10 @@ def series_nest(data,model,vparam_names,bounds,shared_parameters,use_MLE=False,b
 		for i,mod in enumerate(models):
 			mod.parameters[shared_indices] = parameters[shared_vindices]
 			mod.parameters[2] = parameters[amp_indices[i]]
-			mod.parameters[1] = parameters[t0_indices[i]]
+			if i==ref_im:
+				mod.parameters[1] = parameters[t0_indices[i]]
+			else:
+				mod.parameters[1] = parameters[t0_indices[ref_im]]-parameters[t0_indices[i]]
 
 			mod_flux = mod.bandflux(image_data_dict[image_names[i]]['band'],
 									image_data_dict[image_names[i]]['time'],
@@ -831,7 +846,7 @@ def series_nest(data,model,vparam_names,bounds,shared_parameters,use_MLE=False,b
 		with dynesty.pool.Pool(kwargs.get('ncpu',multiprocessing.cpu_count()), loglike_series, prior_transform,
 			logl_args=(models,shared_indices,shared_vindices,
 															amp_indices,t0_indices,image_data_dict,
-															sys_band_dict,image_names,sys_band_params),
+															sys_band_dict,image_names,sys_band_params,ref_im),
 			ptform_args=(npdim,ndim,iparam_names,ppflist,vparam_names,tied)) as pool:
 			sampler = dynesty.NestedSampler(pool.loglike, pool.prior_transform,
 								ndim, pool = pool,nlive=npoints)

@@ -742,15 +742,15 @@ class MISN(dict):
 			amp_name = self.series.fits.model.param_names[2]
 			ref_t0 = labels.index(t0_name+'_'+self.series.refImage)
 			ref_amp = labels.index(amp_name+'_'+self.series.refImage)
-			for im in self.images.keys():
-				if im==self.series.refImage:
-					continue
-				t0_ind = labels.index(t0_name+'_'+im)
-				amp_ind = labels.index(amp_name+'_'+im)
-				labels[t0_ind] = 'dt_'+im
-				labels[amp_ind] = 'mu_'+im
-				samples[:,t0_ind]-=samples[:,ref_t0]
-				samples[:,amp_ind]/=samples[:,ref_amp]
+			# for im in self.images.keys():
+			# 	if im==self.series.refImage:
+			# 		continue
+			# 	t0_ind = labels.index(t0_name+'_'+im)
+			# 	amp_ind = labels.index(amp_name+'_'+im)
+			# 	labels[t0_ind] = 'dt_'+im
+			# 	labels[amp_ind] = 'mu_'+im
+			# 	samples[:,t0_ind]-=samples[:,ref_t0]
+			# 	samples[:,amp_ind]/=samples[:,ref_amp]
 			try:
 				truths = []
 				for p in res.vparam_names:
