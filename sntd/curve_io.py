@@ -742,15 +742,15 @@ class MISN(dict):
 			amp_name = self.series.fits.model.param_names[2]
 			ref_t0 = labels.index(t0_name+'_'+self.series.refImage)
 			ref_amp = labels.index(amp_name+'_'+self.series.refImage)
-			# for im in self.images.keys():
-			# 	if im==self.series.refImage:
-			# 		continue
-			# 	t0_ind = labels.index(t0_name+'_'+im)
-			# 	amp_ind = labels.index(amp_name+'_'+im)
-			# 	labels[t0_ind] = 'dt_'+im
-			# 	labels[amp_ind] = 'mu_'+im
-			# 	samples[:,t0_ind]-=samples[:,ref_t0]
-			# 	samples[:,amp_ind]/=samples[:,ref_amp]
+			for im in self.images.keys():
+				if im==self.series.refImage:
+					continue
+				#t0_ind = labels.index(t0_name+'_'+im)
+				amp_ind = labels.index(amp_name+'_'+im)
+				#labels[t0_ind] = 'dt_'+im
+				labels[amp_ind] = 'mu_'+im
+				#samples[:,t0_ind]-=samples[:,ref_t0]
+				samples[:,amp_ind]/=samples[:,ref_amp]
 			try:
 				truths = []
 				for p in res.vparam_names:
@@ -1030,14 +1030,16 @@ class MISN(dict):
 				fig = plt.figure(figsize=(10, 10))
 				ax = fig.gca()
 			for lc in np.sort([x for x in self.images.keys()]):
-				temp = self.color.table[self.color.table['image'] == lc]
+
+				
 				try:
 					delay = self.color.time_delays[lc]
 					delayerr = self.color.time_delay_errors[lc]
-
+					temp = self.color.fits.table[self.color.fits.table['image']==lc]
 				except:
-					delay = 0
-					delayerr = [0, 0]
+					temp = self.color.table[self.color.table['image'] == lc]
+				delay = 0
+				delayerr = [0, 0]
 
 				if plot3D:
 
