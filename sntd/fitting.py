@@ -244,7 +244,8 @@ def single_model_series_delays(curves,model,vparam_names,shared_parameters,refer
         
         
 
-        full_vparam_names = [x for x in vparam_names if x not in [t0_name,amp_name]]
+        full_vparam_names = [x for x in vparam_names if x not in [t0_name,amp_name] and x in shared_parameters]
+        unshared_parameters = []
         for im in images:
                 if im in magnification_guess.keys():
                         mag = magnification_guess[im]
@@ -268,6 +269,15 @@ def single_model_series_delays(curves,model,vparam_names,shared_parameters,refer
                         else:
                                 full_vparam_names.append('dt'+'_'+im)
 
+                for p in vparam_names:
+                        if p in np.append([t0_name,amp_name],shared_parameters):
+                                continue
+                        if p not in unshared_parameters:
+                                unshared_parameters.append(p)
+                        full_vparam_names.append(p+'_'+im)
+                        bounds[p+'_'+im] = bounds[p]
+
+
 
         for im in band_systematics.keys():
                 for b in band_systematics[im]:
@@ -277,7 +287,8 @@ def single_model_series_delays(curves,model,vparam_names,shared_parameters,refer
                                 #bounds[b+'_'+im+'_sys'] = bounds['band_sys']
                                 b1 = np.nanmin(curves.images[im].table[inds]['flux'])
                                 bounds[b+'_'+im+'_sys'] = (bounds['band_sys'][0]*b1,bounds['band_sys'][1]*b1)
-        params,res,models = series_nest(curves.series.table,model,full_vparam_names,bounds,shared_parameters,band_systematics=band_systematics,no_bound_needed=no_bound_needed,
+        params,res,models = series_nest(curves.series.table,model,full_vparam_names,bounds,shared_parameters,unshared_parameters,
+                                                band_systematics=band_systematics,no_bound_needed=no_bound_needed,
                                                                                 **kwargs)
 
         curves.series.fits = newDict()
@@ -644,7 +655,7 @@ def color_nest(data,model,vparam_names,bounds,shared_parameters,colors,use_MLE=F
 
         return params, res, models
 
-def loglike_series(parameters,models,shared_indices,shared_vindices,
+def loglike_series(parameters,models,shared_indices,shared_vindices,unshared_indices,unshared_vindices,
                                                                                                                         amp_indices,t0_indices,image_data_dict,
                                                                                                                         sys_band_dict,image_names,sys_band_params,
                                                                                                                         ref_im,modelcov):
@@ -652,14 +663,11 @@ def loglike_series(parameters,models,shared_indices,shared_vindices,
         mods = deepcopy(models)
         #print(parameters)
         for i,mod in enumerate(mods):
-                #print(parameters)
-                #print(shared_indices)
-                #print(shared_vindices)
-                #print(amp_indices)
-                #print(t0_indices)
-                #sys.exit()
+                
                 if len(shared_indices)>0:
                         mod.parameters[shared_indices] = parameters[shared_vindices]
+                if len(unshared_indices)>0:
+                        mod.parameters[unshared_indices[image_names[i]]] = parameters[unshared_vindices[image_names[i]]]
                 mod.parameters[2] = parameters[amp_indices[i]]
                 if i==ref_im:
                         mod.parameters[1] = parameters[t0_indices[i]]
@@ -716,7 +724,7 @@ def prior_transform(u,npdim,ndim,iparam_names,ppflist,vparam_names,tied):
 #def loglike(parameters):
 #       chisq = chisq_likelihood(parameters)
 #       return(-.5*chisq)
-def series_nest(data,model,vparam_names,bounds,shared_parameters,use_MLE=False,band_systematics={},
+def series_nest(data,model,vparam_names,bounds,shared_parameters,unshared_parameters,use_MLE=False,band_systematics={},
                                         minsnr=5., priors=None, ppfs=None, npoints=100, method='single',
                                    maxiter=None, maxcall=None, modelcov=False, rstate=None,
                                    verbose=False, warn=True,use_bayesn_epsilon=False,prior_transform_func=None,
@@ -810,6 +818,24 @@ def series_nest(data,model,vparam_names,bounds,shared_parameters,use_MLE=False,b
         shared_vindices = np.array([vparam_names.index(p) for p in shared_parameters if p in vparam_names])
         shared_indices = np.array([model.param_names.index(p) for p in vparam_names if p in shared_parameters])
 
+
+        unshared_vindices = {}
+        unshared_indices = {}
+
+        for p in vparam_names:
+                for im in image_names:
+                        if im in p and p.replace('_'+im,'') in unshared_parameters:
+                                if im not in unshared_vindices.keys():
+                                        unshared_vindices[im] = []
+                                        unshared_indices[im] = []
+                                unshared_vindices[im].append(vparam_names.index(p))
+                                unshared_indices[im].append(model.param_names.index(p.replace('_'+im,'')))
+                                    
+        for im in unshared_vindices.keys():
+                                      
+                unshared_indices[im] = np.array(unshared_indices[im])
+                unshared_vindices[im] = np.array(unshared_vindices[im])
+
         amp_indices = np.array([vparam_names.index(amp_name+'_'+im) for im in image_names])
         #t0_indices = np.array([vparam_names.index(t0_name+'_'+im) for im in image_names])
         t0_indices = np.array([vparam_names.index(t0_name+'_'+im) if t0_name+'_'+im in vparam_names else vparam_names.index('dt_'+im) for im in image_names])
@@ -867,7 +893,7 @@ def series_nest(data,model,vparam_names,bounds,shared_parameters,use_MLE=False,b
 
 
                 with dynesty.pool.Pool(kwargs.get('ncpu',multiprocessing.cpu_count()), loglike_series, prior_transform_func,
-                        logl_args=(models,shared_indices,shared_vindices,
+                        logl_args=(models,shared_indices,shared_vindices,unshared_indices,unshared_vindices,
                                                                                                                         amp_indices,t0_indices,image_data_dict,
                                                                                                                         sys_band_dict,image_names,sys_band_params,ref_im,modelcov),
                         ptform_args=(npdim,ndim,iparam_names,ppflist,vparam_names,tied)) as pool:
@@ -918,6 +944,8 @@ def series_nest(data,model,vparam_names,bounds,shared_parameters,use_MLE=False,b
         for i,mod in enumerate(models):
                 if len(shared_indices)>0:
                         mod.parameters[shared_indices] = best_params[shared_vindices]
+                if len(unshared_indices)>0:
+                        mod.parameters[unshared_indices[image_names[i]]] = best_params[unshared_vindices[image_names[i]]]
                 mod.parameters[2] = best_params[amp_indices[i]]
                 if i==ref_im:
                         mod.parameters[1] = best_params[t0_indices[i]]
